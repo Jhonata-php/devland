@@ -48,6 +48,9 @@ export const INPUT_PREVIEW_LINES = 10;
 export const PROMPT_PREVIEW_LINES = 24;
 
 export const TERMINAL_UNAVAILABLE_HINT = tr('O terminal só fica disponível quando o Habblaud roda com acesso local (bind 127.0.0.1)');
+/** Agente recém-criado: tenta abrir o terminal de novo a cada 2 s por até 30 s antes de mostrar o erro. */
+const AUTO_RETRIES = 15;
+const AUTO_RETRY_MS = 2_000;
 const OPEN_ERROR = tr('Não foi possível abrir o terminal. O agente ainda não tem conversa gravada (mande um pedido a ele e tente de novo) ou já foi fechado.');
 const SESSION_OPEN_ERROR = tr('Não foi possível abrir a sessão. O histórico só funciona no acesso local, com o transcript ainda no disco.');
 /** Espera depois da última tecla antes de buscar (a busca percorre toda a conversa na tela). */
@@ -598,6 +601,9 @@ export class TerminalPanel implements UiComponent, TerminalControl {
   private conn: ConnState = 'connecting';
   /** Já recebeu um `init` desta conexão (ou de uma anterior, no mesmo agente). */
   private loaded = false;
+  /** Agente recém-criado: a conversa ainda não existe e o servidor recusa (404); tentamos sozinhos antes de mostrar o erro. */
+  private autoRetries = 0;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private truncated = false;
   private log = new TerminalLog();
   private rows = new Map<string, HTMLElement>();
@@ -915,8 +921,9 @@ export class TerminalPanel implements UiComponent, TerminalControl {
 
   // ---------------------------------------------------------------- stream
 
-  private connect(): void {
+  private connect(auto = false): void {
     this.disconnect();
+    if (!auto) this.autoRetries = 0;
     const id = this.id;
     if (id === null) return;
     this.conn = 'connecting';
@@ -950,7 +957,11 @@ export class TerminalPanel implements UiComponent, TerminalControl {
       if (es.readyState === ES_CLOSED) {
         es.close();
         this.source = null;
-        this.conn = 'failed';
+        if (!this.loaded && this.autoRetries < AUTO_RETRIES) {
+          this.autoRetries++;
+          this.conn = 'connecting';
+          this.retryTimer = setTimeout(() => this.connect(true), AUTO_RETRY_MS);
+        } else this.conn = 'failed';
       } else {
         this.conn = 'reconnecting';
       }
@@ -960,6 +971,8 @@ export class TerminalPanel implements UiComponent, TerminalControl {
   }
 
   private disconnect(): void {
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
     this.source?.close();
     this.source = null;
   }

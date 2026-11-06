@@ -193,6 +193,19 @@ export class OfficeStore {
     return res.ok;
   }
 
+  /** Cloud, "Atualizar agora" (admin): o servidor pede ao Velix para reimplantar. Devolve o motivo se não deu. */
+  async applyUpdate(): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (this.mock) return { ok: false, error: '' };
+    try {
+      const res = await fetch('/api/updates/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (res.ok) return { ok: true };
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      return { ok: false, error: body.error ?? '' };
+    } catch {
+      return { ok: false, error: '' };
+    }
+  }
+
   // ---------------------------------------------------------------- timelapse
 
   /** Snapshots vêm de uma fonte alternativa (o timelapse), não do SSE. */

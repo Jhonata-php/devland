@@ -44,6 +44,7 @@ import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
 import { UpdateChecker } from './updates/checker';
+import { ghcrLatest, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
 import { getLocale, tr } from '../shared/i18n';
 import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
@@ -87,11 +88,16 @@ roomAliases.load();
 // Office, contas e fontes de agentes se referenciam (avisos de mudança / fontes): ligação tardia.
 const late: { connect?: ConnectService; office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
 // Versão nova: consulta a release mais recente no GitHub a cada 6 h (HABBLAUD_UPDATE_CHECK=0 desliga).
+// Cloud (imagem com HABBLAUD_CLOUD_VERSION): a versão mais recente vem das tags da imagem no GHCR e o admin atualiza
+// por um botão que pede ao Velix para reimplantar (HABBLAUD_VELIX_URL/TOKEN/PROJECT; sem elas, só avisa).
+const velix = config.cloudVersion ? velixTargetFromEnv(process.env) : undefined;
 const updates = new UpdateChecker({
   current: config.version,
   repo: config.repo,
   enabled: config.updateCheck,
   file: join(config.dataDir, 'updates.json'),
+  source: config.cloudVersion && config.repo ? ghcrLatest(config.repo) : undefined,
+  apply: velix ? () => velixRedeploy(velix) : undefined,
   onChange: () => late.office?.markDirty(),
 });
 updates.load();

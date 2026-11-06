@@ -50,6 +50,17 @@ do meio (0.**3**.0).
   ("Assumir daqui" e "Encerrar" ocupam a de baixo, em vez de espremer o nome), o botão de copiar fica só com o ícone numa
   coluna própria (antes cobria o texto) e os cartões de uso do topo não encolhem mais por cima uns dos outros.
 
+- **Habblaud Cloud: atualizar por dentro do app.** O Habblaud agora sabe a versão da imagem em uso e confere as tags
+  novas no GHCR: aparece o selo "Nova versão" e, em **Configurações › Sobre**, o botão **Atualizar agora** (só admin)
+  pede ao Velix para reimplantar, e a página recarrega quando o app volta. Para o botão aparecer, crie um token de API do
+  Velix (Configurações › Assistentes de IA, escopo escrita) e defina no projeto `HABBLAUD_VELIX_URL`
+  (ex.: `https://velix.suaempresa.com`), `HABBLAUD_VELIX_TOKEN` e `HABBLAUD_VELIX_PROJECT` (id, slug ou nome). Sem elas,
+  só avisa.
+- **Celular: barra lateral em tela cheia.** No celular a barra lateral usa a largura toda (sobrava uma faixa do mapa
+  ao lado) e o "+ Contas" ficou menor para a barra do topo caber melhor.
+- **Terminal de agente recém-criado abre sozinho.** Um agente novo ainda não tem conversa gravada; o terminal tenta de
+  novo a cada 2 s por até 30 s em vez de pedir para clicar em "Tentar de novo".
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

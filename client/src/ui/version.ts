@@ -129,17 +129,26 @@ export class AboutGroup {
   private repo: HTMLAnchorElement;
   private checking = false;
   private failure: string | undefined;
+  private applyBtn: HTMLButtonElement;
+  private applyNote: HTMLElement;
+  private howTo: HTMLElement;
+  private applying = false;
+  private applyError: string | undefined;
 
   constructor(private ctx: UiContext) {
     this.name = h('strong', { class: 'ui-about__version' });
     this.checkBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Verificar agora'), on: { click: () => void this.check() } });
     this.status = h('p', { class: 'ui-about__status', role: 'status' });
     this.notes = h('a', { class: 'ui-link-btn', attrs: { target: '_blank', rel: 'noopener noreferrer' } });
+    this.applyBtn = h('button', { class: 'ui-btn ui-btn--sm ui-btn--accent', type: 'button', text: tr('Atualizar agora'), on: { click: () => void this.apply() } });
+    this.applyNote = h('p', { class: 'ui-set__hint', role: 'status', hidden: true });
     this.fresh = h(
       'div',
       { class: 'ui-about__new', hidden: true },
       this.notes,
-      h(
+      this.applyBtn,
+      this.applyNote,
+      (this.howTo = h(
         'p',
         { class: 'ui-set__hint' },
         tr('Para atualizar, na pasta do Habblaud: '),
@@ -149,7 +158,7 @@ export class AboutGroup {
         tr(' (sem Docker: '),
         h('code', { class: 'ui-usage-setup__cmd', text: 'npm run build && npm start' }),
         ').',
-      ),
+      )),
     );
     this.repo = h('a', { class: 'ui-link-btn', text: tr('Código no GitHub'), attrs: { target: '_blank', rel: 'noopener noreferrer' } });
     this.el = h(
@@ -177,6 +186,13 @@ export class AboutGroup {
 
     const fresh = !!s?.available && !!s.latest;
     setHidden(this.fresh, !fresh);
+    // Cloud: o admin atualiza por aqui (o servidor pede ao Velix); sem isso, valem as instruções de terminal.
+    const canApply = fresh && !!s?.canApply;
+    const working = this.applying || !!s?.applyingSince;
+    setHidden(this.howTo, canApply);
+    setHidden(this.applyBtn, !canApply || working);
+    setHidden(this.applyNote, !(canApply && (working || this.applyError)));
+    setText(this.applyNote, working ? tr('Atualizando: o Habblaud baixa a versão nova e reinicia sozinho em alguns minutos. A página recarrega quando voltar.') : (this.applyError ?? ''));
     if (fresh) {
       setText(this.notes, tr('Ver o que mudou na v{0}', [s!.latest]));
       const url = safeGithubUrl(s!.url);
@@ -194,6 +210,20 @@ export class AboutGroup {
     this.el.classList.remove('is-highlight');
     void this.el.offsetWidth;
     this.el.classList.add('is-highlight');
+  }
+
+  private async apply(): Promise<void> {
+    if (this.applying) return;
+    this.applying = true;
+    this.applyError = undefined;
+    this.render();
+    const r = await this.ctx.store.applyUpdate();
+    if (!r.ok) {
+      this.applying = false;
+      this.applyError = tr('Não deu para atualizar: {0}', [r.error || tr('sem resposta do servidor')]);
+    }
+    this.render();
+    this.ctx.invalidate();
   }
 
   private async check(): Promise<void> {

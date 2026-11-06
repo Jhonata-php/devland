@@ -8,6 +8,7 @@ import { discoverClaudeDirs } from './accounts/detect';
 import { parseAllowedHosts } from './http/guard';
 import { parseRemoteConfig, type RemoteConfig } from './http/remote';
 import { parseGithubRepo } from './updates/checker';
+import { cloudVersionOf } from './updates/cloud';
 import { tr } from '../shared/i18n';
 
 export interface ServerConfig {
@@ -48,6 +49,8 @@ export interface ServerConfig {
   version: string;
   /** Repositório no GitHub ("dono/nome", do campo `repository` do package.json) onde saem as versões novas. */
   repo?: string;
+  /** Cloud: tag da imagem em uso (HABBLAUD_CLOUD_VERSION, gravada pelo workflow); vira a versão mostrada e comparada. */
+  cloudVersion?: string;
   /** Consulta o GitHub atrás de versão nova (server/updates/checker.ts); HABBLAUD_UPDATE_CHECK=0 desliga. */
   updateCheck: boolean;
   /** Observa as sessões do Codex (sources/codex/); HABBLAUD_CODEX=0 desliga. */
@@ -105,6 +108,9 @@ export function findRoot(from: string): string {
 }
 
 /** Versão e repositório do package.json. */
+/** Imagem do Cloud no GHCR (de onde vêm as tags de versão). */
+const CLOUD_IMAGE = 'jhonata-php/habblaud';
+
 function readPackage(rootDir: string): { version: string; repo?: string } {
   try {
     const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')) as { version?: unknown; repository?: unknown };
@@ -229,6 +235,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
   const rootDir = findRoot(dirname(fileURLToPath(import.meta.url)));
   const host = env.HABBLAUD_HOST?.trim() || '127.0.0.1';
   const pkg = readPackage(rootDir);
+  // Cloud: a versão é a da imagem (cloud-v0.3.5 → 0.3.5), que o workflow grava ao construir.
+  const cloudVersion = isTruthy(env.HABBLAUD_CLOUD) ? cloudVersionOf(env.HABBLAUD_CLOUD_VERSION) : undefined;
   const remote = parseRemoteConfig(env, inDocker);
   return {
     port: Number.isFinite(port) && port > 0 && port < 65536 ? port : 4747,
@@ -245,9 +253,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     messages: messagesOffReason(env, host, inDocker) === undefined,
     timeline: !env.HABBLAUD_TIMELINE?.trim() || isTruthy(env.HABBLAUD_TIMELINE),
     rootDir,
-    version: pkg.version,
-    repo: pkg.repo,
-    updateCheck: !env.HABBLAUD_UPDATE_CHECK?.trim() || isTruthy(env.HABBLAUD_UPDATE_CHECK),
+    version: cloudVersion ?? pkg.version,
+    repo: cloudVersion ? CLOUD_IMAGE : pkg.repo,
+    cloudVersion,
+    // Cloud sem versão da imagem (build local): não consulta as releases do projeto original.
+    updateCheck: (!env.HABBLAUD_UPDATE_CHECK?.trim() || isTruthy(env.HABBLAUD_UPDATE_CHECK)) && !(isTruthy(env.HABBLAUD_CLOUD) && !cloudVersion),
     codex: !env.HABBLAUD_CODEX?.trim() || isTruthy(env.HABBLAUD_CODEX),
     remote: remote.config,
     remoteWarning: remote.warning,

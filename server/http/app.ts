@@ -83,6 +83,8 @@ export interface ApiDeps {
   updates?: {
     status(): UpdateStatus;
     check(opts: { manual?: boolean }): Promise<UpdateStatus>;
+    /** Cloud: pede ao Velix para atualizar (POST /api/updates/apply, só admin); ausente fora do Cloud. */
+    apply?(): Promise<{ ok: true } | { ok: false; error: string }>;
   };
   /**
    * Porta remota com login (http/remote.ts): `is` diz se a requisição chegou por ela (já autenticada); `allows`, o que
@@ -697,6 +699,21 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/updates') {
       if (!isRead) methodNotAllowed(res, 'GET');
       else sendJson(res, 200, { version: deps.version, ...(deps.updates?.status() ?? { state: 'off', available: false }) });
+      return true;
+    }
+    if (path === '/api/updates/apply') {
+      // Cloud: "Atualizar agora". Só o admin, pela porta com login (o Velix reinicia o app com a imagem nova).
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else {
+        req.resume();
+        const apply = deps.updates?.apply;
+        if (!apply || !isRemote(req) || !deps.remote?.isAdmin?.(req)) sendJson(res, 403, { error: tr('só o administrador atualiza o Habblaud, e só no Cloud') });
+        else
+          deps.updates!
+            .apply!()
+            .then((r) => sendJson(res, r.ok ? 200 : 502, r.ok ? { ok: true } : { error: r.error }))
+            .catch((err) => fail(res, err));
+      }
       return true;
     }
     if (path === '/api/updates/check') {

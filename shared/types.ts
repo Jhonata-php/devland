@@ -252,6 +252,10 @@ export interface UpdateStatus {
   available: boolean;
   /** Motivo da falha (state "error"). */
   error?: string;
+  /** Cloud: o servidor sabe pedir a atualização ao Velix (botão "Atualizar agora" para o admin). */
+  canApply?: boolean;
+  /** Cloud: a atualização foi pedida e o servidor está trocando de versão (epoch ms do pedido). */
+  applyingSince?: number;
 }
 
 export interface SourceInfo {

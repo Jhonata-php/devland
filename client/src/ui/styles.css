@@ -4118,6 +4118,14 @@
     --top-h: 108px;
     --gap: 8px;
     --feed-h: 44vh;
+    /* A barra lateral usa a largura toda do celular (sem uma faixa do mapa ao lado). */
+    --side-w: calc(100vw - var(--gap) * 2);
+  }
+
+  /* "+ Contas" (Cloud) menor, para os botões da direita caberem na primeira linha com a marca. */
+  .ui-btn-accounts {
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .ui-topbar {

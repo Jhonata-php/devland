@@ -65,7 +65,17 @@ interface Cached {
   publishedAt?: number;
 }
 
+/** Fonte própria da "versão mais recente" (Cloud: as tags da imagem), no lugar das releases do GitHub. */
+export type LatestSource = () => Promise<{ latest?: string; url?: string; publishedAt?: number }>;
+
+/** Depois de pedir a atualização, o aviso "atualizando" vale por este tempo (a imagem leva alguns minutos). */
+export const APPLY_WINDOW_MS = 15 * 60_000;
+
 export interface UpdateCheckerOptions {
+  /** Cloud: de onde vem a versão mais recente (padrão: releases do GitHub). */
+  source?: LatestSource;
+  /** Cloud: atualiza o próprio Habblaud (pede ao Velix); ausente = sem botão. */
+  apply?: () => Promise<{ ok: true } | { ok: false; error: string }>;
   /** Versão em uso (package.json). */
   current: string;
   /** "dono/nome"; ausente = verificação desligada. */
@@ -87,6 +97,7 @@ export class UpdateChecker {
   private inflight: Promise<UpdateStatus> | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private announced: string | undefined;
+  private applyingSince: number | undefined;
   private readonly fetchFn: typeof fetch;
   private readonly now: () => number;
 
@@ -111,7 +122,22 @@ export class UpdateChecker {
       publishedAt: c?.publishedAt,
       available: !!c?.latest && compareVersions(c.latest, this.opts.current) > 0,
       error: this.error,
+      canApply: this.opts.apply ? true : undefined,
+      applyingSince: this.applyingSince && this.now() - this.applyingSince < APPLY_WINDOW_MS ? this.applyingSince : undefined,
     };
+  }
+
+  /** Cloud: pede a atualização (só com versão nova à vista). Devolve o motivo se não deu. */
+  async apply(): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!this.opts.apply) return { ok: false, error: tr('este servidor não atualiza por aqui') };
+    if (!this.status().available) return { ok: false, error: tr('não há versão nova para instalar') };
+    if (this.status().applyingSince) return { ok: true };
+    const r = await this.opts.apply();
+    if (r.ok) {
+      this.applyingSince = this.now();
+      this.opts.onChange?.();
+    }
+    return r;
   }
 
   /** Lê o último resultado guardado (ignorado se for de outro repositório). */
@@ -127,7 +153,7 @@ export class UpdateChecker {
         checkedAt: j.checkedAt,
         etag: typeof j.etag === 'string' ? j.etag.slice(0, 200) : undefined,
         latest,
-        url: latest ? safeReleaseUrl(j.url, repo) : undefined,
+        url: latest && !this.opts.source ? safeReleaseUrl(j.url, repo) : undefined,
         publishedAt: latest && typeof j.publishedAt === 'number' ? j.publishedAt : undefined,
       };
     } catch (err) {
@@ -182,6 +208,13 @@ export class UpdateChecker {
 
   private async fetchLatest(): Promise<void> {
     const repo = this.opts.repo!;
+    if (this.opts.source) {
+      const r = await this.opts.source();
+      const v = r.latest ? parseVersion(r.latest) : null;
+      this.cache = { repo, checkedAt: this.now(), latest: v ? `${v.nums.join('.')}${v.pre ? `-${v.pre}` : ''}` : undefined, url: undefined, publishedAt: r.publishedAt };
+      this.save();
+      return;
+    }
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'User-Agent': `habblaud/${this.opts.current}`,

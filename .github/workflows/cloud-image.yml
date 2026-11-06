@@ -32,6 +32,7 @@ jobs:
           file: Dockerfile.cloud
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: CLOUD_VERSION=${{ github.ref_name }}
           # :latest anda junto com a tag da versão: o manifesto do Velix usa :latest e o painel avisa quando ele muda.
           tags: |
             ghcr.io/jhonata-php/habblaud:${{ github.ref_name }}
