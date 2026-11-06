@@ -11248,3 +11248,99 @@ html.is-replay #world {
     right: 4px;
   }
 }
+
+/* ---------------------------------------------------------------- barra de navegação do celular (ui/bottomnav.ts) */
+
+.ui-bnav {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .ui-root {
+    /* Altura da barra (sobe acima da barra de gestos do iPhone); o que ancora embaixo fica acima dela. */
+    --nav-h: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ui-bnav {
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    height: var(--nav-h);
+    padding: 0 4px env(safe-area-inset-bottom, 0px);
+    background: rgba(12, 14, 20, 0.94);
+    -webkit-backdrop-filter: blur(14px) saturate(1.25);
+    backdrop-filter: blur(14px) saturate(1.25);
+    border-top: 1px solid var(--ui-line-strong);
+  }
+
+  .ui-bnav__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ui-muted);
+    font: 500 11px/1 var(--font-ui);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ui-bnav__item.is-active {
+    color: var(--ui-accent);
+    background: rgba(124, 200, 255, 0.1);
+  }
+
+  .ui-bnav__icon {
+    display: grid;
+  }
+
+  .ui-bnav__icon .ui-px-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ui-bnav__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ui-bnav__badge {
+    position: absolute;
+    top: 3px;
+    left: calc(50% + 6px);
+    min-width: 16px;
+    padding: 2px 4px;
+    border-radius: 8px;
+    background: var(--st-waiting, #f4c95d);
+    color: #14161f;
+    font: 700 10px/1 var(--font-ui);
+    text-align: center;
+  }
+
+  .ui-bnav__badge[hidden] {
+    display: none;
+  }
+
+  /* Tudo que ancorava embaixo sobe acima da barra. */
+  .ui-sidebar,
+  .ui-feed,
+  .ui-drawer {
+    bottom: calc(var(--gap) + var(--nav-h));
+  }
+
+  .ui-deliv-toast {
+    bottom: calc(72px + var(--nav-h));
+  }
+}

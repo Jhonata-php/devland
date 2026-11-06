@@ -3350,6 +3350,8 @@ export const FR: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "impossible de cloner : {0}",
   "o login não terminou": "la connexion ne s'est pas terminée",
   "Conectar": "Connecter",
+  "Ajustes": "Réglages",
+  "Navegação": "Navigation",
   "este servidor não atualiza por aqui": "ce serveur ne se met pas à jour d'ici",
   "não há versão nova para instalar": "il n'y a pas de nouvelle version à installer",
   "o GitHub não deu acesso à lista de versões": "GitHub n'a pas donné accès à la liste des versions",

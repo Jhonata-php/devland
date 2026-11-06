@@ -3333,6 +3333,8 @@ export const EN: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "couldn't clone: {0}",
   "o login não terminou": "the login didn't finish",
   "Conectar": "Connect",
+  "Ajustes": "Settings",
+  "Navegação": "Navigation",
   "este servidor não atualiza por aqui": "this server can't update from here",
   "não há versão nova para instalar": "there is no new version to install",
   "o GitHub não deu acesso à lista de versões": "GitHub didn't allow access to the version list",

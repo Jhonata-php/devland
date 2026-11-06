@@ -52,6 +52,10 @@ export class TopBar implements UiComponent {
   /** Abre a janela do Habblaud World (ao lado de Configurações); a janela decide quando ele aparece. */
   readonly worldBtn: HTMLButtonElement;
   private readonly spawnBtn: HTMLButtonElement;
+  /** Abre/fecha o painel de Novo agente (a barra inferior do celular usa). */
+  toggleSpawn(): void {
+    this.spawnPanel.toggle(this.spawnBtn);
+  }
   private readonly spawnPanel: SpawnPanel;
   /** Grupo dos botões de painéis (feed, Habblaud World, configurações, ajuda); o histórico entra aqui (ui/index.ts). */
   readonly panelGroup: HTMLElement;

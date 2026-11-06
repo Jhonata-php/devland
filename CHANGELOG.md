@@ -61,6 +61,10 @@ do meio (0.**3**.0).
 - **Terminal de agente recém-criado abre sozinho.** Um agente novo ainda não tem conversa gravada; o terminal tenta de
   novo a cada 2 s por até 30 s em vez de pedir para clicar em "Tentar de novo".
 
+- **Celular: barra de navegação embaixo.** Até 600 px de largura, uma barra fixa na parte de baixo leva ao
+  **Escritório** (volta ao mapa), **Agentes** (painel lateral, com o número de quem precisa de você), **Novo** agente e
+  **Ajustes**. O painel lateral, a gaveta do agente, o feed e os avisos sobem acima dela.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 
