@@ -9,6 +9,7 @@
 //
 // Segurança: quem controla um terminal destes executa comandos na máquina. O recurso é opt-in (HABBLAUD_PTY=1),
 // as rotas só aceitam conexões do próprio computador (ver http/pty.ts) e ele fica desligado no Docker.
+import { runAsOptions } from '../spawn/runas';
 import { chmodSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
@@ -543,7 +544,8 @@ export async function loadPty(): Promise<{ spawn: SpawnPty | null; reason?: stri
   }
   if (!ptySpawn) return { spawn: null, reason: tr('node-pty sem spawn()') };
   const nativeSpawn = ptySpawn;
-  const spawn: SpawnPty = (file, args, o) => nativeSpawn(file, args, { name: 'xterm-256color', cwd: o.cwd, cols: o.cols, rows: o.rows, env: o.env });
+  // Habblaud Cloud: o processo roda como o usuário dos agentes (spawn/runas.ts), sem acesso a /data.
+  const spawn: SpawnPty = (file, args, o) => nativeSpawn(file, args, { name: 'xterm-256color', cwd: o.cwd, cols: o.cols, rows: o.rows, ...runAsOptions(o.env) });
   // No Windows não há spawn-helper; o teste de spawn foi pensado para o macOS e o Linux.
   if (process.platform === 'win32') return { spawn };
   const dir = nodePtyDir();

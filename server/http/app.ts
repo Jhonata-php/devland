@@ -373,8 +373,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           remote,
           terminal: !!terminals && (!remote || trusted(req, 'terminal')),
           permissions: !!deps.permissions && (!remote || trusted(req, 'permissions')),
-          // O terminal interativo (pty) nunca vale pela porta remota.
-          pty: !!deps.pty && !remote,
+          // O terminal interativo (pty) pela porta remota só no Habblaud Cloud (deps.remote.isAdmin existe só nele).
+          pty: !!deps.pty && (!remote || (!!deps.remote?.isAdmin && trusted(req, 'terminal'))),
           messages: !!deps.messages && (!remote || trusted(req, 'messages')),
           codexEvents: !!deps.codexLive,
           updates: updatesSummary(deps.updates?.status()),
@@ -455,8 +455,9 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     }
     if (path === '/api/pty' || path.startsWith('/api/pty/') || AGENT_ACTION_ROUTE.test(path)) {
       // Executa comandos na máquina: nunca pela porta remota, nem com login (o Host e o endereço de quem conecta não
-      // bastam: o Tailscale chega pelo loopback e o Host se imita).
-      if (isRemote(req)) sendJson(res, 403, { error: tr('o terminal interativo só pode ser usado no próprio computador') });
+      // bastam: o Tailscale chega pelo loopback e o Host se imita). Exceção: o Habblaud Cloud (o container é a máquina),
+      // para quem tem a permissão "terminal"; a rota confere de novo (http/pty.ts, remoteOk).
+      if (isRemote(req) && !(deps.remote?.isAdmin && trusted(req, 'terminal'))) sendJson(res, 403, { error: tr('o terminal interativo só pode ser usado no próprio computador') });
       else if (!deps.pty) sendJson(res, 403, { error: tr('terminal interativo desligado (veja o log do servidor)') });
       else deps.pty(req, res, path);
       return true;

@@ -1,0 +1,68 @@
+# syntax=docker/dockerfile:1
+#
+# Habblaud Cloud: o container É a máquina de desenvolvimento. Os projetos ficam em /workspace, o Claude Code e o
+# Codex rodam aqui dentro (terminais e agentes abertos pelo navegador, com login) e o escritório mostra o que eles
+# fazem. Diferente do Dockerfile (que só observa as sessões do computador por montagens somente leitura).
+#
+# Usuários do Linux:
+#   root  roda o servidor do Habblaud (dono de /data: usuários, segredo das sessões);
+#   dev   roda os agentes (claude, codex, git...), sem acesso a /data (spawn/runas.ts).
+
+FROM node:24-bookworm AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+# Com as dependências opcionais: node-pty (compilado aqui, mesma glibc do runtime) e o terminal sem tela (@xterm/headless).
+RUN npm ci --no-audit --no-fund
+COPY . .
+RUN npm run build && npm prune --omit=dev
+
+FROM node:24-bookworm-slim AS runtime
+
+# Ferramentas de uma máquina de desenvolvimento comum. Os agentes instalam o resto do projeto em /workspace e em ~.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client ripgrep jq less procps \
+     python3 python3-pip python3-venv make g++ unzip tini \
+  && rm -rf /var/lib/apt/lists/*
+
+# Os CLIs dos agentes. ponytail: versões sem fixar; fixe com --build-arg quando precisar repetir um build.
+ARG CLAUDE_CODE_VERSION=latest
+ARG CODEX_VERSION=latest
+RUN npm install -g --no-audit --no-fund "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" "@openai/codex@${CODEX_VERSION}" \
+  && npm cache clean --force
+
+RUN useradd --create-home --uid 1001 --user-group --shell /bin/bash dev \
+  && mkdir -p /workspace /data && chown dev:dev /workspace && chmod 700 /data
+
+WORKDIR /app
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
+
+# A 4747 (sem login) só no loopback do container; a 4748 (com login) é a que o proxy alcança.
+ENV NODE_ENV=production \
+    HABBLAUD_IN_DOCKER=0 \
+    HABBLAUD_CLOUD=1 \
+    HABBLAUD_HOST=127.0.0.1 \
+    HABBLAUD_PORT=4747 \
+    HABBLAUD_REMOTE_HOST=0.0.0.0 \
+    HABBLAUD_DATA_DIR=/data \
+    HABBLAUD_PTY=1 \
+    HABBLAUD_WORLD=0 \
+    HABBLAUD_AGENT_UID=1001 \
+    HABBLAUD_AGENT_GID=1001 \
+    HABBLAUD_AGENT_USER=dev \
+    HABBLAUD_AGENT_HOME=/home/dev \
+    HABBLAUD_CLAUDE_DIRS=/home/dev/.claude \
+    HABBLAUD_CODEX_DIRS=/home/dev/.codex \
+    HABBLAUD_USAGE_DIR=/home/dev/.habblaud/usage \
+    DISABLE_AUTOUPDATER=1
+
+EXPOSE 4748
+VOLUME ["/data", "/workspace", "/home/dev"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:4747/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+
+ENTRYPOINT ["tini", "--", "habblaud-cloud-entrypoint"]
+CMD ["node", "dist/server/index.js"]

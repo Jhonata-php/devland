@@ -16,6 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import { tr } from '../../shared/i18n';
+import { runAsOptions } from './runas';
 import { attachmentsRoot, promptWithAttachments, writeAttachments, type Attachment, type AttachmentStore } from './attachments';
 
 /** Tamanho máximo do pedido (o link inteiro vai pela linha de comando do `open`). */
@@ -105,7 +106,7 @@ export function cliArgs(req: SpawnRequest): string[] {
 export function createCliRunner(bin: string, timeoutMs = CLI_TIMEOUT_MS): CliRunner {
   return (req) =>
     new Promise((ok) => {
-      const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8' }, (err, out, stderr) => {
+      const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8', ...runAsOptions(process.env) }, (err, out, stderr) => {
         const id = /backgrounded\s*·\s*([\w-]+)/.exec(out ?? '')?.[1];
         if (!err && id) return ok({ ok: true, id });
         const line = [stderr, out, err?.message].map((t) => (t ?? '').split('\n').map((l) => l.trim()).find(Boolean)).find(Boolean);

@@ -10,6 +10,7 @@
 !server/
 !scripts/build-server.mjs
 !scripts/build-info.mjs
+!scripts/cloud-entrypoint.sh
 
 # Mesmo dentro das pastas incluídas: nada de lixo local.
 **/node_modules

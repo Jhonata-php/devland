@@ -29,6 +29,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile.cloud
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/jhonata-php/habblaud:${{ github.ref_name }}

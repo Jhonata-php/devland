@@ -376,7 +376,8 @@ const api = createApiHandler({
   timeline: createTimelineHandler({ dir: timelineDir, recording: !!timeline }),
   permissions: permissions ? createPermissionRoutes(permissions) : undefined,
   messages: messages ? createMessageRoutes(messages) : undefined,
-  pty: ptys ? createPtyRoutes(ptys) : undefined,
+  // Habblaud Cloud: o terminal interativo também pela porta com login, para quem tem a permissão "terminal".
+  pty: ptys ? createPtyRoutes(ptys, cloud ? (req) => isRemoteRequest(req) && remoteAllows(req, 'terminal') : undefined) : undefined,
   spawn,
   attachments,
   dictation,

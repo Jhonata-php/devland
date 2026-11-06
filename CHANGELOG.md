@@ -18,6 +18,9 @@ do meio (0.**3**.0).
   **Configurações › Usuários**. Todos veem o mesmo escritório. A 4747, sem login, não é publicada.
 - **O login não cai enquanto você usa.** A sessão da porta com login (celular e Cloud) se renova sozinha a cada dia
   de uso, em vez de vencer 30 dias depois de entrar.
+- **Habblaud Cloud: o container é a máquina de desenvolvimento.** A imagem do Cloud (`Dockerfile.cloud`) traz `git`,
+  o Claude Code e o Codex; o terminal interativo e o Novo agente funcionam pelo navegador, com login, para quem tem a
+  permissão de terminal. Os agentes rodam com um usuário do Linux separado, sem acesso aos dados de login.
 
 ## [1.0.3] - 2026-10-16
 

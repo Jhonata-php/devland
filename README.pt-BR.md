@@ -299,7 +299,9 @@ rede). No modo Node: `HABBLAUD_REMOTE_PORT` e `HABBLAUD_REMOTE_HOST` (padrão `0
 ### Habblaud Cloud: servidor com vários usuários
 
 Para rodar o Habblaud num servidor (por exemplo, atrás do Traefik do Velix em `habblaud.needbr.com`), com login
-próprio para várias pessoas:
+próprio para várias pessoas. **O container é a própria máquina de desenvolvimento:** os projetos ficam em
+`/workspace`, e o Claude Code e o Codex rodam lá dentro, em terminais abertos pelo navegador. Não precisa de outro
+computador ligado.
 
 ```bash
 HABBLAUD_ALLOWED_HOSTS=habblaud.needbr.com docker compose -f docker-compose.cloud.yml up -d --build
@@ -318,6 +320,10 @@ HABBLAUD_ALLOWED_HOSTS=habblaud.needbr.com docker compose -f docker-compose.clou
 - **Sessão:** o login dura 30 dias e se renova sozinho enquanto você usa. Cai só ao sair, ao remover o usuário ou com
   **Sair de todos os aparelhos**.
 - Os usuários ficam em `/data/users.json` (senhas só como hash scrypt; convites só como hash).
+- **Terminal e Novo agente pelo navegador:** quem tem a permissão de terminal abre o Claude Code em uma pasta de
+  `/workspace` direto do escritório. Os agentes rodam com o usuário Linux `dev`, que não consegue ler `/data` (onde
+  ficam os usuários e o segredo das sessões); o servidor do Habblaud roda como root só para abrir os agentes assim.
+- Volumes: `/data` (Habblaud), `/workspace` (projetos) e `/home/dev` (configuração e login do Claude Code e do Codex).
 
 ### Atualizar
 

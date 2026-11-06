@@ -7,6 +7,8 @@
 //   POST /api/agents/:id/takeover      assume a sessão: encerra lá e retoma aqui
 // Quem controla um terminal destes executa comandos na máquina: só conexões do próprio computador, com Host
 // local e (quando o navegador manda) Origin da mesma origem. A borda (http/guard.ts) já exige JSON nos POST.
+// Exceção: o Habblaud Cloud, em que o container É a máquina; lá vale a porta com login (já conferiu Host e Origin)
+// para quem tem a permissão "terminal" (`remoteOk`).
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { PtyError, type PtyManager } from '../pty/manager';
 import { HttpError, readJson, sendJson } from './app';
@@ -23,7 +25,8 @@ function isLoopbackAddress(addr: string | undefined): boolean {
 }
 
 /** Motivo da recusa, ou null. */
-export function ptyRequestProblem(req: IncomingMessage): string | null {
+export function ptyRequestProblem(req: IncomingMessage, remoteOk?: (req: IncomingMessage) => boolean): string | null {
+  if (remoteOk?.(req)) return null;
   if (!isLoopbackAddress(req.socket.remoteAddress)) return tr('o terminal interativo só pode ser usado no próprio computador');
   const host = req.headers.host;
   if (!isLoopbackHost(host)) return tr('abra o Habblaud por http://localhost para usar o terminal interativo');
@@ -43,7 +46,10 @@ export function ptyRequestProblem(req: IncomingMessage): string | null {
   return null;
 }
 
-export function createPtyRoutes(ptys: PtyManager): (req: IncomingMessage, res: ServerResponse, path: string) => void {
+export function createPtyRoutes(
+  ptys: PtyManager,
+  remoteOk?: (req: IncomingMessage) => boolean,
+): (req: IncomingMessage, res: ServerResponse, path: string) => void {
   const fail = (res: ServerResponse, err: unknown) => {
     if (res.headersSent) return void res.destroy();
     if (err instanceof HttpError || err instanceof PtyError) sendJson(res, err.status, { error: err.message });
@@ -66,7 +72,7 @@ export function createPtyRoutes(ptys: PtyManager): (req: IncomingMessage, res: S
   };
 
   const handle = async (req: IncomingMessage, res: ServerResponse, path: string) => {
-    const problem = ptyRequestProblem(req);
+    const problem = ptyRequestProblem(req, remoteOk);
     if (problem) throw new HttpError(403, problem);
     const method = req.method ?? 'GET';
     const action = AGENT_ACTION_ROUTE.exec(path);
