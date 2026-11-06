@@ -46,6 +46,10 @@ do meio (0.**3**.0).
 - **Notificação do navegador quando o agente termina.** Com **Configurações › Notificações do navegador** ligado, a aba
   em segundo plano agora também avisa "concluiu" (e o fim de tarefas em segundo plano), além do "precisa de você".
 
+- **Celular: terminal e barra de uso sem sobreposição.** No terminal de um agente, o cabeçalho passa a ter duas linhas
+  ("Assumir daqui" e "Encerrar" ocupam a de baixo, em vez de espremer o nome), o botão de copiar fica só com o ícone numa
+  coluna própria (antes cobria o texto) e os cartões de uso do topo não encolhem mais por cima uns dos outros.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

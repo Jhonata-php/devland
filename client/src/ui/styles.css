@@ -4283,6 +4283,12 @@
     order: 10;
     flex: 1 1 60%;
   }
+
+  /* Cartões nunca menores que o conteúdo (chip + "5h 33%" / "Sem. 55%"): encolhidos, os números vazavam para o cartão do
+     lado. O cartão é um contêiner (container query), então "auto" não serve: largura mínima fixa, e a fila rola. */
+  .ui-usage .ui-usage-card {
+    flex: 1 0 106px;
+  }
 }
 
 /* Celulares de 320 px: com os botões de 32 px a primeira linha (marca + 7 botões) não cabe. */
@@ -5448,6 +5454,34 @@ button.ui-term__think:hover,
 
   .ui-term__foot {
     padding: 6px 10px 10px;
+  }
+
+  /* Cabeçalho em duas linhas: nome e botões de janela em cima, "Assumir daqui" e "Encerrar" embaixo (em uma só, o nome
+     virava "R..." e os botões estouravam a largura). */
+  .ui-term__bar {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 6px;
+    padding: 6px 6px 8px 12px;
+  }
+
+  .ui-term__who .ui-role,
+  .ui-term__who .ui-prov {
+    display: none;
+  }
+
+  .ui-term .ui-termact {
+    order: 5;
+    flex: 1 1 100%;
+  }
+
+  .ui-term .ui-termact .ui-btn {
+    flex: 1;
+  }
+
+  .ui-term .ui-termact__msg {
+    max-width: 100%;
+    white-space: normal;
   }
 }
 
@@ -11180,4 +11214,29 @@ html.is-replay #world {
 
 .ui-world-chip__visitors[hidden] {
   display: none;
+}
+
+/* Telas de toque: não há hover, então o botão de copiar fica sempre à vista, só com o ícone, em coluna própria à direita
+   (antes aparecia por cima do texto da linha tocada). */
+@media (hover: none) {
+  .ui-term__row,
+  .ui-term__call,
+  .ui-term__result {
+    padding-right: 30px;
+  }
+
+  .ui-term__copy {
+    opacity: 0.55;
+    pointer-events: auto;
+    padding: 0 4px;
+  }
+
+  .ui-term__copy > :not(.ui-term__copy-icon) {
+    display: none;
+  }
+
+  .ui-term__row--user > .ui-term__copy {
+    top: 3px;
+    right: 4px;
+  }
 }
