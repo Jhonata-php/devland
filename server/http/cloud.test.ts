@@ -125,3 +125,14 @@ describe('máquina no container (Cloud)', () => {
     expect(runAsOptions({ HOME: '/root' }, undefined)).toEqual({ env: { HOME: '/root' } });
   });
 });
+
+describe('código de instalação vindo do Velix', () => {
+  it('vale exatamente como veio (base64url, com maiúsculas e minúsculas)', async () => {
+    const t = tempDir();
+    closers.push(async () => t.cleanup());
+    const store = new UserStore(join(t.dir, 'users.json'), Date.now, 10);
+    const sessions = new RemoteSessions(Buffer.alloc(32, 7), { user: '', passwordHashText: '' }, Date.now, undefined, userKeyOf(store));
+    const cloud = createCloud({ store, sessions, secure: () => false, setupCode: 'aB3_xY-9kLmN' });
+    expect(cloud.setupCode()).toBe('aB3_xY-9kLmN');
+  });
+});

@@ -27,7 +27,7 @@ export interface CloudDeps {
   sessions: RemoteSessions;
   secure: (req: IncomingMessage) => boolean;
   throttle?: LoginThrottle;
-  /** Código de instalação (injetável nos testes; padrão: aleatório). */
+  /** Código de instalação: HABBLAUD_SETUP_CODE (a loja do Velix sorteia e mostra em "Credenciais") ou aleatório. */
   setupCode?: string;
 }
 
@@ -260,7 +260,7 @@ export function createCloud(deps: CloudDeps): Cloud {
             res,
             formPage({
               title: tr('Habblaud · criar admin'),
-              intro: tr('Primeiro acesso: crie a conta de admin. O código de instalação está no log do container (no Velix: Logs do app).'),
+              intro: tr('Primeiro acesso: crie a conta de admin. O código de instalação aparece no Velix, em Credenciais do app, e no log do container.'),
               fields: [
                 { id: 'code', label: tr('Código de instalação') },
                 { id: 'name', label: tr('Usuário'), auto: 'username' },
@@ -284,7 +284,9 @@ export function createCloud(deps: CloudDeps): Cloud {
             sendJson(res, 409, { error: tr('O admin já foi criado. Entre pela tela de login.') });
             return false;
           }
-          if (!safeEqual(str(body.code).trim().toUpperCase(), code)) {
+          // O código sorteado aqui é maiúsculo (aceita digitado em minúsculas); o que vem do ambiente vale como está.
+          const typed = str(body.code).trim();
+          if (!safeEqual(typed, code) && !safeEqual(typed.toUpperCase(), code)) {
             sendJson(res, 401, { error: tr('Código de instalação incorreto.') });
             return false;
           }

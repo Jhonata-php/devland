@@ -159,7 +159,7 @@ const remoteSessions = config.remote
   : undefined;
 /** Atrás do Traefik o TLS termina no proxy: o cookie leva Secure quando ele diz que a conexão era HTTPS. */
 const viaHttps = (req: http.IncomingMessage) => req.headers['x-forwarded-proto'] === 'https';
-const cloud = cloudStore && remoteSessions ? createCloud({ store: cloudStore, sessions: remoteSessions, secure: viaHttps }) : undefined;
+const cloud = cloudStore && remoteSessions ? createCloud({ store: cloudStore, sessions: remoteSessions, secure: viaHttps, setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined }) : undefined;
 /** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou HABBLAUD_REMOTE_ALLOW. */
 const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (cloud ? cloud.allows(req, f) : !!config.remote?.allow.has(f));
 const hub = new Hub(office, {

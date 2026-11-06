@@ -3320,7 +3320,6 @@ export const FR: Readonly<Record<string, string>> = {
   "Sair de todos os aparelhos": "Se déconnecter de tous les appareils",
   "Habblaud · usuários": "Habblaud · utilisateurs",
   "Habblaud · criar admin": "Habblaud · créer l'admin",
-  "Primeiro acesso: crie a conta de admin. O código de instalação está no log do container (no Velix: Logs do app).": "Premier accès : créez le compte admin. Le code d'installation est dans le journal du conteneur (dans Velix : Logs de l'app).",
   "Código de instalação": "Code d'installation",
   "Senha (mínimo de 10 caracteres)": "Mot de passe (10 caractères minimum)",
   "Criar admin": "Créer l'admin",
@@ -3336,4 +3335,5 @@ export const FR: Readonly<Record<string, string>> = {
   "Entre com seu usuário e senha do Habblaud.": "Connectez-vous avec votre identifiant et mot de passe Habblaud.",
   "   Habblaud Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).": "   Habblaud Cloud : connexion des utilisateurs sur le port {0} (HTTP, à placer derrière le proxy HTTPS).",
   "   Habblaud Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}": "   Habblaud Cloud : premier accès. Ouvrez /setup et utilisez le code d'installation {0}",
+  "Primeiro acesso: crie a conta de admin. O código de instalação aparece no Velix, em Credenciais do app, e no log do container.": "Premier accès : créez le compte admin. Le code d'installation apparaît dans Velix, dans les Identifiants de l'app, et dans le journal du conteneur.",
 };
