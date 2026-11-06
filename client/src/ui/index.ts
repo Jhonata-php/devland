@@ -279,7 +279,12 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const renamer = new RoomRenamer(ctx);
   ctx.renameRoom = (id, at) => renamer.open(id, at);
   world.onRoomContextMenu?.((id, at) => renamer.open(id, at));
-  const empty = new EmptyState(ctx);
+  const empty = new EmptyState(ctx, {
+    get enabled() {
+      return pty.enabled;
+    },
+    open: (cwd) => pty.newSession(cwd),
+  });
   const banner = new ConnectionBanner(ctx);
   const update = new UpdateBanner(store);
   const tip = new HoverTip(ctx);

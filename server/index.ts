@@ -12,6 +12,9 @@ import { createRequestGuard, isLoopbackHost } from './http/guard';
 import { createRemoteGate, isRemoteRequest, loadSecret, RemoteSessions, startRemoteListener, type RemoteFeature, type RemoteListener } from './http/remote';
 import { createCloud, userKeyOf } from './http/cloud';
 import { UserStore } from './cloud/users';
+import { ConnectService } from './cloud/connect';
+import { findExecutable } from './claude-bin';
+import { agentRunAs } from './spawn/runas';
 import { Hub } from './http/sse';
 import { createStaticHandler } from './http/static';
 import { TerminalStreams } from './http/terminal';
@@ -81,7 +84,7 @@ const roomAliases = new RoomAliases(join(config.dataDir, 'rooms.json'));
 roomAliases.load();
 
 // Office, contas e fontes de agentes se referenciam (avisos de mudança / fontes): ligação tardia.
-const late: { office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
+const late: { connect?: ConnectService; office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
 // Versão nova: consulta a release mais recente no GitHub a cada 6 h (HABBLAUD_UPDATE_CHECK=0 desliga).
 const updates = new UpdateChecker({
   current: config.version,
@@ -159,7 +162,13 @@ const remoteSessions = config.remote
   : undefined;
 /** Atrás do Traefik o TLS termina no proxy: o cookie leva Secure quando ele diz que a conexão era HTTPS. */
 const viaHttps = (req: http.IncomingMessage) => req.headers['x-forwarded-proto'] === 'https';
-const cloud = cloudStore && remoteSessions ? createCloud({ store: cloudStore, sessions: remoteSessions, secure: viaHttps, setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined }) : undefined;
+const cloud = cloudStore && remoteSessions ? createCloud({
+      store: cloudStore,
+      sessions: remoteSessions,
+      secure: viaHttps,
+      setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined,
+      connect: () => late.connect,
+    }) : undefined;
 /** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou HABBLAUD_REMOTE_ALLOW. */
 const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (cloud ? cloud.allows(req, f) : !!config.remote?.allow.has(f));
 const hub = new Hub(office, {
@@ -333,6 +342,20 @@ const ptys = spawnPty
   : undefined;
 late.ptys = ptys;
 late.ptyOff = ptyOff;
+// Habblaud Cloud: conectar contas pela web roda os logins num terminal escondido, como o usuário dos agentes.
+const agentUser = agentRunAs();
+if (cloud && spawnPty && claudeBin && agentUser) {
+  late.connect = new ConnectService({
+    spawn: spawnPty,
+    home: agentUser.home,
+    env: process.env,
+    claudeBin,
+    codexBin: findCodexBin(process.env),
+    ghBin: findExecutable('gh'),
+    onClaudeDir: (dir) => accounts.addDir(dir),
+    onChange: () => office.markDirty(),
+  });
+}
 
 if (config.demo) office.setDemo(true);
 // As fontes síncronas (a do Claude Code) terminam o boot aqui, antes de o hub começar a transmitir.

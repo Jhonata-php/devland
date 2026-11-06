@@ -66,6 +66,13 @@ export class AccountsService {
     this.refreshStatusline();
   }
 
+  /** Habblaud Cloud: conta do Claude conectada pela web (cloud/connect.ts) entra sem reiniciar. */
+  addDir(dir: string): void {
+    if (this.opts.dirs.includes(dir)) return this.refresh();
+    this.opts.dirs = [...this.opts.dirs, dir];
+    this.refresh();
+  }
+
   /** Relê metadados e o cache de uso (barato: dois ou três JSONs pequenos). */
   refresh(): void {
     let detected: DetectedAccount[];

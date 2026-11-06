@@ -400,7 +400,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           terminal: !!terminals && trusted(req, 'terminal'),
           spawn: !!deps.spawn && trusted(req, 'spawn'),
           world: !!deps.world && !!deps.terminal && !remote && isLoopbackHost(req.headers.host),
-          ...(deps.remote?.isAdmin ? { admin: remote && deps.remote.isAdmin(req) } : {}),
+          ...(deps.remote?.isAdmin ? { admin: remote && deps.remote.isAdmin(req), cloud: remote } : {}),
         };
         sendJson(res, 200, access);
       }
@@ -689,7 +689,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/demo') {
       // Liga o modo demonstração para todo mundo: só pelo computador (o celular com login só vê o que foi liberado).
       if (method !== 'POST') methodNotAllowed(res, 'POST');
-      else if (isRemote(req)) sendJson(res, 403, { error: tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') });
+      // Habblaud Cloud: o admin liga (é a instalação dele).
+      else if (isRemote(req) && !deps.remote?.isAdmin?.(req)) sendJson(res, 403, { error: tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') });
       else handleDemo(req, res).catch((err) => fail(res, err));
       return true;
     }

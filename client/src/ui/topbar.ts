@@ -41,6 +41,7 @@ export class TopBar implements UiComponent {
   /** Próximo agente do botão de shells (cliques seguidos passam por todos, do que espera há mais tempo). */
   private shellCursor = 0;
   private usage: UsageCards;
+  private accountsLink: HTMLElement;
   private version: VersionChip;
   private hadOpen = false;
   private sidebarBtn: HTMLButtonElement;
@@ -101,6 +102,8 @@ export class TopBar implements UiComponent {
     }
 
     this.usage = new UsageCards(ctx);
+    // Habblaud Cloud: conectar contas (Claude, Codex, GitHub) numa página própria, no lugar dos cartões sem uso.
+    this.accountsLink = h('a', { class: 'ui-btn ui-btn-accounts', text: tr('+ Contas'), hidden: true, attrs: { href: '/contas', title: tr('Conectar contas do Claude, do Codex e do GitHub') } });
 
     this.sidebarBtn = iconButton(ICONS.sidebar, tr('Painel lateral ( [ )'), () => ctx.togglePanel('sidebar'), 'ui-btn-sidebar');
     this.feedBtn = iconButton(ICONS.feed, tr('Feed de atividade ( ] )'), () => ctx.togglePanel('feed'), 'ui-btn-feed');
@@ -153,6 +156,7 @@ export class TopBar implements UiComponent {
       ),
       counterWrap,
       this.usage.el,
+      this.accountsLink,
       h('div', { class: 'ui-topbar__right' }, viewGroup, panelGroup),
     );
   }
@@ -220,6 +224,7 @@ export class TopBar implements UiComponent {
     this.usage.render();
     this.version.render();
     setHidden(this.spawnBtn, !access().spawn || store.mock || store.replaying);
+    setHidden(this.accountsLink, !access().cloud);
 
     this.sidebarBtn.setAttribute('aria-pressed', String(this.ctx.isPanelOpen('sidebar')));
     this.feedBtn.setAttribute('aria-pressed', String(this.ctx.isPanelOpen('feed')));

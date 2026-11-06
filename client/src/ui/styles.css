@@ -238,6 +238,20 @@
     color 0.15s;
 }
 
+/* Habblaud Cloud: botões da tela vazia (Conectar contas, Abrir terminal). */
+.ui-empty__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Habblaud Cloud: "+ Contas" é um link (vai para /contas) com cara de botão. */
+.ui-btn-accounts {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
 .ui-btn .ui-px-icon {
   width: 14px;
   height: 14px;

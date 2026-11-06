@@ -6,6 +6,7 @@
 import { randomBytes } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getLocale, tr } from '../../shared/i18n';
+import type { ConnectProvider, ConnectService } from '../cloud/connect';
 import { FEATURES, UserError, allowedOf, cleanAllow, type Role, type UserStore } from '../cloud/users';
 import {
   LoginThrottle,
@@ -27,6 +28,8 @@ export interface CloudDeps {
   sessions: RemoteSessions;
   secure: (req: IncomingMessage) => boolean;
   throttle?: LoginThrottle;
+  /** Conectar contas pela web (Claude, Codex, GitHub); ausente = recurso desligado. */
+  connect?: () => ConnectService | undefined;
   /** Código de instalação: HABBLAUD_SETUP_CODE (a loja do Velix sorteia e mostra em "Credenciais") ou aleatório. */
   setupCode?: string;
 }
@@ -193,6 +196,114 @@ function adminPage(): string {
   return shell(tr('Habblaud · usuários'), body, script);
 }
 
+function accountsPage(isAdmin: boolean): string {
+  const t = {
+    connect: tr('Conectar'),
+    none: tr('Nenhuma conta conectada.'),
+    openAnthropic: tr('1. Entrar com a Anthropic'),
+    pasteHint: tr('2. Depois de autorizar, a Anthropic mostra um código. Cole aqui:'),
+    send: tr('Enviar código'),
+    openLink: tr('1. Abrir a página de login'),
+    typeCode: tr('2. Digite este código lá:'),
+    waiting: tr('Esperando você terminar o login na outra aba...'),
+    done: tr('Conta conectada.'),
+    failed: tr('O login não deu certo:'),
+    starting: tr('Preparando o login...'),
+    clone: tr('Clonar'),
+    cloned: tr('Já está em /workspace'),
+    cloning: tr('Clonando...'),
+    clonedTo: tr('Clonado em {0}'),
+    failedGeneric: tr('Não deu certo.'),
+    unavailable: tr('não instalado neste servidor'),
+    private: tr('privado'),
+  };
+  const section = (id: string, title: string, intro: string) =>
+    `<h2>${esc(title)}</h2><p>${esc(intro)}</p><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job"></div>`;
+  const body = `<main>
+  <div class="row" style="justify-content:space-between"><h1>${esc(tr('Contas'))}</h1><a href="/">${esc(tr('Voltar ao escritório'))}</a></div>
+  <p>${esc(tr('As contas são da instalação: os agentes de todos usam as contas conectadas aqui.'))}</p>
+  ${section('claude', 'Claude Code', tr('Assinatura do Claude (Pro/Max) ou conta da Anthropic.'))}
+  ${section('codex', 'Codex', tr('Conta do ChatGPT para o Codex.'))}
+  ${section('github', 'GitHub', tr('Para clonar projetos e para os agentes fazerem git push.'))}
+  <div id="repos-box" hidden><h2>${esc(tr('Projetos do GitHub'))}</h2><table><tbody id="repos"></tbody></table></div>
+  <div id="err" role="alert"></div>
+</main>`;
+  const script = `const T = ${JSON.stringify(t).replace(/</g, '\\u003c')}, ADMIN = ${isAdmin};
+  const $ = (id) => document.getElementById(id), err = $('err');
+  const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+  const call = async (method, url, body) => {
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || T.failedGeneric);
+    return j;
+  };
+  let hasGithub = false;
+  async function loadAccounts() {
+    if (!ADMIN) { hasGithub = true; return; }
+    const { accounts, available } = await call('GET', '/api/cloud/accounts');
+    for (const p of ['claude', 'codex', 'github']) {
+      const mine = accounts.filter((a) => a.provider === p);
+      const ul = $(p + '-list'); ul.replaceChildren(...mine.map((a) => el('li', { textContent: '✓ ' + a.label })));
+      if (!mine.length) ul.append(el('li', { textContent: available[p] ? T.none : T.unavailable }));
+      const btn = document.querySelector('[data-connect="' + p + '"]');
+      if (btn) btn.hidden = !available[p] || (p !== 'claude' && mine.length > 0);
+    }
+    hasGithub = accounts.some((a) => a.provider === 'github');
+  }
+  async function loadRepos() {
+    if (!hasGithub) return;
+    try {
+      const { repos } = await call('GET', '/api/cloud/github/repos');
+      $('repos-box').hidden = false;
+      $('repos').replaceChildren(...repos.map((r) => {
+        const b = el('button', { className: 'small', textContent: r.cloned ? T.cloned : T.clone, disabled: r.cloned });
+        b.onclick = async () => {
+          b.disabled = true; b.textContent = T.cloning;
+          try { const { dir } = await call('POST', '/api/cloud/github/clone', { repo: r.name }); b.textContent = T.clonedTo.replace('{0}', dir); }
+          catch (e) { b.disabled = false; b.textContent = T.clone; err.textContent = e.message; }
+        };
+        return el('tr', {}, el('td', { textContent: r.name + (r.private ? ' (' + T.private + ')' : '') }), el('td', {}, b));
+      }));
+    } catch (e) { err.textContent = e.message; }
+  }
+  function renderJob(box, job) {
+    box.replaceChildren();
+    if (job.state === 'starting') return box.append(el('p', { textContent: T.starting }));
+    if (job.state === 'done') return box.append(el('p', { textContent: T.done }));
+    if (job.state === 'failed') return box.append(el('p', { textContent: T.failed + ' ' + (job.error || '') }));
+    if (job.needsPaste) {
+      const input = el('input', { placeholder: 'code#state', autocomplete: 'off', spellcheck: false });
+      const send = el('button', { className: 'small', textContent: T.send });
+      send.onclick = async () => { send.disabled = true; try { await call('POST', '/api/cloud/connect/' + job.id + '/code', { code: input.value }); } catch (e) { err.textContent = e.message; send.disabled = false; } };
+      box.append(el('p', {}, el('a', { href: job.url, target: '_blank', rel: 'noopener noreferrer', textContent: T.openAnthropic })), el('p', { textContent: T.pasteHint }), input, send);
+    } else {
+      box.append(el('p', {}, el('a', { href: job.url, target: '_blank', rel: 'noopener noreferrer', textContent: T.openLink + ' (' + job.url + ')' })),
+        el('p', { textContent: T.typeCode }), el('h1', { textContent: job.code }), el('p', { textContent: T.waiting }));
+    }
+  }
+  for (const btn of document.querySelectorAll('[data-connect]')) {
+    btn.onclick = async () => {
+      const p = btn.dataset.connect, box = $(p + '-job');
+      err.textContent = ''; btn.disabled = true;
+      try {
+        let job = await call('POST', '/api/cloud/connect', { provider: p });
+        let shown = '';
+        while (job.state === 'starting' || job.state === 'waiting') {
+          const key = job.state + (job.url || '') + (job.code || '');
+          if (key !== shown) { renderJob(box, job); shown = key; }
+          await new Promise((r) => setTimeout(r, 1500));
+          job = await call('GET', '/api/cloud/connect/' + job.id);
+        }
+        renderJob(box, job);
+        await loadAccounts(); await loadRepos();
+      } catch (e) { err.textContent = e.message; }
+      btn.disabled = false;
+    };
+  }
+  loadAccounts().then(loadRepos).catch((e) => { err.textContent = e.message; });`;
+  return shell(tr('Habblaud · contas'), body, script);
+}
+
 function redirect(res: ServerResponse, to: string): void {
   res.writeHead(302, { Location: to, 'Cache-Control': 'no-store' });
   res.end();
@@ -339,12 +450,18 @@ export function createCloud(deps: CloudDeps): Cloud {
 
   const api = (req: IncomingMessage, res: ServerResponse, url: URL): boolean => {
     const path = url.pathname;
-    if (path !== '/admin' && !path.startsWith('/api/cloud/')) return false;
+    if (path !== '/admin' && path !== '/contas' && !path.startsWith('/api/cloud/')) return false;
     const me = userOf(req);
     const method = req.method ?? 'GET';
     if (!me) {
       req.resume();
       sendJson(res, 401, { error: tr('faça login') });
+      return true;
+    }
+    if (path === '/contas') {
+      req.resume();
+      if (!deps.connect?.()) redirect(res, '/');
+      else sendHtml(res, accountsPage(me.role === 'admin'));
       return true;
     }
     if (path === '/api/cloud/me') {
@@ -358,6 +475,25 @@ export function createCloud(deps: CloudDeps): Cloud {
       sendJson(res, 200, { ok: true }, { 'Set-Cookie': cookieHeader('', 0, deps.secure(req)) });
       return true;
     }
+    const connect = deps.connect?.();
+    const reply = (p: Promise<unknown>) =>
+      p.then((body) => sendJson(res, 200, body)).catch((err: unknown) => sendJson(res, 400, { error: err instanceof Error ? err.message : String(err) }));
+    // GitHub: listar e clonar valem para quem pode usar o terminal (os agentes trabalham em /workspace).
+    if (path === '/api/cloud/github/repos' || path === '/api/cloud/github/clone') {
+      if (!connect || !allowedOf(me).has('terminal')) {
+        req.resume();
+        sendJson(res, 403, { error: tr('Precisa da permissão de terminal.') });
+      } else if (path === '/api/cloud/github/repos') {
+        req.resume();
+        reply(connect.repos().then((repos) => ({ repos })));
+      } else if (method === 'POST') {
+        reply(json(req).then(async (body) => ({ dir: await connect.clone(str(body.repo)) })));
+      } else {
+        req.resume();
+        sendJson(res, 405, { error: tr('método não permitido') }, { Allow: 'POST' });
+      }
+      return true;
+    }
     if (me.role !== 'admin') {
       req.resume();
       if (path === '/admin') redirect(res, '/');
@@ -367,6 +503,37 @@ export function createCloud(deps: CloudDeps): Cloud {
     if (path === '/admin') {
       req.resume();
       sendHtml(res, adminPage());
+      return true;
+    }
+    // Contas da instalação: só admin conecta.
+    if (path === '/api/cloud/accounts' || path.startsWith('/api/cloud/connect')) {
+      if (!connect) {
+        req.resume();
+        sendJson(res, 404, { error: tr('Conectar contas pela web está desligado.') });
+        return true;
+      }
+      const job = /^\/api\/cloud\/connect\/([0-9a-f-]{36})(\/code)?$/.exec(path);
+      if (path === '/api/cloud/accounts') {
+        req.resume();
+        const available = { claude: connect.available('claude'), codex: connect.available('codex'), github: connect.available('github') };
+        reply(connect.accounts().then((accounts) => ({ accounts, available })));
+      } else if (path === '/api/cloud/connect' && method === 'POST') {
+        reply(json(req).then((body) => {
+          const p = body.provider;
+          if (p !== 'claude' && p !== 'codex' && p !== 'github') throw new Error(tr('ferramenta inválida'));
+          return connect.start(p as ConnectProvider);
+        }));
+      } else if (job && !job[2] && method === 'GET') {
+        req.resume();
+        const v = connect.get(job[1]);
+        if (v) sendJson(res, 200, v);
+        else sendJson(res, 404, { error: tr('não encontrado') });
+      } else if (job && job[2] && method === 'POST') {
+        reply(json(req).then((body) => connect.paste(job[1], str(body.code))));
+      } else {
+        req.resume();
+        sendJson(res, 404, { error: tr('não encontrado') });
+      }
       return true;
     }
     if (path === '/api/cloud/users' && method === 'GET') {

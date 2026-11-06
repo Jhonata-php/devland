@@ -5,6 +5,7 @@ import { FALLBACK_MARK } from './icons';
 import { emptyOfficeHint } from './provider';
 import { wordmark } from './widgets';
 import { tr } from '../../../shared/i18n';
+import { access } from '../net/access';
 
 /** Depois de quanto tempo sem conexão o aviso aparece. */
 const DISCONNECTED_BANNER_MS = 8_000;
@@ -72,9 +73,16 @@ export class EmptyState implements UiComponent {
   readonly el: HTMLElement;
   private hint: HTMLElement;
   private demoBtn: HTMLButtonElement;
+  /** Habblaud Cloud: o servidor é a máquina; o primeiro agente começa por aqui. */
+  private cloudRow: HTMLElement;
+  private termBtn: HTMLButtonElement;
   private busy = false;
 
-  constructor(private ctx: UiContext) {
+  constructor(
+    private ctx: UiContext,
+    /** Abre o Claude Code num terminal interativo (Habblaud Cloud); ausente/false = sem o botão. */
+    private terminal?: { enabled: boolean; open(cwd: string): Promise<void> },
+  ) {
     const art = h('div', { class: 'ui-empty__art', attrs: { 'aria-hidden': 'true' } });
     const img = h('img', { attrs: { src: '/assets/illustrations/empty-office.png', alt: '', draggable: 'false' } });
     img.addEventListener('error', () => {
@@ -98,8 +106,25 @@ export class EmptyState implements UiComponent {
       art,
       h('h2', { class: 'ui-empty__title', text: tr('O escritório está vazio'), attrs: { id: 'ui-empty-title' } }),
       this.hint,
+      (this.cloudRow = h(
+        'div',
+        { class: 'ui-empty__actions', hidden: true },
+        h('a', { class: 'ui-btn ui-btn--primary ui-btn-accounts', text: tr('Conectar contas'), attrs: { href: '/contas' } }),
+        (this.termBtn = h('button', { class: 'ui-btn ui-btn--primary', type: 'button', text: tr('Abrir terminal'), title: tr('Abre o Claude Code em /workspace (os projetos clonados ficam lá)'), on: { click: () => void this.openTerminal() } }) as HTMLButtonElement),
+      )),
       this.demoBtn,
     );
+  }
+
+  private async openTerminal(): Promise<void> {
+    this.termBtn.disabled = true;
+    try {
+      await this.terminal?.open('/workspace');
+    } catch (err) {
+      this.ctx.announce((err as Error).message || tr('Não foi possível abrir o terminal.'));
+    } finally {
+      this.termBtn.disabled = false;
+    }
   }
 
   render(): void {
@@ -108,9 +133,12 @@ export class EmptyState implements UiComponent {
     const show = officeIsEmpty(this.ctx);
     setHidden(this.el, !show);
     if (!show || !snap) return;
-    setText(this.hint, emptyOfficeHint(snap.accounts));
+    const cloud = !!access().cloud;
+    setText(this.hint, cloud ? tr('Conecte uma conta do Claude ou do Codex e abra um terminal: o agente aparece aqui no escritório.') : emptyOfficeHint(snap.accounts));
+    setHidden(this.cloudRow, !cloud);
+    setHidden(this.termBtn, !this.terminal?.enabled);
     this.demoBtn.disabled = this.busy;
-    setHidden(this.demoBtn, store.mock);
+    setHidden(this.demoBtn, store.mock || (cloud && !access().admin));
   }
 
   private async startDemo(): Promise<void> {

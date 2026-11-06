@@ -324,6 +324,12 @@ HABBLAUD_ALLOWED_HOSTS=habblaud.needbr.com docker compose -f docker-compose.clou
   `/workspace` direto do escritório. Os agentes rodam com o usuário Linux `dev`, que não consegue ler `/data` (onde
   ficam os usuários e o segredo das sessões); o servidor do Habblaud roda como root só para abrir os agentes assim.
 - Volumes: `/data` (Habblaud), `/workspace` (projetos) e `/home/dev` (configuração e login do Claude Code e do Codex).
+- **Contas pela web:** em **+ Contas** (no topo, ou `/contas`), o admin conecta as contas da instalação sem terminal.
+  **Claude:** "Entrar com a Anthropic" abre a página de login; depois de autorizar, cole ali o código que a Anthropic
+  mostra. **Codex** e **GitHub:** a página mostra um link e um código para digitar no site deles. Com o GitHub
+  conectado, a mesma página lista seus repositórios com **Clonar** (vão para `/workspace/<projeto>`) e o `git push`
+  dos agentes usa essa conta. Cada conta nova do Claude ganha uma pasta própria (`~/.claude`, `~/.claude-2`...).
+- **Primeiro agente:** com o escritório vazio, **Abrir terminal** abre o Claude Code em `/workspace`.
 
 ### Atualizar
 

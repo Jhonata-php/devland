@@ -21,6 +21,15 @@ do meio (0.**3**.0).
 - **Habblaud Cloud: o container é a máquina de desenvolvimento.** A imagem do Cloud (`Dockerfile.cloud`) traz `git`,
   o Claude Code e o Codex; o terminal interativo e o Novo agente funcionam pelo navegador, com login, para quem tem a
   permissão de terminal. Os agentes rodam com um usuário do Linux separado, sem acesso aos dados de login.
+- **Habblaud Cloud: conectar contas pela web.** Em **+ Contas**, o admin conecta contas do Claude, do Codex e do
+  GitHub sem abrir terminal: a página mostra o link de login (e o código, quando há). Com o GitHub conectado, dá para
+  clonar os repositórios em `/workspace` e os agentes fazem `git push` com essa conta. No topo, as contas sem dados de
+  uso dão lugar ao botão **+ Contas**; com o escritório vazio, **Abrir terminal** começa o primeiro agente.
+
+### Corrigido
+
+- **Habblaud Cloud: "Ver demonstração" voltou a funcionar para o admin** (antes caía em "não liberado no acesso
+  remoto").
 
 ## [1.0.3] - 2026-10-16
 

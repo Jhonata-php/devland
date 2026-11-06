@@ -398,6 +398,8 @@ export interface AccessInfo {
   world?: boolean;
   /** Habblaud Cloud: quem está logado é admin (vê o link "Usuários"). Ausente fora do Cloud. */
   admin?: boolean;
+  /** Habblaud Cloud: a página está na porta com login de uma instalação na nuvem. */
+  cloud?: boolean;
 }
 
 export interface FeedItem {
