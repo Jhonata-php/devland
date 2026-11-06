@@ -39,6 +39,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
 
+# HABBLAUD_UPDATE_CHECK=0: a versão nova do Cloud aparece no projeto do Velix ("Atualizar versão"), não aqui.
 # A 4747 (sem login) só no loopback do container; a 4748 (com login) é a que o proxy alcança. HOME=/home/dev também
 # para o servidor: as contas do Claude são as pastas ~/.claude* do dev (as conectadas pela web incluídas).
 ENV NODE_ENV=production \
@@ -57,6 +58,7 @@ ENV NODE_ENV=production \
     HOME=/home/dev \
     HABBLAUD_CODEX_DIRS=/home/dev/.codex \
     HABBLAUD_USAGE_DIR=/home/dev/.habblaud/usage \
+    HABBLAUD_UPDATE_CHECK=0 \
     DISABLE_AUTOUPDATER=1
 
 EXPOSE 4748

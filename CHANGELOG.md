@@ -26,6 +26,9 @@ do meio (0.**3**.0).
   clonar os repositórios em `/workspace` e os agentes fazem `git push` com essa conta. No topo, as contas sem dados de
   uso dão lugar ao botão **+ Contas**; com o escritório vazio, **Abrir terminal** começa o primeiro agente.
 
+- **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
+  original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
+
 ### Corrigido
 
 - **Habblaud Cloud: "Ver demonstração" voltou a funcionar para o admin** (antes caía em "não liberado no acesso
