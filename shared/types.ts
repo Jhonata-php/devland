@@ -396,6 +396,8 @@ export interface AccessInfo {
    * com Host local. Ausente em servidores antigos.
    */
   world?: boolean;
+  /** Habblaud Cloud: quem está logado é admin (vê o link "Usuários"). Ausente fora do Cloud. */
+  admin?: boolean;
 }
 
 export interface FeedItem {

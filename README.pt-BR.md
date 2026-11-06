@@ -296,6 +296,29 @@ Sem HTTPS a porta remota não sobe; `HABBLAUD_REMOTE_INSECURE_HTTP=1` força HTT
 rede). No modo Node: `HABBLAUD_REMOTE_PORT` e `HABBLAUD_REMOTE_HOST` (padrão `0.0.0.0:4748`) e
 `HABBLAUD_REMOTE_TLS_DIR` (padrão `~/.habblaud/remote-tls/server`).
 
+### Habblaud Cloud: servidor com vários usuários
+
+Para rodar o Habblaud num servidor (por exemplo, atrás do Traefik do Velix em `habblaud.needbr.com`), com login
+próprio para várias pessoas:
+
+```bash
+HABBLAUD_ALLOWED_HOSTS=habblaud.needbr.com docker compose -f docker-compose.cloud.yml up -d --build
+```
+
+- **Só a porta 4748 é publicada**, e toda requisição nela passa pelo login. A 4747 (sem login) nunca sai do
+  container. A 4748 fala HTTP: o HTTPS fica com o proxy. Por padrão ela é publicada só no loopback do host
+  (`HABBLAUD_CLOUD_BIND` muda isso para o proxy alcançar); nunca a deixe aberta na internet sem o proxy na frente.
+- **Primeiro acesso:** abra o endereço e crie o admin. A tela pede o **código de instalação**, que aparece no log do
+  container (`docker compose -f docker-compose.cloud.yml logs habblaud` ou, no Velix, os logs do app). Sem ele,
+  ninguém vira admin só por chegar primeiro.
+- **Convites:** em **Configurações › Usuários** (ou `/admin`), o admin gera um link de convite com o papel (admin ou
+  usuário) e as permissões. O link vale 7 dias e uma vez só; quem abre escolhe o usuário e a senha.
+- **Escritório compartilhado:** todos veem todos os agentes. As permissões de cada usuário dizem o que ele pode fazer:
+  responder pedidos de permissão, mandar mensagens, ver e usar o terminal, abrir agentes novos. Admin pode tudo.
+- **Sessão:** o login dura 30 dias e se renova sozinho enquanto você usa. Cai só ao sair, ao remover o usuário ou com
+  **Sair de todos os aparelhos**.
+- Os usuários ficam em `/data/users.json` (senhas só como hash scrypt; convites só como hash).
+
 ### Atualizar
 
 A versão em uso aparece na barra superior, ao lado de "Conectado", e em **Configurações › Sobre**. A cada 6 horas o

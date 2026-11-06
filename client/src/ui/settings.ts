@@ -95,6 +95,7 @@ export class SettingsPopover implements UiComponent {
   /** Só na página do celular (porta remota com login): sair deste aparelho. */
   private remoteGroup: HTMLElement;
   private logoutBtn: HTMLButtonElement;
+  private usersRow: HTMLElement;
   private about: AboutGroup;
   private demoBusy = false;
   private anchor: HTMLElement | null = null;
@@ -186,6 +187,17 @@ export class SettingsPopover implements UiComponent {
         ),
         this.logoutBtn,
       ),
+      (this.usersRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Usuários') }),
+          h('span', { class: 'ui-set__hint', text: tr('Convidar pessoas, mudar papéis e o que cada uma pode fazer no escritório.') }),
+        ),
+        h('a', { class: 'ui-btn', text: tr('Abrir'), attrs: { href: '/admin' } }),
+      )),
     );
 
     this.theme.row.append(world.themeNote);
@@ -289,6 +301,7 @@ export class SettingsPopover implements UiComponent {
     this.soundGroup.render();
     setHidden(this.demoGroup, this.ctx.store.mock || access().remote);
     setHidden(this.remoteGroup, !access().remote);
+    setHidden(this.usersRow, !access().admin);
     this.about.render();
 
     const notif = this.switches.get('browserNotifications')!;

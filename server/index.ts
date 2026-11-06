@@ -9,7 +9,9 @@ import { AccountsService } from './accounts/service';
 import { isTruthy, loadConfig, messagesOffReason, terminalOffReason, worldSocketUrl } from './config';
 import { createApiHandler, sendJson } from './http/app';
 import { createRequestGuard, isLoopbackHost } from './http/guard';
-import { createRemoteGate, isRemoteRequest, loadSecret, RemoteSessions, startRemoteListener, type RemoteListener } from './http/remote';
+import { createRemoteGate, isRemoteRequest, loadSecret, RemoteSessions, startRemoteListener, type RemoteFeature, type RemoteListener } from './http/remote';
+import { createCloud, userKeyOf } from './http/cloud';
+import { UserStore } from './cloud/users';
 import { Hub } from './http/sse';
 import { createStaticHandler } from './http/static';
 import { TerminalStreams } from './http/terminal';
@@ -144,8 +146,24 @@ const codexLive: CodexLive | undefined = codex;
 late.office = office;
 late.agents = agents;
 // Página que pode responder pelo escritório: Host local na porta local; na remota, só com permissions liberado.
+// Porta remota com login: sessões e, no Habblaud Cloud (HABBLAUD_CLOUD=1), os usuários de <dataDir>/users.json.
+const cloudStore = config.remote?.cloud ? new UserStore(join(config.dataDir, 'users.json')) : undefined;
+const remoteSessions = config.remote
+  ? new RemoteSessions(
+      loadSecret(join(config.dataDir, 'remote-secret')),
+      config.remote,
+      Date.now,
+      join(config.dataDir, 'remote-revoked.json'),
+      cloudStore && userKeyOf(cloudStore),
+    )
+  : undefined;
+/** Atrás do Traefik o TLS termina no proxy: o cookie leva Secure quando ele diz que a conexão era HTTPS. */
+const viaHttps = (req: http.IncomingMessage) => req.headers['x-forwarded-proto'] === 'https';
+const cloud = cloudStore && remoteSessions ? createCloud({ store: cloudStore, sessions: remoteSessions, secure: viaHttps }) : undefined;
+/** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou HABBLAUD_REMOTE_ALLOW. */
+const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (cloud ? cloud.allows(req, f) : !!config.remote?.allow.has(f));
 const hub = new Hub(office, {
-  canAnswer: (req) => (isRemoteRequest(req) ? !!config.remote?.allow.has('permissions') : isLoopbackHost(req.headers.host)),
+  canAnswer: (req) => (isRemoteRequest(req) ? remoteAllows(req, 'permissions') : isLoopbackHost(req.headers.host)),
 });
 // "Meu dia": amostra o escritório a cada segundo e persiste em <dataDir>/stats/ (ver history/daystats.ts).
 const stats = new DayStatsService({ dir: join(config.dataDir, 'stats'), snapshot: () => hub.current() });
@@ -374,7 +392,7 @@ const api = createApiHandler({
   codexLive,
   stats,
   updates,
-  remote: config.remote ? { is: isRemoteRequest, allows: (f) => config.remote!.allow.has(f) } : undefined,
+  remote: config.remote ? { is: isRemoteRequest, allows: remoteAllows, isAdmin: cloud?.isAdmin } : undefined,
   world: world ? createWorldRoutes(world, worldViewer, worldSocial) : undefined,
 });
 
@@ -436,9 +454,10 @@ if (config.remote) {
   const remote = config.remote;
   const gate = createRemoteGate({
     config: remote,
-    sessions: new RemoteSessions(loadSecret(join(config.dataDir, 'remote-secret')), remote, Date.now, join(config.dataDir, 'remote-revoked.json')),
-    secure: !!remote.tls,
+    sessions: remoteSessions!,
+    secure: cloud ? viaHttps : !!remote.tls,
     caFile: remote.tls?.caFile,
+    cloud: cloud?.gate,
   });
   remoteListener = startRemoteListener(
     remote,
@@ -447,6 +466,7 @@ if (config.remote) {
       try {
         if (guard(req, res)) return;
         if (gate(req, res, url)) return;
+        if (cloud?.api(req, res, url)) return;
         if (!api(req, res, url)) fallback(req, res, url);
       } catch (err) {
         log.warn(tr('Erro ao responder (remoto) {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
@@ -458,6 +478,12 @@ if (config.remote) {
     config.allowedHosts,
   );
   remoteListener.server.once('listening', () => {
+    if (cloud) {
+      log.info(tr('   Habblaud Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).', [remote.port]));
+      const code = cloud.setupCode();
+      if (code) log.info(tr('   Habblaud Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}', [code]));
+      return;
+    }
     const allow = [...remote.allow].join(', ') || tr('só ver');
     const where = config.inDocker ? tr('publicada pelo HABBLAUD_REMOTE_BIND') : remote.host;
     const scheme = remote.tls ? 'HTTPS' : tr('HTTP SEM criptografia (HABBLAUD_REMOTE_INSECURE_HTTP)');

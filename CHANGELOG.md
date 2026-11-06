@@ -10,6 +10,15 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Habblaud Cloud: vários usuários com login.** Com `HABBLAUD_CLOUD=1` (ou `docker-compose.cloud.yml`), a porta 4748
+  vira um login para várias pessoas, pronto para ficar atrás de um proxy com HTTPS. O primeiro acesso cria o admin
+  com o código de instalação que sai no log; depois, convites com papel (admin ou usuário) e permissões por pessoa, em
+  **Configurações › Usuários**. Todos veem o mesmo escritório. A 4747, sem login, não é publicada.
+- **O login não cai enquanto você usa.** A sessão da porta com login (celular e Cloud) se renova sozinha a cada dia
+  de uso, em vez de vencer 30 dias depois de entrar.
+
 ## [1.0.3] - 2026-10-16
 
 ### Corrigido

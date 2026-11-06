@@ -224,7 +224,7 @@ async function start(allow: RemoteFeature[] = ['permissions']): Promise<Harness>
       sendJson(res, 200, { ok: true });
     },
     renameRoom: () => 'sala',
-    remote: { is: isRemoteRequest, allows: (f) => allowSet.has(f) },
+    remote: { is: isRemoteRequest, allows: (_req, f) => allowSet.has(f) },
     world: (req, res, url) => {
       req.resume();
       worldCalls.push(`${req.method} ${url.pathname}`);
