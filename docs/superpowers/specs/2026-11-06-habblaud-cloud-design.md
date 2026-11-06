@@ -73,7 +73,7 @@ convidar um usuário, entrar com ele e ver que as permissões valem.
    `primaryPort: 4748`, só a 4748 em `ports`, volume `data` em `/data`.
 5. **Prévia do app ao lado do terminal:** painel web com endereço, recarregar, abrir em nova aba e tamanhos de tela.
    A prévia passa sempre pelo login do Habblaud. Forma de acesso a decidir: caminho `habblaud.needbr.com/preview/5173/` (funciona hoje) ou subdomínio
-   `5173.habblaud.needbr.com` (exige rota e certificado curinga no Traefik do Velix, que já usa DNS-01 da Cloudflare) ou caminho `/preview/<porta>/`.
+   `5173.habblaud.needbr.com` (exige rota e certificado curinga no Traefik do Velix, que já usa DNS-01 da Cloudflare).
 
 ## Sessões que não caem (requisito de todas as etapas)
 
