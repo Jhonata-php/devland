@@ -21,6 +21,8 @@ services:
       - habblaud-cloud-data:/data
     environment:
       HABBLAUD_CLOUD: "1"
+      # A 4747 (sem login) escuta só dentro do container: nem outro container da mesma rede a alcança.
+      HABBLAUD_HOST: 127.0.0.1
       # A 4747 não é publicada (sem `ports:` para ela): o valor reflete isso para a trava do terminal.
       HABBLAUD_BIND: 127.0.0.1
       # O domínio do app (ex.: habblaud.needbr.com); localhost e IPs sempre valem.
