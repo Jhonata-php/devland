@@ -472,6 +472,7 @@ export const FR: Readonly<Record<string, string>> = {
 
   // client/src/ui/notify.ts
   "Habblaud — precisa de você": "Habblaud — on a besoin de vous",
+  "Habblaud — terminou": "Habblaud — terminé",
 
   // client/src/ui/overlays.ts
   "Conectando ao escritório…": "Connexion au bureau…",
@@ -613,7 +614,7 @@ export const FR: Readonly<Record<string, string>> = {
   "Mostrar nomes": "Afficher les noms",
   "Etiqueta com o nome acima de cada personagem.": "Étiquette avec le nom au-dessus de chaque personnage.",
   "Notificações do navegador": "Notifications du navigateur",
-  "Avisa quando alguém precisa de você e a aba está em segundo plano.": "Prévient quand quelqu'un a besoin de vous et que l'onglet est en arrière-plan.",
+  "Avisa quando alguém precisa de você ou termina o trabalho e a aba está em segundo plano.": "Prévient quand quelqu'un a besoin de vous ou termine son travail et que l'onglet est en arrière-plan.",
   "Idioma": "Langue",
   "Este navegador não oferece notificações.": "Ce navigateur ne propose pas de notifications.",
   "Bloqueadas pelo navegador: libere nas permissões do site.": "Bloquées par le navigateur : autorisez-les dans les permissions du site.",

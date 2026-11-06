@@ -43,6 +43,9 @@ do meio (0.**3**.0).
   janela de Contas ocupa a tela toda). Abrir o terminal de um agente que ainda não tem conversa gravada agora explica o
   motivo (antes dizia que só funcionava no acesso local) e o servidor registra no log.
 
+- **Notificação do navegador quando o agente termina.** Com **Configurações › Notificações do navegador** ligado, a aba
+  em segundo plano agora também avisa "concluiu" (e o fim de tarefas em segundo plano), além do "precisa de você".
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

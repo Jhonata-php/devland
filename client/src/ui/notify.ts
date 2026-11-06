@@ -52,9 +52,9 @@ export class Notifier implements UiComponent {
     // o sino toca mesmo com a aba oculta (é ele que chama você de volta); o estalo, só com ela à vista
     if (n.level === 'alert') this.sounds.play('chime');
     else if (n.level === 'success') this.sounds.play('pop');
-    if (n.level === 'alert' && prefs.browserNotifications && document.hidden && notificationState() === 'granted') {
+    if ((n.level === 'alert' || n.level === 'success') && prefs.browserNotifications && document.hidden && notificationState() === 'granted') {
       try {
-        const notification = new Notification(tr('Habblaud — precisa de você'), {
+        const notification = new Notification(n.level === 'alert' ? tr('Habblaud — precisa de você') : tr('Habblaud — terminou'), {
           body: n.text,
           tag: n.agentId ?? n.id,
           icon: '/assets/brand/favicon-32.png',

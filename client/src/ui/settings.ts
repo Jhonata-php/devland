@@ -222,7 +222,7 @@ export class SettingsPopover implements UiComponent {
         'div',
         { class: 'ui-set-group' },
         h('h3', { text: tr('Avisos') }),
-        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você e a aba está em segundo plano.'), () => void this.toggleNotifications()),
+        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você ou termina o trabalho e a aba está em segundo plano.'), () => void this.toggleNotifications()),
       ),
       this.soundGroup.el,
       h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Idioma') }), this.language.row),
@@ -311,7 +311,7 @@ export class SettingsPopover implements UiComponent {
         ? tr('Este navegador não oferece notificações.')
         : state === 'denied'
           ? tr('Bloqueadas pelo navegador: libere nas permissões do site.')
-          : tr('Avisa quando alguém precisa de você e a aba está em segundo plano.');
+          : tr('Avisa quando alguém precisa de você ou termina o trabalho e a aba está em segundo plano.');
     setText(notif.hint, hint);
     notif.btn.disabled = state === 'unsupported';
   }
