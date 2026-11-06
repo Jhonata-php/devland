@@ -65,6 +65,12 @@ do meio (0.**3**.0).
   **Escritório** (volta ao mapa), **Agentes** (painel lateral, com o número de quem precisa de você), **Novo** agente e
   **Ajustes**. O painel lateral, a gaveta do agente, o feed e os avisos sobem acima dela.
 
+- **Habblaud Cloud: aba Contas e perfil.** No celular, a barra de baixo ganha a aba **Contas** (no lugar do "+ Contas" do
+  topo), e **Configurações** mostra o **Perfil** (quem está logado) e o atalho **Contas conectadas**.
+
+- **Contas no celular como folha de baixo.** A janela de Contas sobe de baixo com largura total, alça e cantos
+  arredondados; cada serviço é um cartão com ícone, nome e estado (verde quando conectado).
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

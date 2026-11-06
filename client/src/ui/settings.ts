@@ -1,6 +1,7 @@
 // Configurações (popover): opções do escritório, avisos, modo demonstração e Sobre (versão). O Habblaud World tem a
 // janela própria (ui/world/world-dialog.ts); daqui só sai a dica do tema em Aparência, que também vai para o prédio.
 import { access, remoteLogout } from '../net/access';
+import { openAccounts } from './accounts';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText } from './dom';
 import { ICONS } from './icons';
@@ -96,6 +97,11 @@ export class SettingsPopover implements UiComponent {
   private remoteGroup: HTMLElement;
   private logoutBtn: HTMLButtonElement;
   private usersRow: HTMLElement;
+  /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
+  private profileRow: HTMLElement;
+  private profileText: HTMLElement;
+  private accountsRow: HTMLElement;
+  private meLoaded = false;
   private about: AboutGroup;
   private demoBusy = false;
   private anchor: HTMLElement | null = null;
@@ -187,6 +193,30 @@ export class SettingsPopover implements UiComponent {
         ),
         this.logoutBtn,
       ),
+      (this.profileRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Perfil') }),
+          (this.profileText = h('span', { class: 'ui-set__hint', text: '…' })),
+        ),
+      )),
+      (this.accountsRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Contas conectadas') }),
+          h('span', { class: 'ui-set__hint', text: tr('Claude Code, Codex e GitHub que os agentes usam, e os projetos clonados.') }),
+        ),
+        h('button', { class: 'ui-btn', type: 'button', text: tr('Abrir'), on: { click: () => {
+          this.hide();
+          openAccounts(this.ctx.root);
+        } } }),
+      )),
       (this.usersRow = h(
         'div',
         { class: 'ui-set', hidden: true },
@@ -302,6 +332,9 @@ export class SettingsPopover implements UiComponent {
     setHidden(this.demoGroup, this.ctx.store.mock || access().remote);
     setHidden(this.remoteGroup, !access().remote);
     setHidden(this.usersRow, !access().admin);
+    setHidden(this.profileRow, !access().cloud);
+    setHidden(this.accountsRow, !access().cloud);
+    if (access().cloud && !this.meLoaded) void this.loadMe();
     this.about.render();
 
     const notif = this.switches.get('browserNotifications')!;
@@ -314,6 +347,20 @@ export class SettingsPopover implements UiComponent {
           : tr('Avisa quando alguém precisa de você ou termina o trabalho e a aba está em segundo plano.');
     setText(notif.hint, hint);
     notif.btn.disabled = state === 'unsupported';
+  }
+
+  /** Cloud: nome e papel de quem está logado (GET /api/cloud/me). */
+  private async loadMe(): Promise<void> {
+    this.meLoaded = true;
+    try {
+      const res = await fetch('/api/cloud/me', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error();
+      const me = (await res.json()) as { name?: string; role?: string };
+      setText(this.profileText, `${me.name ?? ''} · ${me.role === 'admin' ? tr('Admin') : tr('Usuário')}`);
+    } catch {
+      this.meLoaded = false;
+      setText(this.profileText, tr('Não deu para ler o perfil.'));
+    }
   }
 
   private async toggleNotifications(): Promise<void> {

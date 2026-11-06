@@ -2,6 +2,8 @@
 // Agentes (painel lateral, com o número de quem precisa de você), Novo agente e Configurações. No computador fica
 // escondida por CSS (a barra do topo tem tudo).
 import { tr } from '../../../shared/i18n';
+import { access } from '../net/access';
+import { openAccounts } from './accounts';
 import type { UiComponent, UiContext } from './context';
 import { h, setHidden, setText } from './dom';
 import { ICONS } from './icons';
@@ -16,6 +18,7 @@ export class BottomNav implements UiComponent {
   readonly el: HTMLElement;
   private readonly office: Item;
   private readonly agents: Item;
+  private readonly accounts: Item;
   private readonly spawn: Item;
   private readonly settings: Item;
 
@@ -32,9 +35,10 @@ export class BottomNav implements UiComponent {
     };
     this.office = item(ICONS.office, tr('Escritório'), () => this.showOffice());
     this.agents = item(ICONS.sidebar, tr('Agentes'), () => ctx.togglePanel('sidebar'), true);
+    this.accounts = item(ICONS.lock, tr('Contas'), () => openAccounts(ctx.root));
     this.spawn = item(ICONS.newAgent, tr('Novo'), openSpawn);
     this.settings = item(ICONS.settings, tr('Ajustes'), () => ctx.toggleSettings());
-    this.el = h('nav', { class: 'ui-bnav', attrs: { 'aria-label': tr('Navegação') } }, this.office.el, this.agents.el, this.spawn.el, this.settings.el);
+    this.el = h('nav', { class: 'ui-bnav', attrs: { 'aria-label': tr('Navegação') } }, this.office.el, this.agents.el, this.accounts.el, this.spawn.el, this.settings.el);
   }
 
   /** Volta ao mapa: fecha o painel lateral e solta a seleção (a gaveta do agente fecha junto). */
@@ -48,6 +52,9 @@ export class BottomNav implements UiComponent {
     this.office.el.classList.toggle('is-active', !sidebar && !this.ctx.selection());
     this.agents.el.classList.toggle('is-active', sidebar);
     this.agents.el.setAttribute('aria-pressed', String(sidebar));
+    // Habblaud Cloud: a aba Contas só existe na instalação em nuvem (as contas são da instalação).
+    setHidden(this.accounts.el, !access().cloud);
+    this.el.classList.toggle('has-accounts', !!access().cloud);
     const waiting = computeCounters(this.ctx.store.liveSnapshot).waiting;
     if (this.agents.badge) {
       setHidden(this.agents.badge, waiting === 0);

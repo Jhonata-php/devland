@@ -592,7 +592,9 @@ server.listen(config.port, config.host, () => {
   );
   log.info(
     updates.enabled
-      ? tr('   Versão nova: verificando as releases de github.com/{0} a cada 6 h.', [config.repo])
+      ? config.cloudVersion
+        ? tr('   Versão nova: verificando as tags de ghcr.io/{0} a cada 6 h{1}.', [config.repo, velix ? tr(' (botão Atualizar ligado ao Velix)') : tr(' (sem HABBLAUD_VELIX_*: só avisa)')])
+        : tr('   Versão nova: verificando as releases de github.com/{0} a cada 6 h.', [config.repo])
       : tr('   Versão nova: verificação desligada ({0}).', [config.repo ? 'HABBLAUD_UPDATE_CHECK' : tr('package.json sem repositório no GitHub')]),
   );
 });

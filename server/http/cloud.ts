@@ -81,9 +81,18 @@ ${PAGE_STYLE}
   .tabs a:hover { color: #e8e6df; }
   .tabs a.on { color: #f4c95d; border-bottom-color: #f4c95d; }
   .card { background: #14161f; border: 2px solid #3a3f58; border-radius: 8px; padding: 16px; margin: 16px 0; }
-  .card h2 { margin: 0; }
-  .card p { margin: 8px 0 12px; }
-  .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card h2 { margin: 0; font-size: 17px; }
+  .card p { margin: 4px 0 12px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .head .ttl { flex: 1; min-width: 0; }
+  .head .ttl p { margin: 2px 0 0; }
+  .card { border-radius: 16px; padding: 16px; transition: opacity .15s; }
+  .card.on { border-color: #3d6b4a; background: #172421; }
+  .card.off { opacity: .85; }
+  .tile { flex: none; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-weight: 800; font-size: 20px; color: #fff; }
+  .t-claude { background: linear-gradient(160deg, #ffa24a, #e4572a); }
+  .t-codex { background: linear-gradient(160deg, #7b97ff, #4a56e2); }
+  .t-github { background: linear-gradient(160deg, #565c78, #2a2d3d); }
   .pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid #3a3f58; color: #9aa0b8; }
   .pill.on { color: #7bd88f; border-color: #7bd88f; }
   .card ul { list-style: none; margin: 0 0 12px; padding: 0; }
@@ -267,9 +276,10 @@ function accountsPage(isAdmin: boolean, embed = false): string {
     nothing: tr('Nenhum projeto encontrado.'),
     ready: tr('Pronto'),
   };
+  const tiles: Record<string, string> = { claude: 'C', codex: 'X', github: 'G' };
   const section = (id: string, title: string, intro: string) =>
-    `<section class="card" id="${id}-card"><div class="head"><h2>${esc(title)}</h2><span class="pill" id="${id}-pill"></span></div><p>${esc(intro)}</p><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job" class="job"></div></section>`;
-  const body = `${embed ? '<style>body { display: block; padding: 0; min-height: 0; background: #1e2130; } main { border: 0; border-radius: 0; padding: 16px; max-width: none; }</style>' : ''}<main>
+    `<section class="card off" id="${id}-card"><div class="head"><span class="tile t-${id}" aria-hidden="true">${tiles[id]}</span><div class="ttl"><h2>${esc(title)}</h2><p>${esc(intro)}</p></div><span class="pill" id="${id}-pill"></span></div><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job" class="job"></div></section>`;
+  const body = `${embed ? '<style>body { display: block; padding: 0; min-height: 0; background: #1e2130; } main { border: 0; border-radius: 0; padding: 4px 12px 20px; max-width: none; } .card { margin: 10px 0; }</style>' : ''}<main>
   ${embed ? '' : tabs('accounts', isAdmin)}
   <h1>${esc(tr('Contas'))}</h1>
   <p>${esc(tr('As contas são da instalação: os agentes de todos usam as contas conectadas aqui.'))}</p>
@@ -297,6 +307,7 @@ function accountsPage(isAdmin: boolean, embed = false): string {
       const ul = $(p + '-list'); ul.replaceChildren(...mine.map((a) => el('li', { className: 'ok', textContent: a.label })));
       if (!mine.length) ul.append(el('li', { className: 'none', textContent: available[p] ? T.none : T.unavailable }));
       const pill = $(p + '-pill'); pill.textContent = mine.length ? T.on : T.off; pill.className = 'pill' + (mine.length ? ' on' : '');
+      $(p + '-card').className = 'card ' + (mine.length ? 'on' : 'off');
       const btn = document.querySelector('[data-connect="' + p + '"]');
       if (btn) { btn.hidden = !available[p] || (p !== 'claude' && mine.length > 0); btn.textContent = mine.length ? T.another : T.connect; }
     }
