@@ -214,3 +214,21 @@ describe('novo agente em segundo plano (claude --bg)', () => {
     expect(d.get('d3')).toMatchObject({ status: 'opened', how: 'app' });
   });
 });
+
+describe('trustFolder (Cloud: pasta escolhida já entra como confiável)', () => {
+  it('grava hasTrustDialogAccepted sem perder o resto do .claude.json', async () => {
+    const { mkdtempSync, readFileSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { trustFolder } = await import('./spawn');
+    const home = mkdtempSync(join(tmpdir(), 'trust-'));
+    writeFileSync(join(home, '.claude.json'), JSON.stringify({ theme: 'dark', projects: { '/workspace/a': { allowedTools: ['x'] } } }));
+    const who = { uid: process.getuid!(), gid: process.getgid!(), home, user: 'dev' };
+    trustFolder('/workspace/a', who);
+    trustFolder('/workspace/b', who);
+    const cfg = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+    expect(cfg.theme).toBe('dark');
+    expect(cfg.projects['/workspace/a']).toEqual({ allowedTools: ['x'], hasTrustDialogAccepted: true });
+    expect(cfg.projects['/workspace/b'].hasTrustDialogAccepted).toBe(true);
+  });
+});

@@ -230,7 +230,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
         setTimeout(go, 300);
       });
     }
-    if (url.search && location.search === url.search) window.history.replaceState(null, '', location.pathname);
+    if (url.search && location.search === url.search) window.window.history.replaceState(null, '', location.pathname);
   };
   if (typeof location !== 'undefined') openLink(new URL(location.href));
   drawer = new Drawer(ctx, terminal, pty);
@@ -301,6 +301,12 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     narrow: ctx.isNarrow(),
   }));
   drawer.onLayoutChange = () => applyLayout();
+
+  // /?settings (abas das páginas Contas e Usuários do Cloud): abre as Configurações já na chegada.
+  if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('settings')) {
+    window.history.replaceState(null, '', location.pathname);
+    setTimeout(() => settings.toggle(topbar.settingsBtn), 0);
+  }
 
   const components: UiComponent[] = [topbar, sidebar, drawer, terminal, pty, history, deliveries, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, popups, worldChip];
   if (scene) components.push(scene);

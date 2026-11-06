@@ -26,6 +26,16 @@ do meio (0.**3**.0).
   clonar os repositórios em `/workspace` e os agentes fazem `git push` com essa conta. No topo, as contas sem dados de
   uso dão lugar ao botão **+ Contas**; com o escritório vazio, **Abrir terminal** começa o primeiro agente.
 
+- **Habblaud Cloud: páginas Contas e Usuários com abas.** Escritório, Contas, Usuários e Configurações ficam numa barra
+  de abas (Configurações abre o painel no escritório). Em Contas, cada serviço virou um cartão com o estado
+  (Conectado / Não conectado), o Claude ganhou "Adicionar outra conta", o código do Codex e do GitHub tem botão
+  Copiar e a mensagem velha de "Conta conectada." não fica mais sobrando embaixo do botão.
+
+- **Habblaud Cloud: Novo agente em pasta clonada funciona direto.** A pasta escolhida já entra como confiável para o
+  Claude Code (antes dava "a pasta ainda não é confiável" e tentava abrir o app, que não existe no servidor), e os
+  projetos clonados em `/workspace` aparecem como escolhas na lista de pastas. Em Contas, os repositórios do GitHub
+  viraram cartões com busca.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

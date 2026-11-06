@@ -3,6 +3,8 @@
 // do escritório. Worktrees de agentes (<projeto>/.claude/worktrees/<nome>) contam como o projeto; pastas temporárias
 // (e as scratch-workspaces do app do Claude) ficam de fora. Node puro: só junta e ordena (quem lê os transcripts é
 // sources/history.ts).
+import { readdirSync, statSync } from 'node:fs';
+
 
 export interface SpawnFolder {
   /** Caminho absoluto no computador do app do Claude. */
@@ -53,4 +55,33 @@ export function recentFolders(
   for (const s of sessions) add(s.project, s.lastAt, true);
   for (const r of rooms) add(r.path, r.lastAt ?? 0, false);
   return [...byPath.values()].sort((a, b) => b.lastAt - a.lastAt || a.path.localeCompare(b.path)).slice(0, limit);
+}
+
+/** Cloud: cada pasta de projeto dentro de /workspace (os repositórios clonados) vira uma escolha, mesmo sem sessão ainda. */
+export function workspaceFolders(root: string, list: (dir: string) => string[] = (d) => readdirSync(d)): SpawnFolder[] {
+  const out: SpawnFolder[] = [];
+  try {
+    for (const name of list(root)) {
+      if (name.startsWith('.')) continue;
+      const path = `${root}/${name}`;
+      let mtime = 0;
+      try {
+        const st = statSync(path);
+        if (!st.isDirectory()) continue;
+        mtime = st.mtimeMs;
+      } catch {
+        continue;
+      }
+      out.push({ path, name, lastAt: mtime, sessions: 0 });
+    }
+  } catch {
+    // sem a pasta: nada a sugerir
+  }
+  return out;
+}
+
+/** Junta as pastas de /workspace às recentes (sem repetir), as mais recentes primeiro. */
+export function mergeFolders(recent: SpawnFolder[], extra: SpawnFolder[]): SpawnFolder[] {
+  const seen = new Set(recent.map((f) => f.path));
+  return [...recent, ...extra.filter((f) => !seen.has(f.path))].sort((a, b) => b.lastAt - a.lastAt || a.path.localeCompare(b.path));
 }

@@ -49,7 +49,8 @@ import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
 import { AttachmentStore } from './spawn/attachments';
-import { recentFolders } from './spawn/folders';
+import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
+import { WORKSPACE } from './cloud/connect';
 import { isDemoId } from '../shared/timeline';
 import { DictationService } from './dictation/dictation';
 import { createWhisperTranscriber, findWhisper } from './dictation/whisper';
@@ -411,7 +412,8 @@ const api = createApiHandler({
     const last = new Map<string, number>();
     for (const a of snap.agents) last.set(a.roomId, Math.max(last.get(a.roomId) ?? 0, a.lastEventAt ?? 0));
     const rooms = snap.rooms.filter((r) => !isDemoId(r.id)).map((r) => ({ path: r.path, lastAt: last.get(r.id) ?? 0 }));
-    return recentFolders(history ? await history.list().catch(() => []) : [], rooms);
+    const recent = recentFolders(history ? await history.list().catch(() => []) : [], rooms);
+    return cloud ? mergeFolders(recent, workspaceFolders(WORKSPACE)) : recent;
   },
   codexLive,
   stats,

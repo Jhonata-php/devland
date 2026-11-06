@@ -13,10 +13,10 @@
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { statSync } from 'node:fs';
-import { isAbsolute } from 'node:path';
+import { chownSync, existsSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { isAbsolute, join } from 'node:path';
 import { tr } from '../../shared/i18n';
-import { runAsOptions } from './runas';
+import { agentRunAs, runAsOptions } from './runas';
 import { attachmentsRoot, promptWithAttachments, writeAttachments, type Attachment, type AttachmentStore } from './attachments';
 
 /** Tamanho máximo do pedido (o link inteiro vai pela linha de comando do `open`). */
@@ -102,10 +102,40 @@ export function cliArgs(req: SpawnRequest): string[] {
   return req.prompt.trim() ? [...args, '--', req.prompt] : args;
 }
 
+/**
+ * Cloud: ninguém está no terminal para aceitar o aviso de confiança, então a pasta que a pessoa escolheu na tela já
+ * entra como confiável (hasTrustDialogAccepted) no .claude.json do usuário dos agentes, em cada pasta de conta.
+ */
+export function trustFolder(folder: string, who = agentRunAs()): void {
+  if (!who) return;
+  const files = [join(who.home, '.claude.json')];
+  try {
+    for (const n of readdirSync(who.home)) if (n === '.claude' || /^\.claude-\d+$/.test(n)) files.push(join(who.home, n, '.claude.json'));
+  } catch {
+    // sem home: só o arquivo padrão
+  }
+  for (const f of files) {
+    try {
+      const cfg = existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as Record<string, unknown>) : {};
+      const projects = (cfg.projects && typeof cfg.projects === 'object' ? cfg.projects : {}) as Record<string, Record<string, unknown>>;
+      if (projects[folder]?.hasTrustDialogAccepted === true) continue;
+      projects[folder] = { ...projects[folder], hasTrustDialogAccepted: true };
+      cfg.projects = projects;
+      const tmp = `${f}.${process.pid}.tmp`;
+      writeFileSync(tmp, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+      chownSync(tmp, who.uid, who.gid);
+      renameSync(tmp, f);
+    } catch {
+      // arquivo ilegível: não mexe (o aviso volta a aparecer no terminal)
+    }
+  }
+}
+
 /** `claude --bg` na pasta do pedido; devolve o id curto que ele imprime ("backgrounded · 7eacc670 · nome"). */
 export function createCliRunner(bin: string, timeoutMs = CLI_TIMEOUT_MS): CliRunner {
   return (req) =>
     new Promise((ok) => {
+      trustFolder(req.folder);
       const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8', ...runAsOptions(process.env) }, (err, out, stderr) => {
         const id = /backgrounded\s*·\s*([\w-]+)/.exec(out ?? '')?.[1];
         if (!err && id) return ok({ ok: true, id });

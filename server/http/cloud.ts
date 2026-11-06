@@ -76,6 +76,32 @@ ${PAGE_STYLE}
   h2 { font-size: 16px; color: #f4c95d; margin: 24px 0 8px; }
   #link { word-break: break-all; color: #e8e6df; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 2px solid #3a3f58; margin: -8px 0 20px; }
+  .tabs a { padding: 8px 12px; color: #9aa0b8; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tabs a:hover { color: #e8e6df; }
+  .tabs a.on { color: #f4c95d; border-bottom-color: #f4c95d; }
+  .card { background: #14161f; border: 2px solid #3a3f58; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .card h2 { margin: 0; }
+  .card p { margin: 8px 0 12px; }
+  .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid #3a3f58; color: #9aa0b8; }
+  .pill.on { color: #7bd88f; border-color: #7bd88f; }
+  .card ul { list-style: none; margin: 0 0 12px; padding: 0; }
+  .card li { padding: 6px 0; word-break: break-all; }
+  .card li.ok::before { content: '✓ '; color: #7bd88f; }
+  .card li.none { color: #9aa0b8; }
+  .repos { display: grid; gap: 8px; margin-top: 12px; max-height: 480px; overflow-y: auto; }
+  .repo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: #1e2130; border: 1px solid #3a3f58; border-radius: 6px; }
+  .repo b { display: block; word-break: break-all; }
+  .repo small { color: #9aa0b8; }
+  .repo .lock { color: #f4c95d; }
+  .repo button.small { flex: none; }
+  .job:empty { display: none; }
+  .job { border-top: 1px solid #3a3f58; margin-top: 12px; padding-top: 12px; }
+  .job .code { font-size: 28px; letter-spacing: 4px; color: #f4c95d; margin: 4px 0 12px; }
+  .job a.btn { display: inline-block; padding: 8px 12px; background: #f4c95d; color: #14161f; border-radius: 6px; font-weight: 700; text-decoration: none; margin-bottom: 12px; }
+  .job input { margin-bottom: 8px; }
+  .job .bad { color: #ff8a80; }
 </style>
 </head>
 <body>
@@ -129,6 +155,12 @@ function featureLabels(): Record<RemoteFeature, string> {
   };
 }
 
+/** Abas das páginas do Cloud: o escritório, as contas, os usuários (admin) e as configurações (abrem no escritório). */
+function tabs(active: 'accounts' | 'users', isAdmin: boolean): string {
+  const tab = (href: string, label: string, on = false) => `<a href="${href}"${on ? ' class="on" aria-current="page"' : ''}>${esc(label)}</a>`;
+  return `<nav class="tabs">${tab('/', tr('Escritório'))}${tab('/contas', tr('Contas'), active === 'accounts')}${isAdmin ? tab('/admin', tr('Usuários'), active === 'users') : ''}${tab('/?settings', tr('Configurações'))}</nav>`;
+}
+
 function adminPage(): string {
   const labels = featureLabels();
   const t = {
@@ -143,7 +175,8 @@ function adminPage(): string {
     allPerms: tr('todas'),
   };
   const body = `<main>
-  <div class="row" style="justify-content:space-between"><h1>${esc(tr('Usuários'))}</h1><a href="/">${esc(tr('Voltar ao escritório'))}</a></div>
+  ${tabs('users', true)}
+  <h1>${esc(tr('Usuários'))}</h1>
   <p>${esc(tr('Todos veem o escritório inteiro; as permissões dizem o que cada um pode fazer nele.'))}</p>
   <table><thead><tr><th>${esc(tr('Nome'))}</th><th>${esc(tr('Papel'))}</th><th>${esc(tr('Permissões'))}</th><th></th></tr></thead><tbody id="users"></tbody></table>
   <h2>${esc(tr('Convidar'))}</h2>
@@ -216,16 +249,25 @@ function accountsPage(isAdmin: boolean): string {
     failedGeneric: tr('Não deu certo.'),
     unavailable: tr('não instalado neste servidor'),
     private: tr('privado'),
+    on: tr('Conectado'),
+    off: tr('Não conectado'),
+    another: tr('Adicionar outra conta'),
+    copy: tr('Copiar'),
+    copied: tr('Copiado'),
+    search: tr('Buscar projeto...'),
+    nothing: tr('Nenhum projeto encontrado.'),
+    ready: tr('Pronto'),
   };
   const section = (id: string, title: string, intro: string) =>
-    `<h2>${esc(title)}</h2><p>${esc(intro)}</p><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job"></div>`;
+    `<section class="card" id="${id}-card"><div class="head"><h2>${esc(title)}</h2><span class="pill" id="${id}-pill"></span></div><p>${esc(intro)}</p><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job" class="job"></div></section>`;
   const body = `<main>
-  <div class="row" style="justify-content:space-between"><h1>${esc(tr('Contas'))}</h1><a href="/">${esc(tr('Voltar ao escritório'))}</a></div>
+  ${tabs('accounts', isAdmin)}
+  <h1>${esc(tr('Contas'))}</h1>
   <p>${esc(tr('As contas são da instalação: os agentes de todos usam as contas conectadas aqui.'))}</p>
   ${section('claude', 'Claude Code', tr('Assinatura do Claude (Pro/Max) ou conta da Anthropic.'))}
   ${section('codex', 'Codex', tr('Conta do ChatGPT para o Codex.'))}
   ${section('github', 'GitHub', tr('Para clonar projetos e para os agentes fazerem git push.'))}
-  <div id="repos-box" hidden><h2>${esc(tr('Projetos do GitHub'))}</h2><table><tbody id="repos"></tbody></table></div>
+  <section class="card" id="repos-box" hidden><div class="head"><h2>${esc(tr('Projetos do GitHub'))}</h2><span class="pill" id="repos-count"></span></div><p>${esc(tr('Clone um projeto para /workspace; ele aparece em Novo agente para escolher.'))}</p><input id="repos-q" type="search" autocomplete="off"><div id="repos" class="repos"></div></section>
   <div id="err" role="alert"></div>
 </main>`;
   const script = `const T = ${JSON.stringify(t).replace(/</g, '\\u003c')}, ADMIN = ${isAdmin};
@@ -243,42 +285,53 @@ function accountsPage(isAdmin: boolean): string {
     const { accounts, available } = await call('GET', '/api/cloud/accounts');
     for (const p of ['claude', 'codex', 'github']) {
       const mine = accounts.filter((a) => a.provider === p);
-      const ul = $(p + '-list'); ul.replaceChildren(...mine.map((a) => el('li', { textContent: '✓ ' + a.label })));
-      if (!mine.length) ul.append(el('li', { textContent: available[p] ? T.none : T.unavailable }));
+      const ul = $(p + '-list'); ul.replaceChildren(...mine.map((a) => el('li', { className: 'ok', textContent: a.label })));
+      if (!mine.length) ul.append(el('li', { className: 'none', textContent: available[p] ? T.none : T.unavailable }));
+      const pill = $(p + '-pill'); pill.textContent = mine.length ? T.on : T.off; pill.className = 'pill' + (mine.length ? ' on' : '');
       const btn = document.querySelector('[data-connect="' + p + '"]');
-      if (btn) btn.hidden = !available[p] || (p !== 'claude' && mine.length > 0);
+      if (btn) { btn.hidden = !available[p] || (p !== 'claude' && mine.length > 0); btn.textContent = mine.length ? T.another : T.connect; }
     }
     hasGithub = accounts.some((a) => a.provider === 'github');
+  }
+  let repoList = [];
+  function drawRepos() {
+    const q = $('repos-q').value.trim().toLowerCase();
+    const shown = repoList.filter((r) => r.name.toLowerCase().includes(q));
+    $('repos-count').textContent = String(repoList.length);
+    $('repos').replaceChildren(...(shown.length ? shown.map((r) => {
+      const [owner, name] = r.name.split('/');
+      const b = el('button', { className: 'small' + (r.cloned ? ' ghost' : ''), textContent: r.cloned ? '✓ ' + T.ready : T.clone, disabled: r.cloned });
+      b.onclick = async () => {
+        b.disabled = true; b.textContent = T.cloning;
+        try { const { dir } = await call('POST', '/api/cloud/github/clone', { repo: r.name }); r.cloned = true; b.className = 'small ghost'; b.textContent = '✓ ' + T.ready; sub.textContent = dir; }
+        catch (e) { b.disabled = false; b.textContent = T.clone; err.textContent = e.message; }
+      };
+      const sub = el('small', { textContent: r.cloned ? T.cloned : owner + (r.private ? ' · 🔒 ' + T.private : '') });
+      return el('div', { className: 'repo' }, el('div', {}, el('b', { textContent: name }), sub), b);
+    }) : [el('p', { textContent: T.nothing })]));
   }
   async function loadRepos() {
     if (!hasGithub) return;
     try {
       const { repos } = await call('GET', '/api/cloud/github/repos');
-      $('repos-box').hidden = false;
-      $('repos').replaceChildren(...repos.map((r) => {
-        const b = el('button', { className: 'small', textContent: r.cloned ? T.cloned : T.clone, disabled: r.cloned });
-        b.onclick = async () => {
-          b.disabled = true; b.textContent = T.cloning;
-          try { const { dir } = await call('POST', '/api/cloud/github/clone', { repo: r.name }); b.textContent = T.clonedTo.replace('{0}', dir); }
-          catch (e) { b.disabled = false; b.textContent = T.clone; err.textContent = e.message; }
-        };
-        return el('tr', {}, el('td', { textContent: r.name + (r.private ? ' (' + T.private + ')' : '') }), el('td', {}, b));
-      }));
+      repoList = repos; $('repos-box').hidden = false; $('repos-q').placeholder = T.search; $('repos-q').oninput = drawRepos; drawRepos();
     } catch (e) { err.textContent = e.message; }
   }
   function renderJob(box, job) {
     box.replaceChildren();
     if (job.state === 'starting') return box.append(el('p', { textContent: T.starting }));
-    if (job.state === 'done') return box.append(el('p', { textContent: T.done }));
-    if (job.state === 'failed') return box.append(el('p', { textContent: T.failed + ' ' + (job.error || '') }));
+    if (job.state === 'done') return; // a lista de contas acima já mostra o resultado
+    if (job.state === 'failed') return box.append(el('p', { className: 'bad', textContent: T.failed + ' ' + (job.error || '') }));
+    const open = el('a', { className: 'btn', href: job.url, target: '_blank', rel: 'noopener noreferrer', textContent: job.needsPaste ? T.openAnthropic : T.openLink });
     if (job.needsPaste) {
       const input = el('input', { placeholder: 'code#state', autocomplete: 'off', spellcheck: false });
       const send = el('button', { className: 'small', textContent: T.send });
       send.onclick = async () => { send.disabled = true; try { await call('POST', '/api/cloud/connect/' + job.id + '/code', { code: input.value }); } catch (e) { err.textContent = e.message; send.disabled = false; } };
-      box.append(el('p', {}, el('a', { href: job.url, target: '_blank', rel: 'noopener noreferrer', textContent: T.openAnthropic })), el('p', { textContent: T.pasteHint }), input, send);
+      box.append(open, el('p', { textContent: T.pasteHint }), input, send);
     } else {
-      box.append(el('p', {}, el('a', { href: job.url, target: '_blank', rel: 'noopener noreferrer', textContent: T.openLink + ' (' + job.url + ')' })),
-        el('p', { textContent: T.typeCode }), el('h1', { textContent: job.code }), el('p', { textContent: T.waiting }));
+      const copy = el('button', { className: 'small ghost', textContent: T.copy });
+      copy.onclick = () => navigator.clipboard?.writeText(job.code).then(() => { copy.textContent = T.copied; });
+      box.append(open, el('p', { textContent: T.typeCode }), el('div', { className: 'code', textContent: job.code }), copy, el('p', { textContent: T.waiting }));
     }
   }
   for (const btn of document.querySelectorAll('[data-connect]')) {

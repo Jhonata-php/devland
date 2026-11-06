@@ -31,3 +31,21 @@ describe('pastas sugeridas no Novo agente', () => {
     expect(recentFolders(sessions, rooms, 1).map((f) => f.path)).toEqual(['/Users/a/loja']);
   });
 });
+
+describe('workspaceFolders / mergeFolders', () => {
+  it('lista só pastas visíveis e não repete as recentes', async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { workspaceFolders, mergeFolders } = await import('./folders');
+    const root = mkdtempSync(join(tmpdir(), 'ws-'));
+    mkdirSync(join(root, 'site'));
+    mkdirSync(join(root, '.oculta'));
+    writeFileSync(join(root, 'arquivo.txt'), '');
+    const extra = workspaceFolders(root);
+    expect(extra.map((f) => f.name)).toEqual(['site']);
+    const merged = mergeFolders([{ path: join(root, 'site'), name: 'site', lastAt: 1, sessions: 2 }], extra);
+    expect(merged).toHaveLength(1);
+    expect(workspaceFolders('/não/existe')).toEqual([]);
+  });
+});
