@@ -66,6 +66,15 @@ convidar um usuário, entrar com ele e ver que as permissões valem.
 
 ## Etapas seguintes (direção)
 
+**Princípio:** no Velix, o container do Habblaud **é a máquina de desenvolvimento**, não um painel olhando outra
+máquina. Projetos clonados, `claude`, `codex`, terminais e o app em desenvolvimento rodam todos dentro dele, sem
+depender de computador externo. As etapas abaixo seguem esta ordem:
+
+1b. **Máquina no container** (vem antes da 2): imagem do Cloud com `git`, `claude`, `codex`, `node-pty` e as
+   ferramentas comuns de build; volumes graváveis `/workspace` (projetos) e `/data/users/<id>` (config de cada
+   usuário); `HABBLAUD_PTY` ligado só no Cloud, e o terminal interativo e o Novo agente liberados na porta com login
+   para quem tem as permissões `terminal`/`spawn`. Os agentes e o escritório leem as pastas do próprio container.
+
 2. **GitHub pela web:** device flow por usuário; token guardado cifrado em `/data`; clonar projetos no servidor.
 3. **Claude Code e Codex pela web:** terminal guiado para `claude /login` e `codex login`, com pasta de config por
    usuário; `HABBLAUD_PTY` só atrás do login.
@@ -74,6 +83,11 @@ convidar um usuário, entrar com ele e ver que as permissões valem.
 5. **Prévia do app ao lado do terminal:** painel web com endereço, recarregar, abrir em nova aba e tamanhos de tela.
    A prévia passa sempre pelo login do Habblaud. Forma de acesso a decidir: caminho `habblaud.needbr.com/preview/5173/` (funciona hoje) ou subdomínio
    `5173.habblaud.needbr.com` (exige rota e certificado curinga no Traefik do Velix, que já usa DNS-01 da Cloudflare).
+
+6. **Troca de conta no limite (Cloud):** quando a conta do agente chega ao limite (5h/semanal) ou expira, o
+   escritório pede autorização ("Continuar o agente X na conta Y?") e, com o sim, encerra o agente parado, copia o
+   histórico da conversa para a pasta da outra conta e roda `claude --resume` nela, no mesmo projeto. Sugere a conta
+   com mais folga. Opção por usuário "trocar sozinho", desligada por padrão.
 
 ## Sessões que não caem (requisito de todas as etapas)
 
