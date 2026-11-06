@@ -246,6 +246,26 @@
   flex-wrap: wrap;
 }
 
+/* Habblaud Cloud: Contas numa janela dentro do escritório (ui/accounts.ts). */
+.ui-accounts {
+  width: min(760px, 96vw);
+  height: min(86vh, 900px);
+  padding: 0;
+  border: 2px solid #3a3f58;
+  border-radius: 10px;
+  background: #1e2130;
+  color: inherit;
+  overflow: hidden;
+}
+.ui-accounts[open] { display: flex; flex-direction: column; }
+.ui-accounts::backdrop { background: rgba(0, 0, 0, 0.6); }
+.ui-accounts__head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 2px solid #3a3f58; }
+.ui-accounts__head h2 { margin: 0; font-size: 16px; }
+@media (max-width: 640px) {
+  .ui-accounts { width: 100vw; height: 100dvh; max-width: none; max-height: none; border-radius: 0; border: 0; }
+}
+.ui-accounts__frame { flex: 1; width: 100%; border: 0; background: #1e2130; }
+
 /* Habblaud Cloud: "+ Contas" é um link (vai para /contas) com cara de botão. */
 .ui-btn-accounts {
   text-decoration: none;

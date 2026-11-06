@@ -102,6 +102,15 @@ ${PAGE_STYLE}
   .job a.btn { display: inline-block; padding: 8px 12px; background: #f4c95d; color: #14161f; border-radius: 6px; font-weight: 700; text-decoration: none; margin-bottom: 12px; }
   .job input { margin-bottom: 8px; }
   .job .bad { color: #ff8a80; }
+  @media (max-width: 640px) {
+    body { padding: 8px; place-items: start center; }
+    main { padding: 14px; }
+    h1 { font-size: 20px; }
+    table { display: block; overflow-x: auto; }
+    .tabs a { padding: 8px 10px; }
+    .repo { flex-wrap: wrap; }
+    .job .code { font-size: 22px; letter-spacing: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -229,7 +238,7 @@ function adminPage(): string {
   return shell(tr('Habblaud · usuários'), body, script);
 }
 
-function accountsPage(isAdmin: boolean): string {
+function accountsPage(isAdmin: boolean, embed = false): string {
   const t = {
     connect: tr('Conectar'),
     none: tr('Nenhuma conta conectada.'),
@@ -260,8 +269,8 @@ function accountsPage(isAdmin: boolean): string {
   };
   const section = (id: string, title: string, intro: string) =>
     `<section class="card" id="${id}-card"><div class="head"><h2>${esc(title)}</h2><span class="pill" id="${id}-pill"></span></div><p>${esc(intro)}</p><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job" class="job"></div></section>`;
-  const body = `<main>
-  ${tabs('accounts', isAdmin)}
+  const body = `${embed ? '<style>body { display: block; padding: 0; min-height: 0; background: #1e2130; } main { border: 0; border-radius: 0; padding: 16px; max-width: none; }</style>' : ''}<main>
+  ${embed ? '' : tabs('accounts', isAdmin)}
   <h1>${esc(tr('Contas'))}</h1>
   <p>${esc(tr('As contas são da instalação: os agentes de todos usam as contas conectadas aqui.'))}</p>
   ${section('claude', 'Claude Code', tr('Assinatura do Claude (Pro/Max) ou conta da Anthropic.'))}
@@ -514,7 +523,7 @@ export function createCloud(deps: CloudDeps): Cloud {
     if (path === '/contas') {
       req.resume();
       if (!deps.connect?.()) redirect(res, '/');
-      else sendHtml(res, accountsPage(me.role === 'admin'));
+      else sendHtml(res, accountsPage(me.role === 'admin', url.searchParams.has('embed')), true);
       return true;
     }
     if (path === '/api/cloud/me') {

@@ -702,7 +702,7 @@ export const EN: Readonly<Record<string, string>> = {
 
   // client/src/ui/terminal.ts
   "O terminal só fica disponível quando o Habblaud roda com acesso local (bind 127.0.0.1)": "The terminal is only available when Habblaud runs with local access (bind 127.0.0.1)",
-  "Não foi possível abrir o terminal. O recurso só funciona no acesso local, com o agente ainda aberto.": "Couldn't open the terminal. This only works with local access, while the agent is still open.",
+  "Não foi possível abrir o terminal. O agente ainda não tem conversa gravada (mande um pedido a ele e tente de novo) ou já foi fechado.": "Couldn't open the terminal. The agent has no recorded conversation yet (send it a request and try again) or it was already closed.",
   "Não foi possível abrir a sessão. O histórico só funciona no acesso local, com o transcript ainda no disco.": "Couldn't open the session. History only works with local access, while the transcript is still on disk.",
   "Sessão encerrada às {0}": "Session ended at {0}",
   "Sessão encerrada ontem às {0}": "Session ended yesterday at {0}",
@@ -3332,6 +3332,7 @@ export const EN: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "couldn't clone: {0}",
   "o login não terminou": "the login didn't finish",
   "Conectar": "Connect",
+  "Terminal de {0}: {1}.": "Terminal of {0}: {1}.",
   "Buscar projeto...": "Search project...",
   "Nenhum projeto encontrado.": "No project found.",
   "Pronto": "Ready",

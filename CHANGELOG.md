@@ -36,6 +36,13 @@ do meio (0.**3**.0).
   projetos clonados em `/workspace` aparecem como escolhas na lista de pastas. Em Contas, os repositórios do GitHub
   viraram cartões com busca.
 
+- **Habblaud Cloud: Contas abre numa janela dentro do escritório.** **+ Contas** e **Conectar contas** mostram a mesma
+  página como um modal, sem trocar de aba; Ctrl/Cmd+clique ainda abre a página inteira.
+
+- **Habblaud Cloud: celular e terminal de agente sem conversa.** Contas e Usuários se ajustam à tela do celular (a
+  janela de Contas ocupa a tela toda). Abrir o terminal de um agente que ainda não tem conversa gravada agora explica o
+  motivo (antes dizia que só funcionava no acesso local) e o servidor registra no log.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

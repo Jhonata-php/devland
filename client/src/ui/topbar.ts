@@ -1,5 +1,6 @@
 // Barra superior: marca, conexão, contadores, uso por conta e botões de controle.
 import { access } from '../net/access';
+import { accountsClick } from './accounts';
 import { SpawnPanel } from './spawn';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText, setTitle, setVariant } from './dom';
@@ -103,7 +104,7 @@ export class TopBar implements UiComponent {
 
     this.usage = new UsageCards(ctx);
     // Habblaud Cloud: conectar contas (Claude, Codex, GitHub) numa página própria, no lugar dos cartões sem uso.
-    this.accountsLink = h('a', { class: 'ui-btn ui-btn-accounts', text: tr('+ Contas'), hidden: true, attrs: { href: '/contas', title: tr('Conectar contas do Claude, do Codex e do GitHub') } });
+    this.accountsLink = h('a', { class: 'ui-btn ui-btn-accounts', text: tr('+ Contas'), hidden: true, attrs: { href: '/contas', title: tr('Conectar contas do Claude, do Codex e do GitHub') }, on: { click: accountsClick(ctx.root) } });
 
     this.sidebarBtn = iconButton(ICONS.sidebar, tr('Painel lateral ( [ )'), () => ctx.togglePanel('sidebar'), 'ui-btn-sidebar');
     this.feedBtn = iconButton(ICONS.feed, tr('Feed de atividade ( ] )'), () => ctx.togglePanel('feed'), 'ui-btn-feed');

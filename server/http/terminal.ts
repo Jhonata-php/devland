@@ -231,7 +231,10 @@ export class TerminalStreams {
    */
   attach(req: IncomingMessage, res: ServerResponse, agentId: string): void {
     const source = this.sourceFor(agentId);
-    if (typeof source === 'string') return sendJson(res, 404, { error: source });
+    if (typeof source === 'string') {
+      log.warnOnce(`terminal-404:${agentId}:${source}`, tr('Terminal de {0}: {1}.', [agentId, source]));
+      return sendJson(res, 404, { error: source });
+    }
     this.serve(req, res, agentId, source);
   }
 

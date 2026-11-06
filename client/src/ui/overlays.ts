@@ -1,5 +1,6 @@
 // Camadas de estado: splash de carregamento, escritório vazio e aviso de conexão perdida.
 import type { UiComponent, UiContext } from './context';
+import { accountsClick } from './accounts';
 import { h, prefersReducedMotion, setHidden, setText } from './dom';
 import { FALLBACK_MARK } from './icons';
 import { emptyOfficeHint } from './provider';
@@ -109,7 +110,7 @@ export class EmptyState implements UiComponent {
       (this.cloudRow = h(
         'div',
         { class: 'ui-empty__actions', hidden: true },
-        h('a', { class: 'ui-btn ui-btn--primary ui-btn-accounts', text: tr('Conectar contas'), attrs: { href: '/contas' } }),
+        h('a', { class: 'ui-btn ui-btn--primary ui-btn-accounts', text: tr('Conectar contas'), attrs: { href: '/contas' }, on: { click: accountsClick(ctx.root) } }),
         (this.termBtn = h('button', { class: 'ui-btn ui-btn--primary', type: 'button', text: tr('Abrir terminal'), title: tr('Abre o Claude Code em /workspace (os projetos clonados ficam lá)'), on: { click: () => void this.openTerminal() } }) as HTMLButtonElement),
       )),
       this.demoBtn,

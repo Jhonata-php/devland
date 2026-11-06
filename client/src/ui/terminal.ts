@@ -48,7 +48,7 @@ export const INPUT_PREVIEW_LINES = 10;
 export const PROMPT_PREVIEW_LINES = 24;
 
 export const TERMINAL_UNAVAILABLE_HINT = tr('O terminal só fica disponível quando o Habblaud roda com acesso local (bind 127.0.0.1)');
-const OPEN_ERROR = tr('Não foi possível abrir o terminal. O recurso só funciona no acesso local, com o agente ainda aberto.');
+const OPEN_ERROR = tr('Não foi possível abrir o terminal. O agente ainda não tem conversa gravada (mande um pedido a ele e tente de novo) ou já foi fechado.');
 const SESSION_OPEN_ERROR = tr('Não foi possível abrir a sessão. O histórico só funciona no acesso local, com o transcript ainda no disco.');
 /** Espera depois da última tecla antes de buscar (a busca percorre toda a conversa na tela). */
 const SEARCH_DEBOUNCE_MS = 120;
