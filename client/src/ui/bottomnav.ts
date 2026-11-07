@@ -56,8 +56,11 @@ export class BottomNav implements UiComponent {
 
   render(): void {
     const chats = this.chats.isOpen;
-    this.office.el.classList.toggle('is-active', !chats && !this.ctx.selection());
-    this.agents.el.classList.toggle('is-active', chats);
+    // Ajustes (ou outra janela por cima) aberto: só ele fica aceso.
+    const pop = this.ctx.root.classList.contains('has-popover');
+    this.office.el.classList.toggle('is-active', !chats && !this.ctx.selection() && !pop);
+    this.agents.el.classList.toggle('is-active', chats && !pop);
+    this.settings.el.classList.toggle('is-active', pop);
     this.agents.el.setAttribute('aria-pressed', String(chats));
     // Habblaud Cloud: a aba Contas só existe na instalação em nuvem (as contas são da instalação).
     setHidden(this.accounts.el, !access().cloud);

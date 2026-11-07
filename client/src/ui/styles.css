@@ -12288,3 +12288,25 @@ html.is-replay #world {
   .has-sidebar .ui-topbar__left { flex-direction: row; justify-content: flex-start; padding: 0 14px; }
   .has-sidebar .ui-usage { top: calc(var(--top-h) + 6px); }
 }
+
+/* Mapa: vinheta escura nas bordas (sem mudar as cores do escritório), para o olho ir para as salas. */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 55% 45%, transparent 55%, rgba(2, 6, 4, 0.55) 100%);
+}
+@media (min-width: 601px) {
+  /* Janelas grandes do lado direito não passam por cima do trilho da esquerda. */
+  .ui-preview { width: min(760px, calc(100vw - var(--rail-w) - 24px)); }
+}
+/* Avisos de alerta com fundo sólido (o texto da barra de atividade aparecia através deles no celular). */
+.ui-toast--alert { background: linear-gradient(90deg, rgba(255, 92, 108, 0.18), rgba(255, 92, 108, 0.04)), #030a06; }
+.ui-toast { background-color: #030a06; }
+/* Conversas: a função do agente é uma etiqueta pequena, não uma faixa da largura toda. */
+.ui-chats .ui-func, .ui-drawer .ui-func { display: inline-flex; width: auto; max-width: max-content; align-self: flex-start; }
+/* Celular: um aviso por vez (os outros vão para a Atividade), para não cobrir a tela. */
+@media (max-width: 600px) { .ui-toast:not(:first-child) { display: none; } }
+.ui-chats h2::before { content: '> '; color: var(--ui-accent); }
+/* Celular: dentro de uma conversa os avisos não cobrem a caixa de mensagem (eles continuam na Atividade e no badge). */
+@media (max-width: 600px) {
+  .ui-root:has(.ui-chats:not([hidden]) .ui-chats__screen--thread:not([hidden])) .ui-toasts { display: none; }
+}

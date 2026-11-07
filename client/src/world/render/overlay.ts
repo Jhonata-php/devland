@@ -19,7 +19,8 @@ import { tr } from '../../../../shared/i18n';
 
 // A Pixelify Sans tem o "C" maiúsculo quase fechado (lê-se "Oopa" em vez de "Copa") em qualquer
 // peso/tamanho usado no canvas; os textos do mundo usam a fonte do sistema, sempre legível.
-const UI_FONT = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
+// Tema DevLand: rótulos do mapa em fonte de terminal, como o resto da interface.
+const UI_FONT = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace';
 const LABEL_FONT = `600 10.5px ${UI_FONT}`;
 const BUBBLE_FONT = `500 11.5px ${UI_FONT}`;
 const SAY_FONT = `500 10.5px ${UI_FONT}`;
@@ -541,18 +542,23 @@ export class Overlay {
     ctx.beginPath();
     ctx.roundRect(x, y + 2, w, h, 7);
     ctx.fill();
-    ctx.fillStyle = 'rgba(22,27,40,0.9)';
+    ctx.fillStyle = 'rgba(4,12,7,0.92)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 7);
+    ctx.roundRect(x, y, w, h, 4);
     ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(57,255,136,0.35)';
+    ctx.beginPath();
+    ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 4);
+    ctx.stroke();
     ctx.fillStyle = accent;
     ctx.beginPath();
-    ctx.roundRect(x, y, 4, h, [7, 0, 0, 7]);
+    ctx.roundRect(x, y, 3, h, [4, 0, 0, 4]);
     ctx.fill();
     let dx = x + 10;
     if (!compact) {
       ctx.font = ROOM_FONT;
-      ctx.fillStyle = '#f3f5fa';
+      ctx.fillStyle = '#d8f5e4';
       ctx.fillText(text, x + 10, y + h / 2 + 1);
       dx = x + 10 + tw + 8;
     }
@@ -561,12 +567,12 @@ export class Overlay {
       dx += 10;
     }
     if (countText) {
-      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.fillStyle = 'rgba(57,255,136,0.16)';
       ctx.beginPath();
-      ctx.roundRect(dx + 2, y + 4, cw - 4, h - 8, 5);
+      ctx.roundRect(dx + 2, y + 4, cw - 4, h - 8, 3);
       ctx.fill();
       ctx.font = LABEL_FONT;
-      ctx.fillStyle = '#dfe5f2';
+      ctx.fillStyle = '#39ff88';
       ctx.fillText(countText, dx + 7, y + h / 2 + 0.5);
     }
     ctx.restore();
@@ -584,12 +590,12 @@ export class Overlay {
     const h = 18;
     const x = Math.round(cx - w / 2);
     const y = Math.round(cy - h - 4);
-    ctx.fillStyle = 'rgba(22,27,40,0.62)';
+    ctx.fillStyle = 'rgba(4,12,7,0.72)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 6);
+    ctx.roundRect(x, y, w, h, 3);
     ctx.fill();
     ctx.font = font;
-    ctx.fillStyle = '#e8ecf5';
+    ctx.fillStyle = '#a9dcbf';
     ctx.fillText(text, x + 7, y + h / 2 + 1);
     this.place(x, y, w, h);
   }
@@ -920,9 +926,9 @@ export class Overlay {
     const { nameW, chipW, badgeW, codexW, funcW } = this.labelWidth(l);
     const { x, y, w, h } = l;
     const selected = sel.agent === ch.id;
-    ctx.fillStyle = selected ? 'rgba(18,96,140,0.95)' : ch.mode === 'wait' ? 'rgba(120,78,0,0.92)' : 'rgba(22,26,38,0.82)';
+    ctx.fillStyle = selected ? 'rgba(18,120,70,0.95)' : ch.mode === 'wait' ? 'rgba(120,78,0,0.92)' : 'rgba(4,12,7,0.86)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 7.5);
+    ctx.roundRect(x, y, w, h, 4);
     ctx.fill();
     let cx = x + 4;
     if (acc && codex) {

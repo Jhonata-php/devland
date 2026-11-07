@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Mapa no tema DevLand:** os rótulos das salas e dos agentes no mapa usam fonte de terminal, fundo preto e borda verde (o agente selecionado fica verde); vinheta escura nas bordas para destacar as salas; no celular em pé a visão geral aproxima 25% para as salas ficarem legíveis.
 - **Botão da lateral como o do WCAM:** uma bolinha com seta presa na borda do trilho/painel (abre e fecha), em vez de um quadrado; o logo na lateral agora é só o planeta, sem fundo nem quadrado em volta (o ícone do app e a aba continuam com o fundo escuro).
 - **Marca em duas cores:** `DEV` em verde-neon e `LAND` em branco, com o logo do planeta um pouco maior.
 - **Marca integrada à lateral (computador):** recolhida, a lateral vira um trilho fino com o logo, um botão pequeno para expandir e, embaixo, os anéis de uso das contas; aberta, o mesmo bloco vira o cabeçalho da lista de salas (logo + nome + botão de recolher) e os anéis vão para o canto direito. A barra de atividade começa depois do trilho.
@@ -175,6 +176,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Revisão visual:** avisos de alerta com fundo sólido (o texto de trás aparecia); no celular um aviso por vez e nenhum por cima da caixa de mensagem dentro de uma conversa; a função do agente nas Conversas virou etiqueta pequena (ocupava a largura toda); a barra de baixo acende Ajustes quando os ajustes estão abertos; a Prévia ao vivo não cobre mais o trilho da esquerda.
 - **Atualização nativa não encontrava o pacote da versão nova (404):** a imagem principal era publicada antes do pacote `dist-`, e o servidor via a versão nova antes de o pacote existir. Agora o pacote sai primeiro.
 - **Celular: topo mínimo.** Uma linha fina de 48 px com o logo, os mostradores de uso (só os anéis) e o aviso de quem precisa de você; as ferramentas ficam na barra de baixo e o mapa ganha a tela. Também corrige a primeira linha dos agentes na lateral, que sobrepunha o papel e a função.
 - **Atualização automática checa as versões novas a cada 30 min** (antes, a cada 6 h; quem estava na frente de uma sequência de versões demorava a receber).
