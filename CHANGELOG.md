@@ -12,6 +12,11 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Sons diferentes por tipo de aviso:** alarme (precisa de você), arpejo (concluiu), grave (aviso) e pingo
+  (informação); em Ajustes › Sons há botões para ouvir cada um.
+- **Layout hacker:** topo como painel de status com linha de varredura e contadores em `[ ]`; lateral como árvore de
+  arquivos (`~/escritório`, `/sala`, `├─ agente`); cada grupo dos ajustes é uma janela de terminal e os interruptores
+  viram `ON`/`OFF`.
 - **Tema hacker em toda a interface:** o mapa do escritório vira um monitor de fósforo verde (com grade de pontos, vinheta e uma varredura que desce), verde-neon sobre preto, fonte monoespaçada, títulos com `>` e rótulos com `$`,
   bordas com brilho, botão principal em verde e varredura de monitor antigo. Combina com a tela de login.
 - **Habblaud Cloud: login por e-mail.** Criar o admin e aceitar convite pedem e-mail; o login aceita e-mail ou usuário

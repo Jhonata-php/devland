@@ -5,13 +5,18 @@ import type { SoundCueKind } from '../world/api';
 /** Categorias que o usuário liga/desliga nas configurações. */
 export type SoundCategory = 'alerts' | 'keys' | 'elevator' | 'social';
 /** Sons: o sino de "precisa de você", o estalo de tarefa concluída e os do ambiente. */
-export type SoundKind = 'chime' | 'pop' | SoundCueKind;
+/** alarm = precisa de você (urgente); done = tarefa concluída; warn = aviso/erro; blip = informação (mensagem, conta). */
+export type SoundKind = 'chime' | 'pop' | 'alarm' | 'done' | 'warn' | 'blip' | SoundCueKind;
 
 export const SOUND_CATEGORIES: readonly SoundCategory[] = ['alerts', 'keys', 'elevator', 'social'];
 
 export const CATEGORY_OF: Readonly<Record<SoundKind, SoundCategory>> = {
   chime: 'alerts',
   pop: 'alerts',
+  alarm: 'alerts',
+  done: 'alerts',
+  warn: 'alerts',
+  blip: 'alerts',
   keys: 'keys',
   elevator: 'elevator',
   pingpong: 'social',
@@ -23,6 +28,10 @@ export const CATEGORY_OF: Readonly<Record<SoundKind, SoundCategory>> = {
 export const MIN_GAP_MS: Readonly<Record<SoundKind, number>> = {
   chime: 1_200,
   pop: 1_200,
+  alarm: 1_200,
+  done: 1_200,
+  warn: 1_500,
+  blip: 900,
   keys: 600,
   elevator: 1_500,
   pingpong: 200,
@@ -34,6 +43,10 @@ export const MIN_GAP_MS: Readonly<Record<SoundKind, number>> = {
 const CHANNEL: Readonly<Record<SoundKind, string>> = {
   chime: 'alerts',
   pop: 'alerts',
+  alarm: 'alarm',
+  done: 'done',
+  warn: 'warn',
+  blip: 'blip',
   keys: 'keys',
   elevator: 'elevator',
   pingpong: 'pingpong',
@@ -92,12 +105,12 @@ export class SoundScheduler {
    */
   decide(kind: SoundKind, now: number, opts: { hidden?: boolean; gain?: number } = {}): number | null {
     if (!this.allowed(kind)) return null;
-    if (opts.hidden && kind !== 'chime') return null;
+    if (opts.hidden && kind !== 'chime' && kind !== 'alarm') return null;
     const ch = CHANNEL[kind];
     const prev = this.last.get(ch);
     if (prev !== undefined && now - prev < MIN_GAP_MS[kind]) return null;
     while (this.recent.length && now - this.recent[0] >= 1_000) this.recent.shift();
-    if (kind !== 'chime' && this.recent.length >= MAX_PER_SECOND) return null;
+    if (kind !== 'chime' && kind !== 'alarm' && this.recent.length >= MAX_PER_SECOND) return null;
     const g = masterGain(this.settings.volume) * Math.min(1, Math.max(0, opts.gain ?? 1));
     if (g <= 0.0005) return null;
     this.last.set(ch, now);

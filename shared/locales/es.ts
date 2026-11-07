@@ -603,7 +603,6 @@ export const ES: Readonly<Record<string, string>> = {
 
   // client/src/ui/settings-sound.ts
   "Avisos": "Avisos",
-  "Sino quando alguém precisa de você; estalo quando uma tarefa termina.": "Campana cuando alguien te necesita; un chasquido cuando termina una tarea.",
   "Teclado": "Teclado",
   "Digitação baixinha de quem trabalha nas salas à vista.": "Tecleo suave de quien trabaja en las salas a la vista.",
   "Elevador": "Ascensor",
@@ -614,7 +613,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Categorias de som": "Categorías de sonido",
   "Volume": "Volumen",
   "Tocar": "Reproducir",
-  "Avisos: sino e estalo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.": "Avisos: campana y chasquido · Teclado: quien teclea en las salas a la vista · Ascensor: llegadas y salidas · Rondas: ping-pong y arcade.",
   "Sons": "Sonidos",
   "Sons do escritório": "Sonidos de la oficina",
   "Sintetizados no navegador e baixinhos. Com a aba oculta, só o sino de \"precisa de você\".": "Sintetizados en el navegador y suaves. Con la pestaña oculta, solo la campana de \"te necesita\".",
@@ -3469,4 +3467,10 @@ export const ES: Readonly<Record<string, string>> = {
   "E-mail inválido.": "Correo no válido.",
   "Definir e-mail de entrada": "Definir correo de acceso",
   "E-mail para entrar no Habblaud:": "Correo para entrar en Habblaud:",
+  "Testar os sons": "Probar los sonidos",
+  "Cada tipo de notificação tem o seu som: toque para ouvir.": "Cada tipo de notificación tiene su sonido: toca para oírlo.",
+  "Aviso": "Aviso",
+  "Mensagem": "Mensaje",
+  "Alarme quando alguém precisa de você, arpejo quando uma tarefa termina, grave nos avisos e pingo nas informações.": "Alarma cuando alguien te necesita, arpegio al terminar una tarea, grave en los avisos y pitido en la información.",
+  "Avisos: alarme, arpejo, grave e pingo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.": "Avisos: alarma, arpegio, grave y pitido · Teclado: quien escribe en las salas visibles · Ascensor: llegadas y salidas · Juegos: ping-pong y arcade.",
 };

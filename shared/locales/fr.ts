@@ -576,7 +576,6 @@ export const FR: Readonly<Record<string, string>> = {
 
   // client/src/ui/settings-sound.ts
   "Avisos": "Alertes",
-  "Sino quando alguém precisa de você; estalo quando uma tarefa termina.": "Cloche quand quelqu'un a besoin de vous ; petit claquement quand une tâche se termine.",
   "Teclado": "Clavier",
   "Digitação baixinha de quem trabalha nas salas à vista.": "Frappe discrète de ceux qui travaillent dans les salles visibles.",
   "Elevador": "Ascenseur",
@@ -587,7 +586,6 @@ export const FR: Readonly<Record<string, string>> = {
   "Categorias de som": "Catégories de sons",
   "Volume": "Volume",
   "Tocar": "Écouter",
-  "Avisos: sino e estalo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.": "Alertes : cloche et claquement · Clavier : ceux qui tapent dans les salles visibles · Ascenseur : arrivées et départs · Détente : ping-pong et arcade.",
   "Sons": "Sons",
   "Sons do escritório": "Sons du bureau",
   "Sintetizados no navegador e baixinhos. Com a aba oculta, só o sino de \"precisa de você\".": "Synthétisés dans le navigateur, à faible volume. Onglet masqué : seulement la cloche « a besoin de vous ».",
@@ -3485,4 +3483,10 @@ export const FR: Readonly<Record<string, string>> = {
   "E-mail inválido.": "E-mail invalide.",
   "Definir e-mail de entrada": "Définir l'e-mail de connexion",
   "E-mail para entrar no Habblaud:": "E-mail pour se connecter à Habblaud :",
+  "Testar os sons": "Tester les sons",
+  "Cada tipo de notificação tem o seu som: toque para ouvir.": "Chaque type de notification a son propre son : touchez pour écouter.",
+  "Aviso": "Avertissement",
+  "Mensagem": "Message",
+  "Alarme quando alguém precisa de você, arpejo quando uma tarefa termina, grave nos avisos e pingo nas informações.": "Alarme quand quelqu'un a besoin de vous, arpège à la fin d'une tâche, grave pour les avertissements et bip pour les infos.",
+  "Avisos: alarme, arpejo, grave e pingo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.": "Alertes : alarme, arpège, grave et bip · Clavier : frappe dans les salles visibles · Ascenseur : arrivées et départs · Jeux : ping-pong et arcade.",
 };

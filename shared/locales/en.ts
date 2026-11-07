@@ -603,7 +603,6 @@ export const EN: Readonly<Record<string, string>> = {
 
   // client/src/ui/settings-sound.ts
   "Avisos": "Alerts",
-  "Sino quando alguém precisa de você; estalo quando uma tarefa termina.": "A bell when someone needs you; a click when a task finishes.",
   "Teclado": "Keyboard",
   "Digitação baixinha de quem trabalha nas salas à vista.": "Soft typing from whoever is working in the rooms in view.",
   "Elevador": "Elevator",
@@ -614,7 +613,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Categorias de som": "Sound categories",
   "Volume": "Volume",
   "Tocar": "Play",
-  "Avisos: sino e estalo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.": "Alerts: bell and click · Keyboard: typing in the rooms in view · Elevator: arrivals and departures · Groups: ping-pong and arcade.",
   "Sons": "Sounds",
   "Sons do escritório": "Office sounds",
   "Sintetizados no navegador e baixinhos. Com a aba oculta, só o sino de \"precisa de você\".": "Synthesized in the browser, and quiet. With the tab hidden, only the \"needs you\" bell.",
@@ -3468,4 +3466,10 @@ export const EN: Readonly<Record<string, string>> = {
   "E-mail inválido.": "Invalid email.",
   "Definir e-mail de entrada": "Set sign-in email",
   "E-mail para entrar no Habblaud:": "Email to sign in to Habblaud:",
+  "Testar os sons": "Test the sounds",
+  "Cada tipo de notificação tem o seu som: toque para ouvir.": "Each notification type has its own sound: tap to listen.",
+  "Aviso": "Warning",
+  "Mensagem": "Message",
+  "Alarme quando alguém precisa de você, arpejo quando uma tarefa termina, grave nos avisos e pingo nas informações.": "Alarm when someone needs you, arpeggio when a task ends, low tone for warnings and a blip for info.",
+  "Avisos: alarme, arpejo, grave e pingo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.": "Alerts: alarm, arpeggio, low tone and blip · Keyboard: typing in visible rooms · Elevator: arrivals and departures · Games: ping-pong and arcade.",
 };

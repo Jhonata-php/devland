@@ -6,7 +6,7 @@ import type { SoundControl } from './sound';
 import { tr } from '../../../shared/i18n';
 
 const CATEGORY_UI: Readonly<Record<SoundCategory, { label: string; hint: string; sample: SoundKind }>> = {
-  alerts: { label: tr('Avisos'), hint: tr('Sino quando alguém precisa de você; estalo quando uma tarefa termina.'), sample: 'chime' },
+  alerts: { label: tr('Avisos'), hint: tr('Alarme quando alguém precisa de você, arpejo quando uma tarefa termina, grave nos avisos e pingo nas informações.'), sample: 'alarm' },
   keys: { label: tr('Teclado'), hint: tr('Digitação baixinha de quem trabalha nas salas à vista.'), sample: 'keys' },
   elevator: { label: tr('Elevador'), hint: tr('"Ding" quando alguém chega ou vai embora.'), sample: 'elevator' },
   social: { label: tr('Rodas'), hint: tr('Pingue-pongue e fliperama no lounge.'), sample: 'pingpong' },
@@ -54,11 +54,21 @@ export class SoundSettingsGroup {
       chipRow.append(b);
     }
 
+    const testRow = h('div', { class: 'ui-snd__chips', role: 'group', attrs: { 'aria-label': tr('Testar os sons') } });
+    const SAMPLES: [SoundKind, string][] = [
+      ['alarm', tr('Precisa de você')],
+      ['done', tr('Concluído')],
+      ['warn', tr('Aviso')],
+      ['blip', tr('Mensagem')],
+    ];
+    for (const [kind, label] of SAMPLES) testRow.append(h('button', { class: 'ui-snd__chip', type: 'button', text: `▶ ${label}`, on: { click: () => this.sound.preview(kind) } }));
+
     this.details = h(
       'div',
       { class: 'ui-snd__details' },
       h('div', { class: 'ui-set ui-snd__vol' }, h('span', { class: 'ui-set__label', text: tr('Volume') }), this.volume, this.volumeOut),
-      h('div', { class: 'ui-set ui-set--stack' }, h('span', { class: 'ui-set__label', text: tr('Tocar') }), chipRow, h('span', { class: 'ui-set__hint', text: tr('Avisos: sino e estalo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.') })),
+      h('div', { class: 'ui-set ui-set--stack' }, h('span', { class: 'ui-set__label', text: tr('Testar os sons') }), testRow, h('span', { class: 'ui-set__hint', text: tr('Cada tipo de notificação tem o seu som: toque para ouvir.') })),
+      h('div', { class: 'ui-set ui-set--stack' }, h('span', { class: 'ui-set__label', text: tr('Tocar') }), chipRow, h('span', { class: 'ui-set__hint', text: tr('Avisos: alarme, arpejo, grave e pingo · Teclado: quem digita nas salas à vista · Elevador: chegadas e saídas · Rodas: pingue-pongue e fliperama.') })),
     );
 
     this.el = h(

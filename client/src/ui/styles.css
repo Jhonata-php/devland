@@ -11910,3 +11910,76 @@ html, body { background: #040a06 !important; }
   }
   @keyframes hk-sweep { from { transform: translateY(-20vh); } to { transform: translateY(105vh); } }
 }
+
+/* ===== Tema hacker: layout =====
+   Topo = painel de status (HUD) colado nas bordas; lateral = árvore de arquivos; ajustes = janelas de terminal. */
+.ui-root { --top-h: 56px; }
+
+/* Topo: barra cheia, com a linha de varredura correndo embaixo. */
+.ui-topbar {
+  background: linear-gradient(180deg, rgba(6, 16, 10, 0.97), rgba(4, 10, 6, 0.93));
+  border-bottom: 1px solid var(--ui-line-strong);
+  box-shadow: 0 10px 40px -12px rgba(57, 255, 136, 0.35);
+  padding: 0 14px 0 10px;
+}
+.ui-topbar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #39ff88 20%, #4de1ff 50%, #39ff88 80%, transparent);
+  background-size: 200% 100%;
+  opacity: 0.7;
+  animation: hk-line 6s linear infinite;
+}
+@keyframes hk-line { to { background-position: -200% 0; } }
+
+/* Contadores como fichas [ 3 agentes ]. */
+.ui-counter { position: relative; border: 1px solid var(--ui-line); border-radius: 4px; padding: 4px 12px; background: rgba(57, 255, 136, 0.04); }
+.ui-counter::before, .ui-counter::after { position: absolute; top: 50%; transform: translateY(-50%); color: var(--ui-accent); font-weight: 800; opacity: 0.8; }
+.ui-counter::before { content: '['; left: 3px; }
+.ui-counter::after { content: ']'; right: 3px; }
+.ui-counter__value { color: var(--ui-accent); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
+.ui-counter__label { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.ui-counter.is-active { border-color: #ffd24a; background: rgba(255, 210, 74, 0.1); }
+.ui-counter.is-active .ui-counter__value { color: #ffd24a; text-shadow: 0 0 14px rgba(255, 210, 74, 0.7); }
+
+/* Contas: blocos de terminal. */
+.ui-usage-card { border: 1px solid var(--ui-line); border-radius: 4px; background: rgba(0, 0, 0, 0.35); }
+
+/* Lateral: árvore de arquivos colada na borda esquerda. */
+.ui-sidebar { top: var(--top-h); left: 0; bottom: 0; border-radius: 0; border-width: 0 1px 0 0; border-right: 1px solid var(--ui-line-strong); background: rgba(3, 9, 5, 0.94); }
+.ui-side__title h2 { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+.ui-side__title h2::before { content: '~/'; color: var(--ui-accent); text-transform: none; }
+.ui-rooms { position: relative; }
+.ui-room { position: relative; border: 0; border-left: 1px dashed var(--ui-line-strong); border-radius: 0; margin-left: 8px; padding-left: 10px; background: none; }
+.ui-room__head::before { content: '▾'; color: var(--ui-accent); margin-right: 6px; }
+.ui-room__name { text-transform: lowercase; letter-spacing: 0.02em; }
+.ui-room__name::before { content: '/'; color: var(--ui-accent); }
+.ui-room__path { opacity: 0.55; }
+.ui-node { position: relative; border-radius: 3px; }
+.ui-node::before { content: '├─'; position: absolute; left: -22px; top: 50%; transform: translateY(-50%); color: var(--ui-line-strong); font-size: 11px; }
+.ui-node:last-child::before { content: '└─'; }
+.ui-node:hover, .ui-node.is-selected { background: rgba(57, 255, 136, 0.1); box-shadow: inset 2px 0 0 var(--ui-accent); }
+
+/* Configurações: cada grupo é uma janela de terminal; interruptor vira [ ON ]/[ OFF ]. */
+.ui-set-group { position: relative; border: 1px solid var(--ui-line); border-radius: 6px; background: rgba(0, 0, 0, 0.32); padding-top: 34px !important; overflow: hidden; }
+.ui-set-group > h3 {
+  position: absolute; left: 0; right: 0; top: 0; margin: 0 !important; padding: 8px 12px 8px 54px;
+  background: rgba(57, 255, 136, 0.07); border-bottom: 1px solid var(--ui-line);
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-accent);
+}
+.ui-set-group > h3::before {
+  content: ''; position: absolute; left: 12px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%;
+  background: #ff5f56; box-shadow: 14px 0 0 #ffbd2e, 28px 0 0 #27c93f;
+}
+.ui-set { border-bottom: 1px dotted var(--ui-line); }
+.ui-set__label::before { content: '$ '; color: var(--ui-accent); }
+.ui-switch { width: 58px; height: 26px; border-radius: 3px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--ui-line-strong); position: relative; }
+.ui-switch::after { content: 'OFF'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: var(--ui-muted); }
+.ui-switch[aria-checked='true'] { background: rgba(57, 255, 136, 0.18); border-color: var(--ui-accent); box-shadow: 0 0 16px -4px rgba(57, 255, 136, 0.7); }
+.ui-switch[aria-checked='true']::after { content: 'ON'; left: 9px; right: auto; color: var(--ui-accent); }
+.ui-switch__knob { border-radius: 2px !important; width: 14px; height: 14px; top: 5px; background: var(--ui-muted); }
+.ui-switch[aria-checked='true'] .ui-switch__knob { transform: translateX(32px); background: var(--ui-accent); box-shadow: 0 0 10px var(--ui-accent); }
+.ui-snd__chip { border-radius: 3px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.ui-snd__chip[aria-pressed='true'] { background: rgba(57, 255, 136, 0.16); border-color: var(--ui-accent); color: var(--ui-accent); }

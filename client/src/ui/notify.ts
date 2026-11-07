@@ -116,8 +116,8 @@ export class Notifier implements UiComponent {
   private onNotice(n: Notice): void {
     const prefs = this.ctx.prefs;
     // o sino toca mesmo com a aba oculta (é ele que chama você de volta); o estalo, só com ela à vista
-    if (n.level === 'alert') this.sounds.play('chime');
-    else if (n.level === 'success') this.sounds.play('pop');
+    // cada tipo tem o seu som: alarme (precisa de você), arpejo (concluiu), grave (aviso) e pingo (informação)
+    this.sounds.play(n.level === 'alert' ? 'alarm' : n.level === 'success' ? 'done' : n.level === 'warn' ? 'warn' : 'blip');
     if (!this.pushActive && (n.level === 'alert' || n.level === 'success') && prefs.browserNotifications && document.hidden && notificationState() === 'granted') {
       try {
         const notification = new Notification(n.level === 'alert' ? tr('Habblaud — precisa de você') : tr('Habblaud — terminou'), {
