@@ -139,6 +139,10 @@ export class AboutGroup {
   private cfgProject: HTMLInputElement;
   private cfgMsg: HTMLElement;
   private cfgBusy = false;
+  private autoRow: HTMLElement;
+  private autoBox: HTMLInputElement;
+  private autoWin: HTMLSelectElement;
+  private autoBusy = false;
   private applying = false;
   private applyError: string | undefined;
 
@@ -167,6 +171,20 @@ export class AboutGroup {
         ').',
       )),
     );
+    this.autoBox = h('input', { type: 'checkbox', on: { change: () => void this.saveAuto() } }) as HTMLInputElement;
+    this.autoWin = h(
+      'select',
+      { class: 'ui-about__win', on: { change: () => void this.saveAuto() } },
+      h('option', { attrs: { value: 'night' }, text: tr('De madrugada (2h às 5h)') }),
+      h('option', { attrs: { value: 'any' }, text: tr('A qualquer hora') }),
+    ) as HTMLSelectElement;
+    this.autoRow = h(
+      'div',
+      { class: 'ui-about__auto', hidden: true },
+      h('label', { class: 'ui-about__autolabel' }, this.autoBox, h('span', { text: tr('Atualizar sozinho quando sair versão nova') })),
+      this.autoWin,
+      h('p', { class: 'ui-set__hint', text: tr('O Habblaud reinicia na atualização; as conversas abertas voltam sozinhas.') }),
+    );
     const field = (label: string, input: HTMLInputElement) => h('label', { class: 'ui-about__field' }, h('span', { class: 'ui-set__hint', text: label }), input);
     this.cfgUrl = h('input', { class: 'ui-rename__input', type: 'url', attrs: { placeholder: 'https://velix.suaempresa.com', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
     this.cfgToken = h('input', { class: 'ui-rename__input', type: 'password', attrs: { placeholder: 'vlx_…', autocomplete: 'off', spellcheck: 'false' } }) as HTMLInputElement;
@@ -191,6 +209,7 @@ export class AboutGroup {
       h('div', { class: 'ui-about__head' }, h('span', { class: 'ui-about__name' }, 'Habblaud ', this.name), this.checkBtn),
       this.status,
       this.fresh,
+      this.autoRow,
       this.cfg,
       this.repo,
     );
@@ -215,6 +234,12 @@ export class AboutGroup {
     const working = this.applying || !!s?.applyingSince;
     const cloud = !!access().cloud;
     setHidden(this.howTo, canApply || cloud);
+    setHidden(this.autoRow, !(s?.canApply && s.auto && access().admin));
+    if (s?.auto && !this.autoBusy) {
+      this.autoBox.checked = s.auto.enabled;
+      this.autoWin.value = s.auto.window;
+      setHidden(this.autoWin, !s.auto.enabled);
+    }
     setHidden(this.cfg, !(s?.canConfigure && !s.canApply && access().admin));
     setHidden(this.applyBtn, !canApply || working);
     setHidden(this.applyNote, !(canApply && (working || this.applyError)));
@@ -236,6 +261,15 @@ export class AboutGroup {
     this.el.classList.remove('is-highlight');
     void this.el.offsetWidth;
     this.el.classList.add('is-highlight');
+  }
+
+  private async saveAuto(): Promise<void> {
+    if (this.autoBusy) return;
+    this.autoBusy = true;
+    setHidden(this.autoWin, !this.autoBox.checked);
+    await this.ctx.store.setAutoUpdate({ enabled: this.autoBox.checked, window: this.autoWin.value === 'any' ? 'any' : 'night', tz: new Date().getTimezoneOffset() });
+    this.autoBusy = false;
+    this.ctx.invalidate();
   }
 
   private async saveCfg(): Promise<void> {

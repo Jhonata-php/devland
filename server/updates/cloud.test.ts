@@ -66,3 +66,32 @@ describe('Cloud: versão da imagem e atualização por dentro do app', () => {
     expect(c.status().applyingSince).toBeGreaterThan(0);
   });
 });
+
+describe('Cloud: atualização automática', () => {
+  it('a janela da madrugada vale de 2h às 5h no fuso de quem escolheu', async () => {
+    const { inAutoWindow } = await import('./checker');
+    const brt = { enabled: true, window: 'night' as const, tz: 180 }; // UTC−3
+    expect(inAutoWindow(brt, Date.UTC(2026, 10, 7, 5, 0))).toBe(true); // 02:00 locais
+    expect(inAutoWindow(brt, Date.UTC(2026, 10, 7, 7, 59))).toBe(true); // 04:59 locais
+    expect(inAutoWindow(brt, Date.UTC(2026, 10, 7, 8, 0))).toBe(false); // 05:00 locais
+    expect(inAutoWindow(brt, Date.UTC(2026, 10, 7, 20, 0))).toBe(false);
+    expect(inAutoWindow({ ...brt, window: 'any' }, Date.UTC(2026, 10, 7, 20, 0))).toBe(true);
+  });
+
+  it('só atualiza sozinho ligado, dentro da janela, com versão nova, e não repete o pedido', async () => {
+    let applied = 0;
+    let now = Date.UTC(2026, 10, 7, 20, 0); // 17:00 locais: fora da madrugada
+    const c = new UpdateChecker({ current: '0.3.5', repo: 'jhonata-php/habblaud', enabled: true, file: null, autoFile: null, source: async () => ({ latest: '0.3.6' }), apply: async () => (applied++, { ok: true as const }), now: () => now });
+    c.setAuto({ enabled: false, window: 'night', tz: 180 });
+    await c.autoTick();
+    expect(applied).toBe(0); // desligado
+    c.setAuto({ enabled: true, window: 'night', tz: 180 });
+    await c.autoTick();
+    expect(applied).toBe(0); // fora da janela
+    now = Date.UTC(2026, 10, 7, 6, 0); // 03:00 locais
+    await c.autoTick();
+    expect(applied).toBe(1);
+    await c.autoTick();
+    expect(applied).toBe(1); // já está atualizando
+  });
+});

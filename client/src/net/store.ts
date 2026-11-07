@@ -206,6 +206,17 @@ export class OfficeStore {
     }
   }
 
+  /** Cloud (admin): liga/desliga a atualização automática e escolhe a janela. */
+  async setAutoUpdate(body: { enabled: boolean; window: 'any' | 'night'; tz: number }): Promise<boolean> {
+    if (this.mock) return false;
+    try {
+      const res = await fetch('/api/updates/auto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   /** Cloud (admin): guarda a conexão com o Velix para o botão Atualizar. Devolve o motivo se não deu. */
   async configureUpdates(body: { url: string; token: string; project: string }): Promise<{ ok: true } | { ok: false; error: string }> {
     if (this.mock) return { ok: false, error: '' };

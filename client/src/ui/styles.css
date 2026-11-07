@@ -11504,3 +11504,32 @@ html.is-replay #world {
     line-height: 1.45;
   }
 }
+
+.ui-about__auto {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.ui-about__autolabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  font-weight: 600;
+}
+
+.ui-about__autolabel input {
+  width: 20px;
+  height: 20px;
+}
+
+.ui-about__win {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ui-line-strong);
+  background: var(--ui-bg-solid);
+  color: inherit;
+  font: inherit;
+}

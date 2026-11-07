@@ -103,6 +103,7 @@ const updates = new UpdateChecker({
   source: config.cloudVersion && config.repo ? ghcrLatest(config.repo) : undefined,
   apply: config.cloudVersion ? () => (velix ? velixRedeploy(velix) : Promise.resolve({ ok: false as const, error: tr('falta configurar a conexão com o Velix') })) : undefined,
   canApply: () => !!velix,
+  autoFile: join(config.dataDir, 'auto-update.json'),
   onChange: () => late.office?.markDirty(),
 });
 /** Cloud: o admin informa a conexão com o Velix pela tela (Ajustes › Sobre); fica em <dataDir>/velix.json. */
@@ -119,6 +120,7 @@ const configureVelix = (raw: unknown): { ok: true } | { ok: false; error: string
   return { ok: true };
 };
 updates.load();
+updates.loadAuto();
 // Habblaud World (server/world/): a conta e o personagem neste computador. Ligado por padrão (server.habblaud.com, ou
 // HABBLAUD_WORLD_URL); nada sai do computador antes de a pessoa criar a conta e entrar. HABBLAUD_WORLD=0 esconde tudo
 // (rotas 404 e nada na interface); uma HABBLAUD_WORLD_URL recusada deixa o recurso desligado.
@@ -404,6 +406,7 @@ permissions?.start();
 messages?.start();
 stats.start();
 updates.start();
+updates.startAuto();
 worldUplink?.start();
 const ticker = setInterval(() => {
   try {

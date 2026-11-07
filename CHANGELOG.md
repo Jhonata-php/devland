@@ -90,6 +90,11 @@ do meio (0.**3**.0).
   ao subir, retoma cada conversa com `claude --resume` (até 6), em vez de os personagens sumirem e você ter de criar
   agentes novos. Quem foi encerrado de propósito não volta.
 
+- **Habblaud Cloud: atualizar sozinho.** Em **Ajustes › Sobre** o admin liga "Atualizar sozinho quando sair versão nova" e
+  escolhe a janela: de madrugada (2h às 5h, no fuso dele) ou a qualquer hora. O Habblaud confere as versões a cada hora e,
+  dentro da janela, pede ao Velix para reimplantar (uma vez por tentativa, com pausa de 1 h se falhar). Depende da conexão com
+  o Velix já configurada ali; as conversas abertas voltam sozinhas depois do reinício.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

@@ -256,6 +256,8 @@ export interface UpdateStatus {
   canApply?: boolean;
   /** Cloud: dá para informar a conexão com o Velix pela tela (o servidor guarda; o token não volta). */
   canConfigure?: boolean;
+  /** Cloud: atualizar sozinho quando sair versão nova (escolha do admin em Ajustes › Sobre). */
+  auto?: { enabled: boolean; window: 'any' | 'night' };
   /** Cloud: a atualização foi pedida e o servidor está trocando de versão (epoch ms do pedido). */
   applyingSince?: number;
 }
