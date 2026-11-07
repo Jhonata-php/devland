@@ -423,7 +423,8 @@ async function main(): Promise<void> {
   process.exitCode = run(parsed, { env: process.env, home, now: new Date(), tapPath: TAP_SCRIPT, out: (l) => console.log(l) });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+// Só quando o próprio arquivo é o script rodado (importado pelo servidor, que empacota tudo num index.js, não roda).
+if (process.argv[1] && /statusline-install\.[cm]?[jt]s$/.test(process.argv[1]) && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((err: unknown) => {
     console.error(err instanceof FatalError ? tr('[usage] Erro: {0}', [err.message]) : tr('[usage] Erro inesperado: {0}', [String(err)]));
     process.exitCode = 1;
