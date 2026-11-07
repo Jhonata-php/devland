@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera a logo do DevLand — uma ilha flutuante com um terminal em cima (a "land" dos devs) — em pixel art 48x48 e grava
+"""Gera a logo do DevLand — uma ilha flutuante com um terminal dentro de um globo (o mundo dos devs) — em pixel art 48x48 e grava
 os PNGs de client/public/assets/brand/. Só biblioteca padrão: `python3 scripts/brand-logo.py`."""
 import math, pathlib, struct, zlib
 
@@ -32,12 +32,43 @@ for y in range(N):
     for x in range(N):
         if inside(x, y):
             put(x, y, BG if y < 28 else BG2)
-for x, y in [(6, 8), (40, 6), (9, 22), (38, 18), (12, 38), (42, 36), (30, 4), (5, 30)]:
+for x, y in [(5, 6), (42, 5), (4, 40), (43, 41)]:
     put(x, y, G3)
 for y in range(N):
     for x in range(N):
         if inside(x, y) and not all(inside(x + i, y + j) for i, j in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             put(x, y, G2)
+
+# globo: grade de meridianos/paralelos, anel orbital e contorno neon
+gcx, gcy, gr = 23.5, 23.5, 21.5
+PHI = math.radians(-12)
+def ring(front):
+    for k in range(0, 720):
+        t = math.radians(k / 2)
+        if (math.sin(t) > 0) != front:
+            continue
+        x = gcx + 26 * math.cos(t) * math.cos(PHI) - 6 * math.sin(t) * math.sin(PHI)
+        y = gcy + 26 * math.cos(t) * math.sin(PHI) + 6 * math.sin(t) * math.cos(PHI)
+        put(int(round(x)), int(round(y)), CY if front else G3)
+ring(False)
+for y in range(N):
+    for x in range(N):
+        d = math.hypot(x - gcx, y - gcy)
+        if d <= gr:
+            put(x, y, BG2 if d > gr * 0.55 else (7, 20, 12, 255))
+for fx in (0.35, 0.7):                       # meridianos
+    for k in range(0, 360):
+        t = math.radians(k)
+        put(int(round(gcx + gr * fx * math.cos(t) * 1.0)), int(round(gcy + gr * math.sin(t))), G3)
+for dy in (-12, -6, 6, 12):                   # paralelos
+    half = math.sqrt(max(0, gr * gr - dy * dy))
+    for x in range(int(gcx - half), int(gcx + half) + 1):
+        if (x + dy) % 2 == 0:
+            put(x, int(gcy + dy), G3)
+for k in range(0, 720):                       # contorno
+    t = math.radians(k / 2)
+    put(int(round(gcx + gr * math.cos(t))), int(round(gcy + gr * math.sin(t))), G)
+ring(True)
 
 # monitor (terminal) com brilho
 rect(13, 6, 34, 21, G)
