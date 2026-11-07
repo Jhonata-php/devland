@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Topo com ferramentas legendadas:** ícones verdes com o nome embaixo (Visão, Menos, Mais, Novo, Feed, Ajustes, Ajuda), estado ligado em destaque e brilho; no celular ficam só os ícones. O favicon agora é só o planeta com o anel azul, sem fundo.
 - **Logo do DevLand:** planeta em pixel art (oceanos, continentes, luz de um lado) com anel orbital, lua e estrelas, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
 - **Nova marca "DevLand"** no logotipo (texto `DEVLAND_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
 - **Botões, avisos, atividade e janela de Contas no tema hacker:** botões de terminal em caixa-alta que enchem de verde; avisos como cartões de log com etiqueta do nível (`alerta`, `ok`, `aviso`, `info`) e brilho na cor dele; atividade em linhas de log `[hora]`; Contas com barra de terminal.

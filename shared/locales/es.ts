@@ -2415,7 +2415,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Primeira vez neste celular?": "¿Primera vez en este celular?",
   "Instale o certificado do Habblaud": "Instala el certificado de Habblaud",
   "para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).": "para quitar el aviso de seguridad (revisa la huella digital que mostró npm run remote:setup).",
-  "Habblaud · entrar": "Habblaud · entrar",
   "Acesso pelo celular. Entre com o usuário e a senha que você escolheu no npm run remote:setup.": "Acceso desde el celular. Entra con el usuario y la contraseña que elegiste en npm run remote:setup.",
   "Usuário": "Usuario",
   "Senha": "Contraseña",
@@ -3505,4 +3504,10 @@ export const ES: Readonly<Record<string, string>> = {
   "ok": "ok",
   "aviso": "aviso",
   "info": "info",
+  "Tempo": "Tiempo",
+  "Feed": "Feed",
+  "Visão": "Vista",
+  "Menos": "Menos",
+  "Mais": "Más",
+  "Ajuda": "Ayuda",
 };

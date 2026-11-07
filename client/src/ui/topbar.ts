@@ -144,6 +144,16 @@ export class TopBar implements UiComponent {
       iconButton(ICONS.help, tr('Ajuda (?)'), () => ctx.openHelp()),
     );
     this.panelGroup = panelGroup;
+    // Legendas curtas sob os ícones (a dica longa continua no title).
+    const caption = (btn: HTMLElement, text: string) => btn.setAttribute('data-label', text);
+    caption(this.sidebarBtn, tr('Salas'));
+    caption(this.spawnBtn, tr('Novo'));
+    caption(this.timelapseBtn, tr('Tempo'));
+    caption(this.feedBtn, tr('Feed'));
+    caption(this.worldBtn, tr('Mundo'));
+    caption(this.settingsBtn, tr('Ajustes'));
+    for (const [i, label] of [tr('Visão'), tr('Menos'), tr('Mais')].entries()) caption(viewGroup.children[i] as HTMLElement, label);
+    caption(panelGroup.lastElementChild as HTMLElement, tr('Ajuda'));
 
     this.el = h(
       'header',

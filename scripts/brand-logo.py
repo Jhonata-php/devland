@@ -39,52 +39,55 @@ for y in range(N):
         if inside(x, y) and not all(inside(x + i, y + j) for i, j in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             put(x, y, G2)
 
-# planeta com continentes, luz de um lado, anel orbital e lua
+# planeta com continentes, luz de um lado e anel orbital (função: o favicon usa só o planeta e o anel, sem o ladrilho)
 import random
 random.seed(7)
-pcx, pcy, pr = 23.5, 24.5, 15.5
 PHI = math.radians(-24)
 OCEAN = [(8, 70, 60, 255), (12, 110, 86, 255), (20, 150, 110, 255), (40, 200, 140, 255)]
 LAND = [(30, 120, 60, 255), (57, 200, 100, 255), (120, 255, 150, 255)]
 
-def ring(front):
-    for k in range(0, 1440):
-        t = math.radians(k / 4)
-        if (math.sin(t) > 0) != front:
-            continue
-        for off, col in ((0, CY), (1.3, (40, 140, 190, 255))):
-            x = pcx + (22 + off) * math.cos(t) * math.cos(PHI) - (7 + off * 0.3) * math.sin(t) * math.sin(PHI)
-            y = pcy + (22 + off) * math.cos(t) * math.sin(PHI) + (7 + off * 0.3) * math.sin(t) * math.cos(PHI)
-            put(int(round(x)), int(round(y)), col if front else (24, 90, 120, 255))
-
-# continentes: manchas de ruído suavizado dentro da esfera
 def land(x, y):
-    v = math.sin(x * 0.55 + 1.3) * math.cos(y * 0.62) + 0.7 * math.sin((x + y) * 0.35 + 2) + 0.5 * math.cos(x * 0.9 - y * 0.4)
-    return v
-ring(False)
-for y in range(N):
-    for x in range(N):
-        dx, dy = (x - pcx) / pr, (y - pcy) / pr
-        d = math.hypot(dx, dy)
-        if d <= 1:
-            lit = max(0.0, min(1.0, 0.62 + (-dx * 0.55 - dy * 0.55) * 0.55 - d * 0.18))   # luz vindo de cima à esquerda
-            k = min(3, int(lit * 4))
-            put(x, y, LAND[min(2, k)] if land(x, y) > 0.85 else OCEAN[k])
-# brilho (reflexo) e terminador escuro à direita embaixo
-for x, y in [(15, 15), (16, 14), (17, 14), (15, 16)]:
-    put(x, y, (200, 255, 235, 255))
-# contorno do planeta
-for k in range(0, 1440):
-    t = math.radians(k / 4)
-    put(int(round(pcx + (pr + 0.5) * math.cos(t))), int(round(pcy + (pr + 0.5) * math.sin(t))), G)
-ring(True)
-# lua e estrelas
-for dx, dy in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 1), (1, 2)]:
-    put(38 + dx, 8 + dy, (190, 210, 205, 255))
-for x, y in [(6, 7), (42, 18), (7, 40), (40, 39), (30, 5), (4, 20), (44, 30), (14, 43)]:
-    put(x, y, GL if (x + y) % 2 else G2)
+    return math.sin(x * 0.55 + 1.3) * math.cos(y * 0.62) + 0.7 * math.sin((x + y) * 0.35 + 2) + 0.5 * math.cos(x * 0.9 - y * 0.4)
 
-def downscale(size):
+def planet(pcx, pcy, pr, ra, rb):
+    def ring(front):
+        for k in range(0, 1440):
+            t = math.radians(k / 4)
+            if (math.sin(t) > 0) != front:
+                continue
+            for off, col in ((0, CY), (1.3, (40, 140, 190, 255))):
+                x = pcx + (ra + off) * math.cos(t) * math.cos(PHI) - (rb + off * 0.3) * math.sin(t) * math.sin(PHI)
+                y = pcy + (ra + off) * math.cos(t) * math.sin(PHI) + (rb + off * 0.3) * math.sin(t) * math.cos(PHI)
+                put(int(round(x)), int(round(y)), col if front else (24, 90, 120, 255))
+    ring(False)
+    for y in range(N):
+        for x in range(N):
+            dx, dy = (x - pcx) / pr, (y - pcy) / pr
+            d = math.hypot(dx, dy)
+            if d <= 1:
+                lit = max(0.0, min(1.0, 0.62 + (-dx * 0.55 - dy * 0.55) * 0.55 - d * 0.18))   # luz de cima, à esquerda
+                k = min(3, int(lit * 4))
+                put(x, y, LAND[min(2, k)] if land(x, y) > 0.85 else OCEAN[k])
+    for dx, dy in [(-8, -9), (-7, -10), (-6, -10), (-8, -8)]:   # reflexo
+        put(int(pcx + dx * pr / 15.5), int(pcy + dy * pr / 15.5), (200, 255, 235, 255))
+    for k in range(0, 1440):                                      # contorno
+        t = math.radians(k / 4)
+        put(int(round(pcx + (pr + 0.5) * math.cos(t))), int(round(pcy + (pr + 0.5) * math.sin(t))), G)
+    ring(True)
+
+planet(23.5, 24.5, 15.5, 22, 7)
+for dx, dy in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 1), (1, 2)]:   # lua
+    put(38 + dx, 8 + dy, (190, 210, 205, 255))
+for x, y in [(6, 7), (42, 18), (7, 40), (40, 39), (30, 5), (4, 20), (44, 30), (14, 43)]:   # estrelas
+    put(x, y, GL if (x + y) % 2 else G2)
+full = g
+# favicon: só o planeta e o anel azul, sem fundo, ocupando o quadro todo
+g = [[T] * N for _ in range(N)]
+planet(24, 24, 17, 23, 8.5)
+fav = g
+g = full
+
+def downscale(size, g):
     """Média por área (tamanhos menores, para os ícones pequenos não ficarem serrilhados) ou vizinho mais próximo."""
     out = []
     for y in range(size):
@@ -103,8 +106,9 @@ def downscale(size):
         out.append(row)
     return out
 
-def png(size, path):
-    px = downscale(size) if size < N else [[g[y * N // size][x * N // size] for x in range(size)] for y in range(size)]
+def png(size, path, g=None):
+    g = g or full
+    px = downscale(size, g) if size < N else [[g[y * N // size][x * N // size] for x in range(size)] for y in range(size)]
     raw = b''.join(b'\x00' + b''.join(bytes(c) for c in row) for row in px)
     def chunk(t, d):
         c = struct.pack('>I', len(d)) + t + d
@@ -112,7 +116,9 @@ def png(size, path):
     pathlib.Path(path).write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
 
 out = pathlib.Path(__file__).resolve().parent.parent / 'client/public/assets/brand'
-for name, size in [('favicon-16', 16), ('favicon-32', 32), ('logo-mark', 32), ('logo-mark@4x', 128), ('apple-touch-icon', 180), ('icon-192', 192), ('icon-512', 512)]:
+for name, size in [('logo-mark', 32), ('logo-mark@4x', 128), ('apple-touch-icon', 180), ('icon-192', 192), ('icon-512', 512)]:
     png(size, out / f'{name}.png')
-png(480, pathlib.Path('/tmp/devland-logo-preview.png')) if False else None
+for name, size in [('favicon-16', 16), ('favicon-32', 32)]:
+    png(size, out / f'{name}.png', fav)
+png(256, out.parent.parent.parent.parent / 'favicon-preview.png', fav) if False else None
 print('ok')

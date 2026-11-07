@@ -12033,3 +12033,25 @@ html.is-replay #world {
 
 /* A marca em texto aparece nas telas largas (nas estreitas o topo mostra só o ícone, como antes). */
 @media (min-width: 1141px) { .ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 19px; } }
+
+/* Topo: ferramentas com legenda sob o ícone, em verde, com estado ligado/desligado bem claro. */
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label] {
+  width: auto; min-width: 48px; height: 48px; padding: 5px 6px 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--ui-accent); border: 1px solid transparent; border-radius: 6px;
+}
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after {
+  content: attr(data-label); font: 700 9px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ui-muted);
+}
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label]:hover { background: rgba(57, 255, 136, 0.1); border-color: var(--ui-line-strong); }
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label]:hover::after { color: var(--ui-accent); }
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-pressed='true'], .ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-expanded='true'] {
+  background: rgba(57, 255, 136, 0.16); border-color: var(--ui-accent); box-shadow: 0 0 18px -6px var(--ui-accent);
+}
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-pressed='true']::after, .ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-expanded='true']::after { color: var(--ui-accent); }
+.ui-topbar .ui-btn-settings[data-label] { border-color: var(--ui-line-strong); }
+.ui-topbar .ui-btn-sidebar[data-label] { height: 48px; }
+@media (max-width: 700px) {
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label] { min-width: 34px; height: 34px; padding: 0; }
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after { display: none; }
+}
