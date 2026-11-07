@@ -12031,6 +12031,5 @@ html.is-replay #world {
 @keyframes hk-blink { 50% { opacity: 0; } }
 .ui-splash__name.ui-wordtext { font-size: 34px; }
 
-/* A marca em texto aparece sempre (as regras de largura escondiam o logotipo antigo em pixels). */
-.ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 19px; }
-@media (max-width: 700px) { .ui-topbar .ui-brand__name.ui-wordtext { font-size: 15px; letter-spacing: 0.08em; } }
+/* A marca em texto aparece nas telas largas (nas estreitas o topo mostra só o ícone, como antes). */
+@media (min-width: 1141px) { .ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 19px; } }
