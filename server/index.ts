@@ -56,6 +56,7 @@ import { getLocale, tr } from '../shared/i18n';
 import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
+import { fetchOAuthUsage } from './accounts/oauth-usage';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -433,6 +434,14 @@ const agentUser = agentRunAs();
 // Cloud: o tap de uso (cartões de 5 h e semana) entra sozinho no statusLine de cada conta do Claude Code.
 const usageTapPath = join(config.rootDir, 'scripts', 'statusline-tap.mjs');
 if (cloud && agentUser) ensureUsageTap(config.claudeDirs, usageTapPath);
+// Cloud: uso de toda conta conectada, mesmo sem sessão (consulta com o login da conta; a cada 3 min).
+if (cloud) {
+  const pollUsage = () => {
+    for (const e of accounts.entries()) void fetchOAuthUsage(e.dir).then((u) => u && accounts.setUsage(e.id, u));
+  };
+  setTimeout(pollUsage, 5_000).unref();
+  setInterval(pollUsage, 180_000).unref();
+}
 // Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do Habblaud na imagem).
 const pluginsReady: Promise<void> = cloud && agentUser && claudeBin ? ensureHabblaudPlugins(config.claudeDirs, claudeBin, config.rootDir) : Promise.resolve();
 if (cloud && spawnPty && claudeBin && agentUser) {

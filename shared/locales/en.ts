@@ -3455,4 +3455,5 @@ export const EN: Readonly<Record<string, string>> = {
   "Tirar o anexo": "Remove attachment",
   "Sem permissão para usar o microfone.": "No permission to use the microphone.",
   "Não deu para ouvir: {0}": "Couldn't listen: {0}",
+  "consulta à Anthropic com o login da conta": "Queried from Anthropic with the account login",
 };

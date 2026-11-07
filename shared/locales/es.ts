@@ -3456,4 +3456,5 @@ export const ES: Readonly<Record<string, string>> = {
   "Tirar o anexo": "Quitar el adjunto",
   "Sem permissão para usar o microfone.": "Sin permiso para usar el micrófono.",
   "Não deu para ouvir: {0}": "No se pudo escuchar: {0}",
+  "consulta à Anthropic com o login da conta": "Consulta a Anthropic con el inicio de sesión de la cuenta",
 };

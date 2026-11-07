@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Habblaud Cloud: uso de toda conta conectada, mesmo sem sessão aberta.** A cada 3 min o servidor consulta o uso
+  com o login da conta (somente leitura; token vencido fica sem números até uma sessão renová-lo).
 - **Habblaud Cloud: escolher a conta no "Novo agente"** ("Automática" usa a de mais folga) e **anexar fotos e arquivos
   nas Conversas**, mais um microfone que dita pelo navegador (iPhone/Chrome) quando o servidor não tem Whisper.
   Os anexos agora são gravados na casa do usuário dos agentes, para o Claude conseguir ler.
