@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Tela de login redesenhada** (também as de convite e criação do admin): logo, fundo com brilho, botão em relevo, olho
+  para ver a senha, carregando no botão e erro que balança; respeita a área segura do iPhone.
 - **Habblaud Cloud: uso de toda conta conectada, mesmo sem sessão aberta.** A cada 3 min o servidor consulta o uso
   com o login da conta (somente leitura; token vencido fica sem números até uma sessão renová-lo).
 - **Habblaud Cloud: escolher a conta no "Novo agente"** ("Automática" usa a de mais folga) e **anexar fotos e arquivos

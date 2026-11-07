@@ -393,23 +393,49 @@ export function esc(text: string): string {
 
 /** Estilo das telas de entrada (login, criar admin, convite, usuários). */
 export const PAGE_STYLE = `<style>
-  :root { color-scheme: dark; }
+  :root { color-scheme: dark; --bg: #0e1018; --card: #171a27; --line: #2b3047; --txt: #ece9e1; --mut: #98a0bb; --gold: #f4c95d; --gold2: #e0a93a; --bad: #ff8a80; }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #14161f; color: #e8e6df;
-         font: 16px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 16px; }
-  form { width: 100%; max-width: 360px; background: #1e2130; border: 2px solid #3a3f58; border-radius: 10px; padding: 24px; }
-  h1 { margin: 0 0 4px; font-size: 22px; color: #f4c95d; }
-  p { margin: 0 0 20px; color: #9aa0b8; font-size: 13px; }
-  p.ca { margin: 20px 0 0; }
-  a { color: #f4c95d; }
-  code { color: #e8e6df; }
-  label { display: block; font-size: 13px; color: #9aa0b8; margin: 12px 0 6px; }
-  input { width: 100%; padding: 12px; font: inherit; color: inherit; background: #14161f; border: 2px solid #3a3f58; border-radius: 6px; }
-  input:focus { outline: none; border-color: #f4c95d; }
-  button { width: 100%; margin-top: 20px; padding: 12px; font: inherit; font-weight: 700; color: #14161f; background: #f4c95d;
-           border: 0; border-radius: 6px; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: wait; }
-  #err { min-height: 20px; margin-top: 12px; color: #ff8a80; font-size: 13px; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; color: var(--txt);
+         font: 16px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+         padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+         background: radial-gradient(900px 500px at 50% -10%, rgba(244, 201, 93, .13), transparent 60%),
+                     radial-gradient(700px 500px at 100% 100%, rgba(98, 140, 255, .10), transparent 60%),
+                     linear-gradient(rgba(255, 255, 255, .025) 1px, transparent 1px) 0 0 / 100% 24px,
+                     var(--bg); }
+  form { width: 100%; max-width: 380px; background: linear-gradient(180deg, #1c2030, var(--card)); border: 2px solid var(--line); border-radius: 14px;
+         padding: 28px 24px 24px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05); }
+  .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 18px; text-align: center; }
+  .brand img { width: 72px; height: 72px; image-rendering: pixelated; filter: drop-shadow(0 6px 14px rgba(244, 201, 93, .25)); }
+  h1 { margin: 0; font-size: 24px; letter-spacing: .5px; color: var(--gold); }
+  p { margin: 0 0 18px; color: var(--mut); font-size: 13px; }
+  .brand p { margin: 0; }
+  p.ca { margin: 20px 0 0; font-size: 12px; }
+  a { color: var(--gold); }
+  code { color: var(--txt); }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--mut); margin: 14px 0 6px; }
+  input { width: 100%; padding: 13px 14px; font: inherit; font-size: 16px; color: inherit; background: #0f121c; border: 2px solid var(--line); border-radius: 8px;
+          transition: border-color .15s, box-shadow .15s; }
+  input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(244, 201, 93, .18); }
+  .field { position: relative; }
+  .field input { padding-right: 48px; }
+  .eye { position: absolute; right: 4px; top: 4px; width: 40px; height: 40px; margin: 0; padding: 0; display: grid; place-items: center; background: transparent; color: var(--mut);
+         border-radius: 6px; font-size: 18px; font-weight: 400; }
+  .eye:hover { color: var(--txt); background: rgba(255, 255, 255, .06); }
+  button { width: 100%; margin-top: 22px; padding: 13px; font: inherit; font-weight: 700; font-size: 16px; color: #14161f; background: linear-gradient(180deg, var(--gold), var(--gold2));
+           border: 0; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #8f6a1c, 0 8px 18px rgba(0, 0, 0, .35); transition: transform .08s, box-shadow .08s, filter .15s; }
+  button:hover { filter: brightness(1.06); }
+  button:active { transform: translateY(3px); box-shadow: 0 1px 0 #8f6a1c; }
+  button:focus-visible { outline: 3px solid rgba(244, 201, 93, .5); outline-offset: 2px; }
+  button:disabled { opacity: .65; cursor: wait; transform: none; }
+  button.busy::after { content: ''; display: inline-block; width: 14px; height: 14px; margin-left: 10px; vertical-align: -2px; border: 2px solid rgba(20, 22, 31, .35);
+                       border-top-color: #14161f; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #err { min-height: 20px; margin-top: 14px; color: var(--bad); font-size: 13px; text-align: center; }
+  #err.shake { animation: shake .35s; }
+  @keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+  .foot { margin-top: 18px; text-align: center; font-size: 11px; color: #6c7390; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>`;
 
 export function loginPage(opts: { caDownload: boolean; intro?: string }): string {
@@ -435,29 +461,42 @@ ${PAGE_STYLE}
 </head>
 <body>
 <form id="f" autocomplete="on">
-  <h1>Habblaud</h1>
-  <p>${esc(opts.intro ?? tr('Acesso pelo celular. Entre com o usuário e a senha que você escolheu no npm run remote:setup.'))}</p>
+  <div class="brand">
+    <img src="/assets/brand/logo-mark@4x.png" alt="" width="72" height="72">
+    <h1>Habblaud</h1>
+    <p>${esc(opts.intro ?? tr('Acesso pelo celular. Entre com o usuário e a senha que você escolheu no npm run remote:setup.'))}</p>
+  </div>
   <label for="u">${esc(tr('Usuário'))}</label>
   <input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
   <label for="p">${esc(tr('Senha'))}</label>
-  <input id="p" name="password" type="password" autocomplete="current-password" required>
+  <div class="field">
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">&#128065;</button>
+  </div>
   <button id="b" type="submit">${esc(tr('Entrar'))}</button>
   <div id="err" role="alert"></div>
   ${ca}
 </form>
 <script>
   const f = document.getElementById('f'), b = document.getElementById('b'), err = document.getElementById('err');
+  const eye = document.getElementById('eye');
+  eye.addEventListener('click', () => {
+    const show = f.password.type === 'password';
+    f.password.type = show ? 'text' : 'password';
+    eye.setAttribute('aria-pressed', String(show));
+  });
+  const fail = (text) => { err.textContent = text; err.classList.remove('shake'); void err.offsetWidth; err.classList.add('shake'); };
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
-    b.disabled = true; err.textContent = '';
+    b.disabled = true; b.classList.add('busy'); err.textContent = '';
     try {
       const r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value }) });
       if (r.ok) { location.replace('/'); return; }
       const body = await r.json().catch(() => ({}));
-      err.textContent = body.error || ${js(tr('Não deu para entrar.'))};
-    } catch { err.textContent = ${js(tr('Sem conexão com o Habblaud.'))}; }
-    b.disabled = false;
+      fail(body.error || ${js(tr('Não deu para entrar.'))});
+    } catch { fail(${js(tr('Sem conexão com o Habblaud.'))}); }
+    b.disabled = false; b.classList.remove('busy');
   });
 </script>
 </body>

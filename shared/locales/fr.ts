@@ -3473,4 +3473,5 @@ export const FR: Readonly<Record<string, string>> = {
   "Sem permissão para usar o microfone.": "Pas d'autorisation pour le micro.",
   "Não deu para ouvir: {0}": "Impossible d'écouter : {0}",
   "consulta à Anthropic com o login da conta": "Interrogé auprès d'Anthropic avec la connexion du compte",
+  "Mostrar a senha": "Afficher le mot de passe",
 };
