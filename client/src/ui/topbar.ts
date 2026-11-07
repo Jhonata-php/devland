@@ -117,7 +117,7 @@ export class TopBar implements UiComponent {
     this.worldBtn = iconButton(ICONS.city, tr('Habblaud World'), () => ctx.toggleWorld(), 'ui-btn-world');
     this.worldBtn.setAttribute('aria-haspopup', 'dialog');
     this.worldBtn.hidden = true;
-    this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings());
+    this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings(), 'ui-btn-settings');
     this.settingsBtn.setAttribute('aria-haspopup', 'dialog');
     this.spawnPanel = new SpawnPanel(ctx);
     ctx.root.append(this.spawnPanel.el);

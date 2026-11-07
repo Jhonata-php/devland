@@ -11373,6 +11373,26 @@ html.is-replay #world {
     display: none;
   }
 
+  /* O que a barra de baixo já tem (Agentes e Novo) sai do topo. */
+  .ui-topbar .ui-btn-sidebar,
+  .ui-topbar .ui-btn-spawn {
+    display: none;
+  }
+
+  /* Terminal: os botões de ação (Nova sessão, Assumir, Encerrar) em linha própria, com a mesma margem dos dois lados. */
+  .ui-term__bar {
+    padding-right: 10px;
+  }
+
+  .ui-term .ui-termact {
+    flex-wrap: wrap;
+  }
+
+  .ui-term .ui-termact .ui-btn {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
   /* "+ Contas" do topo vira a aba Contas da barra de baixo. */
   .ui-topbar .ui-btn-accounts {
     display: none;

@@ -74,6 +74,11 @@ do meio (0.**3**.0).
 - **Habblaud Cloud: uso das contas.** O servidor instala sozinho o captador de uso no Claude Code de cada conta (ao subir
   e ao conectar uma conta nova), para os cartões de 5 h e semana aparecerem depois da primeira sessão interativa.
 
+- **Habblaud Cloud: mensagens e permissões pelo escritório.** O servidor instala sozinho, em cada conta do Claude Code, os
+  plugins `habblaud-mensagens` e `habblaud-permissoes` (ao subir e ao conectar uma conta), então "Mandar mensagem" e responder
+  pedidos de permissão funcionam nas sessões novas. O terminal de agente ganhou o botão **Nova sessão**, e no celular o topo
+  não repete o que a barra de baixo já tem.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

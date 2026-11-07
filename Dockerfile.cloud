@@ -38,6 +38,9 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY scripts/statusline-tap.mjs ./scripts/statusline-tap.mjs
+# Marketplace dos plugins do Claude Code (mensagens e permissões pelo escritório): o servidor os instala por conta.
+COPY .claude-plugin ./.claude-plugin
+COPY mod ./mod
 COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
 
 # HABBLAUD_CLOUD_VERSION: a tag desta imagem (o workflow passa cloud-v0.3.5); o servidor compara com as tags mais novas no

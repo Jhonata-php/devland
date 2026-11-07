@@ -17,6 +17,7 @@ export class TermActions {
   private agent: AgentInfo | null = null;
   private takeBtn: HTMLButtonElement;
   private stopBtn: HTMLButtonElement;
+  private newBtn: HTMLButtonElement;
   private msg: HTMLElement;
   private confirm: Kind | null = null;
   private confirmTimer: ReturnType<typeof setTimeout> | null = null;
@@ -34,8 +35,10 @@ export class TermActions {
     setTitle(this.takeBtn, tr('Encerra a sessão no terminal onde ela está e continua a mesma conversa aqui, podendo digitar'));
     this.stopBtn = h('button', { class: 'ui-btn ui-btn--sm ui-btn--danger', type: 'button', on: { click: () => this.run('stop') } });
     setTitle(this.stopBtn, tr('Encerra esta sessão do Claude Code (a conversa fica salva)'));
+    this.newBtn = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Nova sessão'), on: { click: () => this.newSession() } });
+    setTitle(this.newBtn, tr('Abre uma sessão nova do Claude Code na mesma pasta deste agente'));
     this.msg = h('span', { class: 'ui-termact__msg', role: 'status', hidden: true });
-    this.el = h('span', { class: 'ui-termact', hidden: true }, this.msg, this.takeBtn, this.stopBtn);
+    this.el = h('span', { class: 'ui-termact', hidden: true }, this.msg, this.newBtn, this.takeBtn, this.stopBtn);
   }
 
   /** `agent` = agente presente na janela (null = sessão do histórico, saiu ou nenhum). */
@@ -53,6 +56,8 @@ export class TermActions {
     setText(this.stopBtn, this.confirm === 'stop' ? tr('Confirmar?') : tr('Encerrar'));
     this.takeBtn.classList.toggle('is-confirm', this.confirm === 'takeover');
     this.stopBtn.classList.toggle('is-confirm', this.confirm === 'stop');
+    setHidden(this.newBtn, !this.roomPath(agent));
+    this.newBtn.disabled = this.busy;
     this.takeBtn.disabled = this.busy;
     this.stopBtn.disabled = this.busy;
   }
@@ -76,6 +81,28 @@ export class TermActions {
     this.ctx.invalidate();
     const job = kind === 'stop' ? (this.onStop ? this.onStop(a) : this.pty.stop(a.id)) : this.pty.takeover(a.id);
     job
+      .then(() => this.showMsg(''))
+      .catch((err: Error) => this.showMsg(tr('Não deu: {0}', [err.message]), true))
+      .finally(() => {
+        this.busy = false;
+        this.ctx.invalidate();
+      });
+  }
+
+  /** Pasta do projeto do agente (a da sala dele). */
+  private roomPath(a: AgentInfo | null): string | undefined {
+    return a ? this.ctx.store.liveSnapshot?.rooms.find((r) => r.id === a.roomId)?.path : undefined;
+  }
+
+  private newSession(): void {
+    const a = this.agent;
+    const cwd = this.roomPath(a);
+    if (!a || !cwd || this.busy) return;
+    this.busy = true;
+    this.showMsg(tr('Abrindo…'));
+    this.ctx.invalidate();
+    this.pty
+      .newSession(cwd, a.account)
       .then(() => this.showMsg(''))
       .catch((err: Error) => this.showMsg(tr('Não deu: {0}', [err.message]), true))
       .finally(() => {

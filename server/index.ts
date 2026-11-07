@@ -43,6 +43,7 @@ import { discoverCodexDirs } from './sources/codex/accounts';
 import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
+import { ensureHabblaudPlugins } from './accounts/plugins';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
 import { ghcrLatest, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
@@ -355,6 +356,8 @@ const agentUser = agentRunAs();
 // Cloud: o tap de uso (cartões de 5 h e semana) entra sozinho no statusLine de cada conta do Claude Code.
 const usageTapPath = join(config.rootDir, 'scripts', 'statusline-tap.mjs');
 if (cloud && agentUser) ensureUsageTap(config.claudeDirs, usageTapPath);
+// Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do Habblaud na imagem).
+if (cloud && agentUser && claudeBin) void ensureHabblaudPlugins(config.claudeDirs, claudeBin, config.rootDir);
 if (cloud && spawnPty && claudeBin && agentUser) {
   late.connect = new ConnectService({
     spawn: spawnPty,
@@ -366,6 +369,7 @@ if (cloud && spawnPty && claudeBin && agentUser) {
     onClaudeDir: (dir) => {
       accounts.addDir(dir);
       ensureUsageTap([dir], usageTapPath);
+      void ensureHabblaudPlugins([dir], claudeBin, config.rootDir);
     },
     onChange: () => office.markDirty(),
   });
