@@ -11,6 +11,9 @@
 !scripts/build-server.mjs
 !scripts/build-info.mjs
 !scripts/cloud-entrypoint.sh
+# O servidor instala o captador de uso (server/accounts/usage-tap.ts) e usa a lógica do instalador.
+!scripts/statusline-tap.mjs
+!scripts/statusline-install.ts
 
 # Mesmo dentro das pastas incluídas: nada de lixo local.
 **/node_modules
