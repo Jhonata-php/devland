@@ -116,9 +116,10 @@ def png(size, path, g=None):
     pathlib.Path(path).write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
 
 out = pathlib.Path(__file__).resolve().parent.parent / 'client/public/assets/brand'
-for name, size in [('logo-mark', 32), ('logo-mark@4x', 128), ('apple-touch-icon', 180), ('icon-192', 192), ('icon-512', 512)]:
+for name, size in [('apple-touch-icon', 180), ('icon-192', 192), ('icon-512', 512)]:
     png(size, out / f'{name}.png')
-for name, size in [('favicon-16', 16), ('favicon-32', 32)]:
+# favicon e marca da interface: só o planeta com o anel, sem fundo nem quadrado
+for name, size in [('favicon-16', 16), ('favicon-32', 32), ('logo-mark', 48), ('logo-mark@4x', 192)]:
     png(size, out / f'{name}.png', fav)
 png(256, out.parent.parent.parent.parent / 'favicon-preview.png', fav) if False else None
 print('ok')

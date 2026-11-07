@@ -12266,3 +12266,25 @@ html.is-replay #world {
   .has-sidebar .ui-usage-tip { left: auto; right: calc(100% + 10px); }
   .has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
 }
+
+/* Botão da lateral como o do WCAM: uma bolinha com seta presa na borda do trilho/painel (não é mais um quadrado grande).
+   A marca é só o planeta, sem fundo nem quadrado em volta. */
+@media (min-width: 601px) {
+  .ui-topbar .ui-btn-sidebar {
+    position: fixed; z-index: 58; left: calc(var(--rail-w) - 12px); top: 58px; width: 24px; height: 24px; padding: 0;
+    display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--ui-line-strong);
+    background: rgba(5, 14, 9, 0.98); color: var(--ui-accent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    transition: left 0.32s var(--ease), border-color 0.15s, box-shadow 0.15s;
+  }
+  .ui-topbar .ui-btn-sidebar svg { display: none; }
+  .ui-topbar .ui-btn-sidebar::before { content: '›'; font: 800 16px/1 var(--font-mono); margin-top: -2px; }
+  .ui-topbar .ui-btn-sidebar:hover { border-color: var(--ui-accent); box-shadow: 0 0 16px -2px var(--ui-accent); }
+  .has-sidebar .ui-topbar .ui-btn-sidebar { left: calc(var(--side-w) - 12px); width: 24px; height: 24px; }
+  .has-sidebar .ui-topbar .ui-btn-sidebar::before { content: '‹'; }
+  .ui-brand__mark { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+  .ui-brand__mark img, .ui-brand img { width: 40px; height: 40px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(57, 255, 136, 0.35)); }
+  .ui-topbar__left { padding-top: 14px; }
+  .ui-usage { top: 78px; }
+  .has-sidebar .ui-topbar__left { flex-direction: row; justify-content: flex-start; padding: 0 14px; }
+  .has-sidebar .ui-usage { top: calc(var(--top-h) + 6px); }
+}

@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Botão da lateral como o do WCAM:** uma bolinha com seta presa na borda do trilho/painel (abre e fecha), em vez de um quadrado; o logo na lateral agora é só o planeta, sem fundo nem quadrado em volta (o ícone do app e a aba continuam com o fundo escuro).
 - **Marca em duas cores:** `DEV` em verde-neon e `LAND` em branco, com o logo do planeta um pouco maior.
 - **Marca integrada à lateral (computador):** recolhida, a lateral vira um trilho fino com o logo, um botão pequeno para expandir e, embaixo, os anéis de uso das contas; aberta, o mesmo bloco vira o cabeçalho da lista de salas (logo + nome + botão de recolher) e os anéis vão para o canto direito. A barra de atividade começa depois do trilho.
 - **Computador: tudo flutuante e mínimo.** O topo perde a barra: ficam o logo no canto esquerdo e uma cápsula de ícones (sem textos) no canto direito, mais a ficha de quem precisa de você. O uso vira anéis flutuantes com a letra da conta na borda direita, embaixo dos ícones (saem da frente quando a gaveta do agente abre) (sem texto nem porcentagem); ao passar o mouse abre a dica com nome, plano, números e reinício.
