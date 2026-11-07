@@ -12,7 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
-- **Tema hacker em toda a interface:** verde-neon sobre preto, fonte monoespaçada, títulos com `>` e rótulos com `$`,
+- **Tema hacker em toda a interface:** o mapa do escritório vira um monitor de fósforo verde (com grade de pontos, vinheta e uma varredura que desce), verde-neon sobre preto, fonte monoespaçada, títulos com `>` e rótulos com `$`,
   bordas com brilho, botão principal em verde e varredura de monitor antigo. Combina com a tela de login.
 - **Habblaud Cloud: login por e-mail.** Criar o admin e aceitar convite pedem e-mail; o login aceita e-mail ou usuário
   (contas antigas continuam entrando pelo usuário e definem o e-mail em Ajustes › Perfil). O e-mail é único e aparece na

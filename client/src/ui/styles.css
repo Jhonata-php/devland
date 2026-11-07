@@ -11878,3 +11878,35 @@ html.is-replay #world {
   background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.1) 2px 3px);
 }
 @media (prefers-reduced-motion: reduce) { #ui::after { display: none; } }
+
+/* ===== Tema hacker: o próprio escritório =====
+   O mapa vira um monitor de fósforo verde (filtro no canvas), com grade de pontos e vinheta por cima. */
+#world, #city, #visit {
+  filter: sepia(0.85) hue-rotate(70deg) saturate(2.2) brightness(0.58) contrast(1.4);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 45%, rgba(0, 12, 4, 0.78) 100%),
+    radial-gradient(rgba(57, 255, 136, 0.13) 1px, transparent 1.2px) 0 0 / 22px 22px;
+}
+html, body { background: #040a06 !important; }
+@media (prefers-reduced-motion: no-preference) {
+  body::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 18vh;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(transparent, rgba(57, 255, 136, 0.07), transparent);
+    animation: hk-sweep 7s linear infinite;
+  }
+  @keyframes hk-sweep { from { transform: translateY(-20vh); } to { transform: translateY(105vh); } }
+}
