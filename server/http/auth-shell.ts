@@ -22,7 +22,7 @@ const R = (x: number, y: number, w: number, h: number, f: string): string => `<r
 /** Um agente em pixel art (16x24), com a cor da camisa; `class` anima o passo. */
 function sprite(shirt: string, skin: string, delay: number, speed: number, top: number): string {
   const body = [R(4, 0, 8, 8, skin), R(4, 0, 8, 3, '#2b2018'), R(2, 8, 12, 9, shirt), R(2, 17, 5, 6, '#1b1f33'), R(9, 17, 5, 6, '#1b1f33')].join('');
-  return `<svg class="agent" style="--d:${delay}s;--s:${speed}s;bottom:${top}px" viewBox="0 0 16 24" width="32" height="48" shape-rendering="crispEdges">${body}</svg>`;
+  return `<svg class="agent" style="--d:${delay}s;--s:${speed}s;bottom:${top}px" viewBox="0 0 16 24" width="44" height="66" shape-rendering="crispEdges">${body}</svg>`;
 }
 
 export const AUTH_STYLE = `<style>
@@ -32,15 +32,15 @@ export const AUTH_STYLE = `<style>
   body { margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--txt); overflow-x: hidden;
          font: 15px/1.5 ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace; }
   .shell { position: relative; isolation: isolate; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-  #rain { position: absolute; inset: 0; z-index: -4; width: 100%; height: 100%; opacity: .55; }
-  .veil { position: absolute; inset: 0; z-index: -3; background: radial-gradient(ellipse at 30% 40%, rgba(5,8,6,.55), rgba(5,8,6,.9) 70%), linear-gradient(rgba(5,8,6,.3), rgba(5,8,6,.8)); }
+  #rain { position: absolute; inset: 0; z-index: -4; width: 100%; height: 100%; opacity: .95; }
+  .veil { position: absolute; inset: 0; z-index: -3; background: radial-gradient(ellipse at 28% 45%, rgba(5,8,6,.72), rgba(5,8,6,.15) 75%), linear-gradient(rgba(5,8,6,.05), rgba(5,8,6,.55)); }
   .glow { position: absolute; inset: 0; z-index: -2; background: radial-gradient(circle at 12% 95%, rgba(57,255,136,.22), transparent 45%), radial-gradient(circle at 95% 5%, rgba(77,225,255,.12), transparent 40%); }
   .crt { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,.18) 2px 3px); mix-blend-mode: multiply; }
   .crt::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55)); }
   header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: max(18px, calc(env(safe-area-inset-top) + 8px)) 20px 0; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: .04em; color: var(--acc); text-shadow: 0 0 14px rgba(57,255,136,.55); }
-  .logo img { width: 34px; height: 34px; image-rendering: pixelated; filter: drop-shadow(0 0 8px rgba(57,255,136,.4)); }
-  .logo::after { content: '_'; animation: blink 1s steps(2, start) infinite; }
+  .mark { display: grid; place-items: center; width: 36px; height: 36px; border: 1.5px solid var(--acc); border-radius: 9px; background: rgba(57,255,136,.1); font-size: 15px; font-weight: 800; box-shadow: 0 0 18px -4px rgba(57,255,136,.7), inset 0 0 12px rgba(57,255,136,.15); }
+  
   .clock { display: none; align-items: center; gap: 8px; font-size: 12px; color: var(--mut); font-variant-numeric: tabular-nums; }
   .clock::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 8px var(--acc); animation: pulse 1.6s infinite; }
   main { flex: 1; width: 100%; max-width: 1150px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 24px; padding: 20px 20px 70px; }
@@ -64,6 +64,8 @@ export const AUTH_STYLE = `<style>
   .body { padding: 26px 24px 24px; }
   .card h1 { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 800; color: var(--txt); }
   .card h1::before { content: '> '; color: var(--acc); }
+  .card h1 { animation: glitch 3.8s infinite; }
+  @keyframes glitch { 0%, 92%, 100% { text-shadow: none; transform: none; } 93% { text-shadow: -2px 0 #ff2d6f, 2px 0 var(--cy); transform: translateX(1px); } 95% { text-shadow: 2px 0 #ff2d6f, -2px 0 var(--cy); transform: translateX(-1px); } 97% { text-shadow: none; } }
   .card .sub { margin: 6px 0 22px; color: var(--mut); font-size: 13px; }
   .alert { display: none; margin-bottom: 14px; padding: 9px 12px; border-radius: 6px; font-size: 13px; border: 1px solid; }
   .alert.on { display: block; }
@@ -89,7 +91,7 @@ export const AUTH_STYLE = `<style>
   .busy .spin { display: block; }
   .help { margin: 18px 0 0; text-align: center; font-size: 12px; line-height: 1.7; color: var(--mut); }
   .help a { color: var(--cy); }
-  .stage { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; z-index: 1; pointer-events: none; overflow: hidden; border-top: 1px dashed rgba(57,255,136,.18); background: linear-gradient(transparent, rgba(57,255,136,.06)); }
+  .stage { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; z-index: 1; pointer-events: none; overflow: hidden; border-top: 1px dashed rgba(57,255,136,.18); background: linear-gradient(transparent, rgba(57,255,136,.06)); }
   .agent { position: absolute; left: -40px; animation: roam var(--s) linear infinite; animation-delay: var(--d); filter: drop-shadow(0 0 6px rgba(57,255,136,.35)); }
   .agent:nth-child(even) { animation-name: roam2; }
   footer.bot { position: absolute; left: 20px; bottom: 6px; z-index: 2; font-size: 11px; color: rgba(127,165,146,.6); }
@@ -155,22 +157,22 @@ export interface AuthPageOptions {
 const RAIN_JS = `
 (function () {
   var cv = document.getElementById('rain'); if (!cv) return;
-  var cx = cv.getContext('2d'), W, H, cols, drops, size = 15;
+  var cx = cv.getContext('2d'), W, H, cols, drops, size = 16;
   var words = ['agent','spawn()','git push','claude','async','await','0x7f','sudo','ssh','docker','const','=>','{ }','fork()','exit 0','npm run','SELECT *','chmod 600','tail -f','sha256','token','merge','deploy','pty','rm -rf /tmp','$ _','404','200 OK','TODO','bash','curl','grep','node','tsc'];
   var chars = '01{}[]()<>/\\\\;:=+*#$%&ABCDEFabcdef'.split('');
-  function fit() { var d = Math.min(window.devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0); cols = Math.ceil(W / size); drops = []; for (var i = 0; i < cols; i++) drops.push({ y: Math.random() * -H / size, w: null, i: 0, sp: .25 + Math.random() * .6 }); }
+  function fit() { var d = Math.min(window.devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0); cols = Math.ceil(W / size); drops = []; for (var i = 0; i < cols; i++) drops.push({ y: Math.random() * H / size, w: null, i: 0, sp: .35 + Math.random() * .7 }); }
   fit(); addEventListener('resize', fit);
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { draw(); return; }
   var last = 0;
   function draw(t) {
-    cx.fillStyle = 'rgba(5,8,6,.14)'; cx.fillRect(0, 0, W, H);
+    cx.fillStyle = 'rgba(5,8,6,.10)'; cx.fillRect(0, 0, W, H);
     cx.font = size + 'px ui-monospace, Menlo, monospace';
     for (var i = 0; i < cols; i++) {
       var d = drops[i], ch;
       if (d.w === null || d.i >= d.w.length) { d.w = Math.random() < .3 ? words[Math.floor(Math.random() * words.length)] : null; d.i = 0; }
       ch = d.w ? d.w[d.i++] : chars[Math.floor(Math.random() * chars.length)];
       var head = Math.random() > .96;
-      cx.fillStyle = head ? '#d8ffe9' : (d.w ? '#39ff88' : 'rgba(57,255,136,.55)');
+      cx.fillStyle = head ? '#eafff2' : (d.w ? '#39ff88' : 'rgba(57,255,136,.75)');
       cx.fillText(ch, i * size, d.y * size);
       d.y += d.sp * 2;
       if (d.y * size > H && Math.random() > .975) d.y = Math.random() * -20;
@@ -224,7 +226,7 @@ ${o.extraHead ?? ''}
   <canvas id="rain" aria-hidden="true"></canvas>
   <div class="veil"></div><div class="glow"></div><div class="crt"></div>
   <header class="top">
-    <div class="logo"><img src="/assets/brand/logo-mark@4x.png" alt="" width="34" height="34">${BRAND}</div>
+    <div class="logo"><span class="mark" aria-hidden="true">&gt;_</span>${BRAND}</div>
     <span class="clock" id="clock" aria-hidden="true"></span>
   </header>
   <main>
