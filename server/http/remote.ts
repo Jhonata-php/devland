@@ -28,6 +28,7 @@ import { dirname, join } from 'node:path';
 import { parsePasswordHash, verifyPassword, type PasswordHash } from '../remote/password';
 import { hostAllowed } from './guard';
 import { getLocale, tr } from '../../shared/i18n';
+import { authPage, ICON, js } from './auth-shell';
 
 export type RemoteFeature = 'permissions' | 'messages' | 'terminal' | 'spawn';
 
@@ -440,68 +441,46 @@ export const PAGE_STYLE = `<style>
 
 export function loginPage(opts: { caDownload: boolean; intro?: string }): string {
   const ca = opts.caDownload
-    ? `<p class="ca">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="habblaud-ca.crt">${esc(tr('Instale o certificado do Habblaud'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
+    ? `<p class="help">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="habblaud-ca.crt">${esc(tr('Instale o certificado do Habblaud'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
     : '';
-  // Dentro do <script>: JSON com "<" escapado, para nenhum texto fechar a tag.
-  const js = (text: string) => JSON.stringify(text).replace(/</g, '\\u003c');
-  return `<!doctype html>
-<html lang="${getLocale()}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
-<title>${esc(tr('Habblaud · entrar'))}</title>
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Habblaud">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-${PAGE_STYLE}
-</head>
-<body>
-<form id="f" autocomplete="on">
-  <div class="brand">
-    <img src="/assets/brand/logo-mark@4x.png" alt="" width="72" height="72">
-    <h1>Habblaud</h1>
-    <p>${esc(opts.intro ?? tr('Acesso pelo celular. Entre com o usuário e a senha que você escolheu no npm run remote:setup.'))}</p>
-  </div>
-  <label for="u">${esc(tr('Usuário'))}</label>
-  <input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
-  <label for="p">${esc(tr('Senha'))}</label>
-  <div class="field">
-    <input id="p" name="password" type="password" autocomplete="current-password" required>
-    <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">&#128065;</button>
-  </div>
-  <button id="b" type="submit">${esc(tr('Entrar'))}</button>
-  <div id="err" role="alert"></div>
-  ${ca}
+  const card = `
+<h1>${esc(tr('Bem-vindo de volta'))}</h1>
+<p class="sub">${esc(opts.intro ?? tr('Acesso pelo celular. Entre com o usuário e a senha que você escolheu no npm run remote:setup.'))}</p>
+<form id="f" autocomplete="on" novalidate>
+  <div id="err" class="alert err" role="alert"></div>
+  <label class="l" for="u">${esc(tr('Usuário'))}</label>
+  <div class="field">${ICON.user}<input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
+  <label class="l" for="p">${esc(tr('Senha'))}</label>
+  <div class="field">${ICON.lock}<input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">${ICON.eye}</button></div>
+  <button id="b" class="btn" type="submit"><span class="spin" aria-hidden="true"></span><span id="bt">${esc(tr('Entrar'))}</span></button>
 </form>
-<script>
-  const f = document.getElementById('f'), b = document.getElementById('b'), err = document.getElementById('err');
-  const eye = document.getElementById('eye');
-  eye.addEventListener('click', () => {
-    const show = f.password.type === 'password';
-    f.password.type = show ? 'text' : 'password';
-    eye.setAttribute('aria-pressed', String(show));
-  });
-  const fail = (text) => { err.textContent = text; err.classList.remove('shake'); void err.offsetWidth; err.classList.add('shake'); };
-  f.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    b.disabled = true; b.classList.add('busy'); err.textContent = '';
-    try {
-      const r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value }) });
-      if (r.ok) { location.replace('/'); return; }
-      const body = await r.json().catch(() => ({}));
-      fail(body.error || ${js(tr('Não deu para entrar.'))});
-    } catch { fail(${js(tr('Sem conexão com o Habblaud.'))}); }
-    b.disabled = false; b.classList.remove('busy');
-  });
-</script>
-</body>
-</html>
-`;
+${ca}`;
+  const script = `
+  (function () {
+    var f = document.getElementById('f'), b = document.getElementById('b'), bt = document.getElementById('bt'), err = document.getElementById('err'), eye = document.getElementById('eye');
+    var eyeOn = ${js(ICON.eyeOff)}, eyeOff = ${js(ICON.eye)};
+    eye.addEventListener('click', function () {
+      var show = f.password.type === 'password';
+      f.password.type = show ? 'text' : 'password';
+      eye.setAttribute('aria-pressed', String(show)); eye.innerHTML = show ? eyeOn : eyeOff;
+    });
+    function fail(text) { err.textContent = text; err.className = 'alert err on'; void err.offsetWidth; err.className = 'alert err on shake'; }
+    f.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (!f.username.value.trim() || !f.password.value) return fail(${js(tr('Informe usuário e senha.'))});
+      b.disabled = true; b.classList.add('busy'); err.className = 'alert err';
+      try {
+        var r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value }) });
+        if (r.ok) { location.replace('/'); return; }
+        var body = await r.json().catch(function () { return {}; });
+        fail(body.error || ${js(tr('Não deu para entrar.'))});
+      } catch (x) { fail(${js(tr('Sem conexão com o Habblaud.'))}); }
+      b.disabled = false; b.classList.remove('busy');
+    });
+  })();`;
+  return authPage({ title: tr('Habblaud · entrar'), card, script });
 }
 
 /** `frameable`: só o próprio Habblaud pode embutir (as páginas do Cloud abrem em janela dentro do escritório). */

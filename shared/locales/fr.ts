@@ -3474,4 +3474,9 @@ export const FR: Readonly<Record<string, string>> = {
   "Não deu para ouvir: {0}": "Impossible d'écouter : {0}",
   "consulta à Anthropic com o login da conta": "Interrogé auprès d'Anthropic avec la connexion du compte",
   "Mostrar a senha": "Afficher le mot de passe",
+  "Informe usuário e senha.": "Saisissez l'identifiant et le mot de passe.",
+  "Escritório ao vivo": "Bureau en direct",
+  "Seus agentes de IA trabalhando": "Vos agents IA au travail",
+  "num só escritório.": "dans un seul bureau.",
+  "Bem-vindo de volta": "Bon retour",
 };

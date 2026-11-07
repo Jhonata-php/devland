@@ -3457,4 +3457,9 @@ export const EN: Readonly<Record<string, string>> = {
   "Não deu para ouvir: {0}": "Couldn't listen: {0}",
   "consulta à Anthropic com o login da conta": "Queried from Anthropic with the account login",
   "Mostrar a senha": "Show password",
+  "Informe usuário e senha.": "Enter username and password.",
+  "Escritório ao vivo": "Live office",
+  "Seus agentes de IA trabalhando": "Your AI agents working",
+  "num só escritório.": "in a single office.",
+  "Bem-vindo de volta": "Welcome back",
 };

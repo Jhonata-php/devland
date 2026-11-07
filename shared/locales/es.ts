@@ -3458,4 +3458,9 @@ export const ES: Readonly<Record<string, string>> = {
   "Não deu para ouvir: {0}": "No se pudo escuchar: {0}",
   "consulta à Anthropic com o login da conta": "Consulta a Anthropic con el inicio de sesión de la cuenta",
   "Mostrar a senha": "Mostrar la contraseña",
+  "Informe usuário e senha.": "Informe usuario y contraseña.",
+  "Escritório ao vivo": "Oficina en vivo",
+  "Seus agentes de IA trabalhando": "Tus agentes de IA trabajando",
+  "num só escritório.": "en una sola oficina.",
+  "Bem-vindo de volta": "Bienvenido de nuevo",
 };
