@@ -145,6 +145,8 @@ function syncRows(dl: HTMLElement, rows: [string, string][]): void {
 
 /** Passo a passo para ligar o uso (dica do cartão e ajuda). */
 export function createUsageSetup(): HTMLElement {
+  // Cloud: não há o que rodar (o servidor liga o captador de uso sozinho); só precisa de uma sessão da conta trabalhando.
+  if (access().cloud) return h('p', { class: 'ui-usage-tip__note', text: tr('No Cloud o Habblaud liga isso sozinho. Os números se atualizam quando uma sessão desta conta trabalha: abra uma conversa nela.') });
   return h(
     'ol',
     { class: 'ui-usage-setup' },

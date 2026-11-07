@@ -3350,6 +3350,8 @@ export const FR: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "impossible de cloner : {0}",
   "o login não terminou": "la connexion ne s'est pas terminée",
   "Conectar": "Connecter",
+  "Esta conversa começou antes do plugin de mensagens. Abra uma nova (aba Novo) para responder por aqui.": "Cette conversation a commencé avant le plugin de messages. Ouvrez-en une nouvelle (onglet Nouveau) pour répondre d'ici.",
+  "No Cloud o Habblaud liga isso sozinho. Os números se atualizam quando uma sessão desta conta trabalha: abra uma conversa nela.": "Dans le Cloud Habblaud l'active seul. Les chiffres se mettent à jour quand une session de ce compte travaille : ouvrez une conversation dessus.",
   "Escritório vazio: abri um primeiro agente em /workspace.": "Bureau vide : j'ai ouvert un premier agent dans /workspace.",
   "Não deu para abrir o primeiro agente: {0}": "Impossible d'ouvrir le premier agent : {0}",
   "Conversas": "Conversations",

@@ -2,7 +2,7 @@
 // do Claude Code, os plugins que ligam o escritório à sessão: habblaud-mensagens (digitar na sessão pelo escritório) e
 // habblaud-permissoes (responder pedidos de permissão). O marketplace é a própria pasta do Habblaud na imagem
 // (.claude-plugin/marketplace.json + mod/), pelo CLI do Claude Code com o CLAUDE_CONFIG_DIR da conta, como o mod:install.
-// O plugin de uso (habblaud) fica de fora: o captador de uso (usage-tap.ts) já faz esse papel. Sessões que já estavam abertas
+// O mod de uso (habblaud) também entra: o captador de statusline (usage-tap.ts) continua como reforço. Sessões que já estavam abertas
 // só carregam os plugins ao reiniciar; as novas já vêm com eles.
 import { execFile } from 'node:child_process';
 import { agentRunAs, runAsOptions } from '../spawn/runas';
@@ -10,7 +10,8 @@ import { errMsg, log } from '../log';
 import { tr } from '../../shared/i18n';
 
 const MARKETPLACE = 'habblaud';
-const PLUGINS = ['habblaud-mensagens', 'habblaud-permissoes'];
+// habblaud (o mod de uso): grava o uso a cada turno de qualquer sessão, inclusive a de segundo plano.
+const PLUGINS = ['habblaud', 'habblaud-mensagens', 'habblaud-permissoes'];
 const TIMEOUT_MS = 120_000;
 
 function run(bin: string, args: string[], dir: string): Promise<{ ok: boolean; out: string }> {

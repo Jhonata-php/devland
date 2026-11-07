@@ -119,6 +119,11 @@ do meio (0.**3**.0).
 - **Celular: o terminal interativo do Claude ocupa a tela toda.** Ele ficava por baixo da barra do topo (o cabeçalho sumia);
   agora cobre as barras, como o terminal da conversa.
 
+- **Habblaud Cloud: conversas novas vão para a conta com mais folga.** Novo, Nova sessão e o primeiro agente escolhem sozinhos a
+  conta conectada com menos uso (a pior entre 5 h e semana); uma conversa em andamento fica na conta dela. O mod de uso também é
+  instalado em cada conta, para o uso ao vivo se atualizar a cada turno, e os agentes só são reabertos depois de os plugins
+  estarem instalados (antes, o plugin de mensagens podia não carregar). O aviso de mensagens ficou claro no Cloud, sem `npm run`.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

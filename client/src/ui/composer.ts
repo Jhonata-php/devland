@@ -128,6 +128,7 @@ export class MessageComposer {
       enabled: store.mock || !!store.snapshot?.meta.messages,
       local: store.mock || access().messages,
       replaying: store.replaying,
+      cloud: !!access().cloud,
     });
     this.mode = mode;
     const ready = mode.kind === 'ready';

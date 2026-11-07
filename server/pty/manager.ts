@@ -73,6 +73,8 @@ export interface PtyManagerOptions {
   disabledReason?: string;
   claudeBin: string;
   accounts: () => PtyAccount[];
+  /** Sessão nova sem conta pedida: id da conta com mais folga de uso (padrão: a conta padrão). */
+  pickAccount?: (accounts: PtyAccount[]) => string | undefined;
   agent: (id: string) => PtyAgentRef | undefined;
   onChange: () => void;
   env?: NodeJS.ProcessEnv;
@@ -392,7 +394,8 @@ export class PtyManager {
     }
     if (!isDir) throw new PtyError(400, tr('pasta não encontrada: {0}', [cwd]));
     const accounts = this.opts.accounts();
-    const account = typeof p.account === 'string' ? accounts.find((a) => a.id === p.account) : (accounts.find((a) => a.isDefault) ?? accounts[0]);
+    const picked = typeof p.account === 'string' ? undefined : this.opts.pickAccount?.(accounts);
+    const account = typeof p.account === 'string' ? accounts.find((a) => a.id === p.account) : ((picked ? accounts.find((a) => a.id === picked) : undefined) ?? accounts.find((a) => a.isDefault) ?? accounts[0]);
     if (!account) throw new PtyError(400, tr('conta desconhecida'));
     const running = [...this.ptys.values()].filter((t) => t.info.exitedAt === undefined).length;
     if (running + Math.max(0, reserved) >= MAX_PTYS) throw new PtyError(429, tr('limite de {0} terminais abertos', [MAX_PTYS]));

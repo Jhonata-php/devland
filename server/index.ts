@@ -45,6 +45,7 @@ import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
 import { ensureHabblaudPlugins } from './accounts/plugins';
+import { pickAccountByLoad } from './pty/pick-account';
 import { loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
@@ -376,6 +377,17 @@ const ptys = spawnPty
       spawn: spawnPty,
       claudeBin: claudeBin ?? 'claude',
       accounts: () => accounts.entries().map((a) => ({ id: a.id, dir: a.dir, isDefault: isDefaultDir(a.dir, config.home) })),
+      // Sessão nova sem conta pedida (Novo, Nova sessão, primeiro agente): a conta conectada com mais folga (o maior uso entre 5 h e
+      // semana, o menor vence); sem números, a padrão. Uma conversa em andamento fica na conta dela.
+      pickAccount: (list) => {
+        const snap = hub.current();
+        return pickAccountByLoad(
+          list.map((a) => {
+            const u = snap.accounts.find((x) => x.id === a.id)?.usage;
+            return { id: a.id, connected: !cloud || existsSync(join(a.dir, '.credentials.json')), fiveHour: u?.fiveHour?.utilization, sevenDay: u?.sevenDay?.utilization };
+          }),
+        );
+      },
       agent: (id) => {
         const a = office.get(id);
         return a && { id: a.id, kind: a.kind, account: a.account, sessionId: a.sessionId, cwd: office.roomPath(a.roomId) };
@@ -392,7 +404,7 @@ const agentUser = agentRunAs();
 const usageTapPath = join(config.rootDir, 'scripts', 'statusline-tap.mjs');
 if (cloud && agentUser) ensureUsageTap(config.claudeDirs, usageTapPath);
 // Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do Habblaud na imagem).
-if (cloud && agentUser && claudeBin) void ensureHabblaudPlugins(config.claudeDirs, claudeBin, config.rootDir);
+const pluginsReady: Promise<void> = cloud && agentUser && claudeBin ? ensureHabblaudPlugins(config.claudeDirs, claudeBin, config.rootDir) : Promise.resolve();
 if (cloud && spawnPty && claudeBin && agentUser) {
   late.connect = new ConnectService({
     spawn: spawnPty,
@@ -664,31 +676,36 @@ if (cloud && agentUser && ptys) {
     }
     return out;
   };
-  setTimeout(() => {
-    const present = new Set(liveNow().map((a) => a.sessionId));
-    for (const a of wasLive) {
-      if (present.has(a.sessionId)) continue;
-      try {
-        ptys.resume(a);
-        log.info(tr('Retomando a conversa {0} em {1}.', [a.sessionId, a.cwd]));
-      } catch (err) {
-        log.warn(tr('Não deu para retomar {0}: {1}', [a.sessionId, errMsg(err)]));
+  // Só depois de os plugins estarem instalados: uma sessão que começa antes deles nunca carrega o plugin de mensagens.
+  void pluginsReady.then(() =>
+    setTimeout(() => {
+      const present = new Set(liveNow().map((a) => a.sessionId));
+      for (const a of wasLive) {
+        if (present.has(a.sessionId)) continue;
+        try {
+          ptys.resume(a);
+          log.info(tr('Retomando a conversa {0} em {1}.', [a.sessionId, a.cwd]));
+        } catch (err) {
+          log.warn(tr('Não deu para retomar {0}: {1}', [a.sessionId, errMsg(err)]));
+        }
       }
-    }
-  }, 8_000).unref();
+    }, 3_000).unref(),
+  );
   const liveBootAt = Date.now();
   // Escritório vazio ao subir (nada para retomar, ou a retomada falhou): abre um primeiro agente em /workspace, como o botão
   // "Abrir terminal", para o escritório já abrir funcionando. Só com uma conta do Claude conectada; HABBLAUD_AUTO_AGENT=0 desliga.
-  setTimeout(() => {
-    if (process.env.HABBLAUD_AUTO_AGENT === '0' || liveNow().length > 0) return;
-    if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
-    try {
-      ptys.create({ cwd: '/workspace' });
-      log.info(tr('Escritório vazio: abri um primeiro agente em /workspace.'));
-    } catch (err) {
-      log.warn(tr('Não deu para abrir o primeiro agente: {0}', [errMsg(err)]));
-    }
-  }, 35_000).unref();
+  void pluginsReady.then(() =>
+    setTimeout(() => {
+      if (process.env.HABBLAUD_AUTO_AGENT === '0' || liveNow().length > 0) return;
+      if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
+      try {
+        ptys.create({ cwd: '/workspace' });
+        log.info(tr('Escritório vazio: abri um primeiro agente em /workspace.'));
+      } catch (err) {
+        log.warn(tr('Não deu para abrir o primeiro agente: {0}', [errMsg(err)]));
+      }
+    }, 30_000).unref(),
+  );
   setInterval(() => {
     // Só depois de as conversas retomadas aparecerem (senão a foto perderia quem ainda está voltando).
     if (!persistLive || shuttingDown || Date.now() - liveBootAt < 45_000) return;
