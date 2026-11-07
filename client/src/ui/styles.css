@@ -12145,3 +12145,40 @@ html.is-replay #world {
   .ui-sidebar { left: var(--rail-w); border-left: 0; }
   .ui-usage-tip { left: calc(100% + 8px); top: 0; }
 }
+
+/* ===== Computador: tudo flutuante e mínimo =====
+   Topo sem barra: o logo no canto esquerdo e uma cápsula de ícones no canto direito (sem textos; o nome aparece na dica).
+   Uso: só os anéis flutuando na borda esquerda, com a letra da conta; ao passar o mouse abre a dica com nome, números e
+   reinício. Só o aviso de quem precisa de você continua aparecendo como ficha ao lado dos ícones. */
+@media (min-width: 601px) {
+  .ui-root { --rail-w: 0px; --top-h: 56px; }
+  .ui-topbar { background: none; border: 0; box-shadow: none; pointer-events: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 8px 12px; }
+  .ui-topbar::after { display: none; }
+  .ui-topbar > *, .ui-topbar__right, .ui-topbar__left { pointer-events: auto; }
+  .ui-topbar__left { border: 0; padding: 0; height: auto; gap: 8px; }
+  .ui-brand__text { display: none !important; }
+  .ui-brand__mark { filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.7)); }
+  .ui-counters { margin-left: auto; border: 0; background: none; }
+  .ui-counters .ui-counter:not(.ui-counter--waiting):not(.ui-counter--shells) { display: none; }
+  .ui-counters .ui-counter--waiting:disabled { display: none; }
+  .ui-counter { border: 1px solid var(--ui-line-strong); border-radius: 999px; background: rgba(3, 9, 5, 0.88); padding: 4px 12px; flex-direction: row; gap: 6px; align-items: baseline; }
+  .ui-counter__label { display: none; }
+  .ui-counter__value { font-size: 16px; }
+  .ui-topbar__right { gap: 2px; padding: 4px; border: 1px solid var(--ui-line-strong); border-radius: 14px; background: rgba(3, 9, 5, 0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7); height: auto; margin-left: 0; }
+  .ui-topbar__right .ui-btn-group { padding: 0; border: 0; background: none; gap: 2px; }
+  .ui-topbar__right .ui-btn-group + .ui-btn-group { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--ui-line); }
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label] { width: 38px; min-width: 38px; height: 38px; padding: 0; }
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after { display: none; }
+  .ui-btn-sidebar { border: 1px solid var(--ui-line-strong); border-radius: 12px; background: rgba(3, 9, 5, 0.88); width: 40px; height: 40px; }
+
+  /* Anéis flutuantes, sem texto. */
+  .ui-usage { background: none; border: 0; border-radius: 0; box-shadow: none; padding: 0; gap: 10px; left: 12px; top: calc(var(--top-h) + 4px); width: auto; transition: left 0.32s var(--ease); overflow: visible; max-height: none; }
+  .has-sidebar .ui-usage { left: calc(var(--side-w) + 14px); }
+  .ui-usage-card { width: 46px !important; height: 46px; padding: 0; border-radius: 50%; background: rgba(3, 9, 5, 0.88); box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.8); }
+  .ui-usage-card:hover, .ui-usage-card:focus-visible { background: rgba(3, 9, 5, 0.97); box-shadow: 0 0 0 1px var(--ui-accent), 0 0 22px -4px var(--ui-accent); }
+  .ui-usage-card__body, .ui-usage-card__flag { display: none !important; }
+  .ui-gauge { width: 46px; height: 46px; }
+  .ui-gauge .ui-acc-chip { width: 24px; height: 24px; font-size: 12px; }
+  .ui-usage-tip { left: calc(100% + 10px); top: 0; }
+  .ui-sidebar { left: 0; }
+}

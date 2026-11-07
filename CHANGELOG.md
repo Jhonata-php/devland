@@ -12,7 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
-- **Computador: trilho lateral de uso.** Os mostradores das contas saem da barra do topo (onde vazavam) e ficam num trilho estreito na borda esquerda, um embaixo do outro, com anel duplo, nome e os números de 5 h e semana; a lista de salas abre ao lado dele. O topo fica com uma linha só (marca, métricas e ferramentas).
+- **Computador: tudo flutuante e mínimo.** O topo perde a barra: ficam o logo no canto esquerdo e uma cápsula de ícones (sem textos) no canto direito, mais a ficha de quem precisa de você. O uso vira anéis flutuantes com a letra da conta na borda esquerda (sem texto nem porcentagem); ao passar o mouse abre a dica com nome, plano, números e reinício.
 - **Contas como mostradores circulares:** cada conta é uma cápsula com anel duplo (fora = sessão de 5 h, dentro = semana; verde, âmbar ou vermelho conforme o uso), a letra no centro, o nome e uma linha `5H 41% · SEM 21%` (o reinício e o e-mail ficam na dica). As ferramentas do topo ficam em duas cápsulas (câmera e painéis).
 - **Topo com ferramentas legendadas:** ícones verdes com o nome embaixo (Visão, Menos, Mais, Novo, Feed, Ajustes, Ajuda), estado ligado em destaque e brilho; no celular ficam só os ícones. O favicon agora é só o planeta com o anel azul, sem fundo.
 - **Logo do DevLand:** planeta em pixel art (oceanos, continentes, luz de um lado) com anel orbital, lua e estrelas, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
