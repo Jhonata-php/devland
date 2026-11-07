@@ -4,8 +4,8 @@
 // uma folha até a borda de baixo. Sem dependências nem arquivos externos (só o logo em /assets/brand, liberado sem login).
 import { getLocale, tr } from '../../shared/i18n';
 
-/** Nome do produto nas telas de entrada (um lugar só para trocar, quando o fork ganhar nome). */
-export const BRAND = 'Habblaud';
+import { BRAND } from '../../shared/brand';
+export { BRAND };
 
 /** Texto nosso (tr) dentro do HTML: escapa o que o HTML interpretaria. */
 function esc(text: string): string {

@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getLocale, tr } from '../../shared/i18n';
 import type { ConnectProvider, ConnectService } from '../cloud/connect';
-import { authPage, ICON } from './auth-shell';
+import { authPage, BRAND, ICON } from './auth-shell';
 import { FEATURES, UserError, allowedOf, cleanAllow, type Role, type UserStore } from '../cloud/users';
 import {
   LoginThrottle,
@@ -140,7 +140,7 @@ function formPage(opts: { title: string; intro: string; fields: { id: string; la
     .map((f) => `<label class="l" for="${f.id}">${esc(f.label)}</label>
   <div class="field">${icon(f)}<input id="${f.id}" name="${f.id}" type="${f.type ?? 'text'}" autocomplete="${f.auto ?? 'off'}" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>`)
     .join('\n  ');
-  const card = `<h1>Habblaud</h1>
+  const card = `<h1>${BRAND}</h1>
 <p class="sub">${esc(opts.intro)}</p>
 <form id="f" novalidate>
   <div id="err" class="alert err" role="alert"></div>

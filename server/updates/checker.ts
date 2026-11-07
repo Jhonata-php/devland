@@ -8,7 +8,7 @@ import type { UpdateStatus } from '../../shared/types';
 import { errMsg, log } from '../log';
 import { tr } from '../../shared/i18n';
 
-export const CHECK_EVERY_MS = 6 * 3_600_000;
+export const CHECK_EVERY_MS = 30 * 60_000;
 export const RETRY_MS = 3_600_000;
 /** Primeira consulta depois de subir (não atrasa a inicialização). */
 const FIRST_DELAY_MS = 5_000;

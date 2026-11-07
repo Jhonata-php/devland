@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Nova marca "Daemon"** no logotipo (texto `DAEMON_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
 - **Botões, avisos, atividade e janela de Contas no tema hacker:** botões de terminal em caixa-alta que enchem de verde; avisos como cartões de log com etiqueta do nível (`alerta`, `ok`, `aviso`, `info`) e brilho na cor dele; atividade em linhas de log `[hora]`; Contas com barra de terminal.
 - **Agentes por função:** cada agente principal tem uma função (front-end, back-end, testes, DevOps, revisão, design),
   escolhida em **Novo agente** (campo Função) ou deduzida dos arquivos que ele mexe e do nome do projeto. A função
@@ -167,6 +168,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Atualização automática checa as versões novas a cada 30 min** (antes, a cada 6 h; quem estava na frente de uma sequência de versões demorava a receber).
 - **Estilos do seletor de conta no "Novo agente" e dos anexos da caixa de mensagem não eram carregados** (estavam num
   arquivo que nenhuma página importava); agora estão em `ui/styles.css`.
 - **Habblaud Cloud, segurança:** o freio de tentativas de login agora é por cliente (quem erra a senha não trava mais o

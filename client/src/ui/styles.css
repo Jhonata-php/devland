@@ -12024,3 +12024,9 @@ html.is-replay #world {
 /* Contas conectadas no topo: o nome em caixa-alta e a letra em quadrado. */
 .ui-usage-card__name { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
 .ui-acc-chip { border-radius: 3px !important; }
+
+/* Marca em texto: DAEMON_ em fonte de terminal, verde com brilho e cursor piscando. */
+.ui-wordtext { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-weight: 800; font-size: 20px; letter-spacing: 0.14em; line-height: 1; color: var(--ui-accent); text-shadow: 0 0 16px rgba(57, 255, 136, 0.6); }
+.ui-wordtext__cur { margin-left: 2px; animation: hk-blink 1s steps(2, start) infinite; }
+@keyframes hk-blink { 50% { opacity: 0; } }
+.ui-splash__name.ui-wordtext { font-size: 34px; }

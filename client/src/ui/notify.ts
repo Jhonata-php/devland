@@ -5,9 +5,10 @@ import type { Notice } from '../../../shared/types';
 import type { SoundBoard } from '../audio/board';
 import type { UiComponent, UiContext } from './context';
 import { computeCounters } from './model';
+import { BRAND } from '../../../shared/brand';
 import { tr } from '../../../shared/i18n';
 
-const BASE_TITLE = 'Habblaud';
+const BASE_TITLE = BRAND;
 
 export type NotificationState = 'unsupported' | 'default' | 'granted' | 'denied';
 

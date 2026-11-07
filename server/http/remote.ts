@@ -28,7 +28,7 @@ import { dirname, join } from 'node:path';
 import { parsePasswordHash, verifyPassword, type PasswordHash } from '../remote/password';
 import { hostAllowed } from './guard';
 import { getLocale, tr } from '../../shared/i18n';
-import { authPage, ICON, js } from './auth-shell';
+import { authPage, BRAND, ICON, js } from './auth-shell';
 
 export type RemoteFeature = 'permissions' | 'messages' | 'terminal' | 'spawn';
 
@@ -480,7 +480,7 @@ ${ca}`;
       b.disabled = false; b.classList.remove('busy');
     });
   })();`;
-  return authPage({ title: tr('Habblaud · entrar'), card, script });
+  return authPage({ title: `${BRAND} · ${tr('entrar')}`, card, script });
 }
 
 /** `frameable`: só o próprio Habblaud pode embutir (as páginas do Cloud abrem em janela dentro do escritório). */
