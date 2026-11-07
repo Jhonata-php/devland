@@ -124,6 +124,9 @@ do meio (0.**3**.0).
   instalado em cada conta, para o uso ao vivo se atualizar a cada turno, e os agentes só são reabertos depois de os plugins
   estarem instalados (antes, o plugin de mensagens podia não carregar). O aviso de mensagens ficou claro no Cloud, sem `npm run`.
 
+- **Cloud: a segunda conta do Claude aparece no topo.** Uma conta conectada aparecia só depois de ter números de uso; agora
+  todas as contas do Claude conectadas têm o seu cartão, e os números chegam quando uma conversa dela trabalha.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

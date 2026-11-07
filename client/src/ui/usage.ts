@@ -221,9 +221,10 @@ export class UsageCards {
   }
 
   render(): void {
-    // No Habblaud Cloud, conta sem números não ocupa o topo (conectar fica em "+ Contas").
+    // No Habblaud Cloud, só o Codex sem números fica de fora do topo (nenhuma conta conectada: conectar é em "+ Contas"); uma conta
+    // do Claude conectada aparece sempre, mesmo antes de ter números (eles chegam quando uma sessão dela trabalha).
     const all = this.ctx.store.snapshot?.accounts ?? [];
-    const accounts = access().cloud ? all.filter((a) => a.usageStatus !== 'disabled') : all;
+    const accounts = access().cloud ? all.filter((a) => a.usageStatus !== 'disabled' || !isCodex(a)) : all;
     this.list.sync(accounts);
     this.el.classList.toggle('is-empty', accounts.length === 0);
     setStyleVar(this.el, '--count', String(accounts.length));
