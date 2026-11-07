@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera a logo do DevLand — uma ilha flutuante com um terminal dentro de um globo (o mundo dos devs) — em pixel art 48x48 e grava
+"""Gera a logo do DevLand — um planeta com anel orbital (o mundo dos devs) — em pixel art 48x48 e grava
 os PNGs de client/public/assets/brand/. Só biblioteca padrão: `python3 scripts/brand-logo.py`."""
 import math, pathlib, struct, zlib
 
@@ -39,70 +39,50 @@ for y in range(N):
         if inside(x, y) and not all(inside(x + i, y + j) for i, j in ((1, 0), (-1, 0), (0, 1), (0, -1))):
             put(x, y, G2)
 
-# globo: grade de meridianos/paralelos, anel orbital e contorno neon
-gcx, gcy, gr = 23.5, 23.5, 21.5
-PHI = math.radians(-12)
+# planeta com continentes, luz de um lado, anel orbital e lua
+import random
+random.seed(7)
+pcx, pcy, pr = 23.5, 24.5, 15.5
+PHI = math.radians(-24)
+OCEAN = [(8, 70, 60, 255), (12, 110, 86, 255), (20, 150, 110, 255), (40, 200, 140, 255)]
+LAND = [(30, 120, 60, 255), (57, 200, 100, 255), (120, 255, 150, 255)]
+
 def ring(front):
-    for k in range(0, 720):
-        t = math.radians(k / 2)
+    for k in range(0, 1440):
+        t = math.radians(k / 4)
         if (math.sin(t) > 0) != front:
             continue
-        x = gcx + 26 * math.cos(t) * math.cos(PHI) - 6 * math.sin(t) * math.sin(PHI)
-        y = gcy + 26 * math.cos(t) * math.sin(PHI) + 6 * math.sin(t) * math.cos(PHI)
-        put(int(round(x)), int(round(y)), CY if front else G3)
+        for off, col in ((0, CY), (1.3, (40, 140, 190, 255))):
+            x = pcx + (22 + off) * math.cos(t) * math.cos(PHI) - (7 + off * 0.3) * math.sin(t) * math.sin(PHI)
+            y = pcy + (22 + off) * math.cos(t) * math.sin(PHI) + (7 + off * 0.3) * math.sin(t) * math.cos(PHI)
+            put(int(round(x)), int(round(y)), col if front else (24, 90, 120, 255))
+
+# continentes: manchas de ruído suavizado dentro da esfera
+def land(x, y):
+    v = math.sin(x * 0.55 + 1.3) * math.cos(y * 0.62) + 0.7 * math.sin((x + y) * 0.35 + 2) + 0.5 * math.cos(x * 0.9 - y * 0.4)
+    return v
 ring(False)
 for y in range(N):
     for x in range(N):
-        d = math.hypot(x - gcx, y - gcy)
-        if d <= gr:
-            put(x, y, BG2 if d > gr * 0.55 else (7, 20, 12, 255))
-for fx in (0.35, 0.7):                       # meridianos
-    for k in range(0, 360):
-        t = math.radians(k)
-        put(int(round(gcx + gr * fx * math.cos(t) * 1.0)), int(round(gcy + gr * math.sin(t))), G3)
-for dy in (-12, -6, 6, 12):                   # paralelos
-    half = math.sqrt(max(0, gr * gr - dy * dy))
-    for x in range(int(gcx - half), int(gcx + half) + 1):
-        if (x + dy) % 2 == 0:
-            put(x, int(gcy + dy), G3)
-for k in range(0, 720):                       # contorno
-    t = math.radians(k / 2)
-    put(int(round(gcx + gr * math.cos(t))), int(round(gcy + gr * math.sin(t))), G)
-ring(True)
-
-# monitor (terminal) com brilho
-rect(13, 6, 34, 21, G)
-rect(14, 7, 33, 20, BG)
-rect(14, 7, 33, 8, G3)           # barra de título
-put(15, 7, (255, 95, 86, 255)); put(17, 7, (255, 189, 46, 255)); put(19, 7, (39, 201, 63, 255))
-for x, y in [(17, 11), (18, 12), (19, 13), (20, 14), (19, 15), (18, 16), (17, 17)]:   # prompt >
-    put(x, y, GL); put(x + 1, y, G)
-rect(23, 16, 29, 17, CY)         # cursor _
-rect(23, 11, 31, 11, G3); rect(23, 13, 28, 13, G3)  # linhas de texto
-rect(22, 22, 25, 24, G2); rect(19, 25, 28, 26, G2)    # pé
-
-# ilha: topo elíptico em grama, com luz na borda de cima
-cx, cy, rx, ry = 23.5, 33, 18, 5.5
-for y in range(26, 41):
-    for x in range(N):
-        d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+        dx, dy = (x - pcx) / pr, (y - pcy) / pr
+        d = math.hypot(dx, dy)
         if d <= 1:
-            top = ((x - cx) / rx) ** 2 + ((y + 1 - cy) / ry) ** 2 > 1
-            put(x, y, GL if top else (G if d < 0.55 else G2))
-# rocha embaixo, afinando em V, com camadas
-for i, y in enumerate(range(37, 46)):
-    half = 17 - int(i * 1.9)
-    for x in range(int(cx - half), int(cx + half) + 1):
-        if half < 1:
-            continue
-        shade = BR if x < cx - half * 0.3 else (BR2 if x < cx + half * 0.4 else BR3)
-        put(x, y, shade if (y + x) % 7 else BR3)
-# detalhes: arbusto, bandeirinha com </>, faíscas de código
-for x, y in [(10, 31), (11, 30), (12, 31), (11, 31)]: put(x, y, G3)
-rect(35, 25, 35, 31, W); rect(36, 25, 39, 27, CY)
-for x, y in [(6, 14), (7, 15), (6, 16)]: put(x, y, G2)
-for x, y in [(41, 12), (40, 13), (41, 14)]: put(x, y, G2)
-for x, y in [(8, 42), (9, 43)]: put(x, y, CY)
+            lit = max(0.0, min(1.0, 0.62 + (-dx * 0.55 - dy * 0.55) * 0.55 - d * 0.18))   # luz vindo de cima à esquerda
+            k = min(3, int(lit * 4))
+            put(x, y, LAND[min(2, k)] if land(x, y) > 0.85 else OCEAN[k])
+# brilho (reflexo) e terminador escuro à direita embaixo
+for x, y in [(15, 15), (16, 14), (17, 14), (15, 16)]:
+    put(x, y, (200, 255, 235, 255))
+# contorno do planeta
+for k in range(0, 1440):
+    t = math.radians(k / 4)
+    put(int(round(pcx + (pr + 0.5) * math.cos(t))), int(round(pcy + (pr + 0.5) * math.sin(t))), G)
+ring(True)
+# lua e estrelas
+for dx, dy in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 1), (1, 2)]:
+    put(38 + dx, 8 + dy, (190, 210, 205, 255))
+for x, y in [(6, 7), (42, 18), (7, 40), (40, 39), (30, 5), (4, 20), (44, 30), (14, 43)]:
+    put(x, y, GL if (x + y) % 2 else G2)
 
 def downscale(size):
     """Média por área (tamanhos menores, para os ícones pequenos não ficarem serrilhados) ou vizinho mais próximo."""

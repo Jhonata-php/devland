@@ -12,7 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
-- **Logo do DevLand:** ilha flutuante em pixel art com um terminal (`>_`) e uma bandeirinha, dentro de um globo com meridianos e um anel orbital, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
+- **Logo do DevLand:** planeta em pixel art (oceanos, continentes, luz de um lado) com anel orbital, lua e estrelas, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
 - **Nova marca "DevLand"** no logotipo (texto `DEVLAND_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
 - **Botões, avisos, atividade e janela de Contas no tema hacker:** botões de terminal em caixa-alta que enchem de verde; avisos como cartões de log com etiqueta do nível (`alerta`, `ok`, `aviso`, `info`) e brilho na cor dele; atividade em linhas de log `[hora]`; Contas com barra de terminal.
 - **Agentes por função:** cada agente principal tem uma função (front-end, back-end, testes, DevOps, revisão, design),
