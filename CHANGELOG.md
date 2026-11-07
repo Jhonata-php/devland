@@ -12,7 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
-- **Nova marca "Devhouse"** no logotipo (texto `DEVHOUSE_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
+- **Logo do DevLand:** casa em pixel art com `</>` dentro, verde-neon sobre preto, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
+- **Nova marca "DevLand"** no logotipo (texto `DEVLAND_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
 - **Botões, avisos, atividade e janela de Contas no tema hacker:** botões de terminal em caixa-alta que enchem de verde; avisos como cartões de log com etiqueta do nível (`alerta`, `ok`, `aviso`, `info`) e brilho na cor dele; atividade em linhas de log `[hora]`; Contas com barra de terminal.
 - **Agentes por função:** cada agente principal tem uma função (front-end, back-end, testes, DevOps, revisão, design),
   escolhida em **Novo agente** (campo Função) ou deduzida dos arquivos que ele mexe e do nome do projeto. A função
