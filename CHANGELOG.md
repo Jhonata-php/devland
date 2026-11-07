@@ -116,6 +116,9 @@ do meio (0.**3**.0).
   primeiro agente em `/workspace` (com uma conta do Claude conectada), em vez de mostrar "O escritório está vazio" e pedir para
   clicar em Abrir terminal. `HABBLAUD_AUTO_AGENT=0` desliga.
 
+- **Celular: o terminal interativo do Claude ocupa a tela toda.** Ele ficava por baixo da barra do topo (o cabeçalho sumia);
+  agora cobre as barras, como o terminal da conversa.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

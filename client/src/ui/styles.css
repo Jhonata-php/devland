@@ -11796,3 +11796,11 @@ html.is-replay #world {
     bottom: 0;
   }
 }
+
+/* Celular: o terminal interativo (ui-term ui-pty) fica por cima da barra do topo e da de baixo, como o terminal da conversa
+   (a regra .ui-pty { z-index: 31 } o deixava por baixo delas e escondia o cabeçalho). */
+@media (max-width: 600px) {
+  .ui-term.ui-pty {
+    z-index: 58;
+  }
+}
