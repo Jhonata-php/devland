@@ -12247,3 +12247,22 @@ html.is-replay #world {
   .has-drawer .ui-feed { width: min(var(--feed-max), calc(100vw - var(--rail-w) - var(--drawer-w) - var(--gap) * 3)); }
   .has-sidebar.has-drawer .ui-feed { width: min(var(--feed-max), calc(100vw - var(--side-w) - var(--drawer-w) - var(--gap) * 4)); }
 }
+
+/* Trilho recolhido: só o logo, um botão pequeno para expandir e, embaixo, os anéis de uso. Sem nome na vertical. */
+@media (min-width: 601px) {
+  .ui-topbar__left { flex-direction: column-reverse; gap: 10px; padding: 12px 0 14px; justify-content: flex-end; }
+  .ui-topbar__left .ui-brand__text { display: none !important; }
+  .ui-topbar__left .ui-brand { gap: 0; }
+  .ui-topbar .ui-btn-sidebar { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--ui-line-strong); background: rgba(57, 255, 136, 0.06); }
+  .ui-topbar .ui-btn-sidebar:hover { border-color: var(--ui-accent); }
+  .ui-usage { left: 9px; right: auto; top: 112px; flex-direction: column; z-index: 57; }
+  .ui-usage-tip { left: calc(100% + 12px); right: auto; }
+  /* Aberta: o cabeçalho com o nome, e os anéis voltam para o canto direito. */
+  .has-sidebar .ui-topbar__left { flex-direction: row-reverse; padding: 0 12px 0 14px; justify-content: space-between; }
+  .has-sidebar .ui-topbar__left .ui-brand__text { display: flex !important; }
+  .has-sidebar .ui-topbar__left .ui-brand { gap: 10px; }
+  .has-sidebar .ui-topbar .ui-btn-sidebar { width: 36px; height: 36px; }
+  .has-sidebar .ui-usage { left: auto; right: 14px; top: calc(var(--top-h) + 6px); flex-direction: column; }
+  .has-sidebar .ui-usage-tip { left: auto; right: calc(100% + 10px); }
+  .has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
+}
