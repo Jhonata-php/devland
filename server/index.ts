@@ -47,7 +47,7 @@ import { createBuildReader, readBuildInfo } from './build';
 import { ensureHabblaudPlugins } from './accounts/plugins';
 import { PushService } from './push/service';
 import { pickAccountByLoad } from './pty/pick-account';
-import { loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
+import { dedupeLive, loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
 import { stageVersion } from './updates/self-update';
@@ -714,7 +714,7 @@ if (cloud && agentUser && ptys) {
       const cwd = snap.rooms.find((r) => r.id === a.roomId)?.path;
       if (a.kind === 'main' && a.sessionId && a.status !== 'offline' && cwd && !isDemoId(a.id)) out.push({ account: a.account, sessionId: a.sessionId, cwd });
     }
-    return out;
+    return dedupeLive(out);
   };
   // Só depois de os plugins estarem instalados: uma sessão que começa antes deles nunca carrega o plugin de mensagens.
   void pluginsReady.then(() =>

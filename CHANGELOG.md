@@ -142,6 +142,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Habblaud Cloud: agentes retomados não criam mais sala "worktree" nem se duplicam.** A conversa que estava num
+  worktree volta para a pasta do projeto, e a mesma conversa só é retomada uma vez.
 - **Habblaud Cloud: "Ativar" numa conta sem uso abre as Contas** (antes abria a ajuda com comandos `npm` que não
   servem no Cloud).
 - **Habblaud Cloud: "Ver demonstração" voltou a funcionar para o admin** (antes caía em "não liberado no acesso

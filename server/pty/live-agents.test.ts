@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadLiveAgents, MAX_RESUME, saveLiveAgents } from './live-agents';
+import { dedupeLive, loadLiveAgents, MAX_RESUME, saveLiveAgents } from './live-agents';
 
 describe('agentes ativos guardados para retomar depois da reimplantação', () => {
   it('grava e lê, ignorando entradas inválidas e limitando a quantidade', () => {
@@ -20,5 +20,10 @@ describe('agentes ativos guardados para retomar depois da reimplantação', () =
     expect(loadLiveAgents(join(dir, 'nao-existe.json'))).toEqual([]);
     writeFileSync(join(dir, 'x.json'), '{nao é json');
     expect(loadLiveAgents(join(dir, 'x.json'))).toEqual([]);
+  });
+
+  it('worktree volta para a raiz do projeto e a conversa repetida some', () => {
+    const a = { account: '.claude', sessionId: 'a1b2c3d4-e5f6-7890', cwd: '/workspace/site/.claude/worktrees/fix' };
+    expect(dedupeLive([a, { ...a, cwd: '/workspace/site' }])).toEqual([{ ...a, cwd: '/workspace/site' }]);
   });
 });
