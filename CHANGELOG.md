@@ -86,6 +86,10 @@ do meio (0.**3**.0).
 - **Ajustes no celular redesenhados.** O menu vira uma folha cheia (acima da barra de baixo, com rolagem por dentro),
   com seções em cartões, cabeçalho fixo, fundo sólido e linhas maiores para tocar.
 
+- **Habblaud Cloud: os agentes voltam depois de reimplantar.** O servidor guarda quem estava ativo (conta, sessão e pasta) e,
+  ao subir, retoma cada conversa com `claude --resume` (até 6), em vez de os personagens sumirem e você ter de criar
+  agentes novos. Quem foi encerrado de propósito não volta.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

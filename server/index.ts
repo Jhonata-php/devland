@@ -44,6 +44,7 @@ import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
 import { ensureHabblaudPlugins } from './accounts/plugins';
+import { loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
 import { ghcrLatest, loadVelixFile, parseVelixTarget, saveVelixFile, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
@@ -625,10 +626,50 @@ server.listen(config.port, config.host, () => {
   );
 });
 
+// Cloud: guarda quem está ativo (a cada 10 s) e retoma essas conversas ao subir; congela a lista ao encerrar, antes de os
+// processos morrerem junto com o container.
+let persistLive = true;
+if (cloud && agentUser && ptys) {
+  const liveFile = join(config.dataDir, 'live-agents.json');
+  const wasLive = loadLiveAgents(liveFile);
+  const liveNow = (): LiveAgent[] => {
+    const snap = hub.current();
+    const out: LiveAgent[] = [];
+    for (const a of snap.agents) {
+      const cwd = snap.rooms.find((r) => r.id === a.roomId)?.path;
+      if (a.kind === 'main' && a.sessionId && a.status !== 'offline' && cwd && !isDemoId(a.id)) out.push({ account: a.account, sessionId: a.sessionId, cwd });
+    }
+    return out;
+  };
+  setTimeout(() => {
+    const present = new Set(liveNow().map((a) => a.sessionId));
+    for (const a of wasLive) {
+      if (present.has(a.sessionId)) continue;
+      try {
+        ptys.resume(a);
+        log.info(tr('Retomando a conversa {0} em {1}.', [a.sessionId, a.cwd]));
+      } catch (err) {
+        log.warn(tr('Não deu para retomar {0}: {1}', [a.sessionId, errMsg(err)]));
+      }
+    }
+  }, 8_000).unref();
+  const liveBootAt = Date.now();
+  setInterval(() => {
+    // Só depois de as conversas retomadas aparecerem (senão a foto perderia quem ainda está voltando).
+    if (!persistLive || shuttingDown || Date.now() - liveBootAt < 45_000) return;
+    try {
+      saveLiveAgents(liveFile, liveNow());
+    } catch (err) {
+      log.warnOnce('live-agents', tr('Não deu para guardar os agentes ativos: {0}', [errMsg(err)]));
+    }
+  }, 10_000).unref();
+}
+
 let shuttingDown = false;
 function shutdown(signal: string): void {
   if (shuttingDown) return;
   shuttingDown = true;
+  persistLive = false;
   log.info(tr('Encerrando ({0})…', [signal]));
   clearInterval(ticker);
   stats.stop();

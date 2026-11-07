@@ -227,6 +227,12 @@ export class PtyManager {
     return this.spawn(this.plan(p, this.takeovers.size));
   }
 
+  /** Retoma a conversa de uma sessão (`claude --resume`) na pasta e conta dela: o escritório volta a ver o agente. */
+  resume(p: { cwd: string; account: string; sessionId: string }): PtyInfo {
+    if (!/^[\w-]{8,64}$/.test(p.sessionId)) throw new PtyError(400, tr('sessão inválida'));
+    return this.spawn(this.plan({ cwd: p.cwd, account: p.account }, this.takeovers.size), { resume: p.sessionId });
+  }
+
   /**
    * Encerra um agente principal. Aberto aqui: fecha o pty. Aberto noutro terminal: encerra o processo, mas só
    * se o registro de sessões da conta confirmar que aquele PID é aquela sessão do Claude Code (e o processo vivo
