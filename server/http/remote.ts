@@ -448,8 +448,8 @@ export function loginPage(opts: { caDownload: boolean; intro?: string }): string
 <p class="sub">${esc(opts.intro ?? tr('Acesso pelo celular. Entre com o usuário e a senha que você escolheu no npm run remote:setup.'))}</p>
 <form id="f" autocomplete="on" novalidate>
   <div id="err" class="alert err" role="alert"></div>
-  <label class="l" for="u">${esc(tr('Usuário'))}</label>
-  <div class="field">${ICON.user}<input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
+  <label class="l" for="u">${esc(tr('E-mail'))}</label>
+  <div class="field">${ICON.user}<input id="u" name="username" type="text" inputmode="email" placeholder="${esc(tr('seu@email.com ou usuário'))}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
   <label class="l" for="p">${esc(tr('Senha'))}</label>
   <div class="field">${ICON.lock}<input id="p" name="password" type="password" autocomplete="current-password" required>
     <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">${ICON.eye}</button></div>
@@ -468,7 +468,7 @@ ${ca}`;
     function fail(text) { err.textContent = text; err.className = 'alert err on'; void err.offsetWidth; err.className = 'alert err on shake'; }
     f.addEventListener('submit', async function (e) {
       e.preventDefault();
-      if (!f.username.value.trim() || !f.password.value) return fail(${js(tr('Informe usuário e senha.'))});
+      if (!f.username.value.trim() || !f.password.value) return fail(${js(tr('Informe e-mail e senha.'))});
       b.disabled = true; b.classList.add('busy'); err.className = 'alert err';
       try {
         var r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },

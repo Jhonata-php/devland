@@ -75,3 +75,19 @@ describe('UserStore', () => {
     expect(s.get(ana.id)).toBeUndefined();
   });
 });
+
+describe('entrada por e-mail', () => {
+  it('entra por e-mail (qualquer caixa) ou usuário; e-mail é único e validado', async () => {
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const store = new UserStore(join(mkdtempSync(join(tmpdir(), 'usr-')), 'users.json'), Date.now, 10);
+    const u = await store.create('ana', 'senha-bem-longa', 'admin', [], 'Ana@Exemplo.com');
+    expect(u.email).toBe('ana@exemplo.com');
+    expect((await store.verify('ANA@exemplo.com', 'senha-bem-longa'))?.id).toBe(u.id);
+    expect((await store.verify('ana', 'senha-bem-longa'))?.id).toBe(u.id);
+    expect(await store.verify('ana@exemplo.com', 'errada')).toBeUndefined();
+    await expect(store.create('bia', 'senha-bem-longa', 'user', [], 'ana@exemplo.com')).rejects.toThrow();
+    await expect(store.create('caio', 'senha-bem-longa', 'user', [], 'sem-arroba')).rejects.toThrow();
+  });
+});

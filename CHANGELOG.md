@@ -12,6 +12,9 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Habblaud Cloud: login por e-mail.** Criar o admin e aceitar convite pedem e-mail; o login aceita e-mail ou usuário
+  (contas antigas continuam entrando pelo usuário e definem o e-mail em Ajustes › Perfil). O e-mail é único e aparece na
+  lista de usuários. As telas de criar admin e convite usam a mesma moldura hacker do login.
 - **Tela de login no estilo "terminal hacker":** chuva de código ao fundo, terminal que digita os agentes, cartão com
   barra de janela, agentes em pixel art andando embaixo, olho para ver a senha e erro que balança. No celular o cartão
   vira uma folha até a borda de baixo. A moldura (`server/http/auth-shell.ts`) serve também às próximas telas.

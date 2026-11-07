@@ -7,6 +7,7 @@ import { randomBytes } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getLocale, tr } from '../../shared/i18n';
 import type { ConnectProvider, ConnectService } from '../cloud/connect';
+import { authPage, ICON } from './auth-shell';
 import { FEATURES, UserError, allowedOf, cleanAllow, type Role, type UserStore } from '../cloud/users';
 import {
   LoginThrottle,
@@ -134,34 +135,38 @@ ${script}
 
 /** Formulário simples que manda JSON e, se der certo, vai para "/". */
 function formPage(opts: { title: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string }[]; endpoint: string; submit: string; extra?: Record<string, string> }): string {
+  const icon = (f: { id: string; type?: string }) => (f.type === 'password' ? ICON.lock : ICON.user);
   const fields = opts.fields
-    .map((f) => `<label for="${f.id}">${esc(f.label)}</label>
-  <input id="${f.id}" name="${f.id}" type="${f.type ?? 'text'}" autocomplete="${f.auto ?? 'off'}" autocapitalize="none" autocorrect="off" spellcheck="false" required>`)
+    .map((f) => `<label class="l" for="${f.id}">${esc(f.label)}</label>
+  <div class="field">${icon(f)}<input id="${f.id}" name="${f.id}" type="${f.type ?? 'text'}" autocomplete="${f.auto ?? 'off'}" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>`)
     .join('\n  ');
-  const body = `<form id="f">
-  <h1>Habblaud</h1>
-  <p>${esc(opts.intro)}</p>
+  const card = `<h1>Habblaud</h1>
+<p class="sub">${esc(opts.intro)}</p>
+<form id="f" novalidate>
+  <div id="err" class="alert err" role="alert"></div>
   ${fields}
-  <button id="b" type="submit">${esc(opts.submit)}</button>
-  <div id="err" role="alert"></div>
+  <button id="b" class="btn" type="submit"><span class="spin" aria-hidden="true"></span><span>${esc(opts.submit)}</span></button>
 </form>`;
-  const script = `const f = document.getElementById('f'), b = document.getElementById('b'), err = document.getElementById('err');
+  const script = `(function () {
+  const f = document.getElementById('f'), b = document.getElementById('b'), err = document.getElementById('err');
   const ids = ${JSON.stringify(opts.fields.map((x) => x.id))}, extra = ${JSON.stringify(opts.extra ?? {}).replace(/</g, '\\u003c')};
+  function fail(t) { err.textContent = t; err.className = 'alert err on'; void err.offsetWidth; err.className = 'alert err on shake'; }
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (f.password2 && f.password2.value !== f.password.value) { err.textContent = ${js(tr('As senhas não conferem.'))}; return; }
-    b.disabled = true; err.textContent = '';
+    if (f.password2 && f.password2.value !== f.password.value) return fail(${js(tr('As senhas não conferem.'))});
+    b.disabled = true; b.classList.add('busy'); err.className = 'alert err';
     const body = { ...extra };
     for (const id of ids) if (id !== 'password2') body[id] = f[id].value;
     try {
       const r = await fetch(${js(opts.endpoint)}, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) });
       if (r.ok) { location.replace('/'); return; }
       const j = await r.json().catch(() => ({}));
-      err.textContent = j.error || ${js(tr('Não deu certo.'))};
-    } catch { err.textContent = ${js(tr('Sem conexão com o Habblaud.'))}; }
-    b.disabled = false;
-  });`;
-  return shell(opts.title, body, script);
+      fail(j.error || ${js(tr('Não deu certo.'))});
+    } catch { fail(${js(tr('Sem conexão com o Habblaud.'))}); }
+    b.disabled = false; b.classList.remove('busy');
+  });
+})();`;
+  return authPage({ title: opts.title, card, script, barTitle: 'setup — bash' });
 }
 
 function featureLabels(): Record<RemoteFeature, string> {
@@ -232,7 +237,7 @@ function adminPage(): string {
       }
       const rm = el('button', { className: 'small ghost', textContent: T.remove });
       rm.onclick = () => { if (confirm(T.confirmRemove.replace('{0}', u.name))) call('DELETE', '/api/cloud/users/' + u.id).then(load, load); };
-      tb.append(el('tr', {}, el('td', { textContent: u.name + (u.id === me ? ' ' + T.you : '') }), el('td', {}, role), perms, el('td', {}, rm)));
+      tb.append(el('tr', {}, el('td', { textContent: u.name + (u.email ? ' · ' + u.email : '') + (u.id === me ? ' ' + T.you : '') }), el('td', {}, role), perms, el('td', {}, rm)));
     }
   }
   $('irole').onchange = () => { $('iperms').hidden = $('irole').value === 'admin'; };
@@ -448,6 +453,7 @@ export function createCloud(deps: CloudDeps): Cloud {
               fields: [
                 { id: 'code', label: tr('Código de instalação') },
                 { id: 'name', label: tr('Usuário'), auto: 'username' },
+                { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email' },
                 { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
                 { id: 'password2', label: tr('Repita a senha'), type: 'password', auto: 'new-password' },
               ],
@@ -474,7 +480,7 @@ export function createCloud(deps: CloudDeps): Cloud {
             sendJson(res, 401, { error: tr('Código de instalação incorreto.') });
             return false;
           }
-          const admin = await store.create(str(body.name), str(body.password), 'admin', []);
+          const admin = await store.create(str(body.name), str(body.password), 'admin', [], str(body.email));
           code = undefined;
           signIn(req, res, admin.id);
           return true;
@@ -494,6 +500,7 @@ export function createCloud(deps: CloudDeps): Cloud {
               intro: tr('Você foi convidado para o Habblaud. Escolha seu usuário e senha.'),
               fields: [
                 { id: 'name', label: tr('Usuário'), auto: 'username' },
+                { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email' },
                 { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
                 { id: 'password2', label: tr('Repita a senha'), type: 'password', auto: 'new-password' },
               ],
@@ -511,7 +518,7 @@ export function createCloud(deps: CloudDeps): Cloud {
           return true;
         }
         guarded(req, res, async (body) => {
-          const user = await store.acceptInvite(str(body.token), str(body.name), str(body.password));
+          const user = await store.acceptInvite(str(body.token), str(body.name), str(body.password), str(body.email));
           signIn(req, res, user.id);
           return true;
         });
@@ -539,7 +546,13 @@ export function createCloud(deps: CloudDeps): Cloud {
     }
     if (path === '/api/cloud/me') {
       req.resume();
-      sendJson(res, 200, { id: me.id, name: me.name, role: me.role, allow: [...allowedOf(me)] });
+      sendJson(res, 200, { id: me.id, name: me.name, email: me.email ?? null, role: me.role, allow: [...allowedOf(me)] });
+      return true;
+    }
+    if (path === '/api/cloud/email' && method === 'POST') {
+      json(req)
+        .then((body) => sendJson(res, 200, { ok: true, email: store.setEmail(me.id, str(body.email)).email }))
+        .catch((err) => fail(res, err));
       return true;
     }
     if (path === '/api/cloud/logout-all' && method === 'POST') {

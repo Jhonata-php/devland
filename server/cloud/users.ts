@@ -14,11 +14,14 @@ export type Role = 'admin' | 'user';
 export const FEATURES: readonly RemoteFeature[] = ['permissions', 'messages', 'terminal', 'spawn'];
 export const PASSWORD_MIN = 10;
 export const NAME_RE = /^[\p{L}\p{N}._-]{2,32}$/u;
+export const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 export const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface User {
   id: string;
   name: string;
+  /** E-mail de entrada (minúsculo, único). Contas antigas não têm: entram pelo usuário e definem o e-mail no perfil. */
+  email?: string;
   passwordHash: string;
   role: Role;
   allow: RemoteFeature[];
@@ -87,14 +90,17 @@ export class UserStore {
     return this.data.users.map(toPublic);
   }
 
-  async create(name: string, password: string, role: Role, allow: RemoteFeature[]): Promise<User> {
+  async create(name: string, password: string, role: Role, allow: RemoteFeature[], email?: string): Promise<User> {
     const clean = name.trim();
+    const mail = email === undefined ? undefined : this.cleanEmail(email);
     if (!NAME_RE.test(clean)) throw new UserError(tr('Nome inválido: use de 2 a 32 letras, números, ponto, hífen ou sublinhado.'));
     if (password.length < PASSWORD_MIN) throw new UserError(tr('A senha precisa ter pelo menos {0} caracteres.', [PASSWORD_MIN]));
     if (this.byName(clean)) throw new UserError(tr('Esse nome já está em uso.'));
+    if (mail && this.byEmail(mail)) throw new UserError(tr('Esse e-mail já está em uso.'));
     const user: User = {
       id: randomUUID(),
       name: clean,
+      ...(mail ? { email: mail } : {}),
       passwordHash: await hashPassword(password, this.logN),
       role,
       allow: role === 'admin' ? [...FEATURES] : cleanAllow(allow),
@@ -102,19 +108,42 @@ export class UserStore {
       createdAt: this.now(),
     };
     // Outra criação pode ter terminado enquanto o scrypt rodava.
-    if (this.byName(clean)) throw new UserError(tr('Esse nome já está em uso.'));
+    if (this.byName(clean) || (mail && this.byEmail(mail))) throw new UserError(tr('Esse nome ou e-mail já está em uso.'));
     this.data.users.push(user);
     this.save();
     return user;
   }
 
-  /** Confere nome e senha; o scrypt roda mesmo sem o usuário. */
-  async verify(name: string, password: string): Promise<User | undefined> {
-    const user = this.byName(name.trim());
+  /** Confere e-mail (ou usuário) e senha; o scrypt roda mesmo sem o usuário. */
+  async verify(login: string, password: string): Promise<User | undefined> {
+    const id = login.trim();
+    const user = id.includes('@') ? this.byEmail(id.toLowerCase()) : this.byName(id);
     this.dummy ??= hashPassword(randomBytes(16).toString('hex'), this.logN);
     const hash = parsePasswordHash(user?.passwordHash ?? (await this.dummy));
     const ok = !!hash && (await verifyPassword(password, hash));
     return ok && user ? user : undefined;
+  }
+
+  /** Define (ou troca) o e-mail de entrada de um usuário. */
+  setEmail(id: string, email: string): User {
+    const user = this.get(id);
+    if (!user) throw new UserError(tr('Usuário não encontrado.'));
+    const mail = this.cleanEmail(email);
+    const other = this.byEmail(mail);
+    if (other && other.id !== id) throw new UserError(tr('Esse e-mail já está em uso.'));
+    user.email = mail;
+    this.save();
+    return user;
+  }
+
+  private cleanEmail(raw: string): string {
+    const mail = raw.trim().toLowerCase();
+    if (!EMAIL_RE.test(mail) || mail.length > 254) throw new UserError(tr('E-mail inválido.'));
+    return mail;
+  }
+
+  private byEmail(mail: string): User | undefined {
+    return this.data.users.find((u) => u.email === mail);
   }
 
   update(id: string, patch: { role?: Role; allow?: RemoteFeature[] }): User {
@@ -158,13 +187,13 @@ export class UserStore {
     return !!this.findInvite(token);
   }
 
-  async acceptInvite(token: string, name: string, password: string): Promise<User> {
+  async acceptInvite(token: string, name: string, password: string, email?: string): Promise<User> {
     const invite = this.findInvite(token);
     if (!invite) throw new UserError(tr('Convite inválido, vencido ou já usado.'));
     // Gasta o convite antes do scrypt: duas aberturas ao mesmo tempo não criam duas contas.
     this.data.invites = this.data.invites.filter((i) => i !== invite);
     try {
-      return await this.create(name, password, invite.role, invite.allow);
+      return await this.create(name, password, invite.role, invite.allow, email);
     } catch (err) {
       this.data.invites.push(invite);
       this.save();
@@ -202,5 +231,5 @@ export class UserStore {
 }
 
 function toPublic(u: User): PublicUser {
-  return { id: u.id, name: u.name, role: u.role, allow: [...u.allow], createdAt: u.createdAt };
+  return { id: u.id, name: u.name, ...(u.email ? { email: u.email } : {}), role: u.role, allow: [...u.allow], createdAt: u.createdAt };
 }

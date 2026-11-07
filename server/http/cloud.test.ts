@@ -52,8 +52,8 @@ describe('Habblaud Cloud', () => {
     expect((await call('/')).location).toBe('/setup');
     expect((await call('/login')).location).toBe('/setup');
     expect((await call('/setup')).text).toContain('Código de instalação');
-    expect((await call('/api/cloud/setup', { body: { code: 'errado', name: 'ana', password: 'senha-bem-longa' } })).status).toBe(401);
-    const ok = await call('/api/cloud/setup', { body: { code: 'aaaa-bbbb-cccc', name: 'ana', password: 'senha-bem-longa' }, headers: { 'X-Forwarded-Proto': 'https' } });
+    expect((await call('/api/cloud/setup', { body: { code: 'errado', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).status).toBe(401);
+    const ok = await call('/api/cloud/setup', { body: { code: 'aaaa-bbbb-cccc', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' }, headers: { 'X-Forwarded-Proto': 'https' } });
     expect(ok.status).toBe(200);
     expect(ok.set).toContain('Secure');
     expect(cloud.setupCode()).toBeUndefined();
@@ -64,15 +64,15 @@ describe('Habblaud Cloud', () => {
 
   it('convite cria usuário com as permissões escolhidas; usuário comum não administra', async () => {
     const { call } = await setup();
-    const admin = (await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', password: 'senha-bem-longa' } })).cookie;
+    const admin = (await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
     const inv = JSON.parse((await call('/api/cloud/invites', { body: { role: 'user', allow: ['messages'] }, cookie: admin })).text) as { path: string };
     expect((await call(inv.path)).text).toContain('convidado');
     const token = inv.path.split('/').pop();
-    const bia = (await call('/api/cloud/invite', { body: { token, name: 'bia', password: 'outra-senha-longa' } })).cookie;
+    const bia = (await call('/api/cloud/invite', { body: { token, name: 'bia', email: 'bia@exemplo.com', password: 'outra-senha-longa' } })).cookie;
     expect((await call('/', { cookie: bia })).text).toBe('escritorio terminal=false admin=false');
     expect((await call('/api/cloud/users', { cookie: bia })).status).toBe(403);
     expect((await call('/admin', { cookie: bia })).location).toBe('/');
-    expect((await call('/api/cloud/invite', { body: { token, name: 'caio', password: 'outra-senha-longa' } })).status).toBe(400);
+    expect((await call('/api/cloud/invite', { body: { token, name: 'caio', email: 'caio@exemplo.com', password: 'outra-senha-longa' } })).status).toBe(400);
 
     const users = JSON.parse((await call('/api/cloud/users', { cookie: admin })).text) as { users: { id: string; name: string }[] };
     const biaId = users.users.find((u) => u.name === 'bia')!.id;
@@ -84,7 +84,7 @@ describe('Habblaud Cloud', () => {
 
   it('login, sair de todos e sem login a API responde 401', async () => {
     const { call } = await setup();
-    await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', password: 'senha-bem-longa' } });
+    await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } });
     expect((await call('/api/remote/login', { body: { user: 'ana', password: 'errada-errada' } })).status).toBe(401);
     const a = (await call('/api/remote/login', { body: { user: 'Ana', password: 'senha-bem-longa' } })).cookie;
     const b = (await call('/api/remote/login', { body: { user: 'ana', password: 'senha-bem-longa' } })).cookie;
@@ -96,7 +96,7 @@ describe('Habblaud Cloud', () => {
   it('sessão em uso é renovada depois de um dia (não cai)', async () => {
     let now = 1_800_000_000_000;
     const { call } = await setup(() => now);
-    const c = (await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', password: 'senha-bem-longa' } })).cookie;
+    const c = (await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
     expect((await call('/', { cookie: c })).cookie).toBeUndefined();
     now += 2 * 24 * 60 * 60 * 1000;
     const renewed = (await call('/', { cookie: c })).cookie;

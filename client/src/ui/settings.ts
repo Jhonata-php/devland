@@ -101,6 +101,7 @@ export class SettingsPopover implements UiComponent {
   /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
   private profileRow: HTMLElement;
   private profileText: HTMLElement;
+  private emailBtn: HTMLButtonElement;
   private accountsRow: HTMLElement;
   private meLoaded = false;
   private about: AboutGroup;
@@ -203,6 +204,7 @@ export class SettingsPopover implements UiComponent {
           h('span', { class: 'ui-set__label', text: tr('Perfil') }),
           (this.profileText = h('span', { class: 'ui-set__hint', text: '…' })),
         ),
+        (this.emailBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Definir e-mail de entrada'), hidden: true, on: { click: () => void this.setEmail() } })),
       )),
       (this.accountsRow = h(
         'div',
@@ -362,12 +364,24 @@ export class SettingsPopover implements UiComponent {
     try {
       const res = await fetch('/api/cloud/me', { credentials: 'same-origin' });
       if (!res.ok) throw new Error();
-      const me = (await res.json()) as { name?: string; role?: string };
-      setText(this.profileText, `${me.name ?? ''} · ${me.role === 'admin' ? tr('Admin') : tr('Usuário')}`);
+      const me = (await res.json()) as { name?: string; email?: string | null; role?: string };
+      setText(this.profileText, `${me.name ?? ''} · ${me.role === 'admin' ? tr('Admin') : tr('Usuário')}${me.email ? ` · ${me.email}` : ''}`);
+      setHidden(this.emailBtn, !!me.email);
     } catch {
       this.meLoaded = false;
       setText(this.profileText, tr('Não deu para ler o perfil.'));
     }
+  }
+
+  /** Cloud: define o e-mail de entrada de quem ainda entra só pelo usuário. */
+  private async setEmail(): Promise<void> {
+    const email = window.prompt(tr('E-mail para entrar no Habblaud:'))?.trim();
+    if (!email) return;
+    const res = await fetch('/api/cloud/email', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    if (res.ok) {
+      this.meLoaded = false;
+      void this.loadMe();
+    } else setText(this.profileText, ((await res.json().catch(() => ({}))) as { error?: string }).error ?? tr('Não deu certo.'));
   }
 
   private async testNotify(): Promise<void> {
