@@ -18,6 +18,7 @@ import { findExecutable } from './claude-bin';
 import { agentRunAs } from './spawn/runas';
 import { Hub } from './http/sse';
 import { createStaticHandler } from './http/static';
+import { createPreview } from './http/preview';
 import { TerminalStreams } from './http/terminal';
 import { createTimelineHandler } from './http/timeline';
 import { TIMELINE_DIR, TimelineRecorder } from './history/timeline';
@@ -484,7 +485,10 @@ const ticker = setInterval(() => {
   }
 }, 250);
 
+const preview = createPreview({ blockedPorts: () => [config.port, config.remote?.port ?? 0] });
+
 const api = createApiHandler({
+  preview,
   renameRoom: (id, name) => {
     const path = office.roomPath(id);
     if (!path) return undefined;
@@ -562,6 +566,7 @@ server.on('request', (req, res) => {
   const url = parseUrl(req);
   try {
     if (guard(req, res)) return;
+    if (preview.handle(req, res, url)) return;
     if (!api(req, res, url)) fallback(req, res, url);
   } catch (err) {
     log.warn(tr('Erro ao responder {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
@@ -589,6 +594,7 @@ if (config.remote) {
     secure: cloud ? viaHttps : !!remote.tls,
     caFile: remote.tls?.caFile,
     cloud: cloud?.gate,
+    selfAuth: preview.verify,
   });
   remoteListener = startRemoteListener(
     remote,
@@ -597,6 +603,7 @@ if (config.remote) {
       try {
         if (guard(req, res)) return;
         if (gate(req, res, url)) return;
+        if (preview.handle(req, res, url)) return;
         if (cloud?.api(req, res, url)) return;
         if (!api(req, res, url)) fallback(req, res, url);
       } catch (err) {

@@ -517,6 +517,8 @@ export interface RemoteGateDeps {
   /** Cookie com Secure (a porta fala HTTPS; atrás de proxy, decidido por requisição). */
   secure: boolean | ((req: IncomingMessage) => boolean);
   cloud?: CloudGate;
+  /** Caminhos que se autenticam sozinhos (prévia ao vivo: token na URL, sem cookie; ver http/preview.ts). */
+  selfAuth?: (pathname: string) => boolean;
   /** Arquivo da CA pública servido em /remote/ca.crt (ausente = sem download). */
   caFile?: string;
   throttle?: LoginThrottle;
@@ -641,6 +643,10 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       return true;
     }
 
+    if (!authed && method === 'GET' && deps.selfAuth?.(path)) {
+      remoteRequests.add(req);
+      return false;
+    }
     if (authed) {
       remoteRequests.add(req);
       if (uid !== undefined) remoteUsers.set(req, uid);

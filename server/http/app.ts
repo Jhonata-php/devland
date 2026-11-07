@@ -16,6 +16,7 @@ import { handleStatsRoute } from './stats';
 import type { TerminalStreams } from './terminal';
 import { tr } from '../../shared/i18n';
 import type { SpawnService } from '../spawn/spawn';
+import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
 import type { SpawnFolder } from '../spawn/folders';
 import { AUDIO_BODY_MAX, type DictationService } from '../dictation/dictation';
@@ -65,6 +66,8 @@ export interface ApiDeps {
   codexLive?: CodexLive;
   /** Novo agente pelo escritório (/api/spawn e, para o auxiliar do host, /api/host/spawn/*; server/spawn/spawn.ts). */
   spawn?: SpawnService;
+  /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
+  preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
   spawnFolders?: () => Promise<SpawnFolder[]>;
   /** Anexos do "Novo agente" (POST /api/spawn/attachments; spawn/attachments.ts). */
@@ -412,6 +415,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           messages: !!deps.messages && trusted(req, 'messages'),
           terminal: !!terminals && trusted(req, 'terminal'),
           spawn: !!deps.spawn && trusted(req, 'spawn'),
+          preview: !!deps.preview && trusted(req, 'terminal'),
           world: !!deps.world && !!deps.terminal && !remote && isLoopbackHost(req.headers.host),
           ...(deps.remote?.isAdmin ? { admin: remote && deps.remote.isAdmin(req), cloud: remote } : {}),
         };
@@ -503,6 +507,26 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       else if (!trusted(req) || (!deps.inDocker && !isLoopbackAddress(req.socket.remoteAddress))) {
         sendJson(res, 403, { error: denied(req, tr('eventos do Codex só são aceitos pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
       } else handleCodexEvent(req, res, { live: deps.codexLive, entries: () => accounts.entriesOf('codex') }).catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/preview' || path === '/api/preview/ports') {
+      // Mostra o que roda nas portas do computador: a mesma trava do terminal (local, ou Cloud com a permissão).
+      const preview = deps.preview;
+      if (!preview) sendJson(res, 403, { error: tr('prévia ao vivo desligada') });
+      else if (!trusted(req, 'terminal')) sendJson(res, 403, { error: denied(req, tr('a prévia só abre pelo próprio computador (http://localhost)')) });
+      else if (path === '/api/preview/ports') {
+        if (!isRead) methodNotAllowed(res, 'GET');
+        else preview.detect().then((ports) => sendJson(res, 200, { ports }), (err) => fail(res, err));
+      } else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else
+        readJson(req)
+          .then((body) => {
+            const port = parsePort((body as { port?: unknown } | null)?.port);
+            const url = port === undefined ? undefined : preview.issue(port);
+            if (!url) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do Habblaud)') });
+            sendJson(res, 200, { url });
+          })
+          .catch((err) => fail(res, err));
       return true;
     }
     if (path === '/api/spawn' || path.startsWith('/api/spawn/')) {

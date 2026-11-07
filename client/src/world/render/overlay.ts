@@ -4,6 +4,7 @@
 // Organização: tudo o que flutua (placas, pílulas, balões, etiquetas) disputa espaço na tela.
 // Os itens são POSICIONADOS em ordem decrescente de prioridade (quem chega depois desvia, vira
 // só o ícone ou é descartado) e DESENHADOS em ordem crescente (o mais importante fica por cima).
+import { agentRole, ROLES } from '../../../../shared/roles';
 import { TILE } from '../../art/api';
 import type { WorldOptions } from '../api';
 import type { Camera } from '../camera';
@@ -869,7 +870,14 @@ export class Overlay {
   // =================================================================== etiquetas
 
   /** Larguras das partes da etiqueta. O selo "CODEX" (como o "SUB") só aparece fora do modo compacto. */
-  private labelWidth(l: Label): { nameW: number; chipW: number; badgeW: number; codexW: number } {
+  /** Função do agente (shared/roles.ts) como ícone curto na etiqueta; ausente em subagentes e na visão geral compacta. */
+  private funcOf(l: Label): { icon: string; color: string } | undefined {
+    if (l.compact || l.ch === this.sim.visitor) return undefined;
+    const id = agentRole(l.ch.info, this.sim.rooms.get(l.ch.info.roomId)?.info);
+    return id ? ROLES[id] : undefined;
+  }
+
+  private labelWidth(l: Label): { nameW: number; chipW: number; badgeW: number; codexW: number; funcW: number } {
     const ch = l.ch;
     const acc = this.sim.accounts.get(ch.info.account);
     const nameW = this.measure(LABEL_FONT, ch.info.name);
@@ -877,13 +885,14 @@ export class Overlay {
     const visitor = ch === this.sim.visitor;
     const badgeW = visitor ? this.measure(BADGE_FONT, visitorBadge()) + 7 : ch.info.kind === 'sub' && !l.compact ? this.measure(BADGE_FONT, 'SUB') + 7 : 0;
     const codexW = ch.info.provider === 'codex' && !l.compact ? this.measure(BADGE_FONT, CODEX_BADGE) + 7 : 0;
-    return { nameW, chipW, badgeW, codexW };
+    const f = this.funcOf(l);
+    return { nameW, chipW, badgeW, codexW, funcW: f ? this.measure(BADGE_FONT, f.icon) + 7 : 0 };
   }
 
   /** Posiciona a etiqueta: nos pés (ou acima da cabeça); se colidir, tenta o outro lado. */
   private placeLabel(l: Label): boolean {
-    const { nameW, chipW, badgeW, codexW } = this.labelWidth(l);
-    const w = Math.round(nameW + 10 + chipW + (badgeW ? badgeW + 3 : 0) + (codexW ? codexW + 3 : 0));
+    const { nameW, chipW, badgeW, codexW, funcW } = this.labelWidth(l);
+    const w = Math.round(nameW + 10 + chipW + (badgeW ? badgeW + 3 : 0) + (codexW ? codexW + 3 : 0) + (funcW ? funcW + 3 : 0));
     const h = LABEL_H;
     const x = Math.round(this.sx(l.head.x) - w / 2);
     const below = Math.round(this.sy(l.head.feetY) + 3);
@@ -908,7 +917,7 @@ export class Overlay {
     const acc = this.sim.accounts.get(ch.info.account);
     const sub = ch.info.kind === 'sub';
     const codex = ch.info.provider === 'codex' || acc?.provider === 'codex';
-    const { nameW, chipW, badgeW, codexW } = this.labelWidth(l);
+    const { nameW, chipW, badgeW, codexW, funcW } = this.labelWidth(l);
     const { x, y, w, h } = l;
     const selected = sel.agent === ch.id;
     ctx.fillStyle = selected ? 'rgba(18,96,140,0.95)' : ch.mode === 'wait' ? 'rgba(120,78,0,0.92)' : 'rgba(22,26,38,0.82)';
@@ -962,6 +971,21 @@ export class Overlay {
       ctx.beginPath();
       ctx.arc(x + w - 3, y + 3, 2.5, 0, Math.PI * 2);
       ctx.fill();
+    }
+    const fn = funcW ? this.funcOf(l) : undefined;
+    if (fn) {
+      // Função: ficha com a cor neon dela (borda e ícone sobre fundo escuro).
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath();
+      ctx.roundRect(cx, y + 3, funcW, h - 6, 3);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = fn.color;
+      ctx.stroke();
+      ctx.font = BADGE_FONT;
+      ctx.fillStyle = fn.color;
+      ctx.fillText(fn.icon, cx + 3.5, y + h / 2 + 0.5);
+      cx += funcW + 3;
     }
     if (codexW) {
       ctx.fillStyle = 'rgba(255,255,255,0.16)';

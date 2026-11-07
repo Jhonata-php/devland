@@ -2,6 +2,8 @@
 // em balões (o que você pediu à direita, o que o agente respondeu à esquerda, avisos no meio, ferramentas em linhas
 // discretas) com a caixa de resposta embaixo. Usa o mesmo stream do terminal do agente (GET /api/agents/:id/terminal) e a
 // mesma caixa de mensagem (ui/composer.ts), então não precisa abrir gaveta nem terminal.
+import { ROLES } from '../../../shared/roles';
+import { funcChip, roleLabel, roleOf } from './roles';
 import type { AgentInfo, TerminalEntry } from '../../../shared/types';
 import { tr } from '../../../shared/i18n';
 import type { UiComponent, UiContext } from './context';
@@ -232,13 +234,14 @@ export class ChatsView implements UiComponent {
     if (this.current) {
       const a = agents.find((x) => x.id === this.current);
       setText(this.title, a?.name ?? '…');
-      setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}` : tr('saiu do escritório'));
+      const fr = a && roleOf(a, snap?.rooms);
+      setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}${fr ? ` · ${ROLES[fr].icon} ${roleLabel(fr)}` : ''}` : tr('saiu do escritório'));
       this.composer.render(a, a?.id ?? this.current);
       return;
     }
     const now = this.ctx.now();
     // Só refaz a lista quando algo mudou (a tela renderiza várias vezes por segundo e a lista perderia rolagem e toque).
-    const key = agents.map((a) => `${a.id}:${a.status}:${a.activity?.id ?? ''}:${a.name}`).join('|') + `#${Math.floor(now / 30_000)}`;
+    const key = agents.map((a) => `${a.id}:${a.status}:${a.activity?.id ?? ''}:${a.name}:${roleOf(a, snap?.rooms) ?? ''}`).join('|') + `#${Math.floor(now / 30_000)}`;
     if (key === this.lastListKey && this.listBody.childElementCount > 0) return;
     this.lastListKey = key;
     if (agents.length === 0) {
@@ -254,7 +257,7 @@ export class ChatsView implements UiComponent {
           'button',
           { class: `ui-chats__item${isPresent(a) ? '' : ' is-gone'}`, type: 'button', on: { click: () => this.openChat(a.id) } },
           h('span', { class: 'ui-chats__avatar' }, createAvatar(a, 'md'), dot),
-          h('span', { class: 'ui-chats__text' }, h('strong', { text: a.name }), h('span', { class: 'ui-chats__room', text: room?.name ?? '' }), h('span', { class: 'ui-chats__preview', text: preview })),
+          h('span', { class: 'ui-chats__text' }, h('strong', { text: a.name }), funcChip(roleOf(a, snap?.rooms)), h('span', { class: 'ui-chats__room', text: room?.name ?? '' }), h('span', { class: 'ui-chats__preview', text: preview })),
           h('time', { class: 'ui-chats__when', text: relativeTime(a.lastEventAt, now) }),
         );
         return row;

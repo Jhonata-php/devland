@@ -3,6 +3,7 @@
 import type { AccountInfo, Activity, AgentInfo, AgentStatus, OfficeSnapshot, RoomInfo, ShellJob, TaskItem } from '../../../shared/types';
 import { formatElapsed, normalizeSearch } from './format';
 import { tr } from '../../../shared/i18n';
+import { agentRole, type RoleId } from '../../../shared/roles';
 
 export const STATUS_LABEL: Record<AgentStatus, string> = {
   working: tr('Trabalhando'),
@@ -298,6 +299,8 @@ export interface AgentFilter {
   query: string;
   /** Contas ocultas (AccountInfo.id). */
   hiddenAccounts: ReadonlySet<string>;
+  /** Só agentes com esta função (shared/roles.ts). */
+  role?: RoleId;
 }
 
 export interface AgentNode {
@@ -361,7 +364,8 @@ export function groupRooms(snap: Pick<OfficeSnapshot, 'rooms' | 'agents' | 'acco
   const accountOrder = new Map(snap.accounts.map((a, i) => [a.id, i]));
   const query = filter?.query.trim() ?? '';
   const hidden = filter?.hiddenAccounts ?? new Set<string>();
-  const filtering = query.length > 0 || hidden.size > 0;
+  const wantRole = filter?.role;
+  const filtering = query.length > 0 || hidden.size > 0 || !!wantRole;
 
   const byRoom = new Map<string, AgentInfo[]>();
   for (const a of snap.agents) {
@@ -373,7 +377,7 @@ export function groupRooms(snap: Pick<OfficeSnapshot, 'rooms' | 'agents' | 'acco
   const groups: RoomGroup[] = [];
   for (const room of [...snap.rooms].sort((a, b) => a.slot - b.slot)) {
     const agents = (byRoom.get(room.id) ?? []).slice().sort(byArrival);
-    const visible = (a: AgentInfo) => !hidden.has(a.account) && matchesQuery(a, room, accounts.get(a.account), query);
+    const visible = (a: AgentInfo) => !hidden.has(a.account) && (!wantRole || agentRole(a, room) === wantRole) && matchesQuery(a, room, accounts.get(a.account), query);
     const ids = new Set(agents.map((a) => a.id));
     const subsOf = new Map<string, AgentInfo[]>();
     const top: AgentInfo[] = [];

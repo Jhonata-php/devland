@@ -16,12 +16,15 @@ import {
   updateStatusDot,
 } from './widgets';
 import { tr } from '../../../shared/i18n';
+import type { RoleId } from '../../../shared/roles';
+import { createFuncChip, updateFuncChip } from './roles';
 
 interface RowRefs {
   avatar: HTMLElement;
   name: HTMLElement;
   chip: HTMLElement;
   role: HTMLElement;
+  func: HTMLElement;
   dot: HTMLElement;
   activity: HTMLElement;
   /** Título da sessão (do que se trata), como no hover do personagem. */
@@ -38,6 +41,7 @@ export function createAgentRow(agent: AgentInfo, onPick: (id: string) => void, s
   const name = h('span', { class: 'ui-agent__name' });
   const chip = createAccountChip('sm');
   const role = createRoleBadge();
+  const func = createFuncChip();
   const dot = createStatusDot();
   const activity = createActivityLine();
   const task = h('span', { class: 'ui-agent__task', hidden: true });
@@ -46,12 +50,12 @@ export function createAgentRow(agent: AgentInfo, onPick: (id: string) => void, s
     'button',
     { class: 'ui-agent', type: 'button' },
     avatar,
-    h('span', { class: 'ui-agent__main' }, h('span', { class: 'ui-agent__top' }, name, chip, since, role), task, activity),
+    h('span', { class: 'ui-agent__main' }, h('span', { class: 'ui-agent__top' }, name, chip, since, role, func), task, activity),
     dot,
   );
   row.dataset.id = agent.id;
   row.addEventListener('click', () => onPick(row.dataset.id!));
-  refs.set(row, { avatar, name, chip, role, dot, activity, task, since, size });
+  refs.set(row, { avatar, name, chip, role, func, dot, activity, task, since, size });
   return row;
 }
 
@@ -66,6 +70,7 @@ export function updateAgentRow(
   selected: boolean,
   now: number,
   agents: readonly AgentInfo[] = [],
+  func?: RoleId,
 ): void {
   const r = refs.get(row);
   if (!r) return;
@@ -75,6 +80,8 @@ export function updateAgentRow(
   setText(r.name, agent.name);
   updateAccountChip(r.chip, account, agent.account, agent.provider);
   updateRoleBadge(r.role, agent);
+  updateFuncChip(r.func, func);
+  row.dataset.func = func ?? '';
   const title = agent.title?.trim() ?? '';
   setText(r.task, title);
   setTitle(r.task, title);

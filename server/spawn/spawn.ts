@@ -17,6 +17,7 @@ import { chownSync, existsSync, readFileSync, readdirSync, renameSync, statSync,
 import { isAbsolute, join } from 'node:path';
 import { tr } from '../../shared/i18n';
 import { agentRunAs, runAsOptions } from './runas';
+import { isRoleId, type RoleId } from '../../shared/roles';
 import { attachmentsRoot, promptWithAttachments, writeAttachments, type Attachment, type AttachmentStore } from './attachments';
 
 /** Tamanho máximo do pedido (o link inteiro vai pela linha de comando do `open`). */
@@ -48,6 +49,8 @@ export interface SpawnRequest {
   account?: string;
   /** Pasta de configuração da conta (CLAUDE_CONFIG_DIR) que o servidor resolveu; sem ela, a conta padrão. */
   configDir?: string;
+  /** Função do agente (front-end, back-end...): vira a etiqueta `[id]` no nome da sessão. */
+  role?: RoleId;
 }
 
 export type SpawnStatus = 'queued' | 'sent' | 'opened' | 'failed';
@@ -82,7 +85,8 @@ export function parseSpawn(raw: unknown): SpawnRequest | { error: string } {
   }
   if (prompt.length > PROMPT_MAX || prompt.includes('\0')) return { error: tr('o pedido passa de {0} caracteres', [PROMPT_MAX]) };
   const account = typeof r.account === 'string' && r.account.length <= 120 && !r.account.includes('\0') ? r.account : undefined;
-  return { folder, prompt, ...(account ? { account } : {}) };
+  const role = isRoleId(r.role) ? r.role : undefined;
+  return { folder, prompt, ...(account ? { account } : {}), ...(role ? { role } : {}) };
 }
 
 /** O link que o app do Claude entende (claude://code/new; `q` = pedido já escrito). */
@@ -94,16 +98,17 @@ export function spawnUrl(req: SpawnRequest): string {
   return `claude://code/new?${q.toString().replace(/\+/g, '%20')}`;
 }
 
-/** Nome da sessão em segundo plano: "Habblaud: " + começo da 1ª linha do pedido. */
-export function sessionName(prompt: string): string {
+/** Nome da sessão em segundo plano: "Habblaud: " + começo da 1ª linha do pedido ("Habblaud [front]: " com função). */
+export function sessionName(prompt: string, role?: RoleId): string {
   const line = prompt.split('\n').map((l) => l.trim()).find(Boolean) ?? '';
   const cut = line.length > NAME_MAX ? `${line.slice(0, NAME_MAX - 1)}…` : line;
-  return cut ? `Habblaud: ${cut}` : 'Habblaud';
+  const head = role ? `Habblaud [${role}]` : 'Habblaud';
+  return cut ? `${head}: ${cut}` : head;
 }
 
 /** Argumentos do `claude`: o pedido depois de `--` (um pedido "doctor" ou "-x" continua sendo pedido). */
 export function cliArgs(req: SpawnRequest): string[] {
-  const args = ['--bg', '-n', sessionName(req.prompt)];
+  const args = ['--bg', '-n', sessionName(req.prompt, req.role)];
   return req.prompt.trim() ? [...args, '--', req.prompt] : args;
 }
 
@@ -287,7 +292,7 @@ export class SpawnService {
       e.at = this.now();
       const files = e.files.map((f) => ({ name: f.name, type: f.type, data: f.data.toString('base64') }));
       this.dropFiles(e);
-      out.push({ id: e.info.id, folder: e.req.folder, prompt: e.req.prompt, files });
+      out.push({ id: e.info.id, folder: e.req.folder, prompt: e.req.prompt, files, ...(e.req.role ? { role: e.req.role } : {}) });
     }
     return out;
   }
@@ -321,7 +326,7 @@ export class SpawnService {
       this.dropFiles(e);
     }
     const configDir = this.opts.accountDir?.(e.req.account);
-    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}) };
+    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}) };
     this.resolve(e, await launch(req, opener, this.opts.cli));
   }
 

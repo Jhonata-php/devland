@@ -12,6 +12,17 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Agentes por função:** cada agente principal tem uma função (front-end, back-end, testes, DevOps, revisão, design),
+  escolhida em **Novo agente** (campo Função) ou deduzida dos arquivos que ele mexe e do nome do projeto. A função
+  aparece como ficha neon (ícone e cor próprios) no personagem do mapa, na lateral, no cartão do agente e nas
+  Conversas, e a lateral filtra por função.
+- **Prévia ao vivo do site:** o botão de navegador na barra do topo abre uma janela com o site do projeto (detecta
+  servidores de desenvolvimento nas portas comuns ou você digita a porta), recarrega sozinha quando um agente altera um
+  arquivo e tem modo "celular". Passa por um proxy autenticado do servidor (só `127.0.0.1`, só leitura, mesma trava do
+  terminal, endereço com token que expira, iframe em sandbox e sem repassar cookies); no Cloud exige a permissão
+  "terminal". Funciona melhor com sites estáticos, renderizados no servidor e Vite; formulários com POST e o
+  WebSocket do HMR não passam.
+
 - **Sons diferentes por tipo de aviso:** alarme (precisa de você), arpejo (concluiu), grave (aviso) e pingo
   (informação); em Ajustes › Sons há botões para ouvir cada um.
 - **Layout hacker:** topo como painel de status com linha de varredura e contadores em `[ ]`; lateral como árvore de

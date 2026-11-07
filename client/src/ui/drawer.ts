@@ -60,6 +60,7 @@ import {
   updateStatusDot,
 } from './widgets';
 import { tr } from '../../../shared/i18n';
+import { createFuncChip, roleOf, updateFuncChip } from './roles';
 
 /** Itens da linha do tempo mostrados de início; "Mostrar mais" acrescenta outro tanto. */
 const TIMELINE_STEP = 15;
@@ -258,6 +259,7 @@ class AgentView {
   /** Quantos itens da linha do tempo aparecem agora. */
   private timelineShown = TIMELINE_STEP;
   private stats: KvList<StatKey>;
+  private func: HTMLElement;
   private social: SocialSection;
   readonly character: CharacterEditor;
   private sessionValue: HTMLElement;
@@ -273,6 +275,7 @@ class AgentView {
     this.avatar = createAvatarPlaceholder('lg');
     this.name = h('h2', { class: 'ui-hero__name' });
     this.role = h('span', { class: 'ui-role' });
+    this.func = createFuncChip();
     this.title = h('p', { class: 'ui-hero__title' });
     this.accChip = createAccountChip('md');
     this.accName = h('span', { class: 'ui-hero__acc-name' });
@@ -284,7 +287,7 @@ class AgentView {
     const heroText = h(
       'div',
       { class: 'ui-hero__text' },
-      h('div', { class: 'ui-hero__line' }, this.name, this.character.button, this.role),
+      h('div', { class: 'ui-hero__line' }, this.name, this.character.button, this.role, this.func),
       h('div', { class: 'ui-hero__acc' }, this.accChip, this.accName, this.accProv, this.accEmail),
       h('div', { class: 'ui-hero__where' }, h('span', { class: 'ui-muted', text: tr('Sala') }), this.roomBtn),
     );
@@ -538,6 +541,7 @@ class AgentView {
     this.character.render(a, !!live);
     setText(this.role, roleLabel(a));
     setVariant(this.role, 'ui-role--', a.kind);
+    updateFuncChip(this.func, roleOf(a, this.ctx.store.snapshot?.rooms));
     setText(this.title, a.title ?? '');
     setHidden(this.title, !a.title);
     setTitle(this.title, a.title ?? '');
