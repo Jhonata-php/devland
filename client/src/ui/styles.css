@@ -12197,3 +12197,11 @@ html.is-replay #world {
   .ui-brand__mark, .ui-brand img { width: 30px; height: 30px; }
   .ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 16px; letter-spacing: 0.12em; }
 }
+
+/* Anéis de uso do lado direito (embaixo da cápsula de ícones); saem da frente quando a gaveta do agente abre. */
+@media (min-width: 601px) {
+  .ui-usage { left: auto; right: 14px; top: calc(var(--top-h) + 6px); transition: right 0.32s var(--ease); }
+  .has-sidebar .ui-usage { left: auto; }
+  .has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
+  .ui-usage-tip { left: auto; right: calc(100% + 10px); }
+}
