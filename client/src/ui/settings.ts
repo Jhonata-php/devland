@@ -97,6 +97,7 @@ export class SettingsPopover implements UiComponent {
   private remoteGroup: HTMLElement;
   private logoutBtn: HTMLButtonElement;
   private usersRow: HTMLElement;
+  private testHint: HTMLElement;
   /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
   private profileRow: HTMLElement;
   private profileText: HTMLElement;
@@ -252,7 +253,13 @@ export class SettingsPopover implements UiComponent {
         'div',
         { class: 'ui-set-group' },
         h('h3', { text: tr('Avisos') }),
-        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você ou termina o trabalho e a aba está em segundo plano.'), () => void this.toggleNotifications()),
+        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o Habblaud fechado (no iPhone, com ele na Tela de Início).'), () => void this.toggleNotifications()),
+        h(
+          'div',
+          { class: 'ui-set' },
+          h('div', { class: 'ui-set__text' }, h('span', { class: 'ui-set__label', text: tr('Testar notificação') }), (this.testHint = h('span', { class: 'ui-set__hint', text: tr('Manda um aviso de teste aos aparelhos com as notificações ligadas.') }))),
+          h('button', { class: 'ui-btn', type: 'button', text: tr('Enviar teste'), on: { click: () => void this.testNotify() } }),
+        ),
       ),
       this.soundGroup.el,
       h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Idioma') }), this.language.row),
@@ -341,10 +348,10 @@ export class SettingsPopover implements UiComponent {
     const state = notificationState();
     const hint =
       state === 'unsupported'
-        ? tr('Este navegador não oferece notificações.')
+        ? tr('Este navegador não oferece notificações. No iPhone, adicione o Habblaud à Tela de Início e abra por lá.')
         : state === 'denied'
           ? tr('Bloqueadas pelo navegador: libere nas permissões do site.')
-          : tr('Avisa quando alguém precisa de você ou termina o trabalho e a aba está em segundo plano.');
+          : tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o Habblaud fechado (no iPhone, com ele na Tela de Início).');
     setText(notif.hint, hint);
     notif.btn.disabled = state === 'unsupported';
   }
@@ -363,14 +370,22 @@ export class SettingsPopover implements UiComponent {
     }
   }
 
+  private async testNotify(): Promise<void> {
+    setText(this.testHint, tr('Enviando…'));
+    const sent = await this.notifier.testPush();
+    setText(this.testHint, sent > 0 ? tr('Enviado. Se não chegou, confira a permissão de notificações do aparelho.') : sent === 0 ? tr('Nenhum aparelho assinado: ligue "Notificações do navegador" acima.') : tr('Não deu para enviar o teste.'));
+  }
+
   private async toggleNotifications(): Promise<void> {
     if (this.ctx.prefs.browserNotifications) {
       this.ctx.updatePrefs({ browserNotifications: false });
+      void this.notifier.unsubscribePush();
       return;
     }
     const state = await this.notifier.enableBrowserNotifications();
     this.ctx.updatePrefs({ browserNotifications: state === 'granted' });
     if (state === 'denied') this.ctx.announce(tr('Notificações bloqueadas pelo navegador.'));
+    if (state === 'unsupported') this.ctx.announce(tr('Este navegador não deixa notificar. No iPhone, adicione o Habblaud à Tela de Início e abra por lá.'));
   }
 
   private async toggleDemo(): Promise<void> {

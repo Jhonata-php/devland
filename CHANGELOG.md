@@ -127,6 +127,11 @@ do meio (0.**3**.0).
 - **Cloud: a segunda conta do Claude aparece no topo.** Uma conta conectada aparecia só depois de ter números de uso; agora
   todas as contas do Claude conectadas têm o seu cartão, e os números chegam quando uma conversa dela trabalha.
 
+- **Notificações push de verdade (iPhone e computador).** Em **Ajustes › Avisos**, ligar "Notificações do navegador" assina o
+  aparelho no push do servidor (chaves VAPID e criptografia RFC 8291, sem dependência nova): quando um agente termina ou
+  precisa de você, o aviso chega mesmo com o Habblaud fechado. No iPhone é preciso adicionar o Habblaud à Tela de Início e abrir
+  por lá (iOS 16.4 ou mais novo). Há um botão **Enviar teste**.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

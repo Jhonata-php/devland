@@ -45,6 +45,7 @@ import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
 import { ensureHabblaudPlugins } from './accounts/plugins';
+import { PushService } from './push/service';
 import { pickAccountByLoad } from './pty/pick-account';
 import { loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
@@ -219,6 +220,16 @@ const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (
 const hub = new Hub(office, {
   canAnswer: (req) => (isRemoteRequest(req) ? remoteAllows(req, 'permissions') : isLoopbackHost(req.headers.host)),
 });
+// Notificações push (push/service.ts): no Cloud e no acesso remoto, para avisar o celular mesmo com o Habblaud fechado.
+const push = cloud || config.remote ? new PushService({ dir: join(config.dataDir, 'push'), subject: 'mailto:habblaud@localhost' }) : undefined;
+if (push) {
+  push.load();
+  hub.onNotice((n) => {
+    // "Precisa de você" e "concluiu" (o texto do aviso de conclusão começa com ✅); o resto não vira notificação.
+    if (n.level !== 'alert' && !(n.level === 'success' && n.text.startsWith('✅'))) return;
+    void push.notify({ title: n.level === 'alert' ? tr('Habblaud — precisa de você') : tr('Habblaud — terminou'), body: n.text, tag: n.agentId ?? n.id });
+  });
+}
 // "Meu dia": amostra o escritório a cada segundo e persiste em <dataDir>/stats/ (ver history/daystats.ts).
 const stats = new DayStatsService({ dir: join(config.dataDir, 'stats'), snapshot: () => hub.current() });
 stats.load();
@@ -482,6 +493,7 @@ const api = createApiHandler({
   },
   codexLive,
   stats,
+  push,
   updates: config.cloudVersion ? Object.assign(updates, { configure: configureVelix }) : updates,
   remote: config.remote ? { is: isRemoteRequest, allows: remoteAllows, isAdmin: cloud?.isAdmin } : undefined,
   world: world ? createWorldRoutes(world, worldViewer, worldSocial) : undefined,

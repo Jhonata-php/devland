@@ -80,6 +80,13 @@ export interface ApiDeps {
   /** Estatísticas do "Meu dia" (GET /api/stats, http/stats.ts). */
   stats?: DayStatsService;
   /** Verificação de versão nova no GitHub (GET /api/updates, POST /api/updates/check; updates/checker.ts). */
+  /** Notificações push (GET /api/push/key, POST /api/push/subscribe|unsubscribe|test; push/service.ts). */
+  push?: {
+    publicKey(): string;
+    subscribe(body: unknown): { ok: true } | { ok: false; error: string };
+    unsubscribe(endpoint: unknown): void;
+    notify(msg: { title: string; body: string; tag?: string }): Promise<number>;
+  };
   updates?: {
     status(): UpdateStatus;
     check(opts: { manual?: boolean }): Promise<UpdateStatus>;
@@ -703,6 +710,38 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/updates') {
       if (!isRead) methodNotAllowed(res, 'GET');
       else sendJson(res, 200, { version: deps.version, ...(deps.updates?.status() ?? { state: 'off', available: false }) });
+      return true;
+    }
+    if (path.startsWith('/api/push/')) {
+      const push = deps.push;
+      if (!push) {
+        req.resume();
+        sendJson(res, 404, { error: tr('notificações push desligadas') });
+      } else if (path === '/api/push/key' && isRead) {
+        sendJson(res, 200, { publicKey: push.publicKey() });
+      } else if (method !== 'POST') {
+        methodNotAllowed(res, 'POST');
+      } else if (path === '/api/push/test') {
+        req.resume();
+        push
+          .notify({ title: tr('Habblaud — teste'), body: tr('As notificações estão funcionando.'), tag: 'push-test' })
+          .then((sent) => sendJson(res, 200, { sent }))
+          .catch((err) => fail(res, err));
+      } else if (path === '/api/push/subscribe' || path === '/api/push/unsubscribe') {
+        readJson(req)
+          .then((body) => {
+            if (path === '/api/push/unsubscribe') {
+              push.unsubscribe((body as { endpoint?: unknown } | null)?.endpoint);
+              return sendJson(res, 200, { ok: true });
+            }
+            const r = push.subscribe(body);
+            sendJson(res, r.ok ? 200 : 400, r.ok ? { ok: true } : { error: r.error });
+          })
+          .catch((err) => fail(res, err));
+      } else {
+        req.resume();
+        sendJson(res, 404, { error: tr('rota desconhecida') });
+      }
       return true;
     }
     if (path === '/api/updates/auto') {
