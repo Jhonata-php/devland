@@ -3449,4 +3449,10 @@ export const EN: Readonly<Record<string, string>> = {
   "Não foi possível abrir o terminal.": "Couldn't open the terminal.",
   "Conecte uma conta do Claude ou do Codex e abra um terminal: o agente aparece aqui no escritório.": "Connect a Claude or Codex account and open a terminal: the agent shows up here in the office.",
   "Abrir contas": "Open accounts",
+  "Automática": "Automatic",
+  "Conta": "Account",
+  "Anexar foto ou arquivo": "Attach a photo or file",
+  "Tirar o anexo": "Remove attachment",
+  "Sem permissão para usar o microfone.": "No permission to use the microphone.",
+  "Não deu para ouvir: {0}": "Couldn't listen: {0}",
 };

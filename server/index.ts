@@ -2,9 +2,9 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
-import { existsSync, rmSync } from 'node:fs';
+import { chownSync, existsSync, rmSync } from 'node:fs';
 import http from 'node:http';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
 import { AccountsService } from './accounts/service';
 import { isTruthy, loadConfig, messagesOffReason, terminalOffReason, worldSocketUrl } from './config';
@@ -56,7 +56,7 @@ import { getLocale, tr } from '../shared/i18n';
 import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
-import { AttachmentStore } from './spawn/attachments';
+import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
 import { isDemoId } from '../shared/timeline';
@@ -338,10 +338,37 @@ const ptyOptIn = isTruthy(ptyFlag);
 // Novo agente pelo escritório (sessão do Claude Code em segundo plano, ou a tela do app do Claude preenchida): a
 // liberação acima mais a trava das mensagens. No Docker, quem roda é o auxiliar do host (npm run codex:bridge).
 const spawnOn = config.messages && ptyOptIn;
+function pickAccountId(list: { id: string; dir: string }[]): string | undefined {
+  const snap = hub.current();
+  return pickAccountByLoad(
+    list.map((a) => {
+      const u = snap.accounts.find((x) => x.id === a.id)?.usage;
+      return { id: a.id, connected: !cloud || existsSync(join(a.dir, '.credentials.json')), fiveHour: u?.fiveHour?.utilization, sevenDay: u?.sevenDay?.utilization };
+    }),
+  );
+}
 const attachments = spawnOn ? new AttachmentStore() : undefined;
+// Anexos gravados na casa de quem roda os agentes (Cloud: o usuário "dev", dono dos arquivos; o servidor roda como root).
+function saveAttachments(id: string, files: readonly Attachment[]): string[] {
+  const who = agentRunAs();
+  if (!who) return writeAttachments(attachmentsRoot(), id, files);
+  const root = join(who.home, '.habblaud', 'attachments');
+  const paths = writeAttachments(root, id, files);
+  for (const p of [join(who.home, '.habblaud'), root, ...new Set(paths.map((f) => dirname(f))), ...paths]) chownSync(p, who.uid, who.gid);
+  return paths;
+}
 const spawnBin = config.inDocker ? undefined : runnableClaudeBin(process.env);
 const spawn = spawnOn
-  ? new SpawnService(config.inDocker ? { attachments } : { opener: createOpener(), cli: spawnBin ? createCliRunner(spawnBin) : undefined, attachments })
+  ? new SpawnService({
+      writeFiles: saveAttachments,
+      ...(config.inDocker ? { attachments } : { opener: createOpener(), cli: spawnBin ? createCliRunner(spawnBin) : undefined, attachments }),
+      // Cloud: a conta escolhida na tela; sem escolha ("Automática"), a de mais folga (a mesma regra das sessões novas).
+      accountDir: (id) => {
+        const list = accounts.entries();
+        const a = (id && id !== 'auto' ? list.find((e) => e.id === id) : undefined) ?? (cloud ? list.find((e) => e.id === pickAccountId(list.map((x) => ({ id: x.id, dir: x.dir, isDefault: isDefaultDir(x.dir, config.home) })))) : undefined);
+        return a && !isDefaultDir(a.dir, config.home) ? a.dir : undefined;
+      },
+    })
   : undefined;
 // Ditado: no Docker quem transcreve é o auxiliar do host; no Node, o servidor, se achar o Whisper local.
 const whisper = config.messages && !config.inDocker ? findWhisper() : undefined;
@@ -390,15 +417,7 @@ const ptys = spawnPty
       accounts: () => accounts.entries().map((a) => ({ id: a.id, dir: a.dir, isDefault: isDefaultDir(a.dir, config.home) })),
       // Sessão nova sem conta pedida (Novo, Nova sessão, primeiro agente): a conta conectada com mais folga (o maior uso entre 5 h e
       // semana, o menor vence); sem números, a padrão. Uma conversa em andamento fica na conta dela.
-      pickAccount: (list) => {
-        const snap = hub.current();
-        return pickAccountByLoad(
-          list.map((a) => {
-            const u = snap.accounts.find((x) => x.id === a.id)?.usage;
-            return { id: a.id, connected: !cloud || existsSync(join(a.dir, '.credentials.json')), fiveHour: u?.fiveHour?.utilization, sevenDay: u?.sevenDay?.utilization };
-          }),
-        );
-      },
+      pickAccount: pickAccountId,
       agent: (id) => {
         const a = office.get(id);
         return a && { id: a.id, kind: a.kind, account: a.account, sessionId: a.sessionId, cwd: office.roomPath(a.roomId) };
@@ -475,7 +494,7 @@ const api = createApiHandler({
   sessions: history,
   timeline: createTimelineHandler({ dir: timelineDir, recording: !!timeline }),
   permissions: permissions ? createPermissionRoutes(permissions) : undefined,
-  messages: messages ? createMessageRoutes(messages) : undefined,
+  messages: messages ? createMessageRoutes(messages, attachments && { store: attachments, save: saveAttachments }) : undefined,
   // Habblaud Cloud: o terminal interativo também pela porta com login, para quem tem a permissão "terminal".
   pty: ptys ? createPtyRoutes(ptys, cloud ? (req) => isRemoteRequest(req) && remoteAllows(req, 'terminal') : undefined) : undefined,
   spawn,

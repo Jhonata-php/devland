@@ -3466,4 +3466,10 @@ export const FR: Readonly<Record<string, string>> = {
   "Não foi possível abrir o terminal.": "Impossible d'ouvrir le terminal.",
   "Conecte uma conta do Claude ou do Codex e abra um terminal: o agente aparece aqui no escritório.": "Connectez un compte Claude ou Codex et ouvrez un terminal : l'agent apparaît ici dans le bureau.",
   "Abrir contas": "Ouvrir les comptes",
+  "Automática": "Automatique",
+  "Conta": "Compte",
+  "Anexar foto ou arquivo": "Joindre une photo ou un fichier",
+  "Tirar o anexo": "Retirer la pièce jointe",
+  "Sem permissão para usar o microfone.": "Pas d'autorisation pour le micro.",
+  "Não deu para ouvir: {0}": "Impossible d'écouter : {0}",
 };

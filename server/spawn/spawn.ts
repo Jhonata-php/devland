@@ -44,6 +44,10 @@ const ERROR_MAX = 300;
 export interface SpawnRequest {
   folder: string;
   prompt: string;
+  /** Id da conta escolhida na tela (vazio/"auto": o servidor escolhe; ver SpawnServiceOptions.accountDir). */
+  account?: string;
+  /** Pasta de configuração da conta (CLAUDE_CONFIG_DIR) que o servidor resolveu; sem ela, a conta padrão. */
+  configDir?: string;
 }
 
 export type SpawnStatus = 'queued' | 'sent' | 'opened' | 'failed';
@@ -77,7 +81,8 @@ export function parseSpawn(raw: unknown): SpawnRequest | { error: string } {
     return { error: tr('escolha uma pasta (caminho absoluto, ex.: /Users/voce/projeto)') };
   }
   if (prompt.length > PROMPT_MAX || prompt.includes('\0')) return { error: tr('o pedido passa de {0} caracteres', [PROMPT_MAX]) };
-  return { folder, prompt };
+  const account = typeof r.account === 'string' && r.account.length <= 120 && !r.account.includes('\0') ? r.account : undefined;
+  return { folder, prompt, ...(account ? { account } : {}) };
 }
 
 /** O link que o app do Claude entende (claude://code/new; `q` = pedido já escrito). */
@@ -136,7 +141,9 @@ export function createCliRunner(bin: string, timeoutMs = CLI_TIMEOUT_MS): CliRun
   return (req) =>
     new Promise((ok) => {
       trustFolder(req.folder);
-      const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8', ...runAsOptions(process.env) }, (err, out, stderr) => {
+      const runAs = runAsOptions(process.env);
+      const env = req.configDir ? { ...runAs.env, CLAUDE_CONFIG_DIR: req.configDir } : runAs.env;
+      const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8', ...runAs, env }, (err, out, stderr) => {
         const id = /backgrounded\s*·\s*([\w-]+)/.exec(out ?? '')?.[1];
         if (!err && id) return ok({ ok: true, id });
         const line = [stderr, out, err?.message].map((t) => (t ?? '').split('\n').map((l) => l.trim()).find(Boolean)).find(Boolean);
@@ -214,6 +221,8 @@ export interface SpawnServiceOptions {
   writeFiles?: (spawnId: string, files: readonly Attachment[]) => string[];
   now?: () => number;
   newId?: () => string;
+  /** Conta do pedido -> pasta de configuração (undefined = conta padrão). Cloud: escolhe a conta quando não vem uma. */
+  accountDir?: (account: string | undefined) => string | undefined;
 }
 
 export type SpawnSubmit = { spawn: SpawnInfo } | { error: 'invalid' | 'unavailable' | 'too-many'; reason: string };
@@ -311,7 +320,8 @@ export class SpawnService {
     } finally {
       this.dropFiles(e);
     }
-    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths) };
+    const configDir = this.opts.accountDir?.(e.req.account);
+    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}) };
     this.resolve(e, await launch(req, opener, this.opts.cli));
   }
 

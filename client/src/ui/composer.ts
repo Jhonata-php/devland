@@ -27,7 +27,26 @@ import type { UiContext } from './context';
 import { DictationButton, dictationAvailable, insertDictation } from './dictation';
 import { h, setAttr, setHidden, setText, setTitle } from './dom';
 import { access } from '../net/access';
+import { ICONS } from './icons';
+import { uploadAttachment } from './spawn';
 import { tr } from '../../../shared/i18n';
+
+interface SpeechLike {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start(): void;
+  stop(): void;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+}
+
+function speechCtor(): (new () => SpeechLike) | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const w = window as unknown as { SpeechRecognition?: new () => SpeechLike; webkitSpeechRecognition?: new () => SpeechLike };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition;
+}
 
 export type ComposerVariant = 'drawer' | 'terminal';
 
@@ -65,6 +84,14 @@ export class MessageComposer {
   /** Rascunho que recebe o ditado em andamento (o agente pode mudar enquanto o Mac transcreve). */
   private dictKey = '';
   private canDictate = false;
+  /** Anexos por agente (fotos, arquivos): sobem ao enviar. */
+  private files = new Map<string, File[]>();
+  private fileInput: HTMLInputElement;
+  private attachBtn: HTMLButtonElement;
+  private fileList: HTMLElement;
+  /** Ditado pelo navegador (iPhone/Chrome), quando o servidor não tem Whisper (Cloud). */
+  private speechBtn: HTMLButtonElement;
+  private speech: SpeechLike | null = null;
 
   constructor(
     private ctx: UiContext,
@@ -102,9 +129,27 @@ export class MessageComposer {
     );
     this.dictate.el.classList.add('ui-msg__mic');
     setHidden(this.dictate.el, true);
+    this.fileInput = h('input', { type: 'file', hidden: true, attrs: { multiple: true, accept: 'image/*,application/pdf,text/*,audio/*,video/*,.zip,.json,.csv,.md', 'aria-hidden': 'true', tabindex: '-1' } });
+    this.fileInput.addEventListener('change', () => {
+      const cur = this.files.get(this.agentId) ?? [];
+      this.files.set(this.agentId, [...cur, ...(this.fileInput.files ?? [])].slice(0, 8));
+      this.fileInput.value = '';
+      this.renderFiles();
+      this.syncButton();
+    });
+    this.attachBtn = h('button', { class: 'ui-btn ui-msg__attach', type: 'button', title: tr('Anexar foto ou arquivo'), attrs: { 'aria-label': tr('Anexar foto ou arquivo') }, on: { click: () => this.fileInput.click() } });
+    const clip = h('span', { attrs: { 'aria-hidden': 'true' } });
+    clip.innerHTML = ICONS.attach;
+    this.attachBtn.append(clip);
+    this.fileList = h('ul', { class: 'ui-msg__files', attrs: { 'aria-label': tr('Anexos') }, hidden: true });
+    this.speechBtn = h('button', { class: 'ui-btn ui-msg__mic ui-dictate ui-dictate--compact', type: 'button', title: tr('Ditar'), attrs: { 'aria-label': tr('Ditar'), 'aria-pressed': 'false' }, on: { click: () => this.toggleSpeech() } });
+    const mic = h('span', { class: 'ui-dictate__icon', attrs: { 'aria-hidden': 'true' } });
+    mic.innerHTML = ICONS.mic;
+    this.speechBtn.append(mic);
+    setHidden(this.speechBtn, !speechCtor());
     this.row = h('div', { class: `ui-msg__row${term ? ' ui-term__prompt ui-term__prompt--mic' : ''}` });
     if (term) this.row.append(h('span', { class: 'ui-term__caret', text: '>', attrs: { 'aria-hidden': 'true' } }));
-    this.row.append(this.box, this.dictate.el, this.sendBtn);
+    this.row.append(this.box, this.attachBtn, this.speechBtn, this.dictate.el, this.sendBtn, this.fileInput);
     // Clique na "linha do prompt" (fora do botão) põe o cursor na caixa, como num terminal.
     this.row.addEventListener('mousedown', (e) => {
       if (e.target === this.row && !this.box.disabled) {
@@ -115,7 +160,7 @@ export class MessageComposer {
     this.hint = h('p', { class: 'ui-msg__hint', hidden: true });
     this.status = h('p', { class: 'ui-msg__status', role: 'status', hidden: true, attrs: { 'aria-live': 'polite' } });
     this.tip = term ? null : h('p', { class: 'ui-msg__tip', text: composerTip() });
-    this.el = h('div', { class: `ui-msg ui-msg--${variant}` }, this.hint, this.row, this.dictStatus, this.status, this.tip);
+    this.el = h('div', { class: `ui-msg ui-msg--${variant}` }, this.hint, this.fileList, this.row, this.dictStatus, this.status, this.tip);
   }
 
   /**
@@ -156,6 +201,10 @@ export class MessageComposer {
     setTitle(this.box, ready ? '' : mode.text);
     this.row.classList.toggle('is-disabled', !ready);
     setHidden(this.sendBtn, !ready);
+    // Anexos e ditado pelo navegador: só no Cloud (o servidor tem o depósito de anexos; no Mac há o ditado do Whisper).
+    setHidden(this.attachBtn, !ready || !access().cloud);
+    setHidden(this.speechBtn, !ready || !speechCtor() || this.canDictate);
+    this.renderFiles();
     // Consulta em cache (30 s): o Mac pode instalar o Whisper ou parar o auxiliar com a página aberta.
     void dictationAvailable().then((ok) => {
       if (ok === this.canDictate) return;
@@ -230,8 +279,65 @@ export class MessageComposer {
     if (!error && !/…$/.test(text)) this.dictTimer = setTimeout(() => setHidden(this.dictStatus, true), 6_000);
   }
 
+  private renderFiles(): void {
+    const list = this.files.get(this.agentId) ?? [];
+    setHidden(this.fileList, !list.length);
+    this.fileList.replaceChildren(
+      ...list.map((f) =>
+        h(
+          'li',
+          { class: 'ui-msg__file' },
+          h('span', { text: f.name }),
+          h('button', {
+            class: 'ui-msg__file-x',
+            type: 'button',
+            text: '×',
+            attrs: { 'aria-label': tr('Tirar o anexo') },
+            on: {
+              click: () => {
+                this.files.set(this.agentId, (this.files.get(this.agentId) ?? []).filter((x) => x !== f));
+                this.renderFiles();
+                this.syncButton();
+              },
+            },
+          }),
+        ),
+      ),
+    );
+  }
+
+  private toggleSpeech(): void {
+    if (this.speech) return this.speech.stop();
+    const Ctor = speechCtor();
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = navigator.language || 'pt-BR';
+    rec.interimResults = false;
+    rec.continuous = false;
+    this.dictKey = this.agentId;
+    rec.onresult = (e) => {
+      const text = Array.from(e.results).map((r) => r[0]?.transcript ?? '').join(' ');
+      if (text.trim()) this.insertDictated(text);
+    };
+    rec.onerror = (e) => this.sayDictation(e.error === 'not-allowed' ? tr('Sem permissão para usar o microfone.') : tr('Não deu para ouvir: {0}', [e.error]), true);
+    rec.onend = () => {
+      this.speech = null;
+      this.speechBtn.classList.remove('is-recording');
+      this.speechBtn.setAttribute('aria-pressed', 'false');
+    };
+    this.speech = rec;
+    this.speechBtn.classList.add('is-recording');
+    this.speechBtn.setAttribute('aria-pressed', 'true');
+    try {
+      rec.start();
+    } catch {
+      rec.onend?.();
+    }
+  }
+
   private syncButton(): void {
-    this.sendBtn.disabled = this.mode.kind !== 'ready' || !canSend(this.box.value) || this.states.get(this.agentId)?.phase === 'sending';
+    const hasFiles = (this.files.get(this.agentId)?.length ?? 0) > 0;
+    this.sendBtn.disabled = this.mode.kind !== 'ready' || !(canSend(this.box.value) || (hasFiles && this.box.value.length <= MESSAGE_MAX)) || this.states.get(this.agentId)?.phase === 'sending';
   }
 
   /** Cresce com o texto até o limite do CSS (~6 linhas; depois rola). Escondida, mede quando aparecer. */
@@ -251,13 +357,20 @@ export class MessageComposer {
   private async send(): Promise<void> {
     const agentId = this.agentId;
     const raw = this.box.value;
-    if (this.mode.kind !== 'ready' || !canSend(raw) || this.states.get(agentId)?.phase === 'sending') return;
+    const files = this.files.get(agentId) ?? [];
+    if (this.mode.kind !== 'ready' || !(canSend(raw) || (files.length && raw.length <= MESSAGE_MAX)) || this.states.get(agentId)?.phase === 'sending') return;
     this.providers.set(agentId, this.provider);
     this.setState(agentId, { phase: 'sending', at: Date.now() });
     let r: { message: OutboxMessage } | { error: string };
     try {
-      r = await this.ctx.store.sendMessage(agentId, messageText(raw));
-    } catch {
+      const ids: string[] = [];
+      for (const f of files) ids.push(await uploadAttachment(f));
+      r = await this.ctx.store.sendMessage(agentId, messageText(raw), ids);
+    } catch (err) {
+      if (files.length) {
+        this.setState(agentId, { phase: 'rejected', error: (err as Error).message || OFFLINE_ERROR, at: Date.now() });
+        return;
+      }
       r = { error: OFFLINE_ERROR };
     }
     if ('error' in r) {
@@ -265,6 +378,8 @@ export class MessageComposer {
       this.setState(agentId, { phase: 'rejected', error: r.error, at: Date.now() });
       return;
     }
+    this.files.delete(agentId);
+    this.renderFiles();
     // Na fila: a caixa esvazia (a não ser que você tenha continuado a escrever enquanto o envio ia).
     if ((this.drafts.get(agentId) ?? '') === raw) {
       this.drafts.delete(agentId);

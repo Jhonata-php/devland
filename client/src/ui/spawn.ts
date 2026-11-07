@@ -5,11 +5,12 @@
 // (ui/dictation.ts, Whisper local no Mac). Pasta que o Claude Code não conhece cai no app (Enter lá).
 import { tr } from '../../../shared/i18n';
 import { isDemoId } from '../../../shared/timeline';
-import type { OfficeSnapshot } from '../../../shared/types';
+import type { AccountInfo, OfficeSnapshot } from '../../../shared/types';
 import type { UiContext } from './context';
 import { DictationButton, dictationAvailable, insertDictation } from './dictation';
 import { h, iconButton, setHidden, setText } from './dom';
 import { ICONS } from './icons';
+import { createAccountChip, updateAccountChip } from './widgets';
 
 export const SPAWN_PROMPT_MAX = 8_000;
 export const MAX_FILES = 8;
@@ -92,6 +93,16 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
+/** Sobe um arquivo para o depósito de anexos e devolve o id (o "Novo agente" e a caixa de mensagem usam o mesmo). */
+export async function uploadAttachment(file: File): Promise<string> {
+  const r = await api<{ id: string }>('/api/spawn/attachments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: file.name, type: file.type, data: await fileToBase64(file) }),
+  });
+  return r.id;
+}
+
 function readPref(): string {
   try {
     return localStorage.getItem(LAST_FOLDER_KEY) ?? '';
@@ -129,6 +140,10 @@ export class SpawnPanel {
   private busy = false;
   private folders: FolderOption[] = [];
   private selected = '';
+  /** Conta escolhida ('' = Automática: o servidor usa a de mais folga). */
+  private account = '';
+  private readonly accountRow: HTMLElement;
+  private readonly accountLabel: HTMLElement;
   private typing = false;
   private files: PendingFile[] = [];
 
@@ -163,6 +178,8 @@ export class SpawnPanel {
       (text, error) => this.say(text, error),
     );
     setHidden(this.dictate.el, true);
+    this.accountLabel = h('p', { class: 'ui-spawn__label', text: tr('Conta') });
+    this.accountRow = h('div', { class: 'ui-spawn__accounts', role: 'radiogroup', attrs: { 'aria-label': tr('Conta') } });
     this.fileList = h('ul', { class: 'ui-spawn__files', attrs: { 'aria-label': tr('Anexos') } });
     this.submitBtn = h('button', { class: 'ui-btn ui-perm__btn ui-perm__btn--allow ui-spawn__go', type: 'button', on: { click: () => void this.submit() } }, tr('Começar'));
     this.status = h('p', { class: 'ui-rename__hint ui-spawn__status', attrs: { role: 'status', 'aria-live': 'polite' } });
@@ -192,6 +209,8 @@ export class SpawnPanel {
         this.folderList,
         this.otherBtn,
         this.folder,
+        this.accountLabel,
+        this.accountRow,
         h('label', { class: 'ui-spawn__label', attrs: { for: 'ui-spawn-prompt' }, text: tr('Pedido') }),
         this.prompt,
         h('div', { class: 'ui-spawn__tools' }, this.dictate.el, attachBtn, this.fileInput),
@@ -220,6 +239,7 @@ export class SpawnPanel {
     if (this.isOpen) return this.hide();
     // Primeiro com o que o escritório já sabe; a lista do servidor (histórico) chega logo depois.
     if (!this.folders.length) this.setFolders(spawnFolders(this.ctx.store.snapshot).map((path) => ({ path, name: path.split(/[\\/]/).pop() || path, lastAt: 0 })));
+    this.renderAccounts();
     void this.loadFolders();
     void this.checkDictation();
     if (!this.busy) setText(this.status, '');
@@ -238,6 +258,29 @@ export class SpawnPanel {
     if (typeof this.el.hidePopover === 'function' && this.isOpen) this.el.hidePopover();
     this.el.classList.remove('is-open');
     this.anchor?.setAttribute('aria-expanded', 'false');
+  }
+
+  /** "Automática" + uma opção por conta do Claude Code; some quando há uma só (não há o que escolher). */
+  private renderAccounts(): void {
+    const list = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => a.provider !== 'codex');
+    const many = list.length > 1;
+    setHidden(this.accountLabel, !many);
+    setHidden(this.accountRow, !many);
+    if (!many) {
+      this.account = '';
+      return;
+    }
+    if (this.account && !list.some((a) => a.id === this.account)) this.account = '';
+    const opts: [string, string, AccountInfo | undefined][] = [['', tr('Automática'), undefined], ...list.map((a): [string, string, AccountInfo] => [a.id, a.name, a])];
+    this.accountRow.replaceChildren(
+      ...opts.map(([id, name, a]) => {
+        const chip = createAccountChip('sm');
+        if (a) updateAccountChip(chip, a);
+        const b = h('button', { class: 'ui-btn ui-spawn__acc', type: 'button', role: 'radio', attrs: { 'aria-checked': String(this.account === id) }, on: { click: () => { this.account = id; this.renderAccounts(); } } }, ...(a ? [chip] : []), h('span', { text: name }));
+        b.classList.toggle('is-on', this.account === id);
+        return b;
+      }),
+    );
   }
 
   private async loadFolders(): Promise<void> {
@@ -369,7 +412,7 @@ export class SpawnPanel {
       let info = await api<SpawnInfo>('/api/spawn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder, prompt: this.prompt.value, ...(ids.length ? { attachments: ids } : {}) }),
+        body: JSON.stringify({ folder, prompt: this.prompt.value, ...(this.account ? { account: this.account } : {}), ...(ids.length ? { attachments: ids } : {}) }),
       });
       const end = Date.now() + WAIT_MS;
       while ((info.status === 'queued' || info.status === 'sent') && Date.now() < end) {

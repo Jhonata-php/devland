@@ -12,6 +12,9 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Habblaud Cloud: escolher a conta no "Novo agente"** ("Automática" usa a de mais folga) e **anexar fotos e arquivos
+  nas Conversas**, mais um microfone que dita pelo navegador (iPhone/Chrome) quando o servidor não tem Whisper.
+  Os anexos agora são gravados na casa do usuário dos agentes, para o Claude conseguir ler.
 - **Habblaud Cloud: vários usuários com login.** Com `HABBLAUD_CLOUD=1` (ou `docker-compose.cloud.yml`), a porta 4748
   vira um login para várias pessoas, pronto para ficar atrás de um proxy com HTTPS. O primeiro acesso cria o admin
   com o código de instalação que sai no log; depois, convites com papel (admin ou usuário) e permissões por pessoa, em
