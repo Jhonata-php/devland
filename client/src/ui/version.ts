@@ -233,6 +233,8 @@ export class AboutGroup {
     const canApply = fresh && !!s?.canApply;
     const working = this.applying || !!s?.applyingSince;
     const cloud = !!access().cloud;
+    // Cloud sem botão (versão ainda sem como atualizar por aqui): a caixa verde ficaria vazia.
+    if (cloud && !canApply) setHidden(this.fresh, true);
     setHidden(this.howTo, canApply || cloud);
     setHidden(this.autoRow, !(s?.canApply && s.auto && access().admin));
     if (s?.auto && !this.autoBusy) {
