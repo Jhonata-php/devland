@@ -172,6 +172,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Atualização nativa não encontrava o pacote da versão nova (404):** a imagem principal era publicada antes do pacote `dist-`, e o servidor via a versão nova antes de o pacote existir. Agora o pacote sai primeiro.
 - **Celular: topo mínimo.** Uma linha fina de 48 px com o logo, os mostradores de uso (só os anéis) e o aviso de quem precisa de você; as ferramentas ficam na barra de baixo e o mapa ganha a tela. Também corrige a primeira linha dos agentes na lateral, que sobrepunha o papel e a função.
 - **Atualização automática checa as versões novas a cada 30 min** (antes, a cada 6 h; quem estava na frente de uma sequência de versões demorava a receber).
 - **Estilos do seletor de conta no "Novo agente" e dos anexos da caixa de mensagem não eram carregados** (estavam num

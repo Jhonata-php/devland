@@ -26,19 +26,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.cloud
-          platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: CLOUD_VERSION=${{ github.ref_name }}
-          # :latest anda junto com a tag da versão: o manifesto do Velix usa :latest e o painel avisa quando ele muda.
-          tags: |
-            ghcr.io/jhonata-php/habblaud:${{ github.ref_name }}
-            ghcr.io/jhonata-php/habblaud:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
       # Pacote só com o código novo (uma camada, sem manifesto de atestado): a atualização nativa do Habblaud o baixa
       # anonimamente (a imagem é pública) em vez de depender do Velix. Mesma tag com o prefixo dist-.
       - uses: docker/build-push-action@v6
@@ -52,3 +39,18 @@ jobs:
           sbom: false
           tags: ghcr.io/jhonata-php/habblaud:dist-${{ github.ref_name }}
           cache-from: type=gha
+      # A imagem principal vai por ÚLTIMO: a tag da versão só aparece depois de o pacote dist- existir (senão a atualização
+      # nativa encontrava a versão nova e levava 404 no pacote, ainda sendo publicado).
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cloud
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: CLOUD_VERSION=${{ github.ref_name }}
+          # :latest anda junto com a tag da versão: o manifesto do Velix usa :latest e o painel avisa quando ele muda.
+          tags: |
+            ghcr.io/jhonata-php/habblaud:${{ github.ref_name }}
+            ghcr.io/jhonata-php/habblaud:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
