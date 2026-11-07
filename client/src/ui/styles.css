@@ -12030,3 +12030,7 @@ html.is-replay #world {
 .ui-wordtext__cur { margin-left: 2px; animation: hk-blink 1s steps(2, start) infinite; }
 @keyframes hk-blink { 50% { opacity: 0; } }
 .ui-splash__name.ui-wordtext { font-size: 34px; }
+
+/* A marca em texto aparece sempre (as regras de largura escondiam o logotipo antigo em pixels). */
+.ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 19px; }
+@media (max-width: 700px) { .ui-topbar .ui-brand__name.ui-wordtext { font-size: 15px; letter-spacing: 0.08em; } }
