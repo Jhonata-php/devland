@@ -107,6 +107,11 @@ do meio (0.**3**.0).
 - **Terminal do agente: a conversa aparece mesmo quando o fim do arquivo é só uma linha enorme** (a leitura inicial amplia a
   janela até achar mensagens), e no celular o campo de mensagem usa o texto curto.
 
+- **Conversas: os agentes como num app de mensagens.** A aba **Conversas** da barra de baixo (celular; no computador abre ao lado)
+  lista os agentes como conversas (foto, projeto, o que estão fazendo, quando) e, ao tocar, abre o histórico em balões: o que
+  você pediu à direita, a resposta do agente à esquerda (com formatação), avisos no meio e as ferramentas em linhas discretas,
+  com a caixa de resposta embaixo. Sem abrir gaveta nem terminal.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

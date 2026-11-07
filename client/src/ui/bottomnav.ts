@@ -25,6 +25,7 @@ export class BottomNav implements UiComponent {
   constructor(
     private ctx: UiContext,
     openSpawn: () => void,
+    private chats: { toggle(): void; readonly isOpen: boolean; close(): void },
   ) {
     const item = (icon: string, label: string, onClick: () => void, badge = false): Item => {
       const ic = h('span', { class: 'ui-bnav__icon', attrs: { 'aria-hidden': 'true' } });
@@ -34,24 +35,30 @@ export class BottomNav implements UiComponent {
       return { el: el as HTMLButtonElement, badge: b };
     };
     this.office = item(ICONS.office, tr('Escritório'), () => this.showOffice());
-    this.agents = item(ICONS.sidebar, tr('Agentes'), () => ctx.togglePanel('sidebar'), true);
+    this.agents = item(ICONS.feed, tr('Conversas'), () => this.openChats(), true);
     this.accounts = item(ICONS.lock, tr('Contas'), () => openAccounts(ctx.root));
     this.spawn = item(ICONS.newAgent, tr('Novo'), openSpawn);
     this.settings = item(ICONS.settings, tr('Ajustes'), () => ctx.toggleSettings());
     this.el = h('nav', { class: 'ui-bnav', attrs: { 'aria-label': tr('Navegação') } }, this.office.el, this.agents.el, this.accounts.el, this.spawn.el, this.settings.el);
   }
 
-  /** Volta ao mapa: fecha o painel lateral e solta a seleção (a gaveta do agente fecha junto). */
+  private openChats(): void {
+    this.ctx.togglePanel('sidebar', false);
+    this.chats.toggle();
+  }
+
+  /** Volta ao mapa: fecha as conversas e o painel lateral e solta a seleção (a gaveta do agente fecha junto). */
   private showOffice(): void {
+    this.chats.close();
     this.ctx.togglePanel('sidebar', false);
     if (this.ctx.selection()) this.ctx.select(null);
   }
 
   render(): void {
-    const sidebar = this.ctx.isPanelOpen('sidebar');
-    this.office.el.classList.toggle('is-active', !sidebar && !this.ctx.selection());
-    this.agents.el.classList.toggle('is-active', sidebar);
-    this.agents.el.setAttribute('aria-pressed', String(sidebar));
+    const chats = this.chats.isOpen;
+    this.office.el.classList.toggle('is-active', !chats && !this.ctx.selection());
+    this.agents.el.classList.toggle('is-active', chats);
+    this.agents.el.setAttribute('aria-pressed', String(chats));
     // Habblaud Cloud: a aba Contas só existe na instalação em nuvem (as contas são da instalação).
     setHidden(this.accounts.el, !access().cloud);
     this.el.classList.toggle('has-accounts', !!access().cloud);

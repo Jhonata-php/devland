@@ -11533,3 +11533,266 @@ html.is-replay #world {
   color: inherit;
   font: inherit;
 }
+
+/* ---------------------------------------------------------------- Conversas (ui/chats.ts): agentes como mensagens */
+
+.ui-chats {
+  position: fixed;
+  z-index: 36;
+  left: 0;
+  right: 0;
+  top: var(--top-h);
+  bottom: var(--nav-h, 0px);
+  display: flex;
+  flex-direction: column;
+  background: #0e1118;
+  border-top: 1px solid var(--ui-line);
+  color: var(--ui-text);
+}
+
+.ui-chats[hidden],
+.ui-chats__screen[hidden] {
+  display: none;
+}
+
+.ui-chats__screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ui-chats__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 10px 16px;
+  border-bottom: 1px solid var(--ui-line);
+  background: #12151d;
+}
+
+.ui-chats__head h2 {
+  flex: 1;
+  margin: 0;
+  font: 700 18px/1.2 var(--font-ui);
+}
+
+.ui-chats__who {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-chats__title {
+  font: 700 16px/1.2 var(--font-ui);
+}
+
+.ui-chats__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 12px;
+}
+
+.ui-chats__empty {
+  margin: 32px 24px;
+  text-align: center;
+  color: var(--ui-muted);
+}
+
+.ui-chats__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-chats__item:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ui-chats__item.is-gone {
+  opacity: 0.6;
+}
+
+.ui-chats__avatar {
+  position: relative;
+  flex: none;
+  display: grid;
+}
+
+.ui-chats__dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #0e1118;
+  background: #5b6378;
+}
+
+.ui-chats__dot.is-working {
+  background: #5fd38d;
+}
+
+.ui-chats__dot.is-waiting {
+  background: #f4c95d;
+}
+
+.ui-chats__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.ui-chats__text strong {
+  font: 700 16px/1.2 var(--font-ui);
+}
+
+.ui-chats__room {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #b6bdd0;
+}
+
+.ui-chats__when {
+  flex: none;
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__msgs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overscroll-behavior: contain;
+}
+
+.ui-chats__note {
+  margin: 0;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__note[hidden] {
+  display: none;
+}
+
+.ui-chats__row {
+  display: flex;
+}
+
+.ui-chats__row--me {
+  justify-content: flex-end;
+}
+
+.ui-chats__bubble {
+  position: relative;
+  max-width: 86%;
+  padding: 8px 12px 6px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ui-chats__bubble--me {
+  border-bottom-right-radius: 4px;
+  background: #1f4a7a;
+  color: #eaf3ff;
+  white-space: pre-wrap;
+}
+
+.ui-chats__bubble--agent {
+  border-bottom-left-radius: 4px;
+  background: #1c2030;
+  border: 1px solid var(--ui-line);
+}
+
+.ui-chats__bubble p {
+  margin: 0 0 6px;
+}
+
+.ui-chats__bubble pre {
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 12.5px;
+}
+
+.ui-chats__time {
+  display: block;
+  margin-top: 2px;
+  text-align: right;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.ui-chats__sys {
+  align-self: center;
+  max-width: 90%;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  color: var(--ui-muted);
+  text-align: center;
+}
+
+.ui-chats__tool {
+  align-self: flex-start;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font: 12px/1.4 var(--font-mono, monospace);
+  color: var(--ui-muted);
+}
+
+.ui-chats__composer {
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px) * 0);
+  border-top: 1px solid var(--ui-line);
+  background: #12151d;
+}
+
+@media (min-width: 601px) {
+  /* No computador a barra de baixo não existe: as conversas ficam ao lado, com a largura de um painel. */
+  .ui-chats {
+    left: auto;
+    width: min(420px, 100vw);
+    bottom: 0;
+  }
+}
