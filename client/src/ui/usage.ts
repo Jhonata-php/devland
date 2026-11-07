@@ -63,6 +63,8 @@ interface Meter {
 }
 
 interface CardRefs {
+  gauge: HTMLElement;
+  line: HTMLElement;
   chip: HTMLElement;
   flag: HTMLElement;
   name: HTMLElement;
@@ -274,6 +276,8 @@ export class UsageCards {
   private createCard(): HTMLElement {
     const tipId = `ui-usage-tip-${++tipSeq}`;
     const chip = createAccountChip('lg');
+    const gauge = h('span', { class: 'ui-gauge', attrs: { 'aria-hidden': 'true' } }, h('i', { class: 'ui-gauge__ring ui-gauge__ring--out' }), h('i', { class: 'ui-gauge__ring ui-gauge__ring--in' }), chip);
+    const line = h('span', { class: 'ui-gauge__line' });
     const flag = h('span', { class: 'ui-usage-card__flag', hidden: true, attrs: { 'aria-hidden': 'true' } });
     flag.innerHTML = ICONS.clock;
     const name = h('span', { class: 'ui-usage-card__name' });
@@ -310,12 +314,14 @@ export class UsageCards {
     const card = h(
       'div',
       { class: 'ui-usage-card', tabIndex: 0, attrs: { 'aria-describedby': tipId } },
-      chip,
+      gauge,
       flag,
-      h('div', { class: 'ui-usage-card__body' }, h('div', { class: 'ui-usage-card__head' }, name, prov, email, state), meters, msg),
+      h('div', { class: 'ui-usage-card__body' }, h('div', { class: 'ui-usage-card__head' }, name, prov, email, state), line, meters, msg),
       tip,
     );
     this.refs.set(card, {
+      gauge,
+      line,
       chip,
       flag,
       name,
@@ -364,6 +370,15 @@ export class UsageCards {
       updateMeter(r.week, week, tr('Semana'));
     }
     r.meters.classList.toggle('is-dim', state !== 'ok');
+    // Mostrador circular: anel de fora = sessão de 5 h, anel de dentro = semana (a cor segue o nível de uso).
+    const p5 = five?.pct ?? null;
+    const p7 = week?.pct ?? null;
+    setStyleVar(r.gauge, '--p5', String(p5 ?? 0));
+    setStyleVar(r.gauge, '--p7', String(p7 ?? 0));
+    setStyleVar(r.gauge, '--c5', `var(--lv-${usageLevel(p5 ?? 0)})`);
+    setStyleVar(r.gauge, '--c7', `var(--lv-${usageLevel(p7 ?? 0)})`);
+    r.gauge.classList.toggle('is-empty', p5 === null && p7 === null);
+    setText(r.line, showMeters ? `5H ${p5 === null ? '—' : `${p5}%`} · ${tr('SEM')} ${p7 === null ? '—' : `${p7}%`}` : '');
 
     // Idade dos números antigos no cabeçalho (no celular, um selo no chip faz esse papel). No Codex a idade fica
     // sempre à mostra (os números só se renovam enquanto alguma sessão roda), discreta enquanto são recentes.

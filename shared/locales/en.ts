@@ -3509,4 +3509,5 @@ export const EN: Readonly<Record<string, string>> = {
   "Menos": "Less",
   "Mais": "More",
   "Ajuda": "Help",
+  "SEM": "WK",
 };

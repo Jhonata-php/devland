@@ -12055,3 +12055,24 @@ html.is-replay #world {
   .ui-topbar .ui-btn-group .ui-icon-btn[data-label] { min-width: 34px; height: 34px; padding: 0; }
   .ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after { display: none; }
 }
+
+/* ===== Contas como mostradores circulares =====
+   O cartão deixa de ser uma tabela de barras: um anel duplo (fora = 5 h, dentro = semana) com a letra da conta no centro,
+   o nome e uma linha só com os dois números. Os detalhes (reinício, e-mail) continuam na dica ao passar o mouse. */
+.ui-usage-card { width: auto; min-width: 172px; flex: none; gap: 10px; padding: 5px 14px 5px 6px; border-radius: 999px; border: 1px solid var(--ui-line-strong); border-left-width: 1px; background: rgba(0, 0, 0, 0.45); }
+.ui-usage-card .ui-acc-chip { position: relative; z-index: 1; width: 26px; height: 26px; font-size: 13px; border-radius: 50% !important; }
+.ui-gauge { position: relative; display: grid; place-items: center; width: 46px; height: 46px; flex: none; }
+.ui-gauge__ring { position: absolute; border-radius: 50%; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px)); }
+.ui-gauge__ring--out { inset: 0; background: conic-gradient(var(--c5, var(--ui-accent)) calc(var(--p5, 0) * 1%), rgba(255, 255, 255, 0.1) 0); }
+.ui-gauge__ring--in { inset: 6px; background: conic-gradient(var(--c7, var(--ui-accent)) calc(var(--p7, 0) * 1%), rgba(255, 255, 255, 0.1) 0); }
+.ui-gauge.is-empty .ui-gauge__ring { opacity: 0.35; }
+.ui-usage-card__body { gap: 2px; }
+.ui-usage-card__meters { display: none !important; }
+.ui-gauge__line { font: 700 11px/1.2 var(--font-mono); letter-spacing: 0.04em; color: var(--ui-muted); white-space: nowrap; }
+.ui-usage-card:hover .ui-gauge__line { color: var(--ui-accent); }
+.ui-usage-card__flag { display: none !important; }
+
+/* Ferramentas em cápsulas: Câmera numa, painéis noutra, separadas por um vão (em vez de uma fila solta de ícones). */
+.ui-topbar__right { gap: 12px; border-left: 0; padding-left: 0; }
+.ui-topbar__right .ui-btn-group { gap: 2px; padding: 3px; border: 1px solid var(--ui-line-strong); border-radius: 12px; background: rgba(0, 0, 0, 0.4); }
+.ui-topbar__right .ui-btn-group .ui-icon-btn[data-label] { border-radius: 9px; }

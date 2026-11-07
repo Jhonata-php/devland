@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Contas como mostradores circulares:** cada conta é uma cápsula com anel duplo (fora = sessão de 5 h, dentro = semana; verde, âmbar ou vermelho conforme o uso), a letra no centro, o nome e uma linha `5H 41% · SEM 21%` (o reinício e o e-mail ficam na dica). As ferramentas do topo ficam em duas cápsulas (câmera e painéis).
 - **Topo com ferramentas legendadas:** ícones verdes com o nome embaixo (Visão, Menos, Mais, Novo, Feed, Ajustes, Ajuda), estado ligado em destaque e brilho; no celular ficam só os ícones. O favicon agora é só o planeta com o anel azul, sem fundo.
 - **Logo do DevLand:** planeta em pixel art (oceanos, continentes, luz de um lado) com anel orbital, lua e estrelas, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
 - **Nova marca "DevLand"** no logotipo (texto `DEVLAND_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
