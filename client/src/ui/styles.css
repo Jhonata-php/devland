@@ -11872,7 +11872,7 @@ html.is-replay #world {
 
 /* ===== Tema hacker: layout =====
    Topo = painel de status (HUD) colado nas bordas; lateral = árvore de arquivos; ajustes = janelas de terminal. */
-.ui-root { --top-h: 56px; }
+@media (min-width: 601px) { .ui-root { --top-h: 56px; } }
 
 /* Topo: barra cheia, com a linha de varredura correndo embaixo. */
 .ui-topbar {
@@ -11894,7 +11894,7 @@ html.is-replay #world {
 @keyframes hk-line { to { background-position: -200% 0; } }
 
 /* Topo: três zonas bem separadas — marca | métricas | contas e ferramentas. */
-.ui-root { --top-h: 64px; }
+@media (min-width: 601px) { .ui-root { --top-h: 64px; } }
 .ui-topbar { gap: 16px; }
 .ui-topbar__left { padding-right: 16px; border-right: 1px solid var(--ui-line); height: 36px; }
 .ui-brand__text { gap: 2px; }
@@ -12076,3 +12076,46 @@ html.is-replay #world {
 .ui-topbar__right { gap: 12px; border-left: 0; padding-left: 0; }
 .ui-topbar__right .ui-btn-group { gap: 2px; padding: 3px; border: 1px solid var(--ui-line-strong); border-radius: 12px; background: rgba(0, 0, 0, 0.4); }
 .ui-topbar__right .ui-btn-group .ui-icon-btn[data-label] { border-radius: 9px; }
+
+/* Lista de agentes: a primeira linha pode quebrar (nome, conta, tempo, papel e função não cabem juntos na lateral). */
+.ui-agent__top { flex-wrap: wrap; row-gap: 3px; }
+.ui-agent__top .ui-func { order: 5; flex: none; }
+.ui-agent__name { max-width: 100%; }
+
+/* Celular: mostradores menores, ferramentas sem cápsula, nada passa da largura da tela. */
+@media (max-width: 600px) {
+  .ui-gauge { width: 36px; height: 36px; }
+  .ui-gauge__ring--in { inset: 5px; }
+  .ui-usage-card { min-width: 0; padding: 4px 10px 4px 5px; gap: 7px; }
+  .ui-usage-card .ui-acc-chip { width: 20px; height: 20px; font-size: 11px; }
+  .ui-gauge__line { font-size: 10px; }
+  .ui-topbar__right .ui-btn-group { padding: 0; border: 0; background: none; gap: 0; }
+  .ui-topbar { overflow: hidden; }
+}
+
+/* ===== Celular: topo mínimo =====
+   As ferramentas já estão na barra de baixo (Escritório, Conversas, Novo, Ajustes), então o topo só mostra o essencial numa
+   linha fina: o logo, os mostradores de uso (só os anéis; o detalhe abre na dica) e o aviso de quem precisa de você. */
+@media (max-width: 600px) {
+  .ui-root.ui-root { --top-h: 48px; }
+  .ui-topbar { flex-wrap: nowrap; height: var(--top-h); padding: 0 10px; gap: 10px; align-items: center; overflow: visible; }
+  .ui-topbar__right, .ui-btn-accounts, .ui-btn-sidebar, .ui-brand__text, .ui-usage-card__body, .ui-usage-card__flag { display: none !important; }
+  .ui-topbar__left { border: 0; padding: 0; height: auto; flex: none; }
+  .ui-brand { gap: 0; }
+  .ui-brand__mark, .ui-brand img { width: 30px; height: 30px; }
+  .ui-usage { order: 2; flex: 1 1 auto; margin: 0; gap: 8px; justify-content: center; overflow: visible; }
+  .ui-usage-card { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; box-shadow: none; min-width: 0; }
+  .ui-gauge { width: 34px; height: 34px; }
+  .ui-usage-card .ui-acc-chip { width: 18px; height: 18px; font-size: 10px; }
+  .ui-counters { order: 3; margin-left: 0; border: 0; background: none; }
+  .ui-counter { padding: 2px 8px; min-width: 0; }
+  .ui-counter__label { display: none; }
+}
+@media (max-width: 600px) {
+  .ui-topbar__left { width: 32px; min-width: 32px; }
+  .ui-brand, .ui-brand__mark { width: 30px; min-width: 30px; flex: none; }
+  .ui-brand__mark img, .ui-brand img { width: 30px; height: 30px; display: block; }
+}
+@media (max-width: 600px) {
+  .ui-usage-card { display: flex !important; flex: none !important; width: auto !important; }
+}
