@@ -10,7 +10,7 @@ import { ICONS } from './icons';
 import { groupRooms, type AgentNode, type RoomGroup } from './model';
 import { officeIsEmpty } from './overlays';
 import { createAgentRow, updateAgentRow } from './rows';
-import { createAccountChip, createProgress, updateAccountChip, updateProgress, wordmark } from './widgets';
+import { createAccountChip, createProgress, updateAccountChip, updateProgress } from './widgets';
 import { tr } from '../../../shared/i18n';
 import { ROLE_IDS, ROLES, type RoleId } from '../../../shared/roles';
 import { roleLabel, roleOf } from './roles';
@@ -139,7 +139,7 @@ export class Sidebar implements UiComponent {
     this.el = h(
       'aside',
       { class: 'ui-panel ui-sidebar', attrs: { 'aria-label': tr('Salas e agentes'), id: 'ui-sidebar' } },
-      h('div', { class: 'ui-side__head' }, h('div', { class: 'ui-side__brand' }, h('img', { attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: '', width: 34, height: 34, draggable: 'false' } }), wordmark('ui-side__word')), h('div', { class: 'ui-side__title' }, h('h2', { text: tr('Escritório') }), close), search, this.filters, this.roleBar),
+      h('div', { class: 'ui-side__head' }, h('div', { class: 'ui-side__title' }, h('h2', { text: tr('Escritório') }), close), search, this.filters, this.roleBar),
       this.scroller,
     );
   }
