@@ -12212,16 +12212,38 @@ html.is-replay #world {
 .ui-wordtext { text-shadow: none; font-size: 17px; }
 @media (min-width: 601px) { .ui-topbar .ui-brand__name.ui-wordtext { font-size: 17px; } .ui-brand__mark, .ui-brand img { width: 34px; height: 34px; } }
 
-/* Marca integrada à lateral (computador): recolhida, é uma aba compacta no canto (botão + logo + nome); aberta, vira o
-   cabeçalho da própria lista de salas — mesma largura, mesmo fundo, um painel só. */
+/* Marca integrada à lateral (computador). Recolhida, a lateral vira um trilho fino na borda esquerda (botão em cima, depois o
+   logo e o nome DEVLAND na vertical). Aberta, o mesmo bloco vira o cabeçalho da lista de salas (logo + nome + botão), na
+   mesma largura e fundo do painel: a marca nunca fica solta no canto, sempre faz parte da lateral. */
 @media (min-width: 601px) {
+  .ui-root { --rail-w: 64px; }
   .ui-topbar__left {
-    position: fixed; left: 0; top: 0; z-index: 56; width: auto; height: var(--top-h); margin: 0; padding: 0 14px 0 8px; gap: 8px;
-    border: 1px solid var(--ui-line-strong); border-left: 0; border-top: 0; border-radius: 0 0 16px 0;
-    background: rgba(3, 9, 5, 0.94); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7); backdrop-filter: none; -webkit-backdrop-filter: none;
-    transition: width 0.32s var(--ease), border-radius 0.32s var(--ease);
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 56; width: var(--rail-w); height: auto; margin: 0; padding: 10px 0 14px; gap: 14px;
+    flex-direction: column; align-items: center; justify-content: flex-start;
+    border: 0; border-right: 1px solid var(--ui-line-strong); border-radius: 0;
+    background: linear-gradient(180deg, rgba(5, 14, 9, 0.97), rgba(3, 9, 5, 0.94)); box-shadow: 10px 0 30px -14px rgba(0, 0, 0, 0.7);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    transition: width 0.32s var(--ease);
   }
-  .has-sidebar .ui-topbar__left { width: var(--side-w); flex-direction: row-reverse; justify-content: space-between; border-radius: 0; border-bottom-color: var(--ui-line); box-shadow: none; padding: 0 12px 0 14px; }
-  .has-sidebar .ui-brand { border-left: 0; padding-left: 0; }
-  .ui-sidebar { top: var(--top-h); border-top: 0; }
+  .ui-topbar__left .ui-brand { flex-direction: column; gap: 12px; border: 0; padding: 0; width: auto; }
+  .ui-topbar__left .ui-brand__text { display: flex !important; }
+  .ui-topbar .ui-topbar__left .ui-brand__name.ui-wordtext { writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.3em; }
+  .ui-topbar .ui-topbar__left .ui-wordtext__cur { margin: 6px 0 0; }
+  .ui-brand__mark, .ui-brand img { width: 38px; height: 38px; }
+  .has-sidebar .ui-topbar__left {
+    width: var(--side-w); height: var(--top-h); bottom: auto; padding: 0 12px 0 14px; gap: 8px;
+    flex-direction: row-reverse; align-items: center; justify-content: space-between;
+    border-right: 1px solid var(--ui-line-strong); border-bottom: 1px solid var(--ui-line); box-shadow: none;
+  }
+  .has-sidebar .ui-topbar__left .ui-brand { flex-direction: row; gap: 10px; }
+  .has-sidebar .ui-topbar .ui-topbar__left .ui-brand__name.ui-wordtext { writing-mode: horizontal-tb; font-size: 17px; letter-spacing: 0.12em; }
+  .has-sidebar .ui-topbar .ui-topbar__left .ui-wordtext__cur { margin: 0 0 0 2px; }
+  .ui-sidebar { top: var(--top-h); border-top: 0; left: 0; }
+}
+@media (min-width: 601px) {
+  /* A atividade começa depois do trilho da lateral recolhida. */
+  .ui-feed { left: calc(var(--rail-w) + var(--gap)); width: min(var(--feed-max), calc(100vw - var(--rail-w) - var(--gap) * 2)); }
+  .has-sidebar .ui-feed { left: calc(var(--side-w) + var(--gap) * 2); width: min(var(--feed-max), calc(100vw - var(--side-w) - var(--gap) * 3)); }
+  .has-drawer .ui-feed { width: min(var(--feed-max), calc(100vw - var(--rail-w) - var(--drawer-w) - var(--gap) * 3)); }
+  .has-sidebar.has-drawer .ui-feed { width: min(var(--feed-max), calc(100vw - var(--side-w) - var(--drawer-w) - var(--gap) * 4)); }
 }
