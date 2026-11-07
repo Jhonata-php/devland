@@ -3449,4 +3449,5 @@ export const ES: Readonly<Record<string, string>> = {
   "Abre o Claude Code em /workspace (os projetos clonados ficam lá)": "Abre Claude Code en /workspace (ahí quedan los proyectos clonados)",
   "Não foi possível abrir o terminal.": "No se pudo abrir la terminal.",
   "Conecte uma conta do Claude ou do Codex e abra um terminal: o agente aparece aqui no escritório.": "Conecta una cuenta de Claude o de Codex y abre una terminal: el agente aparece aquí en la oficina.",
+  "Abrir contas": "Abrir cuentas",
 };

@@ -8,6 +8,7 @@
 // a idade ("há 12 min") fica sempre à mostra. Sem cota nem créditos ("sem cota") nunca vira 0%. Não há o que
 // instalar para o uso: "Como funciona" abre a ajuda na seção do Codex. Sem Opus/Sonnet nem e-mail (só o plano).
 import { access } from '../net/access';
+import { openAccounts } from './accounts';
 import type { AccountInfo } from '../../../shared/types';
 import type { UiContext } from './context';
 import { h, KeyedList, setAttr, setHidden, setStyleVar, setText, setTitle, setVariant } from './dom';
@@ -294,7 +295,7 @@ export class UsageCards {
         class: 'ui-usage-card__how',
         type: 'button',
         title: tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'),
-        on: { click: () => this.ctx.openHelp(howBtn.dataset.help === 'codex' ? 'codex' : 'usage') },
+        on: { click: () => (howBtn.dataset.help === 'cloud' ? openAccounts(document.body) : this.ctx.openHelp(howBtn.dataset.help === 'codex' ? 'codex' : 'usage')) },
       },
       howLong,
       howShort,
@@ -390,9 +391,11 @@ export class UsageCards {
     setHidden(r.how, state === 'noquota');
     r.msg.classList.toggle('is-noquota', state === 'noquota');
     setTitle(r.msg, state === 'noquota' ? codexUsageNote(a, now) : '');
-    setText(r.howLong, codex ? tr('Como funciona') : tr('Como ativar'));
-    setText(r.howShort, codex ? tr('Saber') : tr('Ativar'));
-    r.how.dataset.help = codex ? 'codex' : 'usage';
+    setText(r.howLong, codex ? tr('Como funciona') : access().cloud ? tr('Abrir contas') : tr('Como ativar'));
+    setText(r.howShort, codex ? tr('Saber') : access().cloud ? tr('Contas') : tr('Ativar'));
+    // No Cloud não há o que instalar: o botão leva às Contas (o uso chega quando uma sessão da conta trabalha).
+    const cloud = access().cloud && !codex;
+    r.how.dataset.help = codex ? 'codex' : cloud ? 'cloud' : 'usage';
     setTitle(r.how, codex ? tr('Como o uso do Codex chega ao Habblaud (abre a ajuda em “Codex”)') : tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'));
     this.updateTip(r, a, state, five, week, now);
   }
