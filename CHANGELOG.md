@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Tema hacker em toda a interface:** verde-neon sobre preto, fonte monoespaçada, títulos com `>` e rótulos com `$`,
+  bordas com brilho, botão principal em verde e varredura de monitor antigo. Combina com a tela de login.
 - **Habblaud Cloud: login por e-mail.** Criar o admin e aceitar convite pedem e-mail; o login aceita e-mail ou usuário
   (contas antigas continuam entrando pelo usuário e definem o e-mail em Ajustes › Perfil). O e-mail é único e aparece na
   lista de usuários. As telas de criar admin e convite usam a mesma moldura hacker do login.
@@ -148,6 +150,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Estilos do seletor de conta no "Novo agente" e dos anexos da caixa de mensagem não eram carregados** (estavam num
+  arquivo que nenhuma página importava); agora estão em `ui/styles.css`.
 - **Habblaud Cloud, segurança:** o freio de tentativas de login agora é por cliente (quem erra a senha não trava mais o
   dono da conta; há um freio global folgado contra troca de endereço); toda resposta leva HSTS, Permissions-Policy,
   proteção contra ser embutido por outro site e COOP; o nome do repositório a clonar não aceita começar com "-" nem
