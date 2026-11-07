@@ -147,7 +147,9 @@ export class MessageComposer {
     }
     this.box.disabled = !ready;
     const name = agent?.name ?? tr('o agente');
-    const placeholder = ready ? (term ? tr('Mensagem para {0} (Enter manda, Shift+Enter quebra a linha)', [name]) : tr('Mensagem para {0}…', [name])) : mode.text;
+    // Celular: o texto longo ocupava três linhas do rodapé do terminal; fica só "Mensagem para <nome>…".
+    const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 600px)').matches;
+    const placeholder = ready ? (term && !phone ? tr('Mensagem para {0} (Enter manda, Shift+Enter quebra a linha)', [name]) : tr('Mensagem para {0}…', [name])) : mode.text;
     setAttr(this.box, 'placeholder', placeholder);
     setAttr(this.box, 'aria-label', ready ? tr('Mensagem para {0}', [name]) : mode.text);
     setTitle(this.box, ready ? '' : mode.text);

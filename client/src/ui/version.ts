@@ -240,7 +240,7 @@ export class AboutGroup {
       this.autoWin.value = s.auto.window;
       setHidden(this.autoWin, !s.auto.enabled);
     }
-    setHidden(this.cfg, !(s?.canConfigure && !s.canApply && access().admin));
+    setHidden(this.cfg, !(s?.needsImage && s.canConfigure && access().admin));
     setHidden(this.applyBtn, !canApply || working);
     setHidden(this.applyNote, !(canApply && (working || this.applyError)));
     setText(this.applyNote, working ? tr('Atualizando: o Habblaud baixa a versão nova e reinicia sozinho em alguns minutos. A página recarrega quando voltar.') : (this.applyError ?? ''));

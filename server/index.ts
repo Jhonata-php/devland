@@ -2,6 +2,7 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
+import { rmSync } from 'node:fs';
 import http from 'node:http';
 import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
@@ -47,6 +48,7 @@ import { ensureHabblaudPlugins } from './accounts/plugins';
 import { loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
+import { stageVersion } from './updates/self-update';
 import { ghcrLatest, loadVelixFile, parseVelixTarget, saveVelixFile, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
 import { getLocale, tr } from '../shared/i18n';
 import type { WorldLocale } from '../shared/world/protocol';
@@ -101,8 +103,23 @@ const updates = new UpdateChecker({
   enabled: config.updateCheck,
   file: join(config.dataDir, 'updates.json'),
   source: config.cloudVersion && config.repo ? ghcrLatest(config.repo) : undefined,
-  apply: config.cloudVersion ? () => (velix ? velixRedeploy(velix) : Promise.resolve({ ok: false as const, error: tr('falta configurar a conexão com o Velix') })) : undefined,
-  canApply: () => !!velix,
+  // Atualização nativa: baixa o código da versão nova do GHCR para <dados>/app e reinicia (o entrypoint o usa); o Velix só entra
+  // como plano B quando a versão muda as dependências e a conexão com ele foi configurada.
+  apply: config.cloudVersion
+    ? async () => {
+        const latest = updates.status().latest;
+        if (latest && config.repo) {
+          const r = await stageVersion({ image: config.repo, version: latest, dataDir: config.dataDir, depsHashFile: join(config.rootDir, 'deps.hash') });
+          if (r.ok) {
+            setTimeout(() => shutdown('update'), 1_500);
+            return { ok: true as const };
+          }
+          if (!r.needsImage || !velix) return r;
+        }
+        return velix ? velixRedeploy(velix) : { ok: false as const, error: tr('falta configurar a conexão com o Velix') };
+      }
+    : undefined,
+  canApply: () => true,
   autoFile: join(config.dataDir, 'auto-update.json'),
   onChange: () => late.office?.markDirty(),
 });
@@ -628,6 +645,9 @@ server.listen(config.port, config.host, () => {
       : tr('   Versão nova: verificação desligada ({0}).', [config.repo ? 'HABBLAUD_UPDATE_CHECK' : tr('package.json sem repositório no GitHub')]),
   );
 });
+
+// Cloud: a versão baixada (<dados>/app) só vale se o servidor ficar de pé; passado 1 minuto no ar, tira o marcador de "subindo".
+if (cloud) setTimeout(() => rmSync(join(config.dataDir, 'app', 'booting'), { force: true }), 60_000).unref();
 
 // Cloud: guarda quem está ativo (a cada 10 s) e retoma essas conversas ao subir; congela a lista ao encerrar, antes de os
 // processos morrerem junto com o container.

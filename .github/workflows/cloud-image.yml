@@ -39,3 +39,16 @@ jobs:
             ghcr.io/jhonata-php/habblaud:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # Pacote só com o código novo (uma camada, sem manifesto de atestado): a atualização nativa do Habblaud o baixa
+      # anonimamente (a imagem é pública) em vez de depender do Velix. Mesma tag com o prefixo dist-.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cloud
+          target: dist-pkg
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ghcr.io/jhonata-php/habblaud:dist-${{ github.ref_name }}
+          cache-from: type=gha

@@ -95,7 +95,7 @@ export interface UpdateCheckerOptions {
   /** Cloud: de onde vem a versão mais recente (padrão: releases do GitHub). */
   source?: LatestSource;
   /** Cloud: atualiza o próprio Habblaud (pede ao Velix); ausente = sem botão. */
-  apply?: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  apply?: () => Promise<{ ok: true } | { ok: false; error: string; needsImage?: true }>;
   /** Cloud: a conexão com o Velix já foi configurada (a tela mostra o botão ou o formulário). */
   canApply?: () => boolean;
   /** Cloud: onde guardar a escolha de atualizar sozinho; null = só em memória (testes). */
@@ -122,6 +122,7 @@ export class UpdateChecker {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private announced: string | undefined;
   private applyingSince: number | undefined;
+  private needsImage = false;
   private auto: AutoPrefs = { enabled: false, window: 'night', tz: 0 };
   private lastAutoAttempt = -Infinity;
   private autoTimer: ReturnType<typeof setInterval> | null = null;
@@ -151,6 +152,7 @@ export class UpdateChecker {
       error: this.error,
       canApply: this.opts.apply ? (this.opts.canApply ? this.opts.canApply() : true) : undefined,
       canConfigure: this.opts.apply ? true : undefined,
+      needsImage: this.needsImage || undefined,
       auto: this.opts.apply ? { enabled: this.auto.enabled, window: this.auto.window } : undefined,
       applyingSince: this.applyingSince && this.now() - this.applyingSince < APPLY_WINDOW_MS ? this.applyingSince : undefined,
     };
@@ -214,6 +216,7 @@ export class UpdateChecker {
     if (!this.status().available) return { ok: false, error: tr('não há versão nova para instalar') };
     if (this.status().applyingSince) return { ok: true };
     const r = await this.opts.apply();
+    this.needsImage = !r.ok && r.needsImage === true;
     if (r.ok) {
       this.applyingSince = this.now();
       this.opts.onChange?.();

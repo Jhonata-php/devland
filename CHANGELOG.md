@@ -99,6 +99,14 @@ do meio (0.**3**.0).
   "Todos" (antes só as atividades importantes), porque os personagens são pequenos. Quem já tinha preferências guardadas
   mantém as suas (Ajustes › Escritório › Balões de atividade).
 
+- **Habblaud Cloud: atualização nativa, sem Velix.** O workflow publica o código de cada versão como um pacote público no GHCR
+  (`dist-cloud-v…`); o botão **Atualizar** (e o "atualizar sozinho") baixa esse pacote, confere o sha256 e as dependências,
+  guarda em `/data/app` e reinicia: o container passa a rodar o código novo, e volta sozinho à imagem se ele não ficar de pé
+  em 1 minuto. Se a versão muda as dependências, o app avisa que precisa de imagem nova (aí vale o Velix, pelo formulário que
+  aparece em Ajustes › Sobre).
+- **Terminal do agente: a conversa aparece mesmo quando o fim do arquivo é só uma linha enorme** (a leitura inicial amplia a
+  janela até achar mensagens), e no celular o campo de mensagem usa o texto curto.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

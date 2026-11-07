@@ -95,6 +95,9 @@ function parseInto(parser: TerminalParser, lines: readonly string[], out: Termin
  * Agente real (ou sessão do histórico): lê o transcript JSONL com um FileTail próprio. `transcriptPathOf`
  * informa a troca de transcript do principal (/clear); numa sessão do histórico ele nunca muda.
  */
+/** Teto da janela de leitura inicial quando o fim do arquivo não tem nenhuma mensagem. */
+const MAX_INIT_WINDOW = 64 * 1024 * 1024;
+
 class TranscriptSource implements ConversationSource {
   private tail: FileTail;
   /** Criado em load(), que sempre roda antes do primeiro poll(). */
@@ -110,8 +113,20 @@ class TranscriptSource implements ConversationSource {
   }
 
   load(): TerminalInit {
+    // O fim do arquivo pode ser só uma linha gigante (resultado de ferramenta) ou registros sem mensagem: a janela de
+    // leitura cresce (x4, até 64 MB) enquanto não achar nenhuma mensagem e ainda houver arquivo antes dela.
+    let bytes = this.o.initTailBytes;
+    for (let attempt = 0; ; attempt++) {
+      const r = this.loadWindow(bytes);
+      if (r.entries.length > 0 || r.init.truncated === false || bytes >= MAX_INIT_WINDOW || attempt >= 4) return r.init;
+      bytes = Math.min(bytes * 4, MAX_INIT_WINDOW);
+      this.tail = new FileTail(this.tail.path);
+    }
+  }
+
+  private loadWindow(bytes: number): { init: TerminalInit; entries: TerminalEntry[] } {
     this.parser = this.o.createParser();
-    const offset = this.tail.seekTail(this.o.initTailBytes);
+    const offset = this.tail.seekTail(bytes);
     const keep = this.o.initEntries;
     let entries: TerminalEntry[] = [];
     let dropped = false;
@@ -129,7 +144,7 @@ class TranscriptSource implements ConversationSource {
       entries = entries.slice(-keep);
       dropped = true;
     }
-    return { agentId: this.agentId, entries, truncated: offset > 0 || dropped };
+    return { init: { agentId: this.agentId, entries, truncated: offset > 0 || dropped }, entries };
   }
 
   poll(): PollResult {
