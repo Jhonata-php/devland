@@ -2,7 +2,7 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
-import { rmSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import http from 'node:http';
 import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
@@ -677,6 +677,18 @@ if (cloud && agentUser && ptys) {
     }
   }, 8_000).unref();
   const liveBootAt = Date.now();
+  // Escritório vazio ao subir (nada para retomar, ou a retomada falhou): abre um primeiro agente em /workspace, como o botão
+  // "Abrir terminal", para o escritório já abrir funcionando. Só com uma conta do Claude conectada; HABBLAUD_AUTO_AGENT=0 desliga.
+  setTimeout(() => {
+    if (process.env.HABBLAUD_AUTO_AGENT === '0' || liveNow().length > 0) return;
+    if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
+    try {
+      ptys.create({ cwd: '/workspace' });
+      log.info(tr('Escritório vazio: abri um primeiro agente em /workspace.'));
+    } catch (err) {
+      log.warn(tr('Não deu para abrir o primeiro agente: {0}', [errMsg(err)]));
+    }
+  }, 35_000).unref();
   setInterval(() => {
     // Só depois de as conversas retomadas aparecerem (senão a foto perderia quem ainda está voltando).
     if (!persistLive || shuttingDown || Date.now() - liveBootAt < 45_000) return;

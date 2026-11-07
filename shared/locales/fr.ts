@@ -3350,6 +3350,8 @@ export const FR: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "impossible de cloner : {0}",
   "o login não terminou": "la connexion ne s'est pas terminée",
   "Conectar": "Connecter",
+  "Escritório vazio: abri um primeiro agente em /workspace.": "Bureau vide : j'ai ouvert un premier agent dans /workspace.",
+  "Não deu para abrir o primeiro agente: {0}": "Impossible d'ouvrir le premier agent : {0}",
   "Conversas": "Conversations",
   "Voltar às conversas": "Retour aux conversations",
   "Abrindo a conversa…": "Ouverture de la conversation…",

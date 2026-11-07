@@ -112,6 +112,10 @@ do meio (0.**3**.0).
   você pediu à direita, a resposta do agente à esquerda (com formatação), avisos no meio e as ferramentas em linhas discretas,
   com a caixa de resposta embaixo. Sem abrir gaveta nem terminal.
 
+- **Habblaud Cloud: o escritório abre funcionando.** Se ao subir não houver agente para retomar, o servidor abre sozinho um
+  primeiro agente em `/workspace` (com uma conta do Claude conectada), em vez de mostrar "O escritório está vazio" e pedir para
+  clicar em Abrir terminal. `HABBLAUD_AUTO_AGENT=0` desliga.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 
