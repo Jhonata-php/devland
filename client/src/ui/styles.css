@@ -11409,3 +11409,98 @@ html.is-replay #world {
     bottom: calc(72px + var(--nav-h));
   }
 }
+
+/* Ajustes › Sobre (Cloud): ligar o Habblaud ao Velix para atualizar por aqui. */
+.ui-about__cfg {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ui-about__cfg > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ui-about__field {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+@media (max-width: 600px) {
+  /* Menus (Ajustes, Novo agente...) no celular: fundo sólido e sempre acima da barra de baixo. */
+  .ui-popover {
+    background: #12151d;
+    max-height: calc(100dvh - var(--top-h) - var(--nav-h, 0px) - 24px);
+  }
+}
+
+/* Ajustes no celular: folha de baixo até o topo da barra (alça, cabeçalho fixo), seções em cartões e linhas fáceis de tocar. */
+@media (max-width: 600px) {
+  .ui-popover.ui-settings {
+    top: calc(var(--top-h) + var(--gap)) !important;
+    bottom: calc(var(--nav-h, 0px) + var(--gap)) !important;
+    left: var(--gap) !important;
+    right: var(--gap) !important;
+    width: auto;
+    height: calc(100dvh - var(--top-h) - var(--nav-h, 0px) - var(--gap) * 2) !important;
+    max-height: none !important;
+    padding: 0 0 12px;
+    border-radius: 20px;
+    background: #12151d;
+  }
+
+  .ui-settings .ui-popover__head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 16px 12px 10px 18px;
+    background: #12151d;
+    border-bottom: 1px solid var(--ui-line);
+  }
+
+  .ui-settings .ui-popover__head h2 {
+    font-size: 17px;
+  }
+
+  .ui-settings .ui-set-group {
+    margin: 12px 12px 0;
+    padding: 12px 14px 10px;
+    border: 1px solid var(--ui-line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .ui-settings .ui-set-group + .ui-set-group {
+    border-top: 1px solid var(--ui-line);
+    padding-top: 12px;
+  }
+
+  .ui-settings .ui-set-group h3 {
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--ui-accent);
+  }
+
+  .ui-settings .ui-set {
+    min-height: 48px;
+    padding: 8px 0;
+  }
+
+  .ui-settings .ui-set + .ui-set {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .ui-settings .ui-btn {
+    min-height: 40px;
+    padding-inline: 14px;
+  }
+
+  .ui-settings .ui-set__hint {
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+}

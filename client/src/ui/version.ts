@@ -7,6 +7,7 @@ import { h, setAttr, setHidden, setText, setTitle, setVariant } from './dom';
 import { formatDateTime, relativeTime } from './format';
 import { pixelIcon } from './icons';
 import { safeLocalStorage } from './prefs';
+import { access } from '../net/access';
 import { tr } from '../../../shared/i18n';
 
 /** Última versão nova já avisada neste navegador (o aviso sai uma vez por versão). */
@@ -132,6 +133,12 @@ export class AboutGroup {
   private applyBtn: HTMLButtonElement;
   private applyNote: HTMLElement;
   private howTo: HTMLElement;
+  private cfg: HTMLDetailsElement;
+  private cfgUrl: HTMLInputElement;
+  private cfgToken: HTMLInputElement;
+  private cfgProject: HTMLInputElement;
+  private cfgMsg: HTMLElement;
+  private cfgBusy = false;
   private applying = false;
   private applyError: string | undefined;
 
@@ -160,6 +167,22 @@ export class AboutGroup {
         ').',
       )),
     );
+    const field = (label: string, input: HTMLInputElement) => h('label', { class: 'ui-about__field' }, h('span', { class: 'ui-set__hint', text: label }), input);
+    this.cfgUrl = h('input', { class: 'ui-rename__input', type: 'url', attrs: { placeholder: 'https://velix.suaempresa.com', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
+    this.cfgToken = h('input', { class: 'ui-rename__input', type: 'password', attrs: { placeholder: 'vlx_…', autocomplete: 'off', spellcheck: 'false' } }) as HTMLInputElement;
+    this.cfgProject = h('input', { class: 'ui-rename__input', type: 'text', attrs: { value: 'habblaud', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
+    this.cfgMsg = h('p', { class: 'ui-set__hint', role: 'status', hidden: true });
+    this.cfg = h(
+      'details',
+      { class: 'ui-about__cfg', hidden: true },
+      h('summary', { text: tr('Atualizar por aqui: ligar ao Velix') }),
+      h('p', { class: 'ui-set__hint', text: tr('No Velix, crie um token em Configurações › Assistentes de IA (escopo escrita) e cole aqui. Fica guardado só neste servidor.') }),
+      field(tr('Endereço do Velix'), this.cfgUrl),
+      field(tr('Token de API'), this.cfgToken),
+      field(tr('Projeto no Velix'), this.cfgProject),
+      h('button', { class: 'ui-btn ui-btn--sm ui-btn--accent', type: 'button', text: tr('Salvar'), on: { click: () => void this.saveCfg() } }),
+      this.cfgMsg,
+    ) as HTMLDetailsElement;
     this.repo = h('a', { class: 'ui-link-btn', text: tr('Código no GitHub'), attrs: { target: '_blank', rel: 'noopener noreferrer' } });
     this.el = h(
       'div',
@@ -168,6 +191,7 @@ export class AboutGroup {
       h('div', { class: 'ui-about__head' }, h('span', { class: 'ui-about__name' }, 'Habblaud ', this.name), this.checkBtn),
       this.status,
       this.fresh,
+      this.cfg,
       this.repo,
     );
   }
@@ -189,7 +213,9 @@ export class AboutGroup {
     // Cloud: o admin atualiza por aqui (o servidor pede ao Velix); sem isso, valem as instruções de terminal.
     const canApply = fresh && !!s?.canApply;
     const working = this.applying || !!s?.applyingSince;
-    setHidden(this.howTo, canApply);
+    const cloud = !!access().cloud;
+    setHidden(this.howTo, canApply || cloud);
+    setHidden(this.cfg, !(s?.canConfigure && !s.canApply && access().admin));
     setHidden(this.applyBtn, !canApply || working);
     setHidden(this.applyNote, !(canApply && (working || this.applyError)));
     setText(this.applyNote, working ? tr('Atualizando: o Habblaud baixa a versão nova e reinicia sozinho em alguns minutos. A página recarrega quando voltar.') : (this.applyError ?? ''));
@@ -210,6 +236,20 @@ export class AboutGroup {
     this.el.classList.remove('is-highlight');
     void this.el.offsetWidth;
     this.el.classList.add('is-highlight');
+  }
+
+  private async saveCfg(): Promise<void> {
+    if (this.cfgBusy) return;
+    this.cfgBusy = true;
+    setText(this.cfgMsg, tr('Salvando…'));
+    setHidden(this.cfgMsg, false);
+    const r = await this.ctx.store.configureUpdates({ url: this.cfgUrl.value, token: this.cfgToken.value, project: this.cfgProject.value });
+    this.cfgBusy = false;
+    if (r.ok) {
+      this.cfgToken.value = '';
+      setText(this.cfgMsg, tr('Pronto: o botão Atualizar agora aparece quando houver versão nova.'));
+    } else setText(this.cfgMsg, tr('Não deu para salvar: {0}', [r.error || tr('sem resposta do servidor')]));
+    this.ctx.invalidate();
   }
 
   private async apply(): Promise<void> {

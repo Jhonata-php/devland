@@ -79,6 +79,13 @@ do meio (0.**3**.0).
   pedidos de permissão funcionam nas sessões novas. O terminal de agente ganhou o botão **Nova sessão**, e no celular o topo
   não repete o que a barra de baixo já tem.
 
+- **Habblaud Cloud: ligar ao Velix pela tela de Ajustes.** Em **Ajustes › Sobre**, o admin cola o endereço do Velix, um
+  token de API e o projeto (o servidor guarda em `<dados>/velix.json`, e o token nunca volta para a página); com isso o
+  botão **Atualizar agora** aparece quando sai versão nova, sem editar variáveis do Velix. No Cloud, as instruções de
+  `git pull` deixam de aparecer.
+- **Ajustes no celular redesenhados.** O menu vira uma folha cheia (acima da barra de baixo, com rolagem por dentro),
+  com seções em cartões, cabeçalho fixo, fundo sólido e linhas maiores para tocar.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

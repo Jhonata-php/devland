@@ -46,7 +46,7 @@ import { createBuildReader, readBuildInfo } from './build';
 import { ensureHabblaudPlugins } from './accounts/plugins';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
-import { ghcrLatest, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
+import { ghcrLatest, loadVelixFile, parseVelixTarget, saveVelixFile, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
 import { getLocale, tr } from '../shared/i18n';
 import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
@@ -92,16 +92,31 @@ const late: { connect?: ConnectService; office?: Office; agents?: SourceSet; per
 // Versão nova: consulta a release mais recente no GitHub a cada 6 h (HABBLAUD_UPDATE_CHECK=0 desliga).
 // Cloud (imagem com HABBLAUD_CLOUD_VERSION): a versão mais recente vem das tags da imagem no GHCR e o admin atualiza
 // por um botão que pede ao Velix para reimplantar (HABBLAUD_VELIX_URL/TOKEN/PROJECT; sem elas, só avisa).
-const velix = config.cloudVersion ? velixTargetFromEnv(process.env) : undefined;
+const velixFile = join(config.dataDir, 'velix.json');
+let velix = config.cloudVersion ? (velixTargetFromEnv(process.env) ?? loadVelixFile(velixFile)) : undefined;
 const updates = new UpdateChecker({
   current: config.version,
   repo: config.repo,
   enabled: config.updateCheck,
   file: join(config.dataDir, 'updates.json'),
   source: config.cloudVersion && config.repo ? ghcrLatest(config.repo) : undefined,
-  apply: velix ? () => velixRedeploy(velix) : undefined,
+  apply: config.cloudVersion ? () => (velix ? velixRedeploy(velix) : Promise.resolve({ ok: false as const, error: tr('falta configurar a conexão com o Velix') })) : undefined,
+  canApply: () => !!velix,
   onChange: () => late.office?.markDirty(),
 });
+/** Cloud: o admin informa a conexão com o Velix pela tela (Ajustes › Sobre); fica em <dataDir>/velix.json. */
+const configureVelix = (raw: unknown): { ok: true } | { ok: false; error: string } => {
+  const t = parseVelixTarget(raw);
+  if ('error' in t) return { ok: false, error: t.error };
+  try {
+    saveVelixFile(velixFile, t);
+  } catch (err) {
+    return { ok: false, error: errMsg(err) };
+  }
+  velix = t;
+  late.office?.markDirty();
+  return { ok: true };
+};
 updates.load();
 // Habblaud World (server/world/): a conta e o personagem neste computador. Ligado por padrão (server.habblaud.com, ou
 // HABBLAUD_WORLD_URL); nada sai do computador antes de a pessoa criar a conta e entrar. HABBLAUD_WORLD=0 esconde tudo
@@ -434,7 +449,7 @@ const api = createApiHandler({
   },
   codexLive,
   stats,
-  updates,
+  updates: config.cloudVersion ? Object.assign(updates, { configure: configureVelix }) : updates,
   remote: config.remote ? { is: isRemoteRequest, allows: remoteAllows, isAdmin: cloud?.isAdmin } : undefined,
   world: world ? createWorldRoutes(world, worldViewer, worldSocial) : undefined,
 });

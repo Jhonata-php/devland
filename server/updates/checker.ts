@@ -76,6 +76,8 @@ export interface UpdateCheckerOptions {
   source?: LatestSource;
   /** Cloud: atualiza o próprio Habblaud (pede ao Velix); ausente = sem botão. */
   apply?: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  /** Cloud: a conexão com o Velix já foi configurada (a tela mostra o botão ou o formulário). */
+  canApply?: () => boolean;
   /** Versão em uso (package.json). */
   current: string;
   /** "dono/nome"; ausente = verificação desligada. */
@@ -122,7 +124,8 @@ export class UpdateChecker {
       publishedAt: c?.publishedAt,
       available: !!c?.latest && compareVersions(c.latest, this.opts.current) > 0,
       error: this.error,
-      canApply: this.opts.apply ? true : undefined,
+      canApply: this.opts.apply ? (this.opts.canApply ? this.opts.canApply() : true) : undefined,
+      canConfigure: this.opts.apply ? true : undefined,
       applyingSince: this.applyingSince && this.now() - this.applyingSince < APPLY_WINDOW_MS ? this.applyingSince : undefined,
     };
   }
@@ -130,6 +133,7 @@ export class UpdateChecker {
   /** Cloud: pede a atualização (só com versão nova à vista). Devolve o motivo se não deu. */
   async apply(): Promise<{ ok: true } | { ok: false; error: string }> {
     if (!this.opts.apply) return { ok: false, error: tr('este servidor não atualiza por aqui') };
+    if (!this.status().canApply) return { ok: false, error: tr('falta configurar a conexão com o Velix') };
     if (!this.status().available) return { ok: false, error: tr('não há versão nova para instalar') };
     if (this.status().applyingSince) return { ok: true };
     const r = await this.opts.apply();

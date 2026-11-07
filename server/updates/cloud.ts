@@ -2,6 +2,8 @@
 // que o workflow grava ao construir); a mais recente, da lista de tags da imagem no GHCR (pública, sem token); e o
 // botão "Atualizar agora" pede ao Velix para reimplantar o projeto (o container não troca a própria imagem), pela API
 // MCP do Velix com um token de API (POST <VELIX_URL>/api/mcp, ferramenta redeploy_project).
+import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { compareVersions, parseVersion, type LatestSource } from './checker';
 import { tr } from '../../shared/i18n';
 
@@ -50,6 +52,34 @@ export function velixTargetFromEnv(env: NodeJS.ProcessEnv): VelixTarget | undefi
   // O token vai no cabeçalho: só https (ou o próprio computador, nos testes).
   if (!/^https:\/\//.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url)) return undefined;
   return { url, token, project };
+}
+
+/** Valida o que a pessoa digitou na tela (endereço https, token e projeto); devolve o alvo ou o motivo. */
+export function parseVelixTarget(raw: unknown): VelixTarget | { error: string } {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const t = velixTargetFromEnv({ HABBLAUD_VELIX_URL: str(r.url), HABBLAUD_VELIX_TOKEN: str(r.token), HABBLAUD_VELIX_PROJECT: str(r.project) });
+  if (!t) return { error: tr('preencha o endereço do Velix (com https://), o token e o projeto') };
+  if (t.token.length > 512 || t.project.length > 120) return { error: tr('token ou projeto grande demais') };
+  return t;
+}
+
+/** Conexão com o Velix guardada em <dataDir>/velix.json (só o servidor lê; o token nunca volta para a página). */
+export function loadVelixFile(file: string): VelixTarget | undefined {
+  try {
+    const t = parseVelixTarget(JSON.parse(readFileSync(file, 'utf8')));
+    return 'error' in t ? undefined : t;
+  } catch {
+    return undefined;
+  }
+}
+
+export function saveVelixFile(file: string, t: VelixTarget): void {
+  mkdirSync(dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  writeFileSync(tmp, `${JSON.stringify(t)}\n`, { mode: 0o600 });
+  chmodSync(tmp, 0o600);
+  renameSync(tmp, file);
 }
 
 /** Pede ao Velix para reimplantar o projeto (baixa a imagem :latest e sobe de novo; os volumes ficam). */

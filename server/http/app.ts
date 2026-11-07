@@ -85,6 +85,8 @@ export interface ApiDeps {
     check(opts: { manual?: boolean }): Promise<UpdateStatus>;
     /** Cloud: pede ao Velix para atualizar (POST /api/updates/apply, só admin); ausente fora do Cloud. */
     apply?(): Promise<{ ok: true } | { ok: false; error: string }>;
+    /** Cloud: guarda a conexão com o Velix informada pelo admin (POST /api/updates/config). */
+    configure?(body: unknown): { ok: true } | { ok: false; error: string };
   };
   /**
    * Porta remota com login (http/remote.ts): `is` diz se a requisição chegou por ela (já autenticada); `allows`, o que
@@ -699,6 +701,20 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/updates') {
       if (!isRead) methodNotAllowed(res, 'GET');
       else sendJson(res, 200, { version: deps.version, ...(deps.updates?.status() ?? { state: 'off', available: false }) });
+      return true;
+    }
+    if (path === '/api/updates/config') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (!deps.updates?.configure || !isRemote(req) || !deps.remote?.isAdmin?.(req)) {
+        req.resume();
+        sendJson(res, 403, { error: tr('só o administrador configura a atualização, e só no Cloud') });
+      } else
+        readJson(req)
+          .then((body) => {
+            const r = deps.updates!.configure!(body);
+            sendJson(res, r.ok ? 200 : 400, r.ok ? { ok: true } : { error: r.error });
+          })
+          .catch((err) => fail(res, err));
       return true;
     }
     if (path === '/api/updates/apply') {
