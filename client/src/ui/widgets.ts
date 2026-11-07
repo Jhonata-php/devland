@@ -133,6 +133,6 @@ export function updateShellActivityLine(el: HTMLElement, wait: ShellWait, now: n
 /** Nome do produto como logotipo em pixels (o texto fica para leitores de tela). */
 export function wordmark(cls = 'ui-brand__name'): HTMLElement {
   const el = h('span', { class: `${cls} ui-wordtext` });
-  el.append(h('span', { class: 'ui-wordtext__name', text: BRAND.toUpperCase(), attrs: { 'aria-label': BRAND } }), h('span', { class: 'ui-wordtext__cur', text: '_', attrs: { 'aria-hidden': 'true' } }));
+  el.append(h('span', { class: 'ui-wordtext__name', attrs: { 'aria-label': BRAND } }, h('span', { class: 'ui-wordtext__a', text: BRAND.slice(0, 3).toUpperCase() }), h('span', { class: 'ui-wordtext__b', text: BRAND.slice(3).toUpperCase() })), h('span', { class: 'ui-wordtext__cur', text: '_', attrs: { 'aria-hidden': 'true' } }));
   return el;
 }

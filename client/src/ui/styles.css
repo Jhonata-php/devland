@@ -12205,3 +12205,9 @@ html.is-replay #world {
   .has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
   .ui-usage-tip { left: auto; right: calc(100% + 10px); }
 }
+
+/* Marca em duas cores: DEV em verde-neon, LAND em branco; o logo um pouco maior. */
+.ui-wordtext__a { color: var(--ui-accent); text-shadow: 0 0 16px rgba(57, 255, 136, 0.7); }
+.ui-wordtext__b { color: #f2fff8; text-shadow: 0 0 10px rgba(255, 255, 255, 0.25); }
+.ui-wordtext { text-shadow: none; font-size: 17px; }
+@media (min-width: 601px) { .ui-topbar .ui-brand__name.ui-wordtext { font-size: 17px; } .ui-brand__mark, .ui-brand img { width: 34px; height: 34px; } }
