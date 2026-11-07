@@ -95,6 +95,10 @@ do meio (0.**3**.0).
   dentro da janela, pede ao Velix para reimplantar (uma vez por tentativa, com pausa de 1 h se falhar). Depende da conexão com
   o Velix já configurada ali; as conversas abertas voltam sozinhas depois do reinício.
 
+- **Celular: o que cada agente faz aparece no mapa.** Na primeira visita em tela de celular, os balões de atividade vêm em
+  "Todos" (antes só as atividades importantes), porque os personagens são pequenos. Quem já tinha preferências guardadas
+  mantém as suas (Ajustes › Escritório › Balões de atividade).
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

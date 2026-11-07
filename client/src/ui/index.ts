@@ -62,7 +62,7 @@ function isTypingTarget(t: EventTarget | null): boolean {
 
 export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi, city?: CitySceneHost): void {
   const storage = safeLocalStorage();
-  let prefs: UiPrefs = loadPrefs(storage);
+  let prefs: UiPrefs = loadPrefs(storage, typeof matchMedia === 'function' && matchMedia('(max-width: 600px)').matches);
   let selection: Selection = world.getSelection();
   let skew = 0;
   const narrowMq = typeof matchMedia === 'function' ? matchMedia(NARROW_QUERY) : null;

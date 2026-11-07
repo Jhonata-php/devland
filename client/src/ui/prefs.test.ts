@@ -123,3 +123,14 @@ describe('migração do nome antigo (CodeTown)', () => {
     expect(Object.fromEntries(full.data)).toEqual({ 'codetown:prefs': '{}' });
   });
 });
+
+describe('loadPrefs no celular', () => {
+  it('na primeira visita o balão de atividade vem em "Todos"; depois vale o que foi guardado', () => {
+    const mem = new Map<string, string>();
+    const storage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) };
+    expect(loadPrefs(storage, true).bubbles).toBe('all');
+    expect(loadPrefs(storage, false).bubbles).toBe(DEFAULT_PREFS.bubbles);
+    savePrefs(storage, { ...DEFAULT_PREFS, bubbles: 'none' });
+    expect(loadPrefs(storage, true).bubbles).toBe('none');
+  });
+});

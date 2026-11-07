@@ -69,13 +69,18 @@ export function sanitizePrefs(raw: unknown): UiPrefs {
   };
 }
 
-export function loadPrefs(storage: StorageLike | null): UiPrefs {
-  if (!storage) return { ...DEFAULT_PREFS };
+/**
+ * `phone`: tela de celular na primeira visita (nada guardado ainda): os personagens são pequenos, então o balão do que
+ * cada agente está fazendo aparece sempre ("Todos"), não só nas atividades importantes.
+ */
+export function loadPrefs(storage: StorageLike | null, phone = false): UiPrefs {
+  const first = (): UiPrefs => ({ ...DEFAULT_PREFS, ...(phone ? { bubbles: 'all' as const } : {}) });
+  if (!storage) return first();
   try {
     const raw = storage.getItem(PREFS_KEY);
-    return sanitizePrefs(raw ? JSON.parse(raw) : null);
+    return raw ? sanitizePrefs(JSON.parse(raw)) : first();
   } catch {
-    return { ...DEFAULT_PREFS };
+    return first();
   }
 }
 
