@@ -272,7 +272,10 @@ export class LoginThrottle {
   private blockedUntil = 0;
   private busy = false;
 
-  constructor(private readonly now: () => number = Date.now) {}
+  constructor(
+    private readonly now: () => number = Date.now,
+    private readonly threshold = 5,
+  ) {}
 
   /** Segundos até poder tentar de novo (0 = pode; 1 enquanto outra tentativa está em andamento). */
   retryAfter(): number {
@@ -295,12 +298,47 @@ export class LoginThrottle {
 
   fail(): void {
     this.failures++;
-    if (this.failures >= 5) this.blockedUntil = this.now() + Math.min(300, 2 ** (this.failures - 5)) * 1000;
+    if (this.failures >= this.threshold) this.blockedUntil = this.now() + Math.min(300, 2 ** Math.min(20, this.failures - this.threshold)) * 1000;
   }
 
   succeed(): void {
     this.failures = 0;
     this.blockedUntil = 0;
+  }
+}
+
+/** Endereço do cliente segundo o proxy: o ÚLTIMO item de X-Forwarded-For (o que o próprio proxy acrescentou; os de antes o cliente pode forjar). */
+export function forwardedClient(req: IncomingMessage): string {
+  const h = req.headers['x-forwarded-for'];
+  const last = (Array.isArray(h) ? h.join(',') : (h ?? '')).split(',').pop()?.trim() ?? '';
+  return /^[\w.:%-]{1,64}$/.test(last) ? last : '';
+}
+
+/**
+ * Freio por cliente (quem erra a senha só trava a si mesmo, não o dono da conta) mais um freio global bem mais folgado
+ * contra quem troca de endereço a cada tentativa.
+ */
+export class ClientThrottles {
+  private readonly byClient = new Map<string, LoginThrottle>();
+  private readonly global: LoginThrottle;
+  constructor(private readonly now: () => number = Date.now) {
+    this.global = new LoginThrottle(now, 40);
+  }
+  for(req: IncomingMessage): Pick<LoginThrottle, 'retryAfter' | 'begin' | 'end'> {
+    const key = forwardedClient(req);
+    if (this.byClient.size > 2000) this.byClient.clear();
+    let mine = this.byClient.get(key);
+    if (!mine) this.byClient.set(key, (mine = new LoginThrottle(this.now)));
+    const all = [mine, this.global];
+    return {
+      retryAfter: () => Math.max(...all.map((t) => t.retryAfter())),
+      begin: () => {
+        if (all.some((t) => t.retryAfter() > 0)) return false;
+        for (const t of all) t.begin();
+        return true;
+      },
+      end: (ok: boolean) => all.forEach((t) => t.end(ok)),
+    };
   }
 }
 
@@ -473,7 +511,7 @@ export interface RemoteGateDeps {
  * logout, 401, redirecionamento, CA) e false quando a requisição está autenticada — e então a marca como remota.
  */
 export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, res: ServerResponse, url: URL) => boolean {
-  const throttle = deps.throttle ?? new LoginThrottle();
+  const clients = new ClientThrottles();
   const verify = deps.verify ?? verifyPassword;
   const caAvailable = () => !!deps.caFile && existsSync(deps.caFile);
   const cloud = deps.cloud;
@@ -485,7 +523,14 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
     const uid = cloud ? deps.sessions.userOf(cookie) : undefined;
     const authed = cloud ? uid !== undefined : deps.sessions.verify(cookie);
 
+    // Cabeçalhos de endurecimento em toda resposta da porta (as respostas que definem os seus mantêm os deles).
+    res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=(), usb=()');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self'; base-uri 'none'; object-src 'none'; form-action 'self'");
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    if (secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
     if (path === '/api/remote/login') {
+      const throttle = deps.throttle ?? clients.for(req);
       if (method !== 'POST') {
         sendJson(res, 405, { error: tr('método não permitido') }, { Allow: 'POST' });
         return true;

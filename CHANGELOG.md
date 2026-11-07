@@ -142,6 +142,10 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Habblaud Cloud, segurança:** o freio de tentativas de login agora é por cliente (quem erra a senha não trava mais o
+  dono da conta; há um freio global folgado contra troca de endereço); toda resposta leva HSTS, Permissions-Policy,
+  proteção contra ser embutido por outro site e COOP; o nome do repositório a clonar não aceita começar com "-" nem
+  ter "..".
 - **Habblaud Cloud: agentes retomados não criam mais sala "worktree" nem se duplicam.** A conversa que estava num
   worktree volta para a pasta do projeto, e a mesma conversa só é retomada uma vez.
 - **Habblaud Cloud: "Ativar" numa conta sem uso abre as Contas** (antes abria a ajuda com comandos `npm` que não

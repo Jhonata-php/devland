@@ -157,7 +157,7 @@ export class ConnectService {
   /** Clona em /workspace/<repo>. Devolve a pasta. */
   async clone(nameWithOwner: string): Promise<string> {
     if (!this.deps.ghBin) throw new Error(tr('o GitHub não está instalado neste servidor'));
-    if (!/^[\w.-]+\/[\w.-]+$/.test(nameWithOwner)) throw new Error(tr('repositório inválido'));
+    if (!/^[\w][\w.-]*\/[\w][\w.-]*$/.test(nameWithOwner) || nameWithOwner.includes('..')) throw new Error(tr('repositório inválido'));
     const dest = join(WORKSPACE, nameWithOwner.split('/')[1]);
     if (existsSync(dest)) throw new Error(tr('já existe {0}', [dest]));
     const r = await this.run(this.deps.ghBin, ['repo', 'clone', nameWithOwner, dest], {}, 600_000);

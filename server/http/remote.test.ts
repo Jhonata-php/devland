@@ -627,3 +627,18 @@ describe('cookie Secure e download da CA', () => {
     expect((await request(base, '/login')).body).toContain('/remote/ca.crt');
   });
 });
+
+describe('freio de login por cliente', () => {
+  it('quem erra trava só o próprio endereço; X-Forwarded-For vale pelo último item', async () => {
+    const { ClientThrottles, forwardedClient } = await import('./remote');
+    const req = (ip: string) => ({ headers: { 'x-forwarded-for': `1.1.1.1, ${ip}` } }) as never;
+    expect(forwardedClient(req('9.9.9.9'))).toBe('9.9.9.9');
+    const c = new ClientThrottles();
+    for (let i = 0; i < 6; i++) {
+      const t = c.for(req('9.9.9.9'));
+      if (t.begin()) t.end(false);
+    }
+    expect(c.for(req('9.9.9.9')).retryAfter()).toBeGreaterThan(0);
+    expect(c.for(req('8.8.8.8')).retryAfter()).toBe(0);
+  });
+});
