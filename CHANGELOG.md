@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Botões, avisos, atividade e janela de Contas no tema hacker:** botões de terminal em caixa-alta que enchem de verde; avisos como cartões de log com etiqueta do nível (`alerta`, `ok`, `aviso`, `info`) e brilho na cor dele; atividade em linhas de log `[hora]`; Contas com barra de terminal.
 - **Agentes por função:** cada agente principal tem uma função (front-end, back-end, testes, DevOps, revisão, design),
   escolhida em **Novo agente** (campo Função) ou deduzida dos arquivos que ele mexe e do nome do projeto. A função
   aparece como ficha neon (ícone e cor próprios) no personagem do mapa, na lateral, no cartão do agente e nas

@@ -11986,3 +11986,41 @@ html.is-replay #world {
 .ui-preview__stage.has-frame .ui-preview__note { display: none; }
 .ui-preview__stage.is-phone .ui-preview__frame { width: 390px; max-width: 100%; border-left: 1px solid var(--ui-accent); border-right: 1px solid var(--ui-accent); }
 @media (max-width: 720px) { .ui-preview { left: 8px; right: 8px; width: auto; } }
+
+/* ===== Tema hacker: botões, avisos, atividade e janela de contas ===== */
+/* Botões: placa de terminal, em caixa-alta; no hover enchem de verde. */
+.ui-root .ui-btn { height: 30px; padding: 0 12px; border-radius: 3px; border: 1px solid var(--ui-line-strong); background: rgba(57, 255, 136, 0.05); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ui-accent); }
+.ui-root .ui-btn:hover { background: var(--ui-accent); color: #03120a; border-color: var(--ui-accent); box-shadow: 0 0 20px -4px rgba(57, 255, 136, 0.8); }
+.ui-root .ui-btn:active { transform: translateY(1px); }
+.ui-root .ui-btn-accounts::before { content: '+'; }
+
+/* Avisos: cartões de log, com tarja e brilho na cor do nível e entrada deslizando. */
+.ui-toast { border-radius: 4px; border: 1px solid var(--lvl); background: rgba(3, 10, 6, 0.96); box-shadow: inset 4px 0 0 var(--lvl), 0 0 26px -8px var(--lvl), 0 14px 30px rgba(0, 0, 0, 0.55); }
+.ui-toast::before { content: attr(data-level); position: absolute; top: 4px; right: 8px; font: 800 9px/1 var(--font-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--lvl); opacity: 0.85; }
+.ui-toast { position: relative; }
+.ui-toast--success { --lvl: #39ff88; }
+.ui-toast--warn { --lvl: #ffd24a; }
+.ui-toast--alert { --lvl: #ff5c6c; border-color: var(--lvl); background: linear-gradient(90deg, rgba(255, 92, 108, 0.18), rgba(3, 10, 6, 0.96)); }
+.ui-toast__text { font-size: 12px; }
+.ui-toast__text::before { content: '> '; color: var(--lvl); font-weight: 800; }
+
+/* Atividade: linhas de log com a hora em verde e o autor em destaque. */
+.ui-feed { border-radius: 6px 6px 0 0; border: 1px solid var(--ui-line-strong); }
+.ui-feed__title { letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-accent); }
+.ui-feed__title::before { content: '▸ '; }
+.ui-feed__row { border-radius: 0; border-bottom: 1px solid rgba(57, 255, 136, 0.06); height: 28px; }
+.ui-feed__row:hover { background: rgba(57, 255, 136, 0.08); box-shadow: inset 2px 0 0 var(--ui-accent); }
+.ui-feed__time { color: var(--ui-accent); opacity: 0.85; }
+.ui-feed__time::before { content: '['; opacity: 0.5; }
+.ui-feed__time::after { content: ']'; opacity: 0.5; }
+.ui-feed__who { color: #c9ffe0; }
+
+/* Contas (janela dentro do escritório): barra de terminal e cantos retos. */
+.ui-accounts { border: 1px solid var(--ui-line-strong); border-radius: 8px; background: #040a06; box-shadow: 0 0 60px -20px rgba(57, 255, 136, 0.55), 0 30px 80px rgba(0, 0, 0, 0.7); }
+.ui-accounts__head { border-bottom: 1px solid var(--ui-line-strong); background: rgba(57, 255, 136, 0.06); }
+.ui-accounts__head h2 { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-accent); }
+.ui-accounts__head h2::before { content: '> '; }
+
+/* Contas conectadas no topo: o nome em caixa-alta e a letra em quadrado. */
+.ui-usage-card__name { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+.ui-acc-chip { border-radius: 3px !important; }

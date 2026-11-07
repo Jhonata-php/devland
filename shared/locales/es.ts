@@ -3501,4 +3501,8 @@ export const ES: Readonly<Record<string, string>> = {
   "a prévia só mostra o site (GET); formulários com POST não funcionam aqui": "la vista previa solo muestra el sitio (GET); los formularios con POST no funcionan aquí",
   "prévia expirada: reabra a prévia no Habblaud": "vista previa caducada: vuelve a abrirla en Habblaud",
   "nada respondeu na porta {0}: o servidor do projeto está rodando?": "nada respondió en el puerto {0}: ¿está en marcha el servidor del proyecto?",
+  "alerta": "alerta",
+  "ok": "ok",
+  "aviso": "aviso",
+  "info": "info",
 };

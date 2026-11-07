@@ -3500,4 +3500,8 @@ export const EN: Readonly<Record<string, string>> = {
   "a prévia só mostra o site (GET); formulários com POST não funcionam aqui": "the preview only shows the site (GET); forms using POST don't work here",
   "prévia expirada: reabra a prévia no Habblaud": "preview expired: reopen the preview in Habblaud",
   "nada respondeu na porta {0}: o servidor do projeto está rodando?": "nothing answered on port {0}: is the project's server running?",
+  "alerta": "alert",
+  "ok": "ok",
+  "aviso": "warning",
+  "info": "info",
 };
