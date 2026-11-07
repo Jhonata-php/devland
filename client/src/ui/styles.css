@@ -12212,8 +12212,16 @@ html.is-replay #world {
 .ui-wordtext { text-shadow: none; font-size: 17px; }
 @media (min-width: 601px) { .ui-topbar .ui-brand__name.ui-wordtext { font-size: 17px; } .ui-brand__mark, .ui-brand img { width: 34px; height: 34px; } }
 
-/* Cápsula do canto (botão da lateral + marca): acompanha a lista de salas quando ela abre e fecha. */
+/* Marca integrada à lateral (computador): recolhida, é uma aba compacta no canto (botão + logo + nome); aberta, vira o
+   cabeçalho da própria lista de salas — mesma largura, mesmo fundo, um painel só. */
 @media (min-width: 601px) {
-  .ui-topbar__left { margin-left: 0; transition: margin-left 0.32s var(--ease); }
-  .has-sidebar .ui-topbar__left { margin-left: var(--side-w); }
+  .ui-topbar__left {
+    position: fixed; left: 0; top: 0; z-index: 56; width: auto; height: var(--top-h); margin: 0; padding: 0 14px 0 8px; gap: 8px;
+    border: 1px solid var(--ui-line-strong); border-left: 0; border-top: 0; border-radius: 0 0 16px 0;
+    background: rgba(3, 9, 5, 0.94); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7); backdrop-filter: none; -webkit-backdrop-filter: none;
+    transition: width 0.32s var(--ease), border-radius 0.32s var(--ease);
+  }
+  .has-sidebar .ui-topbar__left { width: var(--side-w); flex-direction: row-reverse; justify-content: space-between; border-radius: 0; border-bottom-color: var(--ui-line); box-shadow: none; padding: 0 12px 0 14px; }
+  .has-sidebar .ui-brand { border-left: 0; padding-left: 0; }
+  .ui-sidebar { top: var(--top-h); border-top: 0; }
 }
