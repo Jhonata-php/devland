@@ -11893,18 +11893,30 @@ html.is-replay #world {
 }
 @keyframes hk-line { to { background-position: -200% 0; } }
 
-/* Contadores como fichas [ 3 agentes ]. */
-.ui-counter { position: relative; border: 1px solid var(--ui-line); border-radius: 4px; padding: 4px 12px; background: rgba(57, 255, 136, 0.04); }
-.ui-counter::before, .ui-counter::after { position: absolute; top: 50%; transform: translateY(-50%); color: var(--ui-accent); font-weight: 800; opacity: 0.8; }
-.ui-counter::before { content: '['; left: 3px; }
-.ui-counter::after { content: ']'; right: 3px; }
-.ui-counter__value { color: var(--ui-accent); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
-.ui-counter__label { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
-.ui-counter.is-active { border-color: #ffd24a; background: rgba(255, 210, 74, 0.1); }
-.ui-counter.is-active .ui-counter__value { color: #ffd24a; text-shadow: 0 0 14px rgba(255, 210, 74, 0.7); }
-
-/* Contas: blocos de terminal. */
-.ui-usage-card { border: 1px solid var(--ui-line); border-radius: 4px; background: rgba(0, 0, 0, 0.35); }
+/* Topo: três zonas bem separadas — marca | métricas | contas e ferramentas. */
+.ui-root { --top-h: 64px; }
+.ui-topbar { gap: 16px; }
+.ui-topbar__left { padding-right: 16px; border-right: 1px solid var(--ui-line); height: 36px; }
+.ui-brand__text { gap: 2px; }
+/* Métricas: um bloco só, com divisórias, número grande em verde e rótulo pequeno em caixa-alta. */
+.ui-counters { padding: 0; border: 1px solid var(--ui-line-strong); border-radius: 6px; background: rgba(57, 255, 136, 0.05); overflow: hidden; }
+.ui-counter { align-items: center; min-width: 76px; padding: 5px 14px; border-radius: 0; }
+.ui-counter + .ui-counter { box-shadow: none; border-left: 1px solid var(--ui-line); }
+.ui-counter__value { font-size: 22px; line-height: 1; font-weight: 800; color: var(--ui-accent); text-shadow: 0 0 14px rgba(57, 255, 136, 0.55); font-variant-numeric: tabular-nums; }
+.ui-counter__label { margin-top: 3px; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-muted); }
+.ui-counter.is-active { background: rgba(255, 210, 74, 0.12); }
+.ui-counter.is-active .ui-counter__value { color: #ffd24a; text-shadow: 0 0 16px rgba(255, 210, 74, 0.75); }
+.ui-counter.is-active .ui-counter__label { color: #ffd24a; }
+/* Contas: etiquetas compactas com faixa colorida na esquerda; o e-mail fica na dica. */
+.ui-usage { gap: 8px; }
+.ui-usage-card { width: 232px; min-width: 176px; border-radius: 6px; border: 1px solid var(--ui-line); border-left: 3px solid var(--acc); background: rgba(0, 0, 0, 0.4); padding: 5px 10px 5px 8px; }
+.ui-usage-card__email { display: none !important; }
+.ui-usage-card:hover { border-color: var(--acc); box-shadow: 0 0 18px -6px var(--acc); }
+/* Ferramentas: ícones quadrados soltos, sem a caixa em volta do grupo. */
+.ui-btn-group { gap: 4px; padding: 0; background: none; border: 0; }
+.ui-topbar .ui-icon-btn { width: 34px; height: 34px; border-radius: 6px; border: 1px solid transparent; }
+.ui-topbar .ui-icon-btn:hover { border-color: var(--ui-accent); background: rgba(57, 255, 136, 0.1); }
+.ui-topbar__right { gap: 10px; padding-left: 14px; border-left: 1px solid var(--ui-line); height: 36px; }
 
 /* Lateral: árvore de arquivos colada na borda esquerda. */
 .ui-sidebar { top: var(--top-h); left: 0; bottom: 0; border-radius: 0; border-width: 0 1px 0 0; border-right: 1px solid var(--ui-line-strong); background: rgba(3, 9, 5, 0.94); }

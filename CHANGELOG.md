@@ -25,7 +25,7 @@ do meio (0.**3**.0).
 
 - **Sons diferentes por tipo de aviso:** alarme (precisa de você), arpejo (concluiu), grave (aviso) e pingo
   (informação); em Ajustes › Sons há botões para ouvir cada um.
-- **Layout hacker:** topo como painel de status com linha de varredura e contadores em `[ ]`; lateral como árvore de
+- **Layout hacker:** topo em três zonas (marca | métricas num bloco só com número grande e divisórias | contas em etiquetas compactas com faixa colorida e ferramentas soltas), com linha de varredura; lateral como árvore de
   arquivos (`~/escritório`, `/sala`, `├─ agente`); cada grupo dos ajustes é uma janela de terminal e os interruptores
   viram `ON`/`OFF`.
 - **Tema hacker em toda a interface:** verde-neon sobre preto (o mapa do escritório mantém as cores originais), fonte monoespaçada, títulos com `>` e rótulos com `$`,
