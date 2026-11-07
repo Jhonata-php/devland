@@ -37,6 +37,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
+COPY scripts/statusline-tap.mjs ./scripts/statusline-tap.mjs
 COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
 
 # HABBLAUD_CLOUD_VERSION: a tag desta imagem (o workflow passa cloud-v0.3.5); o servidor compara com as tags mais novas no

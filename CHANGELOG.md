@@ -71,6 +71,9 @@ do meio (0.**3**.0).
 - **Contas no celular como folha de baixo.** A janela de Contas sobe de baixo com largura total, alça e cantos
   arredondados; cada serviço é um cartão com ícone, nome e estado (verde quando conectado).
 
+- **Habblaud Cloud: uso das contas.** O servidor instala sozinho o captador de uso no Claude Code de cada conta (ao subir
+  e ao conectar uma conta nova), para os cartões de 5 h e semana aparecerem depois da primeira sessão interativa.
+
 - **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
   original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
 

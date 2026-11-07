@@ -3333,6 +3333,8 @@ export const EN: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "couldn't clone: {0}",
   "o login não terminou": "the login didn't finish",
   "Conectar": "Connect",
+  "Uso de {0}: settings.json não foi alterado ({1}).": "Usage of {0}: settings.json was not changed ({1}).",
+  "Uso de {0}: não deu para instalar o tap ({1}).": "Usage of {0}: couldn't install the tap ({1}).",
   "   Versão nova: verificando as tags de ghcr.io/{0} a cada 6 h{1}.": "   New version: checking the tags of ghcr.io/{0} every 6 h{1}.",
   " (botão Atualizar ligado ao Velix)": " (Update button connected to Velix)",
   " (sem HABBLAUD_VELIX_*: só avisa)": " (no HABBLAUD_VELIX_*: only notifies)",

@@ -3350,6 +3350,8 @@ export const FR: Readonly<Record<string, string>> = {
   "não consegui clonar: {0}": "impossible de cloner : {0}",
   "o login não terminou": "la connexion ne s'est pas terminée",
   "Conectar": "Connecter",
+  "Uso de {0}: settings.json não foi alterado ({1}).": "Usage de {0} : settings.json n'a pas été modifié ({1}).",
+  "Uso de {0}: não deu para instalar o tap ({1}).": "Usage de {0} : impossible d'installer le tap ({1}).",
   "   Versão nova: verificando as tags de ghcr.io/{0} a cada 6 h{1}.": "   Nouvelle version : vérification des tags de ghcr.io/{0} toutes les 6 h{1}.",
   " (botão Atualizar ligado ao Velix)": " (bouton Mettre à jour relié à Velix)",
   " (sem HABBLAUD_VELIX_*: só avisa)": " (sans HABBLAUD_VELIX_* : prévient seulement)",

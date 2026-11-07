@@ -43,6 +43,7 @@ import { discoverCodexDirs } from './sources/codex/accounts';
 import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
+import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
 import { ghcrLatest, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
 import { getLocale, tr } from '../shared/i18n';
@@ -351,6 +352,9 @@ late.ptys = ptys;
 late.ptyOff = ptyOff;
 // Habblaud Cloud: conectar contas pela web roda os logins num terminal escondido, como o usuário dos agentes.
 const agentUser = agentRunAs();
+// Cloud: o tap de uso (cartões de 5 h e semana) entra sozinho no statusLine de cada conta do Claude Code.
+const usageTapPath = join(config.rootDir, 'scripts', 'statusline-tap.mjs');
+if (cloud && agentUser) ensureUsageTap(config.claudeDirs, usageTapPath);
 if (cloud && spawnPty && claudeBin && agentUser) {
   late.connect = new ConnectService({
     spawn: spawnPty,
@@ -359,7 +363,10 @@ if (cloud && spawnPty && claudeBin && agentUser) {
     claudeBin,
     codexBin: findCodexBin(process.env),
     ghBin: findExecutable('gh'),
-    onClaudeDir: (dir) => accounts.addDir(dir),
+    onClaudeDir: (dir) => {
+      accounts.addDir(dir);
+      ensureUsageTap([dir], usageTapPath);
+    },
     onChange: () => office.markDirty(),
   });
 }
