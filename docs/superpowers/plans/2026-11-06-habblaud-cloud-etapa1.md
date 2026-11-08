@@ -1,4 +1,4 @@
-# Habblaud Cloud — Etapa 1 (login multiusuário em Docker)
+# DevLand Cloud — Etapa 1 (login multiusuário em Docker)
 
 > Spec: `docs/superpowers/specs/2026-11-06-habblaud-cloud-design.md`. Execução inline, um commit no fim da etapa.
 

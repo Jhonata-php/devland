@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="client/public/assets/brand/logo-mark@4x.png" width="96" alt="Habblaud logo: a small pixel-art building" />
+  <img src="client/public/assets/brand/logo-mark@4x.png" width="96" alt="DevLand logo: a small pixel-art building" />
 </p>
 
-<h1 align="center">Habblaud</h1>
+<h1 align="center">DevLand</h1>
 
 <p align="center">
   <b>The virtual office for your Claude Code (and Codex) agents.</b><br />
@@ -20,13 +20,13 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/office.gif" width="820" alt="Animation of a Habblaud room: characters typing at their desks, subagents with badges and activity bubbles" />
+  <img src="docs/screenshots/office.gif" width="820" alt="Animation of a DevLand room: characters typing at their desks, subagents with badges and activity bubbles" />
 </p>
 
 ---
 
 You open Claude Code in several projects, launch subagents, leave tasks running… and lose track of who's doing
-what. **Habblaud** turns all of that into an office you can take in at a glance: who's typing, who raised a hand
+what. **DevLand** turns all of that into an office you can take in at a glance: who's typing, who raised a hand
 because they **need you**, who delivered their work and left, who went for a coffee while waiting for the next
 instruction — and how much of each account you've already used in the 5-hour session and in the week.
 
@@ -35,7 +35,7 @@ and they watch soccer together in the lounge, play video games and ping-pong, go
 mirror and bet coins on rock-paper-scissors. See [Social life](#social-life).
 
 Everything runs on your machine, reading the files Claude Code itself already writes (plus only the `alias` lines in
-your shell, to give each account its letter). Nothing leaves the computer: Habblaud doesn't read credentials or make
+your shell, to give each account its letter). Nothing leaves the computer: DevLand doesn't read credentials or make
 external calls.
 
 ## Contents
@@ -60,7 +60,7 @@ external calls.
 session gets its own room along the hallway. At the top, the counters and each account's usage; on the left, the rooms
 and agents; at the bottom, the activity feed.
 
-![Habblaud overview: building with lobby, kitchen, restrooms, lounge and project rooms; sidebar with rooms and agents; account usage at the top; activity feed at the bottom](docs/screenshots/overview.png)
+![DevLand overview: building with lobby, kitchen, restrooms, lounge and project rooms; sidebar with rooms and agents; account usage at the top; activity feed at the bottom](docs/screenshots/overview.png)
 
 <table>
   <tr>
@@ -112,7 +112,7 @@ shrinks on its own.
 
 <table>
   <tr>
-    <td width="34%"><img src="docs/screenshots/mobile.png" alt="Habblaud on a phone, with account usage at the top" /></td>
+    <td width="34%"><img src="docs/screenshots/mobile.png" alt="DevLand on a phone, with account usage at the top" /></td>
     <td>
       <b>On your phone too.</b> The interface adapts to small screens: account usage stays at the top, the room list
       becomes a drawer and the details open from the bottom up. See how to allow access over the local network in
@@ -140,10 +140,10 @@ cd habblaud
 npm install
 ```
 
-> `npm install` only downloads build tools (Vite, TypeScript, tsx…). The Habblaud server has no
+> `npm install` only downloads build tools (Vite, TypeScript, tsx…). The DevLand server has no
 > runtime dependencies: it only uses Node's built-in modules.
 
-### 2. Start Habblaud
+### 2. Start DevLand
 
 **Option A — Docker (recommended for keeping it always on)**
 
@@ -165,7 +165,7 @@ Open **http://localhost:4747**. For development, use `npm run dev` (server + Vit
 
 Now open Claude Code in any project and watch your agent arrive by elevator. 🎉
 
-### 3. Install the Habblaud mod in Claude Code (recommended)
+### 3. Install the DevLand mod in Claude Code (recommended)
 
 ```bash
 npm run mod:install                        # o mod e os plugins de permissões e de mensagens, em cada conta
@@ -173,10 +173,10 @@ npm run mod:install -- --sem-permissoes    # sem responder permissões e pergunt
 npm run mod:install -- --sem-mensagens     # sem mandar mensagens aos agentes pelo escritório
 ```
 
-Habblaud ships a [mod](https://code.claude.com/docs/en/plugins/mods/overview) (a plugin that runs inside
+DevLand ships a [mod](https://code.claude.com/docs/en/plugins/mods/overview) (a plugin that runs inside
 Claude Code) and installs it in each account, through `claude plugin` itself, from this folder. With it:
 
-- each account's **5-hour and weekly usage** shows up live in Habblaud;
+- each account's **5-hour and weekly usage** shows up live in DevLand;
 - the terminal shows a line when **another session needs you** (permission or answer);
 - the **`/habblaud`** command becomes available in Claude Code;
 - you can **approve or deny permission requests from the office** ("Do you want to…") and **answer the agent's
@@ -215,22 +215,22 @@ you don't end up with two of them capturing usage or answering the same request.
 
 If you also use OpenAI's **Codex** (the `codex` CLI or the app), its sessions join the same office: each
 project is a room — the same room as Claude Code, when both are open in the same project — and each session is a
-character with the **CODEX** tag. Habblaud finds the Codex folder on its own (`~/.codex`, `CODEX_HOME` or `~/.codex*`) and
+character with the **CODEX** tag. DevLand finds the Codex folder on its own (`~/.codex`, `CODEX_HOME` or `~/.codex*`) and
 reads the conversations, without installing anything. To see Codex **live** (what it's doing right now, who needs you) and
 approve commands from the office, install the hooks:
 
 ```bash
-npm run codex:install      # acrescenta os hooks do Habblaud em ~/.codex/hooks.json (backup antes; os outros ficam)
+npm run codex:install      # acrescenta os hooks do DevLand em ~/.codex/hooks.json (backup antes; os outros ficam)
 npm run codex:status       # confere
 ```
 
-Then **open Codex and approve the Habblaud hooks in `/hooks`**: Codex only runs a new hook after you
-approve it (Habblaud never writes that approval). With Habblaud in Docker, to send messages to Codex sessions,
+Then **open Codex and approve the DevLand hooks in `/hooks`**: Codex only runs a new hook after you
+approve it (DevLand never writes that approval). With DevLand in Docker, to send messages to Codex sessions,
 also keep `npm run codex:bridge` running on the Mac (see [Codex](#codex)).
 
 ### Open on your phone (optional)
 
-By default Habblaud only accepts connections from the computer it runs on. To open it on your phone (on the same Wi-Fi), with Docker:
+By default DevLand only accepts connections from the computer it runs on. To open it on your phone (on the same Wi-Fi), with Docker:
 
 ```bash
 printf 'HABBLAUD_BIND=0.0.0.0\n' > .env
@@ -259,7 +259,7 @@ npm run docker:up
 `remote:setup` writes only the password **hash** (scrypt) to `.env`, creates a local CA and the server certificate in
 `~/.habblaud/remote-tls`, and leaves a service announcing `<nome>.local` on the network (mDNS; LaunchAgent on macOS,
 systemd on Linux). Open `https://<nome>.local` on your phone (with `:4748` if port 443 was taken). The first time,
-accept the warning, tap **Install the Habblaud certificate** and trust it (iPhone: Settings › Profile Downloaded ›
+accept the warning, tap **Install the DevLand certificate** and trust it (iPhone: Settings › Profile Downloaded ›
 Install, then Settings › General › About › Certificate Trust Settings; Android: Security › Encryption & credentials ›
 Install a certificate › CA certificate), checking the fingerprint the setup showed.
 
@@ -274,7 +274,7 @@ Install a certificate › CA certificate), checking the fingerprint the setup sh
 - **Deliveries** (phone, with `terminal` allowed): the box button in the top bar lists what each agent finished, with
   a summary and attachments (screenshots, PDFs, files it sent) that open with a tap.
 - **New agent** (the **+** button): starts a Claude Code session in the background on the computer (`claude --bg`, in
-  the chosen folder), which shows up in the office and receives messages and permission requests through Habblaud. In
+  the chosen folder), which shows up in the office and receives messages and permission requests through DevLand. In
   a folder Claude Code doesn't trust yet, it opens the Claude app's new-session screen filled in, and you press Enter
   there. **It comes turned off:** it needs `HABBLAUD_PTY=1` (the same opt-in as the
   [interactive terminal](#interactive-terminal-take-over-new-session-and-end); in Docker, put it in `.env` and keep
@@ -301,7 +301,7 @@ in the clear on the network). In Node mode: `HABBLAUD_REMOTE_PORT` and `HABBLAUD
 ### Updating
 
 The version in use shows up in the top bar, next to "Connected", and in **Settings › About**. Every 6 hours
-Habblaud checks GitHub for a new version (the [releases](https://github.com/marmottajr/habblaud/releases)
+DevLand checks GitHub for a new version (the [releases](https://github.com/marmottajr/habblaud/releases)
 of this repository). When there is one, the green **New version** badge appears in place of the number, along with a notice and a dot on the
 settings button. **About** has the link to what changed and the **Check now** button (each version's notes
 are also in [`CHANGELOG.md`](CHANGELOG.md)). To update:
@@ -322,7 +322,7 @@ after updating. To skip checking GitHub, use `HABBLAUD_UPDATE_CHECK=0` (in `.env
 
 #### Coming from CodeTown
 
-Habblaud was called **CodeTown** up to 0.3.2. After `git pull`, run once:
+DevLand was called **CodeTown** up to 0.3.2. After `git pull`, run once:
 
 ```bash
 npm install
@@ -347,7 +347,7 @@ npm run docker:up        # tira o container codetown e copia os dados do volume 
 
 ```bash
 npm run mod:uninstall                       # tira o mod, os plugins de permissões e de mensagens e o marketplace
-npm run codex:uninstall                     # tira os hooks do Habblaud do Codex (os outros ficam)
+npm run codex:uninstall                     # tira os hooks do DevLand do Codex (os outros ficam)
 npm run docker:down                         # para o container
 docker volume rm habblaud_habblaud-data     # apaga os dados do container (nomes, salas, linha do tempo e estatísticas)
 docker image rm habblaud:local              # apaga a imagem
@@ -462,7 +462,7 @@ is busy, it goes in when the agent finishes what it's doing. Subagents and sessi
   by day, with search by title, project or account. An ended session opens in the terminal with the project, title and date in the
   header and "Session ended at …" at the bottom; a session that's still open opens the agent's live terminal.
 
-Since the terminal (and the history) shows the whole conversation, it only exists when Habblaud is reachable **only from the
+Since the terminal (and the history) shows the whole conversation, it only exists when DevLand is reachable **only from the
 computer it runs on** (the default), and it only opens through `http://localhost` or `http://127.0.0.1`. With the port open to the network
 (`HABBLAUD_BIND=0.0.0.0` or `HABBLAUD_HOST=0.0.0.0`), it stays off. Details in
 [Privacy and security](#privacy-and-security).
@@ -476,7 +476,7 @@ open the same window, with tabs for the other agents in the same project.
 - Session opened here: it's the real Claude Code (type, answer; Esc interrupts the agent, as in the terminal).
 - Session opened in another terminal: **Take over here** (at the top of the window) ends the session there and continues the **same
   conversation** here (`claude --resume <sessão>`, in the same folder and account). The character keeps its name. On Windows, the
-  terminal the session came from goes back to normal (Habblaud turns off the mouse/keyboard modes that Claude turned on).
+  terminal the session came from goes back to normal (DevLand turns off the mouse/keyboard modes that Claude turned on).
 - **End** closes the session, whether it's here or in another terminal (the conversation is saved).
 - **New session** (in the room's drawer) opens a new Claude Code in the project folder.
 
@@ -484,8 +484,8 @@ Taking over and ending ask for a second click; closing the window doesn't end th
 drawer) can be dragged by its bar and resized from the corner; double-clicking the bar puts it back in place.
 **It comes turned off:** turn it on with `HABBLAUD_PTY=1` (first read the warning in [Privacy and security](#privacy-and-security)).
 It uses `node-pty`, `@xterm/headless` (optional dependencies) and the `claude` on your PATH (`HABBLAUD_CLAUDE_BIN` for
-another one); it only accepts requests from the computer it runs on. On startup, Habblaud opens a test terminal: if `node-pty` or
-`claude` don't work, the feature stays off and the log says why. **Restarting Habblaud ends the sessions
+another one); it only accepts requests from the computer it runs on. On startup, DevLand opens a test terminal: if `node-pty` or
+`claude` don't work, the feature stays off and the log says why. **Restarting DevLand ends the sessions
 it opened.**
 The live terminal is still available in the session history, for subagents and when the interactive one is off.
 
@@ -516,7 +516,7 @@ buttons:
 - **Approve** — and, when Claude Code suggests it, **Approve and don't ask again** (the same rule the terminal
   would offer, for example `Bash(npm test:*)` in this project);
 - **Deny** — with an optional reason, which goes to the agent, and the option to interrupt it;
-- **Answer in terminal** — Habblaud sets the request aside.
+- **Answer in terminal** — DevLand sets the request aside.
 
 The dialog keeps showing in the terminal at the same time, and whichever answer comes first wins: if you answered in the
 terminal, the request disappears from the office on its own. The **need you** counter (and the `P` key) takes you to each request.
@@ -527,7 +527,7 @@ your own in **Other**, and use **Reply**; **Deny…** tells the agent you don't 
 terminal** leaves the question there. The answer reaches the agent as if you had chosen it in the terminal.
 
 - The request goes through a Claude Code `PermissionRequest` hook (the plugin's, or the old way's), which only diverts it
-  when there's **some Habblaud page open** on this computer; with Habblaud stopped or no page open, it
+  when there's **some DevLand page open** on this computer; with DevLand stopped or no page open, it
   exits right away and the terminal carries on as usual.
 - With no answer from the office within 5 minutes (up to 24 h with `HABBLAUD_PERMISSION_TIMEOUT=86400` in the `env`
   of `settings.json`), the request goes back to being answerable only in the terminal (the plugin's options are in
@@ -536,7 +536,7 @@ terminal** leaves the question there. The answer reaches the agent as if you had
   hook finishes: answer from the office or use **Answer in terminal**. With a wait longer than 5 minutes, if no
   page that can answer stays open for 5 minutes (and no [phone with login](#phone-with-login-and-https-approving-requests)
   is set up to answer), the request goes back to the terminal.
-- It works under the same safeguard as the terminal: only with Habblaud reachable only from the computer it runs on
+- It works under the same safeguard as the terminal: only with DevLand reachable only from the computer it runs on
   and opened through `http://localhost`. Check with `npm run mod:status` (or `npm run hooks:status`, in the old
   way). It also works from the [phone with login](#phone-with-login-and-https-approving-requests) (its default).
 - In demo mode, the made-up agents also ask for permission and ask questions (pretend ones), so you can
@@ -553,7 +553,7 @@ and waits for the next request, give a new instruction or correct its course, wi
 - The box shows the status: **queued** (the session fetches messages every 2 seconds), **delivered** or **not
   delivered**, with the reason. With the agent busy, the message waits and goes in when it finishes its turn, like a
   prompt typed while the agent is working.
-- The plugin runs inside each session and only talks to Habblaud at `127.0.0.1`. Without it (or in a session opened before
+- The plugin runs inside each session and only talks to DevLand at `127.0.0.1`. Without it (or in a session opened before
   the install: use `/reload-plugins`), an install hint shows up in place of the box. Subagents don't receive
   messages.
 - It works under the same safeguard as the terminal (local access only) and can be turned off with `HABBLAUD_MENSAGENS=0`.
@@ -576,7 +576,7 @@ agent's details and click the pencil next to the name (**Edit character**). In t
 
 The choice is stored in `~/.habblaud/names.json` and goes away after 60 days without the project being used. The editor has the same safeguard as the
 terminal: the pencil only shows up with the terminal on (without `HABBLAUD_TERMINAL=0`) and local access, that
-is, with Habblaud reachable only from the computer it runs on and opened through `http://localhost`.
+is, with DevLand reachable only from the computer it runs on and opened through `http://localhost`.
 
 ### Codex
 
@@ -584,20 +584,20 @@ Codex sessions (CLI or app) show up like Claude Code's: character, project room,
 subagents, terminal and history, 5-hour and weekly usage and **My day** (tokens only: Codex doesn't report cost). The
 Codex account chip is hollow and carries the **CODEX** tag.
 
-- **Without installing anything**, Habblaud reads the files Codex itself writes (the conversations in `~/.codex/sessions` and the
+- **Without installing anything**, DevLand reads the files Codex itself writes (the conversations in `~/.codex/sessions` and the
   locks of the open sessions in `~/.codex/thread-writer-locks`). The catch is that Codex writes each step **after** it
   finishes and never writes "waiting on you": without the hooks, the office shows Codex with a delay and doesn't tell you when it
   needs you.
-- **With the hooks** (`npm run codex:install` and approving them in `/hooks`), Codex notifies Habblaud at every step: the session
+- **With the hooks** (`npm run codex:install` and approving them in `/hooks`), Codex notifies DevLand at every step: the session
   shows up right away, the activity is the current one and an approval request makes the character raise a hand.
-- **Approving from the office:** with some Habblaud page open, Codex's approval request waits for your
+- **Approving from the office:** with some DevLand page open, Codex's approval request waits for your
   answer in the **Asks for permission** card for up to **25 seconds** (`npm run codex:install -- --espera <s>`, from 5 to 120):
   **Approve** or **Deny** (with the reason). Unlike Claude Code, Codex only shows the approval in the terminal
   **after** the office answers or the time runs out — in the meantime the terminal shows "Waiting for an answer in
-  Habblaud…". There's no "always allow" or "interrupt", and Codex doesn't let you answer its questions from outside.
+  DevLand…". There's no "always allow" or "interrupt", and Codex doesn't let you answer its questions from outside.
 - **Sending messages:** the **Send message** box works for Codex too, through `codex queue`: the message joins
   the session's queue and Codex picks it up when it finishes what it's doing (up to about 10 seconds later). In Node mode
-  Habblaud runs the command itself; **in Docker**, keep `npm run codex:bridge` running on the Mac (the container can't
+  DevLand runs the command itself; **in Docker**, keep `npm run codex:bridge` running on the Mac (the container can't
   see your Codex).
 - **5-hour and weekly usage:** comes from Codex's own files and only refreshes while some session is running; the card
   shows how old the numbers are and "no quota" when the workspace has run out of credits.
@@ -610,7 +610,7 @@ Codex account chip is hollow and carries the **CODEX** tag.
 
 ### GitHub in the office
 
-What the agents do on GitHub livens up the project's room, with no token and no internet access: Habblaud reads the
+What the agents do on GitHub livens up the project's room, with no token and no internet access: DevLand reads the
 calls in the transcripts (`gh pr create`, `gh pr merge`, `git push`, `gh run watch`, `gh pr checks`, `gh run view`,
 `gh release create` and the GitHub MCP tools) and their results.
 
@@ -628,7 +628,7 @@ calls in the transcripts (`gh pr create`, `gh pr merge`, `git push`, `gh run wat
 </table>
 
 Each event also creates a notice ("🎉 Danilo opened PR #12 in habblaud", "🚨 CI failed in habblaud (feat/x)") and goes
-into the feed. Only what happens live livens up the room: whatever was already in the transcripts when Habblaud opened only goes to the
+into the feed. Only what happens live livens up the room: whatever was already in the transcripts when DevLand opened only goes to the
 history. With "reduce motion" turned on in the system, nothing flashes or spins. In demo mode, made-up PRs, merges and CI runs
 show up from time to time.
 ### My day
@@ -637,10 +637,10 @@ The **My day** button (or the `M` key) shows where the day went: how much time t
 highlighted, how much time they spent **waiting on you** (permission, question or choice) — with the longest wait, who
 waited, where and when. Next to it, sessions, subagents, requests, tokens and cost (when Claude Code records the cost in the
 transcript), and charts by hour, by project (from the one that waited on you the most to the one that waited the least) and by account, plus
-the ranking of the longest waits. Pick the day in the selector (Habblaud keeps the last 30); when it's showing today,
+the ranking of the longest waits. Pick the day in the selector (DevLand keeps the last 30); when it's showing today,
 the panel refreshes every 30 s. Each chart has a table version, and the legend turns each status on and off.
 
-The time is **agent time**: two agents working for an hour count as two hours. Habblaud only counts what
+The time is **agent time**: two agents working for an hour count as two hours. DevLand only counts what
 happens while it's running, and the day follows your browser's time zone. With demo mode on, the panel
 shows made-up numbers (with the "demo" badge) and lets you switch to the real data; the demo agents never
 go into the real stats.
@@ -662,11 +662,11 @@ Want to see the office full without having any sessions open?
 > of this section is about Claude Code.
 
 If you use more than one Claude Code account (for example, a `c` shortcut with `~/.claude` and a `d` with
-`CLAUDE_CONFIG_DIR=~/.claude-conta2`), Habblaud shows them all together: each agent carries its account's chip and the top bar
+`CLAUDE_CONFIG_DIR=~/.claude-conta2`), DevLand shows them all together: each agent carries its account's chip and the top bar
 shows, for each account, the **percentage used** of the 5-hour session and of the week and **when each limit resets**.
 
 **How accounts are recognized.** Each Claude Code config folder is an account: `~/.claude` and any
-`~/.claude*` with `projects/` or `sessions/` (plus `CLAUDE_CONFIG_DIR`). To give each one its letter, Habblaud
+`~/.claude*` with `projects/` or `sessions/` (plus `CLAUDE_CONFIG_DIR`). To give each one its letter, DevLand
 reads, in your shell files (`~/.zshrc`, `~/.bashrc`…), **only** the `alias x='... claude ...'` lines:
 
 ```bash
@@ -676,7 +676,7 @@ alias d='CLAUDE_CONFIG_DIR=~/.claude-conta2 claude'
 
 becomes **Account C** and **Account D**. Only shortcuts of up to 3 letters count; accounts without a shortcut get A, B…
 
-**Where the numbers come from.** The recommended way is the Habblaud mod (`npm run mod:install`, Claude Code 2.1.287+):
+**Where the numbers come from.** The recommended way is the DevLand mod (`npm run mod:install`, Claude Code 2.1.287+):
 inside each session, it receives the plan limits from Claude Code itself and stores only the 5-hour and weekly
 percentages (and when they reset) in `~/.habblaud/usage/<conta>.json`. The numbers arrive after each account's next
 reply. Check with `npm run mod:status`. On earlier versions of Claude Code, the statusline tap
@@ -686,19 +686,19 @@ reply. Check with `npm run mod:status`. On earlier versions of Claude Code, the 
 <summary><b>Details of the tap and the /usage cache</b></summary>
 
 - `usage:install` (the old way) changes, in `<conta>/settings.json`, **only** the `statusLine.command` field: the
-  original command (e.g. `npx -y ccstatusline`) now runs through `node "<pasta do Habblaud>/scripts/statusline-tap.mjs" --
+  original command (e.g. `npx -y ccstatusline`) now runs through `node "<pasta do DevLand>/scripts/statusline-tap.mjs" --
   <comando original>` (on Windows, the original command runs in Git Bash, as Claude Code would run it). A copy of the
   file first goes to `settings.json.habblaud-backup-<data>`. If the account had no statusline, one is created that only
   captures usage. `npm run usage:install -- --dry-run` shows what would change without writing anything.
 - The tap passes the same JSON on to your statusline (output and exit code are still its own) and writes **only**
   `{accountId, configDir, fetchedAt, five_hour, seven_day}` — no prompts, costs or project paths. Any
-  failure while capturing is ignored: the statusline never breaks because of Habblaud.
+  failure while capturing is ignored: the statusline never breaks because of DevLand.
 
 | Source | How it works |
 | --- | --- |
-| **Habblaud mod** (recommended) | Live, as described above. Replaces the tap: `mod:install` removes the tap from the account. |
+| **DevLand mod** (recommended) | Live, as described above. Replaces the tap: `mod:install` removes the tap from the account. |
 | Statusline tap (Claude Code older than 2.1.287) | Live, through the statusline command, in the same file. |
-| `/usage` cache (always on) | Claude Code saves the last result of the `/usage` command. In Node mode, Habblaud rereads it every 60 s; in Docker, the value read at the last `npm run docker:up` applies. It only changes when someone runs `/usage`. |
+| `/usage` cache (always on) | Claude Code saves the last result of the `/usage` command. In Node mode, DevLand rereads it every 60 s; in Docker, the value read at the last `npm run docker:up` applies. It only changes when someone runs `/usage`. |
 
 The sources are local files: none of them reads passwords or tokens, or makes network calls. The source with the
 most recent numbers always wins. Numbers older than 30 minutes show up as **outdated**; a window that has already reset
@@ -716,7 +716,7 @@ Everything works without configuring anything. If you need to adjust something, 
 | `HABBLAUD_HOST` | `127.0.0.1` | Server interface in Node mode. Anything other than `127.0.0.1`/`localhost` turns off the terminal (and answering and sending messages from the office). |
 | `HABBLAUD_BIND` | `127.0.0.1` | Docker only (in `.env`): where the port is published. `0.0.0.0` opens it to the local network (and turns off the terminal and anything that acts on the sessions). |
 | `HABBLAUD_CLAUDE_DIRS` | automatic detection | Account folders, comma-separated (e.g. `/caminho/conta1,/caminho/conta2`). |
-| `HABBLAUD_DATA_DIR` | `~/.habblaud` | Where Habblaud keeps its own data (character and room names, the timelapse timeline and the My day stats). |
+| `HABBLAUD_DATA_DIR` | `~/.habblaud` | Where DevLand keeps its own data (character and room names, the timelapse timeline and the My day stats). |
 | `HABBLAUD_TIMELINE` | on | `0` turns off timeline recording (the days already recorded stay in the timelapse). In Docker it's always on. |
 | `HABBLAUD_USAGE_DIR` | `~/.habblaud/usage` | Where the mod (or the statusline tap) writes usage. |
 | `HABBLAUD_DEMO` | off | `1` turns on demo mode at startup. |
@@ -741,12 +741,12 @@ Everything works without configuring anything. If you need to adjust something, 
 
 ## Habblaud World
 
-Habblaud World is an online pixel-art city where every Habblaud becomes a building, lit up live while the agents work,
+Habblaud World is an online pixel-art city where every DevLand becomes a building, lit up live while the agents work,
 and everyone walks around with a character. **It's on by default**, pointing at `server.habblaud.com`; **nothing leaves
 your computer until you create an account** and sign in, and `HABBLAUD_WORLD=0` turns everything off. Access is granted
 through a waiting list.
 
-**How to configure it.** The variables below (in `.env` or in the environment) are optional: without them, Habblaud
+**How to configure it.** The variables below (in `.env` or in the environment) are optional: without them, DevLand
 points at the official server. The section shows up in the **Habblaud World** window (the city button in the top bar) and only works from this computer (never through the phone port); the
 account stays only here, in `~/.habblaud/world.json` (permission 600; in Docker, in the `/data` volume).
 
@@ -766,7 +766,7 @@ exact JSON of the last upload, with its size in bytes and the world's reply.
 **Account and waitlist.** Sign up with e-mail, **player name** (3 to 20 characters, unique in the world: it stays
 reserved for you while you wait on the list and becomes your character's name) and password (12 characters or more;
 leaked passwords are refused), a 6-digit code by e-mail and accepting the Terms of Use and the Privacy Policy. Every
-account joins a waitlist, and access is granted in batches: an open Habblaud checks on its own every 30 minutes. Up to 3
+account joins a waitlist, and access is granted in batches: an open DevLand checks on its own every 30 minutes. Up to 3
 computers per account (**Devices**, with revoke).
 
 **Character.** The player name chosen at sign-up (it can be changed later, once every 30 days), the same appearance
@@ -778,7 +778,7 @@ and follows the office live. The **Your building** card shows the connection, fl
 the world refuses an upload or stops the building (old version, another computer, suspended or banned account), the
 reason; a suspended or banned account gets **Appeal by e-mail**. A building marked as "unverified" (implausible numbers,
 under review) stays out of leaderboards and highlights and shows **Dispute by e-mail**. When the world is under
-maintenance, the card says so, and Habblaud tries again on its own.
+maintenance, the card says so, and DevLand tries again on its own.
 
 **Visibility.** Live (floors, counters and each character's status) or **discreet mode** (only lit or dark and the
 number of floors); closed to visits; hide the country; the building's **tokens** only in bands (up to 100 thousand, 1
@@ -812,23 +812,23 @@ disappears from the map; 30 days later, it's removed). **Leave the world** remov
 account and the character stay, and coming back creates a new building. **Delete account** (in **Account and data**,
 with the code that arrives by e-mail) takes the building and the profile out of the world right away, deletes the
 account, likes, blocks, reports you made and devices from the database within 7 days (and from backups within 30) and
-deletes `world.json` from this computer. With no word from Habblaud for 7 days, the building disappears from the map
+deletes `world.json` from this computer. With no word from DevLand for 7 days, the building disappears from the map
 and, 30 days later, is removed; an e-mail warns 3 days before (can be turned off in **Account and data**).
 
 **Export.** **Download my data** (in **Account and data**) saves `habblaud-world-dados.json` with what the world keeps
 about your account: e-mail, dates, character, visibility, devices, building, likes given, blocks and reports you made.
 Once a day.
 
-**Truthful data.** The World only works if the buildings are real: changing Habblaud to send invented or inflated
+**Truthful data.** The World only works if the buildings are real: changing DevLand to send invented or inflated
 floors, agents, statuses, tokens or characters breaks the Terms of Use and gets the account banned (the server checks
-the plausibility of every packet). Changing Habblaud for anything else stays free (MIT). How Habblaud talks to the World
+the plausibility of every packet). Changing DevLand for anything else stays free (MIT). How DevLand talks to the World
 (in Portuguese): [shared/world/README.md](shared/world/README.md).
 
 **Testing with a local world server.** For World development, with the world server running on the same computer (for
 example, in Docker, published on port 4848):
 
 - Outside Docker: `HABBLAUD_WORLD_URL=http://127.0.0.1:4848 npm run dev`.
-- With Habblaud in Docker: in this folder's `.env`, `HABBLAUD_WORLD_URL=http://host.docker.internal:4848` and
+- With DevLand in Docker: in this folder's `.env`, `HABBLAUD_WORLD_URL=http://host.docker.internal:4848` and
   `HABBLAUD_WORLD_DEV=1`; then `npm run docker:up`, which ends with the World line
   (`Habblaud World: on: http://host.docker.internal:4848`, or why it stayed off). `docker-compose.yml` already maps
   `host.docker.internal` to the host (`extra_hosts` with `host-gateway`; Docker Desktop already has the name). On
@@ -877,7 +877,7 @@ shared/   protocolo (types.ts), atividades em PT-BR, nomes, simulador de demonst
 server/   servidor HTTP + SSE: contas e uso, leitura das sessões e transcripts, modelo do escritório
 client/   Vite: src/art (pixel art procedural), src/world (o escritório no canvas), src/ui (interface)
 scripts/  build do servidor, docker-up, instaladores (mod, tap de statusline e hook de permissão) e screenshots
-mod/      o mod do Habblaud e os plugins de permissões e de mensagens (plugins do Claude Code; marketplace em .claude-plugin/)
+mod/      o mod do DevLand e os plugins de permissões e de mensagens (plugins do Claude Code; marketplace em .claude-plugin/)
 ```
 
 | Route | Description |
@@ -915,7 +915,7 @@ More server details in [`server/README.md`](server/README.md).
 | `<conta>/sessions/` | `/claude/<conta>/sessions` (read-only) | Open sessions and their status. |
 | `<conta>/projects/` | `/claude/<conta>/projects` (read-only) | Transcripts of the sessions and subagents. |
 | `~/.habblaud/usage/` | `/usage` (read-only) | Usage captured by the mod (or by the statusline tap). |
-| `habblaud-data` volume | `/data` | Habblaud's own data (character names, the timelapse timeline and the My day stats). |
+| `habblaud-data` volume | `/data` | DevLand's own data (character names, the timelapse timeline and the My day stats). |
 | `~/.habblaud/remote-tls/server/` | `/remote-tls` (read-only) | Only after `npm run remote:setup`: the server certificate and key of the [phone with login](#phone-with-login-and-https-approving-requests) (never the CA key). |
 
 The account folder is **never** mounted whole (credentials and settings live there). The container runs as an unprivileged
@@ -926,7 +926,7 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
 
 ## Privacy and security
 
-- **Read-only:** Habblaud never writes to the Claude Code folders. The exceptions are the installers, which you run:
+- **Read-only:** DevLand never writes to the Claude Code folders. The exceptions are the installers, which you run:
   `npm run mod:install` / `mod:uninstall` uses `claude plugin` itself (which registers the marketplace and the plugins
   in `settings.json` and in `<conta>/plugins/`) and, on install, removes the old tap and hook with a backup; in the old
   way, `npm run usage:install` / `usage:uninstall` changes only the `statusLine.command` in `settings.json` and
@@ -934,7 +934,7 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
 - **The mod:** runs inside each Claude Code session, with your permissions (like every mod), and only does what is
   listed in [`mod/README.md`](mod/README.md) — `claude plugin validate mod/habblaud` shows the events and the calls,
   without running anything. It only writes the 5-hour and weekly usage percentages (and when they reset) to
-  `~/.habblaud/usage/<conta>.json`; for the "needs you" line and `/habblaud`, it only talks to Habblaud at
+  `~/.habblaud/usage/<conta>.json`; for the "needs you" line and `/habblaud`, it only talks to DevLand at
   `127.0.0.1`. It doesn't read the conversation, doesn't call the model and doesn't send anything off the computer. It's loaded from this
   folder: whatever is in it (including after a `git pull`) is what runs. The messages plugin
   (`habblaud-mensagens`) is separate precisely because it acts: it types into the session what you sent from the office.
@@ -947,14 +947,14 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   account and sign in, and only what is listed in [what leaves your computer](docs/world/privacidade.md) (in Portuguese);
   `HABBLAUD_WORLD=0` turns it all off.
   So is the [phone with login](#phone-with-login-and-https-approving-requests), which only exists after `npm run remote:setup`.
-- **No credentials:** Habblaud doesn't read passwords or access tokens. From each account's `.claude.json` it only uses the
+- **No credentials:** DevLand doesn't read passwords or access tokens. From each account's `.claude.json` it only uses the
   email, the organization and the `/usage` cache; live usage comes from the mod (or the statusline tap).
 - **Masked secrets:** tokens and passwords in known formats (`Bearer`, `-u usuário:senha`, `TOKEN=`, `sk-…`,
   `ghp_…`, `AKIA…` keys, JWTs, passwords in URLs) become `***` before they reach the browser.
 - **Protected against malicious sites:** the server refuses addresses that aren't `localhost`/IP (DNS rebinding) and
   `POST` requests coming from other origins (CSRF), and doesn't let the page be embedded in other sites.
 - **Local-only terminal:** the full conversation of the sessions (and the history of the ended sessions, with their
-  titles) only leaves the server with Habblaud reachable only from the computer it runs on (`HABBLAUD_HOST` local in Node;
+  titles) only leaves the server with DevLand reachable only from the computer it runs on (`HABBLAUD_HOST` local in Node;
   `HABBLAUD_BIND` local in Docker) — there's no way to
   turn it on with the port exposed — and each request has to come through `localhost`/`127.0.0.1`: network IPs and names from
   `HABBLAUD_ALLOWED_HOSTS` (proxies, tunnels) are refused. Secrets are masked and long texts truncated before
@@ -966,7 +966,7 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
 - **Answering from the office, local only:** approving or denying acts on the sessions, so it follows the same safeguard as the
   terminal (local bind, local `Host`, no proxies or tunnels) and only exists with the permission hook (the one from the
   `habblaud-permissoes` plugin or the old way's) installed by you. Answers require JSON and a local origin (a site
-  open in the browser can't send them), the hook only talks to `127.0.0.1` and, when in doubt — Habblaud down,
+  open in the browser can't send them), the hook only talks to `127.0.0.1` and, when in doubt — DevLand down,
   an error, a timeout — it exits without deciding: the terminal decides. The full command or the diff only leaves the server for
   whoever opened the page from the computer it runs on. "Always allow" only applies a rule that Claude Code itself suggested
   for that request. Note: any program or person that can open `http://localhost:4747` on this machine
@@ -986,7 +986,7 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   terminals. It follows the same safeguard as the terminal (local bind, local `Host`, no proxies or tunnels) and each request
   has to come from the computer it runs on, with a local origin (a site open in the browser can't send one). Even so,
   **any program on this machine** that talks to `http://localhost:4747` — including an agent running a command —
-  gets that power. Before ending a process from outside, Habblaud checks in the session registry and in the system that
+  gets that power. Before ending a process from outside, DevLand checks in the session registry and in the system that
   that PID is still that Claude Code (same start time and executable). On shared computers or with agents
   running unsupervised, leave it off.
 - **Phone with login, opt-in:** only exists after `npm run remote:setup`. A second port with HTTPS (a local CA that only
@@ -1006,13 +1006,13 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   and the server answers `403`. Changes require JSON and a local origin. `HABBLAUD_TERMINAL=0` turns it off too.
 - **My day stats:** only aggregate numbers (time per status, counts, tokens, cost) with project,
   account and agent names, kept in `HABBLAUD_DATA_DIR/stats/` for 30 days — nothing from the conversation.
-- **Codex:** Habblaud only reads the conversations (`sessions/`, `archived_sessions/`) and the locks of the open sessions
+- **Codex:** DevLand only reads the conversations (`sessions/`, `archived_sessions/`) and the locks of the open sessions
   (`thread-writer-locks/`); in Docker, only those three folders are mounted, read-only. It never reads `auth.json`,
   `config.toml`, the shell environment (`shell_snapshots/`), the prompt history, the logs or the Codex databases, and doesn't
   show the ChatGPT account ids. `npm run codex:install` only adds groups to `hooks.json` (with a backup; those from
   other apps stay where they are) and writes `~/.habblaud/codex-hook.json`; approving the hooks is always up to you, in
   `/hooks`. The hooks only talk to `127.0.0.1`. Messages to Codex carry the same warning as those to Claude Code: any
-  program on this machine that talks to Habblaud can leave a message in a session's queue.
+  program on this machine that talks to DevLand can leave a message in a session's queue.
 - **What shows up on screen:** activity summaries (tool, file, command or query), session titles,
   tasks and stats (and, in the terminal, the conversation). Don't expose the port on networks you don't
   trust.
@@ -1046,7 +1046,7 @@ In the browser console, `habblaud.world.debug` has tools for testing scenes (e.g
 
 **Timelapse with made-up data only** (e.g. to record a GIF): `npm run demo:timeline` runs the demo mode
 simulator offline and records a whole day (by default, yesterday from 9 a.m. to 7 p.m., with a busy morning, a quieter lunch and a
-peak in the afternoon) in `<tmp>/habblaud-demo/timeline/`. Then start a Habblaud that only reads that folder and doesn't show your
+peak in the afternoon) in `<tmp>/habblaud-demo/timeline/`. Then start a DevLand that only reads that folder and doesn't show your
 sessions, and open the Timelapse:
 
 ```bash
@@ -1065,7 +1065,7 @@ working, note the changes under "Não lançado" (Unreleased). To release:
 2. Replace "Não lançado" with the version and the date (`## [0.3.0] - AAAA-MM-DD`), leave an empty "Não lançado" above it and
    update the links at the end. `npm test` fails if the `package.json` version doesn't have a section.
 3. Merge into `main` and run `npm run release` (it needs an authenticated [`gh`](https://cli.github.com/); `-- --dry-run`
-   only shows the notes). The script creates the `v0.3.0` tag and the release with the section's text. From then on, Habblaud
+   only shows the notes). The script creates the `v0.3.0` tag and the release with the section's text. From then on, DevLand
    users see the **New version** badge.
 
 ## Troubleshooting
@@ -1103,7 +1103,7 @@ install, run `/reload-plugins`; `/plugin` shows, below the tabs, the loaded mods
 <details>
 <summary><b>"Port 4747 is already in use"</b></summary>
 
-Another Habblaud (Node or Docker) is already running. Stop it (`npm run docker:down`, or Ctrl+C in the
+Another DevLand (Node or Docker) is already running. Stop it (`npm run docker:down`, or Ctrl+C in the
 `npm start` terminal) or use another port: `HABBLAUD_PORT=4848 npm run docker:up` (Docker) or `HABBLAUD_PORT=4848 npm start`
 (Node).
 
@@ -1122,7 +1122,7 @@ to open it by a name (e.g. `meu-mac.local`), add `HABBLAUD_ALLOWED_HOSTS=meu-mac
 <details>
 <summary><b>The terminal doesn't open</b></summary>
 
-The terminal only exists with Habblaud reachable only from the computer it runs on. Check that `.env` doesn't have
+The terminal only exists with DevLand reachable only from the computer it runs on. Check that `.env` doesn't have
 `HABBLAUD_BIND=0.0.0.0` (or, in Node mode, that you didn't use `HABBLAUD_HOST=0.0.0.0`) or `HABBLAUD_TERMINAL=0`, and open it through
 `http://localhost:4747` (through the network IP or a name from `HABBLAUD_ALLOWED_HOSTS` it's refused). In Docker, a container
 created before this feature needs to be recreated: `npm run docker:up`. The startup log (`npm run docker:logs`)
@@ -1134,10 +1134,10 @@ says whether the terminal is on and, if it isn't, why.
 <summary><b>The permission request (or the question) doesn't show up in the office</b></summary>
 
 Run `npm run mod:status`: it says, per account, whether the `habblaud-permissoes` plugin is installed and enabled (and whether
-the old hook was left alongside it, which would make two of them answer) and whether Habblaud is handling requests. In the old way,
+the old hook was left alongside it, which would make two of them answer) and whether DevLand is handling requests. In the old way,
 `npm run hooks:status` says whether the hook is installed and pointing to this folder. The request is only diverted with some
-Habblaud page opened through `http://localhost` (or `127.0.0.1`) and with the terminal on (same safeguard). Sessions
-opened before the install load the plugin with `/reload-plugins` (or when reopened). In the old way, if Habblaud
+DevLand page opened through `http://localhost` (or `127.0.0.1`) and with the terminal on (same safeguard). Sessions
+opened before the install load the plugin with `/reload-plugins` (or when reopened). In the old way, if DevLand
 uses another port, reinstall with `npm run hooks:install -- --port <porta>`. For the agent's questions, the plugin
 must be from 0.6.0 or newer: run `npm run mod:install` after updating.
 
@@ -1146,7 +1146,7 @@ must be from 0.6.0 or newer: run `npm run mod:install` after updating.
 <details>
 <summary><b>Codex doesn't show up in the office (or shows up with a delay)</b></summary>
 
-The startup log (`npm run docker:logs`) says how many Codex accounts Habblaud found; if it's none, point to the
+The startup log (`npm run docker:logs`) says how many Codex accounts DevLand found; if it's none, point to the
 folder with `HABBLAUD_CODEX_DIRS` (and run `npm run docker:up` again: in Docker, only the folders that existed at
 `docker:up` are mounted). Without the hooks, Codex shows up through its files, which are only written after each step:
 run `npm run codex:install`, **approve the hooks in `/hooks` in Codex** and check with `npm run codex:status`. Codex runs
@@ -1160,11 +1160,11 @@ say which folder it's in (it only creates the session lock), and without the fol
 <summary><b>The message box doesn't show up (or stays queued)</b></summary>
 
 The box only shows up for main agents whose session has the `habblaud-mensagens` plugin connected: run
-`npm run mod:status` (it says, per account, whether the plugin is installed and whether Habblaud has messages turned on) and, in
+`npm run mod:status` (it says, per account, whether the plugin is installed and whether DevLand has messages turned on) and, in
 sessions opened before the install, `/reload-plugins`. Without the plugin, the agent's details show the install
 hint. Messages follow the terminal's safeguard and `HABBLAUD_MENSAGENS=0` turns them off; the startup log
 (`npm run docker:logs`) says whether they're on and, if they aren't, why. A message that stays **queued** and fails
-with "the session didn't fetch the message" means the session stopped asking Habblaud (it closed, or the plugin was
+with "the session didn't fetch the message" means the session stopped asking DevLand (it closed, or the plugin was
 turned off).
 
 </details>
@@ -1173,7 +1173,7 @@ turned off).
 <summary><b>In Docker, a closed session stays in the office</b></summary>
 
 This happens if Claude Code was force-quit without deleting its own entry in `sessions/` (in Docker there's no way to
-check whether the process still exists). Running with Node (`npm start`), Habblaud checks the processes and this doesn't
+check whether the process still exists). Running with Node (`npm start`), DevLand checks the processes and this doesn't
 happen.
 
 </details>
@@ -1196,12 +1196,12 @@ Docker Desktop only shares some Mac folders with containers (by default `/Users`
 
 ## Disclaimer
 
-Habblaud is an independent project, **not affiliated with, sponsored or endorsed by Anthropic**. "Claude" and
+DevLand is an independent project, **not affiliated with, sponsored or endorsed by Anthropic**. "Claude" and
 "Claude Code" are trademarks of Anthropic, used here only to describe what the project works with.
 
-To show the agents, Habblaud only reads local files that Claude Code itself writes on your machine
+To show the agents, DevLand only reads local files that Claude Code itself writes on your machine
 (records of the open sessions, transcripts and account settings). This format isn't documented and may change between Claude Code versions:
-after an update, Habblaud may stop working, fully or partially, until it's adjusted.
+after an update, DevLand may stop working, fully or partially, until it's adjusted.
 
 ## License
 
@@ -1217,7 +1217,7 @@ for a hangout (alone, it sticks with the popcorn) and takes the hourglass along;
 a new request to someone — it lets the group know ("Oops, they're calling me! 🏃") and runs back to its desk.
 
 <p align="center">
-  <img src="docs/screenshots/social-lounge.gif" width="816" alt="Habblaud lounge with three hangouts at once: three coworkers on the couch watching soccer on TV (the screen flashes GOL), a ping-pong match with fans and an arcade duel with trash talk in the bubbles" />
+  <img src="docs/screenshots/social-lounge.gif" width="816" alt="DevLand lounge with three hangouts at once: three coworkers on the couch watching soccer on TV (the screen flashes GOL), a ping-pong match with fans and an arcade duel with trash talk in the bubbles" />
 </p>
 
 ### The hangouts
@@ -1279,7 +1279,7 @@ Each gain shows up as "+🪙10" over the head; matches and bets go into the acti
 and the statement are saved in the browser (each browser has its own economy: the bets are drawn there) and are
 forgotten three days after the agent leaves.
 
-> All of this is just Habblaud putting on a show: nothing changes in the Claude Code agents, which keep working normally.
+> All of this is just DevLand putting on a show: nothing changes in the Claude Code agents, which keep working normally.
 
 ---
 

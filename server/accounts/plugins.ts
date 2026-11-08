@@ -23,7 +23,7 @@ function run(bin: string, args: string[], dir: string): Promise<{ ok: boolean; o
 }
 
 /** Instala (ou confirma) o marketplace e os plugins em cada pasta de conta, uma de cada vez e em segundo plano. */
-export async function ensureHabblaudPlugins(dirs: readonly string[], claudeBin: string, root: string): Promise<void> {
+export async function ensureDevLandPlugins(dirs: readonly string[], claudeBin: string, root: string): Promise<void> {
   for (const dir of dirs) {
     try {
       // "já existe" também sai com erro: o que importa é o plugin ficar instalado.
@@ -33,9 +33,9 @@ export async function ensureHabblaudPlugins(dirs: readonly string[], claudeBin: 
         const r = await run(claudeBin, ['plugin', 'install', `${p}@${MARKETPLACE}`], dir);
         if (!r.ok && !/already|já/i.test(r.out)) failed.push(`${p}: ${r.out.split('\n').pop()?.slice(0, 160) ?? ''}`);
       }
-      if (failed.length) log.warnOnce(`plugins:${dir}`, tr('Plugins do Habblaud em {0}: {1}', [dir, failed.join('; ')]));
+      if (failed.length) log.warnOnce(`plugins:${dir}`, tr('Plugins do DevLand em {0}: {1}', [dir, failed.join('; ')]));
     } catch (err) {
-      log.warnOnce(`plugins:${dir}`, tr('Plugins do Habblaud em {0}: {1}', [dir, errMsg(err)]));
+      log.warnOnce(`plugins:${dir}`, tr('Plugins do DevLand em {0}: {1}', [dir, errMsg(err)]));
     }
   }
 }

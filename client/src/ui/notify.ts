@@ -121,7 +121,7 @@ export class Notifier implements UiComponent {
     this.sounds.play(n.level === 'alert' ? 'alarm' : n.level === 'success' ? 'done' : n.level === 'warn' ? 'warn' : 'blip');
     if (!this.pushActive && (n.level === 'alert' || n.level === 'success') && prefs.browserNotifications && document.hidden && notificationState() === 'granted') {
       try {
-        const notification = new Notification(n.level === 'alert' ? tr('Habblaud — precisa de você') : tr('Habblaud — terminou'), {
+        const notification = new Notification(n.level === 'alert' ? tr('DevLand — precisa de você') : tr('DevLand — terminou'), {
           body: n.text,
           tag: n.agentId ?? n.id,
           icon: '/assets/brand/favicon-32.png',

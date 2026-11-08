@@ -229,17 +229,17 @@ export function statusText(waiting: readonly WaitingAgent[]): string | undefined
 export function summaryText(s: Summary, url: string): string {
   const agents = s.agents === 1 ? '1 agente' : `${s.agents} agentes`
   const waiting = s.waiting.length === 0 ? 'ninguém precisa de você' : s.waiting.length === 1 ? '1 precisa de você' : `${s.waiting.length} precisam de você`
-  const lines = [`Habblaud ${s.version} em ${url}`, `${agents} · ${s.working} trabalhando · ${waiting}`]
+  const lines = [`DevLand ${s.version} em ${url}`, `${agents} · ${s.working} trabalhando · ${waiting}`]
   for (const w of s.waiting) lines.push(`✋ ${w.name} (${w.room}): ${w.waitingFor}${w.answerable ? ' · dá para responder pelo escritório' : ''}`)
   return lines.join('\n')
 }
 
 export function offlineText(url: string): string {
-  return `O Habblaud não respondeu em ${url}. Para subir: npm run docker:up na pasta do Habblaud.`
+  return `O DevLand não respondeu em ${url}. Para subir: npm run docker:up na pasta do DevLand.`
 }
 
 export function outdatedText(url: string): string {
-  return `O Habblaud em ${url} está numa versão sem a rota do mod. Para atualizar: git pull e npm run docker:up na pasta do Habblaud.`
+  return `O DevLand em ${url} está numa versão sem a rota do mod. Para atualizar: git pull e npm run docker:up na pasta do DevLand.`
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -293,7 +293,7 @@ async function writeUsage($: EngineInterface, rateLimits: readonly SessionRateLi
 }
 
 /** GET /api/mod/summary com prazo de 2 s; nunca lança. */
-async function askHabblaud($: EngineInterface, port: number, query: string): Promise<Asked> {
+async function askDevLand($: EngineInterface, port: number, query: string): Promise<Asked> {
   let wait: { cancel: () => void } | undefined
   const timeout = new Promise<undefined>((resolve) => {
     wait = $.clock.after(FETCH_TIMEOUT_MS, () => resolve(undefined))
@@ -343,7 +343,7 @@ async function poll($: EngineInterface): Promise<void> {
     const params = new URLSearchParams()
     if (e.accountId) params.set('account', e.accountId)
     params.set('session', await $.session.id())
-    const asked = await askHabblaud($, e.port, `?${params.toString()}`)
+    const asked = await askDevLand($, e.port, `?${params.toString()}`)
     if (asked.kind !== 'ok') {
       setStatus($, undefined)
       schedule($, OFFLINE_POLL_MS)
@@ -362,7 +362,7 @@ async function poll($: EngineInterface): Promise<void> {
 async function habblaudText($: EngineInterface): Promise<string> {
   const e = await readEnv($)
   const url = `http://localhost:${e.port}`
-  const asked = await askHabblaud($, e.port, '')
+  const asked = await askDevLand($, e.port, '')
   if (asked.kind === 'outdated') return outdatedText(url)
   if (asked.kind === 'offline') return offlineText(url)
   return summaryText(asked.summary, url)
@@ -371,7 +371,7 @@ async function habblaudText($: EngineInterface): Promise<string> {
 export const register: Register = (on) => {
   on('session.start', async ($, e, next) => {
     try {
-      await $.command.register({ name: 'habblaud', description: 'Resumo do Habblaud: quantos agentes, quem trabalha e quem precisa de você' })
+      await $.command.register({ name: 'habblaud', description: 'Resumo do DevLand: quantos agentes, quem trabalha e quem precisa de você' })
     } catch {
       // sem o comando, o resto segue
     }

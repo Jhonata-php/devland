@@ -1,4 +1,4 @@
-# Imagem do Habblaud Cloud em ghcr.io/jhonata-php/habblaud, para a loja do Velix puxar.
+# Imagem do DevLand Cloud em ghcr.io/jhonata-php/habblaud (o nome do pacote no GitHub continua habblaud: trocar quebraria a atualização nativa), para a loja do Velix puxar.
 #
 # Sai a cada tag cloud-v* (ex.: cloud-v0.1.0 vira a imagem :cloud-v0.1.0 e também :latest), para amd64 e arm64.
 # O manifesto do Velix (velix/apps/api/src/catalog/manifests/habblaud.ts) usa :latest.

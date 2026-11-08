@@ -6,8 +6,8 @@ const act = (kind: 'edit' | 'run', detail: string) => ({ id: '1', kind, icon: ''
 
 describe('roles', () => {
   it('lê a etiqueta do nome da sessão', () => {
-    expect(roleFromTitle('Habblaud [front]: ajustar botão')).toBe('front');
-    expect(roleFromTitle('Habblaud [xyz]: nada')).toBeUndefined();
+    expect(roleFromTitle('DevLand [front]: ajustar botão')).toBe('front');
+    expect(roleFromTitle('DevLand [xyz]: nada')).toBeUndefined();
   });
   it('deduz pelos arquivos e pelo projeto', () => {
     expect(agentRole({ ...base, activity: act('edit', 'src/App.tsx') })).toBe('front');
@@ -17,6 +17,6 @@ describe('roles', () => {
     expect(agentRole({ ...base, kind: 'sub' as never })).toBeUndefined();
   });
   it('a etiqueta vale mais que a dedução', () => {
-    expect(agentRole({ ...base, title: 'Habblaud [review]: x', activity: act('edit', 'a.tsx') })).toBe('review');
+    expect(agentRole({ ...base, title: 'DevLand [review]: x', activity: act('edit', 'a.tsx') })).toBe('review');
   });
 });

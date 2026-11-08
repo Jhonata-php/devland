@@ -162,7 +162,7 @@ function formPage(opts: { title: string; intro: string; fields: { id: string; la
       if (r.ok) { location.replace('/'); return; }
       const j = await r.json().catch(() => ({}));
       fail(j.error || ${js(tr('Não deu certo.'))});
-    } catch { fail(${js(tr('Sem conexão com o Habblaud.'))}); }
+    } catch { fail(${js(tr('Sem conexão com o DevLand.'))}); }
     b.disabled = false; b.classList.remove('busy');
   });
 })();`;
@@ -249,7 +249,7 @@ function adminPage(): string {
   $('copy').onclick = () => navigator.clipboard?.writeText($('link').textContent).then(() => { err.textContent = T.copied; });
   $('all').onclick = async () => { await call('POST', '/api/cloud/logout-all', {}); location.replace('/login'); };
   load().catch(() => {});`;
-  return shell(tr('Habblaud · usuários'), body, script);
+  return shell(tr('DevLand · usuários'), body, script);
 }
 
 function accountsPage(isAdmin: boolean, embed = false): string {
@@ -379,7 +379,7 @@ function accountsPage(isAdmin: boolean, embed = false): string {
     };
   }
   loadAccounts().then(loadRepos).catch((e) => { err.textContent = e.message; });`;
-  return shell(tr('Habblaud · contas'), body, script);
+  return shell(tr('DevLand · contas'), body, script);
 }
 
 function redirect(res: ServerResponse, to: string): void {
@@ -448,7 +448,7 @@ export function createCloud(deps: CloudDeps): Cloud {
           sendHtml(
             res,
             formPage({
-              title: tr('Habblaud · criar admin'),
+              title: tr('DevLand · criar admin'),
               intro: tr('Primeiro acesso: crie a conta de admin. O código de instalação aparece no Velix, em Credenciais do app, e no log do container.'),
               fields: [
                 { id: 'code', label: tr('Código de instalação') },
@@ -491,13 +491,13 @@ export function createCloud(deps: CloudDeps): Cloud {
       if (invite) {
         req.resume();
         if (!store.inviteValid(invite[1])) {
-          sendHtml(res, shell(tr('Habblaud · convite'), `<form><h1>Habblaud</h1><p>${esc(tr('Convite inválido, vencido ou já usado. Peça um novo a quem administra o Habblaud.'))}</p><a href="/login">${esc(tr('Ir para o login'))}</a></form>`, ''));
+          sendHtml(res, shell(tr('DevLand · convite'), `<form><h1>DevLand</h1><p>${esc(tr('Convite inválido, vencido ou já usado. Peça um novo a quem administra o DevLand.'))}</p><a href="/login">${esc(tr('Ir para o login'))}</a></form>`, ''));
         } else
           sendHtml(
             res,
             formPage({
-              title: tr('Habblaud · convite'),
-              intro: tr('Você foi convidado para o Habblaud. Escolha seu usuário e senha.'),
+              title: tr('DevLand · convite'),
+              intro: tr('Você foi convidado para o DevLand. Escolha seu usuário e senha.'),
               fields: [
                 { id: 'name', label: tr('Usuário'), auto: 'username' },
                 { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email' },

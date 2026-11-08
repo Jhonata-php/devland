@@ -29,7 +29,7 @@ export function ptyRequestProblem(req: IncomingMessage, remoteOk?: (req: Incomin
   if (remoteOk?.(req)) return null;
   if (!isLoopbackAddress(req.socket.remoteAddress)) return tr('o terminal interativo só pode ser usado no próprio computador');
   const host = req.headers.host;
-  if (!isLoopbackHost(host)) return tr('abra o Habblaud por http://localhost para usar o terminal interativo');
+  if (!isLoopbackHost(host)) return tr('abra o DevLand por http://localhost para usar o terminal interativo');
   const origin = req.headers.origin;
   if (typeof origin === 'string') {
     let same = false;

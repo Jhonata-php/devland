@@ -46,7 +46,7 @@ async function setup(now = () => Date.now()) {
   return { store, cloud, call };
 }
 
-describe('Habblaud Cloud', () => {
+describe('DevLand Cloud', () => {
   it('sem usuários manda para /setup; o admin só nasce com o código de instalação', async () => {
     const { call, cloud } = await setup();
     expect((await call('/')).location).toBe('/setup');

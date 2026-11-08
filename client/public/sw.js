@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
   }
   // Todo push mostra uma notificação (o iOS cancela a assinatura de quem recebe push "mudo").
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Habblaud', {
+    self.registration.showNotification(data.title || 'DevLand', {
       body: data.body || '',
       tag: data.tag || undefined,
       icon: '/assets/brand/icon-192.png',

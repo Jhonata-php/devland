@@ -42,7 +42,7 @@ describe('PushService', () => {
     }) as unknown as typeof fetch);
     s.subscribe(sub('https://fcm.googleapis.com/fcm/send/viva'));
     s.subscribe(sub('https://fcm.googleapis.com/fcm/send/morta'));
-    expect(await s.notify({ title: 'Habblaud', body: 'oi' })).toBe(1);
+    expect(await s.notify({ title: 'DevLand', body: 'oi' })).toBe(1);
     expect(calls).toHaveLength(2);
     expect(s.count()).toBe(1);
   });

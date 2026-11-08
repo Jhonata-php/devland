@@ -1,4 +1,4 @@
-# Plugins do Claude Code do Habblaud
+# Plugins do Claude Code do DevLand
 
 O repositório é também um marketplace de plugins do Claude Code: `.claude-plugin/marketplace.json` (na raiz)
 lista o marketplace `habblaud` com três plugins, um em cada pasta daqui: o mod `habblaud` (só observa),
@@ -22,22 +22,22 @@ instalação está no README principal.
   `npm run usage:install`: o seu statusline fica intocado. A conta é a pasta de `CLAUDE_CONFIG_DIR` (o primeiro
   item) ou `~/.claude` (`~` é o `HOME`; no Windows sem ele, o `USERPROFILE`). Valores iguais gravados há menos de
   10 s não são regravados; falha ao gravar = silêncio.
-- **"Precisa de você" embaixo do prompt:** a cada 5 s pergunta ao Habblaud local
+- **"Precisa de você" embaixo do prompt:** a cada 5 s pergunta ao DevLand local
   (`GET http://127.0.0.1:<HABBLAUD_PORT ou 4747>/api/mod/summary`) quem está esperando, já sem esta sessão e os
   subagentes dela, e mostra `🏢 Valentina precisa de você em loja-virtual` ou
   `🏢 2 precisam de você: Valentina (loja-virtual), Elias (app-mobile)` (até 3 nomes, depois "e mais N").
-  Ninguém esperando ou Habblaud fora do ar: a linha some; fora do ar, as perguntas passam a ser a cada 30 s até
+  Ninguém esperando ou DevLand fora do ar: a linha some; fora do ar, as perguntas passam a ser a cada 30 s até
   ele voltar. Só em sessões que desenham (no `claude -p` não pergunta nada).
 - **`/habblaud`:** resumo do escritório inteiro, respondido pelo próprio mod (não chama o modelo, não gasta uso):
 
   ```
-  Habblaud 0.3.0 em http://localhost:4747
+  DevLand 0.3.0 em http://localhost:4747
   7 agentes · 3 trabalhando · 2 precisam de você
   ✋ Valentina (loja-virtual): aprovar uma permissão · dá para responder pelo escritório
   ✋ Elias (app-mobile): responder no terminal
   ```
 
-  Fora do ar: `O Habblaud não respondeu em http://localhost:4747. Para subir: npm run docker:up na pasta do Habblaud.`
+  Fora do ar: `O DevLand não respondeu em http://localhost:4747. Para subir: npm run docker:up na pasta do DevLand.`
 
 ### O que ele acessa
 
@@ -47,27 +47,27 @@ carregar o módulo; nada fora desta lista é chamado):
 ```
 ❯ ./register.ts hooks: session.start, session.measure, command.run{command=habblaud}
 ❯ ./register.ts answers its own command: command.run{command=habblaud}
-❯ ./register.ts calls: $.clock.after (via askHabblaud), $.clock.every (via schedule), $.clock.now (via writeUsage), $.command.register, $.env.get (via readEnv), $.fs.write (via writeUsage), $.http.fetch (via askHabblaud), $.session.id (via poll), $.session.surfaces (via poll), $.session.usage, $.ui.status (via setStatus)
+❯ ./register.ts calls: $.clock.after (via askDevLand), $.clock.every (via schedule), $.clock.now (via writeUsage), $.command.register, $.env.get (via readEnv), $.fs.write (via writeUsage), $.http.fetch (via askDevLand), $.session.id (via poll), $.session.surfaces (via poll), $.session.usage, $.ui.status (via setStatus)
 ❯ ./register.ts env writes: nothing
 ❯ ./register.ts env reads: CLAUDE_CONFIG_DIR, HABBLAUD_PORT, HABBLAUD_USAGE_DIR, HOME, USERPROFILE
 ```
 
 Em palavras: só observa (nenhum hook decide nada: não aprova ferramentas, não muda prompts, não lê mensagens),
 grava um único arquivo (o de uso), fala só com `127.0.0.1` e lê cinco variáveis de ambiente. `$.clock.after` é o
-prazo de 2 s de cada pergunta ao Habblaud (`$.http.fetch` não aceita AbortSignal).
+prazo de 2 s de cada pergunta ao DevLand (`$.http.fetch` não aceita AbortSignal).
 
 ## `habblaud-permissoes` — responder permissões pelo escritório
 
 Um hook `PermissionRequest` comum (sem mod), em `habblaud-permissoes/hooks/hooks.json`:
 
 ```json
-{ "matcher": "*", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/permission-hook.mjs\"", "timeout": 86430, "statusMessage": "Aguardando resposta no Habblaud" }] }
+{ "matcher": "*", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/permission-hook.mjs\"", "timeout": 86430, "statusMessage": "Aguardando resposta no DevLand" }] }
 ```
 
 O script `hooks/permission-hook.mjs` é o mesmo que o `npm run hooks:install` instala (fonte única; Node puro, só
-`node:*`, porque o Claude Code copia apenas a pasta do plugin para o cache). Ele manda o pedido ao Habblaud local
+`node:*`, porque o Claude Code copia apenas a pasta do plugin para o cache). Ele manda o pedido ao DevLand local
 e espera a resposta por até 5 min; o diálogo continua no terminal e vale o que você responder primeiro. Sem o
-Habblaud no ar ou sem nenhuma página aberta, sai na hora. Porta: `HABBLAUD_PORT` (padrão 4747); espera:
+DevLand no ar ou sem nenhuma página aberta, sai na hora. Porta: `HABBLAUD_PORT` (padrão 4747); espera:
 `HABBLAUD_PERMISSION_TIMEOUT` (padrão 300 s, até 86400 s = 24 h; o tempo limite do hook no plugin é 86430 s). Para aprovar
 pelo celular longe do computador, ponha `"env": { "HABBLAUD_PERMISSION_TIMEOUT": "86400" }` no `settings.json` da
 conta: vale para as sessões abertas depois. Subagentes em segundo plano só mostram o diálogo quando o hook termina,
@@ -116,11 +116,11 @@ Saída de `claude plugin validate --strict mod/habblaud-mensagens`:
 Em palavras: um hook só (`session.start`, que liga o relógio das rodadas); a única ação na sessão é o
 `$.prompt.submit` das mensagens; não lê a conversa, não grava arquivo nenhum, fala só com `127.0.0.1` e lê quatro
 variáveis de ambiente (a conta sai do `CLAUDE_CONFIG_DIR`, como no mod). `$.clock.after` é o prazo de 2 s de cada
-pedido ao Habblaud e de cada `$.prompt.submit`.
+pedido ao DevLand e de cada `$.prompt.submit`.
 
-Porta: `HABBLAUD_PORT` (padrão 4747). Precisa do Claude Code 2.1.287+ e de um Habblaud com as mensagens ligadas: a
+Porta: `HABBLAUD_PORT` (padrão 4747). Precisa do Claude Code 2.1.287+ e de um DevLand com as mensagens ligadas: a
 mesma trava do terminal e das permissões (porta presa ao `127.0.0.1` e cabeçalho Host local) e `HABBLAUD_MENSAGENS`
-não desligado (`0`, `false`, `off` ou `no` desligam). Qualquer processo desta máquina que fale com o Habblaud
+não desligado (`0`, `false`, `off` ou `no` desligam). Qualquer processo desta máquina que fale com o DevLand
 consegue mandar uma mensagem às sessões com o plugin: por isso a trava local.
 
 ## Desenvolver

@@ -27,7 +27,7 @@ export const SOURCE_LABEL: Record<NonNullable<AccountInfo['usage']>['source'], s
 
 /** Origem para mostrar: o arquivo ao vivo pode ter sido gravado pelo mod do Habblaud ou pelo tap. */
 export function sourceLabel(u: NonNullable<AccountInfo['usage']>): string {
-  if (u.source === 'statusline' && u.via === 'mod') return tr('ao vivo (mod do Habblaud)');
+  if (u.source === 'statusline' && u.via === 'mod') return tr('ao vivo (mod do DevLand)');
   return SOURCE_LABEL[u.source] ?? u.source;
 }
 
@@ -38,7 +38,7 @@ export function sourceLabel(u: NonNullable<AccountInfo['usage']>): string {
 export const USAGE_SETUP_STEPS: readonly [string, string][] = [
   [
     'npm run mod:install',
-    tr('Recomendado: instala o mod do Habblaud no Claude Code (2.1.287 ou mais novo), que passa o uso de 5 h e da semana ao vivo. Rode na pasta do Habblaud, no computador onde o Claude Code roda; nas sessões já abertas, `/reload-plugins`.'),
+    tr('Recomendado: instala o mod do DevLand no Claude Code (2.1.287 ou mais novo), que passa o uso de 5 h e da semana ao vivo. Rode na pasta do DevLand, no computador onde o Claude Code roda; nas sessões já abertas, `/reload-plugins`.'),
   ],
   [
     'npm run usage:install',
@@ -149,7 +149,7 @@ function syncRows(dl: HTMLElement, rows: [string, string][]): void {
 /** Passo a passo para ligar o uso (dica do cartão e ajuda). */
 export function createUsageSetup(): HTMLElement {
   // Cloud: não há o que rodar (o servidor liga o captador de uso sozinho); só precisa de uma sessão da conta trabalhando.
-  if (access().cloud) return h('p', { class: 'ui-usage-tip__note', text: tr('No Cloud o Habblaud liga isso sozinho. Os números se atualizam quando uma sessão desta conta trabalha: abra uma conversa nela.') });
+  if (access().cloud) return h('p', { class: 'ui-usage-tip__note', text: tr('No Cloud o DevLand liga isso sozinho. Os números se atualizam quando uma sessão desta conta trabalha: abra uma conversa nela.') });
   return h(
     'ol',
     { class: 'ui-usage-setup' },
@@ -390,7 +390,7 @@ export class UsageCards {
     // No Cloud não há o que instalar: o botão leva às Contas (o uso chega quando uma sessão da conta trabalha).
     const cloud = access().cloud && !codex;
     r.how.dataset.help = codex ? 'codex' : cloud ? 'cloud' : 'usage';
-    setTitle(r.how, codex ? tr('Como o uso do Codex chega ao Habblaud (abre a ajuda em “Codex”)') : tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'));
+    setTitle(r.how, codex ? tr('Como o uso do Codex chega ao DevLand (abre a ajuda em “Codex”)') : tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'));
     this.updateTip(r, a, state, five, week, now);
   }
 

@@ -21,7 +21,7 @@ describe('Web Push (RFC 8291 / 8292)', () => {
     const ua = createECDH('prime256v1');
     ua.generateKeys();
     const auth = Buffer.alloc(16, 7);
-    const text = JSON.stringify({ title: 'Habblaud', body: 'Rafaela concluiu ✅' });
+    const text = JSON.stringify({ title: 'DevLand', body: 'Rafaela concluiu ✅' });
     const msg = encryptPayload(Buffer.from(text), ua.getPublicKey(), auth);
     const salt = msg.subarray(0, 16);
     const asPublic = msg.subarray(21, 21 + msg.readUInt8(20));

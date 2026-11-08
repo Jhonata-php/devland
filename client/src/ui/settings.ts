@@ -169,7 +169,7 @@ export class SettingsPopover implements UiComponent {
       (v) => pickLanguage(v),
     );
     this.language.row.append(
-      h('span', { class: 'ui-set__hint', text: tr('Os textos das atividades vêm do servidor: seguem HABBLAUD_LANG ou o idioma do sistema onde o Habblaud roda (o inglês, só com HABBLAUD_LANG=en).') }),
+      h('span', { class: 'ui-set__hint', text: tr('Os textos das atividades vêm do servidor: seguem HABBLAUD_LANG ou o idioma do sistema onde o DevLand roda (o inglês, só com HABBLAUD_LANG=en).') }),
     );
 
     this.demoGroup = h(
@@ -255,7 +255,7 @@ export class SettingsPopover implements UiComponent {
         'div',
         { class: 'ui-set-group' },
         h('h3', { text: tr('Avisos') }),
-        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o Habblaud fechado (no iPhone, com ele na Tela de Início).'), () => void this.toggleNotifications()),
+        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o DevLand fechado (no iPhone, com ele na Tela de Início).'), () => void this.toggleNotifications()),
         h(
           'div',
           { class: 'ui-set' },
@@ -350,10 +350,10 @@ export class SettingsPopover implements UiComponent {
     const state = notificationState();
     const hint =
       state === 'unsupported'
-        ? tr('Este navegador não oferece notificações. No iPhone, adicione o Habblaud à Tela de Início e abra por lá.')
+        ? tr('Este navegador não oferece notificações. No iPhone, adicione o DevLand à Tela de Início e abra por lá.')
         : state === 'denied'
           ? tr('Bloqueadas pelo navegador: libere nas permissões do site.')
-          : tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o Habblaud fechado (no iPhone, com ele na Tela de Início).');
+          : tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o DevLand fechado (no iPhone, com ele na Tela de Início).');
     setText(notif.hint, hint);
     notif.btn.disabled = state === 'unsupported';
   }
@@ -375,7 +375,7 @@ export class SettingsPopover implements UiComponent {
 
   /** Cloud: define o e-mail de entrada de quem ainda entra só pelo usuário. */
   private async setEmail(): Promise<void> {
-    const email = window.prompt(tr('E-mail para entrar no Habblaud:'))?.trim();
+    const email = window.prompt(tr('E-mail para entrar no DevLand:'))?.trim();
     if (!email) return;
     const res = await fetch('/api/cloud/email', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
     if (res.ok) {
@@ -399,7 +399,7 @@ export class SettingsPopover implements UiComponent {
     const state = await this.notifier.enableBrowserNotifications();
     this.ctx.updatePrefs({ browserNotifications: state === 'granted' });
     if (state === 'denied') this.ctx.announce(tr('Notificações bloqueadas pelo navegador.'));
-    if (state === 'unsupported') this.ctx.announce(tr('Este navegador não deixa notificar. No iPhone, adicione o Habblaud à Tela de Início e abra por lá.'));
+    if (state === 'unsupported') this.ctx.announce(tr('Este navegador não deixa notificar. No iPhone, adicione o DevLand à Tela de Início e abra por lá.'));
   }
 
   private async toggleDemo(): Promise<void> {

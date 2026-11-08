@@ -90,7 +90,7 @@ describe('setup e anúncio', () => {
     expect(isValidDomain('10.0.0.1')).toBe(false);
     expect(mdnsCommand('darwin', 'myclaude', '192.168.1.10', 443)).toEqual({
       cmd: 'dns-sd',
-      args: ['-P', 'Habblaud (myclaude)', '_https._tcp', 'local', '443', 'myclaude.local', '192.168.1.10'],
+      args: ['-P', 'DevLand (myclaude)', '_https._tcp', 'local', '443', 'myclaude.local', '192.168.1.10'],
     });
     expect(mdnsCommand('linux', 'myclaude', '192.168.1.10', 443)).toEqual({ cmd: 'avahi-publish', args: ['-a', '-R', 'myclaude.local', '192.168.1.10'] });
     expect(mdnsCommand('win32', 'myclaude', '192.168.1.10', 443)).toBeUndefined();

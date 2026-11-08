@@ -47,7 +47,7 @@ export const INPUT_PREVIEW_LINES = 10;
 /** Prompt do usuário muito longo (texto colado): recolhido. */
 export const PROMPT_PREVIEW_LINES = 24;
 
-export const TERMINAL_UNAVAILABLE_HINT = tr('O terminal só fica disponível quando o Habblaud roda com acesso local (bind 127.0.0.1)');
+export const TERMINAL_UNAVAILABLE_HINT = tr('O terminal só fica disponível quando o DevLand roda com acesso local (bind 127.0.0.1)');
 /** Agente recém-criado: tenta abrir o terminal de novo a cada 2 s por até 30 s antes de mostrar o erro. */
 const AUTO_RETRIES = 15;
 const AUTO_RETRY_MS = 2_000;
@@ -380,8 +380,8 @@ export function terminalFooter(agent: AgentInfo | undefined, agents: readonly Ag
       // quando ele chegou): os botões não vêm, então diz onde responder.
       const hint =
         agent.provider === 'codex'
-          ? tr('{0} · responda no Codex: este pedido não chegou ao Habblaud ou passou do tempo de espera', [text])
-          : tr('{0} · responda no Claude Code: este pedido não chegou ao Habblaud ou passou do tempo de espera', [text]);
+          ? tr('{0} · responda no Codex: este pedido não chegou ao DevLand ou passou do tempo de espera', [text])
+          : tr('{0} · responda no Claude Code: este pedido não chegou ao DevLand ou passou do tempo de espera', [text]);
       return { kind: 'waiting', text: hint, since: agent.statusSince };
     }
     default:

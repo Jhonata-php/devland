@@ -148,7 +148,7 @@ export function decisionOutput(result) {
   if (result.behavior === 'allow') return { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'allow' } } };
   if (result.behavior === 'deny') {
     const reason = typeof result.message === 'string' && result.message.trim() ? result.message.trim().slice(0, 1_000) : '';
-    const message = reason ? `Recusado pelo usuário no Habblaud: ${reason}` : 'Recusado pelo usuário no Habblaud.';
+    const message = reason ? `Recusado pelo usuário no DevLand: ${reason}` : 'Recusado pelo usuário no DevLand.';
     return { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'deny', message } } };
   }
   return undefined;
@@ -217,7 +217,7 @@ export async function run(env = process.env, stdinText) {
     const account = accountOf(codexHome);
     const base = `http://127.0.0.1:${cfg.port}`;
     const sent = await call(base, 'POST', '/api/codex/events', eventBody(input, account, codexHome), event === 'SessionEnd' ? SESSION_END_TIMEOUT_MS : EVENT_TIMEOUT_MS);
-    debug(`${event}: ${sent ? `${sent.status} ${JSON.stringify(sent.json ?? null)}` : 'Habblaud fora do ar'}`);
+    debug(`${event}: ${sent ? `${sent.status} ${JSON.stringify(sent.json ?? null)}` : 'DevLand fora do ar'}`);
     if (event !== 'PermissionRequest' || typeof input.tool_name !== 'string' || !input.tool_name) return undefined;
     // Sem resposta nem ao evento: o Habblaud está fora do ar (ou travado); a aprovação segue no terminal.
     if (!sent) return undefined;
@@ -226,7 +226,7 @@ export async function run(env = process.env, stdinText) {
     const deadline = startedAt + cfg.waitMs;
     const reg = await call(base, 'POST', '/api/permissions', permissionBody(input, account, codexHome, Math.max(0, deadline - Date.now())), REGISTER_TIMEOUT_MS);
     if (!reg || reg.status !== 201 || typeof reg.json?.id !== 'string') {
-      debug(`sem desvio (${reg ? `${reg.status} ${JSON.stringify(reg.json ?? null)}` : 'Habblaud fora do ar'})`);
+      debug(`sem desvio (${reg ? `${reg.status} ${JSON.stringify(reg.json ?? null)}` : 'DevLand fora do ar'})`);
       return undefined;
     }
     const id = encodeURIComponent(reg.json.id);

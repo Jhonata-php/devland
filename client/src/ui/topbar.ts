@@ -208,7 +208,7 @@ export class TopBar implements UiComponent {
         ? tr('Dados simulados no navegador (?mock=1)')
         : conn === 'open'
           ? tr('Recebendo eventos do servidor em tempo real')
-          : tr('Sem conexão com o servidor do Habblaud'),
+          : tr('Sem conexão com o servidor do DevLand'),
     );
     setHidden(this.demoBadge, !(conn === 'open' && snap?.meta.demo));
 

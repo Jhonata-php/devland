@@ -1,10 +1,10 @@
-# Habblaud Cloud — Design
+# DevLand Cloud — Design
 
 **Status:** etapa 1 aprovada; etapas 2–5 com direção definida, cada uma terá seu próprio detalhamento antes do código.
 
 ## Objetivo
 
-Transformar o Habblaud num app multiusuário instalável pela loja do Velix. Uma instância por instalação, isolada; domínio
+Transformar o DevLand num app multiusuário instalável pela loja do Velix. Uma instância por instalação, isolada; domínio
 e HTTPS pelo Traefik do Velix (ex.: `habblaud.needbr.com`, um domínio comum do Velix, sem curinga). **A porta 4747 (sem login) nunca é publicada.**
 
 ## Decisões
@@ -66,7 +66,7 @@ convidar um usuário, entrar com ele e ver que as permissões valem.
 
 ## Etapas seguintes (direção)
 
-**Princípio:** no Velix, o container do Habblaud **é a máquina de desenvolvimento**, não um painel olhando outra
+**Princípio:** no Velix, o container do DevLand **é a máquina de desenvolvimento**, não um painel olhando outra
 máquina. Projetos clonados, `claude`, `codex`, terminais e o app em desenvolvimento rodam todos dentro dele, sem
 depender de computador externo. As etapas abaixo seguem esta ordem:
 
@@ -81,7 +81,7 @@ depender de computador externo. As etapas abaixo seguem esta ordem:
 4. **Catálogo do Velix:** manifesto em `velix/apps/api/src/catalog/manifests/habblaud.ts` (formato `VelixManifest`),
    `primaryPort: 4748`, só a 4748 em `ports`, volume `data` em `/data`.
 5. **Prévia do app ao lado do terminal:** painel web com endereço, recarregar, abrir em nova aba e tamanhos de tela.
-   A prévia passa sempre pelo login do Habblaud. Forma de acesso a decidir: caminho `habblaud.needbr.com/preview/5173/` (funciona hoje) ou subdomínio
+   A prévia passa sempre pelo login do DevLand. Forma de acesso a decidir: caminho `habblaud.needbr.com/preview/5173/` (funciona hoje) ou subdomínio
    `5173.habblaud.needbr.com` (exige rota e certificado curinga no Traefik do Velix, que já usa DNS-01 da Cloudflare).
 
 6. **Troca de conta no limite (Cloud):** quando a conta do agente chega ao limite (5h/semanal) ou expira, o

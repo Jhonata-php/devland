@@ -45,7 +45,7 @@ import { discoverCodexDirs } from './sources/codex/accounts';
 import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
-import { ensureHabblaudPlugins } from './accounts/plugins';
+import { ensureDevLandPlugins } from './accounts/plugins';
 import { PushService } from './push/service';
 import { pickAccountByLoad } from './pty/pick-account';
 import { dedupeLive, loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
@@ -229,7 +229,7 @@ if (push) {
   hub.onNotice((n) => {
     // "Precisa de você" e "concluiu" (o texto do aviso de conclusão começa com ✅); o resto não vira notificação.
     if (n.level !== 'alert' && !(n.level === 'success' && n.text.startsWith('✅'))) return;
-    void push.notify({ title: n.level === 'alert' ? tr('Habblaud — precisa de você') : tr('Habblaud — terminou'), body: n.text, tag: n.agentId ?? n.id });
+    void push.notify({ title: n.level === 'alert' ? tr('DevLand — precisa de você') : tr('DevLand — terminou'), body: n.text, tag: n.agentId ?? n.id });
   });
 }
 // "Meu dia": amostra o escritório a cada segundo e persiste em <dataDir>/stats/ (ver history/daystats.ts).
@@ -444,7 +444,7 @@ if (cloud) {
   setInterval(pollUsage, 180_000).unref();
 }
 // Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do Habblaud na imagem).
-const pluginsReady: Promise<void> = cloud && agentUser && claudeBin ? ensureHabblaudPlugins(config.claudeDirs, claudeBin, config.rootDir) : Promise.resolve();
+const pluginsReady: Promise<void> = cloud && agentUser && claudeBin ? ensureDevLandPlugins(config.claudeDirs, claudeBin, config.rootDir) : Promise.resolve();
 if (cloud && spawnPty && claudeBin && agentUser) {
   late.connect = new ConnectService({
     spawn: spawnPty,
@@ -456,7 +456,7 @@ if (cloud && spawnPty && claudeBin && agentUser) {
     onClaudeDir: (dir) => {
       accounts.addDir(dir);
       ensureUsageTap([dir], usageTapPath);
-      void ensureHabblaudPlugins([dir], claudeBin, config.rootDir);
+      void ensureDevLandPlugins([dir], claudeBin, config.rootDir);
     },
     onChange: () => office.markDirty(),
   });
@@ -617,9 +617,9 @@ if (config.remote) {
   );
   remoteListener.server.once('listening', () => {
     if (cloud) {
-      log.info(tr('   Habblaud Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).', [remote.port]));
+      log.info(tr('   DevLand Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).', [remote.port]));
       const code = cloud.setupCode();
-      if (code) log.info(tr('   Habblaud Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}', [code]));
+      if (code) log.info(tr('   DevLand Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}', [code]));
       return;
     }
     const allow = [...remote.allow].join(', ') || tr('só ver');
@@ -634,7 +634,7 @@ if (config.remote) {
 
 server.listen(config.port, config.host, () => {
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
-  log.info(tr('🏢 Habblaud {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
+  log.info(tr('🏢 DevLand {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
   const list = accounts.entries();
   if (!list.length) log.warn(tr('Nenhuma pasta do Claude Code encontrada (defina HABBLAUD_CLAUDE_DIRS).'));
   for (const dir of codexDirsRefused(process.env, config.home)) {

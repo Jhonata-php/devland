@@ -58,8 +58,8 @@ export function updateStatusLine(version: string, s: UpdateStatus | undefined, n
 
 /** Dica do número de versão na barra superior. */
 export function versionChipTitle(version: string, s: UpdateStatus | undefined, now: number): string {
-  if (s?.available && s.latest) return tr('Nova versão do Habblaud: v{0} (você usa a v{1}). Clique para ver as novidades e como atualizar.', [s.latest, version]);
-  return tr('Habblaud v{0}. {1} Clique para ver detalhes.', [version, updateStatusLine(version, s, now).text]);
+  if (s?.available && s.latest) return tr('Nova versão do DevLand: v{0} (você usa a v{1}). Clique para ver as novidades e como atualizar.', [s.latest, version]);
+  return tr('DevLand v{0}. {1} Clique para ver detalhes.', [version, updateStatusLine(version, s, now).text]);
 }
 
 /** Número da versão na barra superior; vira o selo "Nova versão" quando há release mais nova. */
@@ -115,7 +115,7 @@ export class UpdateToaster implements UiComponent {
     } catch {
       // Sem armazenamento: avisa uma vez por página aberta.
     }
-    this.push({ id: `update:${s.latest}`, level: 'success', text: tr('Nova versão do Habblaud: v{0}. Veja as novidades e como atualizar em Configurações › Sobre.', [s.latest]), at: this.ctx.now() });
+    this.push({ id: `update:${s.latest}`, level: 'success', text: tr('Nova versão do DevLand: v{0}. Veja as novidades e como atualizar em Configurações › Sobre.', [s.latest]), at: this.ctx.now() });
   }
 }
 
@@ -162,7 +162,7 @@ export class AboutGroup {
       (this.howTo = h(
         'p',
         { class: 'ui-set__hint' },
-        tr('Para atualizar, na pasta do Habblaud: '),
+        tr('Para atualizar, na pasta do DevLand: '),
         h('code', { class: 'ui-usage-setup__cmd', text: 'git pull' }),
         tr(' e de novo '),
         h('code', { class: 'ui-usage-setup__cmd', text: 'npm run docker:up' }),
@@ -183,7 +183,7 @@ export class AboutGroup {
       { class: 'ui-about__auto', hidden: true },
       h('label', { class: 'ui-about__autolabel' }, this.autoBox, h('span', { text: tr('Atualizar sozinho quando sair versão nova') })),
       this.autoWin,
-      h('p', { class: 'ui-set__hint', text: tr('O Habblaud reinicia na atualização; as conversas abertas voltam sozinhas.') }),
+      h('p', { class: 'ui-set__hint', text: tr('O DevLand reinicia na atualização; as conversas abertas voltam sozinhas.') }),
     );
     const field = (label: string, input: HTMLInputElement) => h('label', { class: 'ui-about__field' }, h('span', { class: 'ui-set__hint', text: label }), input);
     this.cfgUrl = h('input', { class: 'ui-rename__input', type: 'url', attrs: { placeholder: 'https://velix.suaempresa.com', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
@@ -206,7 +206,7 @@ export class AboutGroup {
       'div',
       { class: 'ui-set-group ui-about', attrs: { id: 'ui-about' } },
       h('h3', { text: tr('Sobre'), tabIndex: -1 }),
-      h('div', { class: 'ui-about__head' }, h('span', { class: 'ui-about__name' }, 'Habblaud ', this.name), this.checkBtn),
+      h('div', { class: 'ui-about__head' }, h('span', { class: 'ui-about__name' }, 'DevLand ', this.name), this.checkBtn),
       this.status,
       this.fresh,
       this.autoRow,
@@ -245,7 +245,7 @@ export class AboutGroup {
     setHidden(this.cfg, !(s?.needsImage && s.canConfigure && access().admin));
     setHidden(this.applyBtn, !canApply || working);
     setHidden(this.applyNote, !(canApply && (working || this.applyError)));
-    setText(this.applyNote, working ? tr('Atualizando: o Habblaud baixa a versão nova e reinicia sozinho em alguns minutos. A página recarrega quando voltar.') : (this.applyError ?? ''));
+    setText(this.applyNote, working ? tr('Atualizando: o DevLand baixa a versão nova e reinicia sozinho em alguns minutos. A página recarrega quando voltar.') : (this.applyError ?? ''));
     if (fresh) {
       setText(this.notes, tr('Ver o que mudou na v{0}', [s!.latest]));
       const url = safeGithubUrl(s!.url);
@@ -308,9 +308,9 @@ export class AboutGroup {
     this.failure = undefined;
     this.render();
     try {
-      if (!(await this.ctx.store.checkUpdates())) this.failure = tr('Não deu para falar com o servidor do Habblaud.');
+      if (!(await this.ctx.store.checkUpdates())) this.failure = tr('Não deu para falar com o servidor do DevLand.');
     } catch {
-      this.failure = tr('Não deu para falar com o servidor do Habblaud.');
+      this.failure = tr('Não deu para falar com o servidor do DevLand.');
     } finally {
       this.checking = false;
       this.render();

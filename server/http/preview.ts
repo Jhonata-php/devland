@@ -129,7 +129,7 @@ export function createPreview(opts: { blockedPorts: () => number[]; now?: () => 
       }
       const p = parse(url.pathname);
       if (!p) {
-        fail(res, 403, tr('prévia expirada: reabra a prévia no Habblaud'));
+        fail(res, 403, tr('prévia expirada: reabra a prévia no DevLand'));
         return true;
       }
       const base = `${PREVIEW_PREFIX}${p.port}/${p.token}/`;

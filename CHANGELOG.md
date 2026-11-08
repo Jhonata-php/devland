@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Nome DevLand em todo lugar:** textos da tela, notificações, ajuda, mensagens do servidor e dos plugins, manuais e nome do pacote passam a dizer DevLand. O "Habblaud World", as variáveis `HABBLAUD_*`, as pastas em `~/.habblaud` e o nome da imagem no GitHub continuam como estavam, para não quebrar instalações existentes.
 - **Salas de projeto com visual DevLand:** piso de tapete escuro (grafite, azul-noite, vinho...) e paredes escuras com um neon diferente por sala (verde, roxo, ciano, âmbar, rosa...); mesas e cadeiras escuras. As decorações de Natal/Halloween agora vêm desligadas por padrão (dá para ligar em Ajustes › Aparência).
 - **Mapa sem rua nem carros:** no lugar da rua há um passeio de jardim com trilha de pedra, canteiros floridos, bancos e postes.
 - **Mapa no tema DevLand:** os rótulos das salas e dos agentes no mapa usam fonte de terminal, fundo preto e borda verde (o agente selecionado fica verde); vinheta escura nas bordas para destacar as salas; no celular em pé a visão geral aproxima 25% para as salas ficarem legíveis.

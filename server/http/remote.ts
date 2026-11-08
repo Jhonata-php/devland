@@ -441,7 +441,7 @@ export const PAGE_STYLE = `<style>
 
 export function loginPage(opts: { caDownload: boolean; intro?: string }): string {
   const ca = opts.caDownload
-    ? `<p class="help">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="habblaud-ca.crt">${esc(tr('Instale o certificado do Habblaud'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
+    ? `<p class="help">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="habblaud-ca.crt">${esc(tr('Instale o certificado do DevLand'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
     : '';
   const card = `
 <h1>${esc(tr('Bem-vindo de volta'))}</h1>
@@ -476,7 +476,7 @@ ${ca}`;
         if (r.ok) { location.replace('/'); return; }
         var body = await r.json().catch(function () { return {}; });
         fail(body.error || ${js(tr('Não deu para entrar.'))});
-      } catch (x) { fail(${js(tr('Sem conexão com o Habblaud.'))}); }
+      } catch (x) { fail(${js(tr('Sem conexão com o DevLand.'))}); }
       b.disabled = false; b.classList.remove('busy');
     });
   })();`;
@@ -639,7 +639,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       if (go) {
         res.writeHead(302, { Location: go, 'Cache-Control': 'no-store' });
         res.end();
-      } else sendHtml(res, loginPage({ caDownload: caAvailable(), intro: cloud ? tr('Entre com seu usuário e senha do Habblaud.') : undefined }));
+      } else sendHtml(res, loginPage({ caDownload: caAvailable(), intro: cloud ? tr('Entre com seu usuário e senha do DevLand.') : undefined }));
       return true;
     }
 
@@ -662,7 +662,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
 
     req.resume();
     if (path === '/api' || path.startsWith('/api/')) {
-      sendJson(res, 401, { error: tr('faça login: abra o Habblaud por esta porta no navegador e entre com usuário e senha') });
+      sendJson(res, 401, { error: tr('faça login: abra o DevLand por esta porta no navegador e entre com usuário e senha') });
     } else {
       res.writeHead(302, { Location: cloud?.needsSetup() ? '/setup' : '/login', 'Cache-Control': 'no-store' });
       res.end();

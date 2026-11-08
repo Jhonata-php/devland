@@ -235,7 +235,7 @@ async function start(allow: RemoteFeature[] = ['permissions']): Promise<Harness>
   const gate = createRemoteGate({ config: CFG, sessions: new RemoteSessions(SECRET, CFG), secure: false });
   const page = (_req: http.IncomingMessage, res: http.ServerResponse) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end('<!doctype html><title>Habblaud</title>');
+    res.end('<!doctype html><title>DevLand</title>');
   };
   const local = http.createServer((req, res) => {
     if (guard(req, res)) return;
