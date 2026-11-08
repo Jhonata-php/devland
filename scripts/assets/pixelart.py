@@ -279,13 +279,13 @@ def signage() -> Image.Image:
     for sx in (3, w - 4):  # parafusos
         px[sx, 7] = hex_rgba("#c9d3e3")
         px[sx, 8] = hex_rgba("#7d8aa3")
-    # texto centralizado com sombra de 1px; "Hab" claro e "blaud" na cor das janelas acesas
+    # texto centralizado com sombra de 1px; "Dev" claro e "Land" na cor das janelas acesas
     tx, ty = (w - text_width("DevLand")) // 2, 4
-    blaud_x = tx + text_width("Hab") + 1
-    draw_text(img, tx, ty + 1, "Hab", "#151c33")
-    draw_text(img, blaud_x, ty + 1, "blaud", "#151c33")
-    draw_text(img, tx, ty, "Hab", "#f4f1ea")
-    draw_text(img, blaud_x, ty, "blaud", "#fac665")
+    land_x = tx + text_width("Dev") + 1
+    draw_text(img, tx, ty + 1, "Dev", "#151c33")
+    draw_text(img, land_x, ty + 1, "Land", "#151c33")
+    draw_text(img, tx, ty, "Dev", "#f4f1ea")
+    draw_text(img, land_x, ty, "Land", "#fac665")
     return img
 
 
