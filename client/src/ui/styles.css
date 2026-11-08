@@ -12387,3 +12387,10 @@ body::before {
 
 /* Sobre: o diagnóstico da tela e o link do código lado a lado, com espaço. */
 .ui-about__links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
+
+/* Celular com a barra de status por cima do app (app da tela de início, barra translúcida): o topo desce o tamanho da
+   área segura, e a barra de baixo já soma a área do indicador de início. Como no wsat. */
+@media (max-width: 600px) {
+  .ui-root.ui-root { --top-h: calc(48px + env(safe-area-inset-top, 0px)); }
+  .ui-topbar.ui-topbar { padding-top: env(safe-area-inset-top, 0px); }
+}

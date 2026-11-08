@@ -41,7 +41,6 @@ import { TopBar } from './topbar';
 import { BottomNav } from './bottomnav';
 import { ChatsView } from './chats';
 import { UpdateBanner } from './update';
-import { WorldPopups } from './world/world-popups';
 import { WorldChip } from './world/world-chip';
 import { WorldDialog } from './world/world-dialog';
 import { WorldSocialNotifier } from './world/away-summary';
@@ -249,7 +248,6 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const hw = worldSource(store);
   worldDialog = new WorldDialog(ctx, hw, topbar.worldBtn);
   settings = new SettingsPopover(ctx, notifier, sound, worldDialog);
-  const popups = new WorldPopups(ctx, hw, { openWorld: (screen) => worldDialog.show(screen, topbar.worldBtn), panelOpen: () => settings.isOpen || worldDialog.isOpen });
   // Chip "🏙️ no mundo" / "⏸ pausado" na barra do topo (conta aprovada; nunca pela porta do celular).
   const worldChip = new WorldChip(ctx, hw, () => worldDialog.show('home'), (n) => toasts.push(n));
   topbar.addStatus(worldChip.el);
@@ -302,7 +300,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const scrim = h('div', { class: 'ui-scrim', attrs: { 'aria-hidden': 'true' }, on: { click: () => ctx.togglePanel('sidebar', false) } });
 
   root.classList.add('ui-root');
-  root.append(timelapse.vignette, topbar.el, chats.el, bottomNav.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, popups.el, tip.el, settings.el, worldDialog.el, history.el, deliveries.el, previewPanel.el, help.el, renamer.el, live, splash.el);
+  root.append(timelapse.vignette, topbar.el, chats.el, bottomNav.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, worldDialog.el, history.el, deliveries.el, previewPanel.el, help.el, renamer.el, live, splash.el);
   area = new FreeArea(world, { root, topbar: topbar.el, sidebar: sidebar.el, drawer: drawer.el, feed: feed.el }, () => ({
     sidebar: panels.sidebar,
     feed: panels.feed,
@@ -324,7 +322,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     setTimeout(() => settings.toggle(topbar.settingsBtn), 0);
   }
 
-  const components: UiComponent[] = [topbar, bottomNav, chats, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, popups, worldChip];
+  const components: UiComponent[] = [topbar, bottomNav, chats, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, worldChip];
   if (scene) components.push(scene);
   root.append(worldSocial.el);
   components.push(worldSocial);

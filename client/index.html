@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#070d0b" />
+    <meta name="theme-color" content="#0c0e14" />
     <meta name="description" content="Escritório virtual em pixel art que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo." />
     <title>DevLand</title>
     <!-- Prévia ao compartilhar o link (Open Graph / Twitter). -->
@@ -32,18 +32,14 @@
     <meta name="apple-mobile-web-app-title" content="DevLand" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <style>
-      /* Página presa à tela: no iPhone, só overflow:hidden não impede o navegador de rolar o app sozinho (campo focado, seletor). */
-      html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; background: #070d0b; }
-      html, body { position: fixed; inset: 0; width: 100%; }
+      /* Página do tamanho da tela; as camadas são fixas em inset 0 (como no wsat): o iOS ajusta a altura sozinho. */
+      html, body { margin: 0; overscroll-behavior: none; background: #0c0e14; }
+      /* O documento precisa ter altura de tela (como no wsat): com tudo fixo e o corpo vazio, o app da tela de início no iOS
+         novo ficava com a área 62 pt mais curta que a tela e uma faixa morta embaixo da barra de baixo. */
+      body { min-height: 100vh; }
       #world, #city, #visit { position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh; display: block; image-rendering: pixelated; }
       #world[hidden], #city[hidden], #visit[hidden] { display: none; }
       #ui { position: fixed; inset: 0; pointer-events: none; }
-      /* Telas de toque: as camadas fixas seguem a área visível (client/src/ui/scrolllock.ts define --vv-*). */
-      @media (pointer: coarse) {
-        #world, #city, #visit, #ui { inset: auto; top: var(--vv-top, 0px); left: var(--vv-left, 0px); width: 100%; height: var(--vv-h, 100dvh); }
-        /* Os painéis são fixed dentro de #ui: com transform, #ui vira o quadro deles e eles acompanham a área visível. */
-        #ui { transform: translateZ(0); }
-      }
       #ui > * { pointer-events: auto; }
     </style>
   </head>
