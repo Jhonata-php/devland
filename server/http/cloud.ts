@@ -265,16 +265,18 @@ const EMBED_STYLE = `<style>
   .chip { padding: 4px 10px; font-size: 12px; border-radius: 99px; border: 1px solid var(--line); color: var(--mut); }
   .chip.on { color: #39ff88; border-color: rgba(57, 255, 136, .5); }
   button.danger:hover { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255, 107, 107, .08); }
-  .inv .row { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
-  .inv .row input { flex: 1; min-width: 0; }
   .fl { margin: 0; font-size: 12px; color: var(--mut); }
-  .out { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; align-items: center; }
-  .out input { min-width: 0; padding: 9px 10px; font-size: 12px; }
-  .out small { grid-column: 1 / -1; color: var(--mut); }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .g2 input { width: 100%; min-width: 0; }
+  .inv .fl { display: block; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+  .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: rgba(3, 9, 5, .6); }
+  .seg button { margin: 0; padding: 7px 18px; font-size: 13px; color: var(--mut); background: transparent; box-shadow: none; border-radius: 8px; }
+  .seg button[aria-checked=true] { color: #04100a; background: linear-gradient(180deg, #39ff88, #19c76a); box-shadow: 0 0 16px -4px rgba(57, 255, 136, .7); }
+  .hint { margin: 10px 0 0; font-size: 12px; color: var(--mut); }
   .sess p { margin: 0 0 4px; font-size: 13px; color: var(--mut); }
   #err { margin-top: 12px; min-height: 18px; font-size: 13px; color: var(--bad); text-align: left; }
   #err.ok { color: #39ff88; }
-  @media (max-width: 640px) { main { padding: 10px 14px 24px; } .u { flex-wrap: wrap; } .who { flex: 1 1 60%; } }
+  @media (max-width: 640px) { main { padding: 10px 14px 24px; } .g2 { grid-template-columns: 1fr; } .u { flex-wrap: wrap; } .who { flex: 1 1 60%; } }
 </style><script>addEventListener('DOMContentLoaded', function () { var m = document.querySelector('main'); function post() { parent.postMessage({ devlandEmbedH: m.offsetHeight + 4 }, location.origin); } new ResizeObserver(post).observe(m); post(); });</script>`;
 
 function adminPage(): string {
@@ -285,12 +287,9 @@ function adminPage(): string {
     admin: tr('Admin'),
     user: tr('Usuário'),
     you: tr('(você)'),
-    copied: tr('Link copiado.'),
-    expires: tr('Vale por 7 dias e uma vez só.'),
     failed: tr('Não deu certo.'),
     allPerms: tr('todas'),
     sentTo: tr('Convite enviado para {0}.'),
-    notSent: tr('Convite criado, mas o e-mail não foi enviado (SMTP desligado ou com erro). Copie o link e envie você mesmo.'),
   };
   const body = `${EMBED_STYLE}<main>
   <h1>${esc(tr('Usuários'))}</h1>
@@ -299,11 +298,15 @@ function adminPage(): string {
   <div id="users" class="users"></div>
   <h2>${esc(tr('Convidar'))}</h2>
   <div class="card inv">
-    <div class="row"><label class="fl" for="iemail">${esc(tr('E-mail da pessoa'))}</label><input id="iemail" type="email" autocomplete="off" placeholder="${esc(tr('nome@empresa.com'))}"></div>
-    <div class="row"><label class="fl" for="irole">${esc(tr('Papel'))}</label><select id="irole"><option value="user">${esc(t.user)}</option><option value="admin">${esc(t.admin)}</option></select></div>
+    <div class="g2">
+      <div><label class="fl" for="iemail">${esc(tr('E-mail'))}</label><input id="iemail" type="email" autocomplete="off" placeholder="${esc(tr('nome@empresa.com'))}"></div>
+      <div><label class="fl" for="iname">${esc(tr('Nome'))}</label><input id="iname" type="text" autocomplete="off" placeholder="${esc(tr('como vai aparecer'))}"></div>
+    </div>
+    <label class="fl">${esc(tr('Permissão'))}</label>
+    <div class="seg" id="irole" role="radiogroup"><button type="button" role="radio" aria-checked="true" data-v="user">${esc(t.user)}</button><button type="button" role="radio" aria-checked="false" data-v="admin">${esc(t.admin)}</button></div>
     <fieldset id="iperms">${FEATURES.map((f) => `<label><input type="checkbox" value="${f}"${f === 'permissions' ? ' checked' : ''}> ${esc(labels[f])}</label>`).join('')}</fieldset>
+    <p id="iadmin" class="hint" hidden>${esc(tr('Admin pode tudo: ver e responder, terminal, agentes novos, contas e usuários.'))}</p>
     <button id="invite" class="small">${esc(tr('Enviar convite por e-mail'))}</button>
-    <div id="out" class="out" hidden><input id="link" readonly aria-label="${esc(tr('Link de convite'))}"><button id="copy" class="small ghost" type="button">${esc(tr('Copiar'))}</button><small id="outnote"></small></div>
   </div>
   <h2>${esc(tr('Esta sessão'))}</h2>
   <div class="card sess"><p>${esc(tr('Encerra o seu login em todos os aparelhos (celular, outros navegadores).'))}</p><button id="all" class="small ghost">${esc(tr('Sair de todos os aparelhos'))}</button></div>
@@ -312,7 +315,7 @@ function adminPage(): string {
   const script = `const T = ${JSON.stringify(t).replace(/</g, '\\u003c')}, L = ${JSON.stringify(labels).replace(/</g, '\\u003c')}, F = ${JSON.stringify(FEATURES)};
   const $ = (id) => document.getElementById(id), err = $('err');
   const call = async (method, url, body) => {
-    err.textContent = '';
+    err.textContent = ''; err.className = '';
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: body ? JSON.stringify(body) : undefined });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { err.textContent = j.error || T.failed; throw new Error(); }
@@ -341,18 +344,22 @@ function adminPage(): string {
       box.append(el('div', { className: 'card person' }, row, perms));
     }
   }
-  $('irole').onchange = () => { $('iperms').hidden = $('irole').value === 'admin'; };
+  let irole = 'user';
+  for (const b of $('irole').children) b.onclick = () => {
+    irole = b.dataset.v;
+    for (const x of $('irole').children) x.setAttribute('aria-checked', String(x === b));
+    $('iperms').hidden = irole === 'admin'; $('iadmin').hidden = irole !== 'admin';
+  };
   $('invite').onclick = async () => {
     const allow = [...$('iperms').querySelectorAll('input:checked')].map((i) => i.value);
     const email = $('iemail').value.trim();
-    const { path, sent } = await call('POST', '/api/cloud/invites', { role: $('irole').value, allow, email });
-    $('link').value = location.origin + path;
-    // Com SMTP o link já foi para o e-mail; sem ele (ou se o envio falhou) o admin copia e manda por onde quiser.
-    $('out').hidden = !!sent; $('outnote').textContent = T.expires;
-    err.textContent = sent ? T.sentTo.replace('{0}', email) : T.notSent; err.className = sent ? 'ok' : '';
-    if (sent) $('iemail').value = ''; else $('link').select();
+    $('invite').disabled = true;
+    try {
+      await call('POST', '/api/cloud/invites', { role: irole, allow, email, name: $('iname').value.trim() });
+      err.textContent = T.sentTo.replace('{0}', email); err.className = 'ok';
+      $('iemail').value = ''; $('iname').value = '';
+    } catch {} finally { $('invite').disabled = false; }
   };
-  $('copy').onclick = () => navigator.clipboard?.writeText($('link').value).then(() => { err.textContent = T.copied; err.className = 'ok'; });
   $('all').onclick = async () => { await call('POST', '/api/cloud/logout-all', {}); location.replace('/login'); };
   load().catch(() => {});`;
   return shell(tr('DevLand · usuários'), body, script);
@@ -688,7 +695,7 @@ export function createCloud(deps: CloudDeps): Cloud {
               title: tr('DevLand · convite'),
               intro: tr('Você foi convidado para o DevLand. Escolha seu usuário e senha.'),
               fields: [
-                { id: 'name', label: tr('Nome'), auto: 'name' },
+                { id: 'name', label: tr('Nome'), auto: 'name', value: store.inviteName(invite[1]) },
                 { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email', value: store.inviteEmail(invite[1]), readonly: !!store.inviteEmail(invite[1]) },
                 { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
                 { id: 'password2', label: tr('Repita a senha'), type: 'password', auto: 'new-password' },
@@ -842,25 +849,24 @@ export function createCloud(deps: CloudDeps): Cloud {
     if (path === '/api/cloud/invites' && method === 'POST') {
       json(req)
         .then(async (body) => {
+          if (!deps.mailer) throw new UserError(tr('Para convidar, configure o envio de e-mail (SMTP) desta instalação.'));
           const email = str(body.email).trim();
           if (!email) throw new UserError(tr('Digite o e-mail da pessoa.'));
-          const { token, expiresAt } = store.createInvite(role(body.role) ?? 'user', cleanAllow(body.allow), me.id, email);
-          const path = `/convite/${token}`;
-          let sent = false;
-          if (deps.mailer) {
-            const link = `${deps.secure(req) ? 'https' : 'http'}://${req.headers.host ?? ''}${path}`;
-            try {
-              await deps.mailer.send({
-                to: email.toLowerCase(),
-                subject: tr('Convite para o DevLand'),
-                text: tr('Olá!\n\n{0} convidou você para o DevLand, o escritório virtual dos agentes de IA. Para criar a sua conta, abra o link abaixo (vale por 7 dias e só funciona uma vez):\n\n{1}\n\nSe você não esperava este convite, ignore este e-mail.\n', [me.name, link]),
-              });
-              sent = true;
-            } catch (err) {
-              deps.warn?.(tr('Não deu para enviar o e-mail do convite: {0}', [err instanceof Error ? err.message : String(err)]));
-            }
+          const { token, expiresAt } = store.createInvite(role(body.role) ?? 'user', cleanAllow(body.allow), me.id, email, str(body.name));
+          const link = `${deps.secure(req) ? 'https' : 'http'}://${req.headers.host ?? ''}/convite/${token}`;
+          try {
+            await deps.mailer.send({
+              to: email.toLowerCase(),
+              subject: tr('Convite para o DevLand'),
+              text: tr('Olá!\n\n{0} convidou você para o DevLand, o escritório virtual dos agentes de IA. Para criar a sua conta, abra o link abaixo (vale por 7 dias e só funciona uma vez):\n\n{1}\n\nSe você não esperava este convite, ignore este e-mail.\n', [me.name, link]),
+            });
+          } catch (err) {
+            // Convite que não chegou não fica valendo por aí.
+            store.revokeInvite(token);
+            deps.warn?.(tr('Não deu para enviar o e-mail do convite: {0}', [err instanceof Error ? err.message : String(err)]));
+            return sendJson(res, 502, { error: tr('Não deu para enviar o e-mail. Confira o SMTP da instalação e tente de novo.') });
           }
-          sendJson(res, 200, { path, expiresAt, sent });
+          sendJson(res, 200, { ok: true, expiresAt });
         })
         .catch((err) => fail(res, err));
       return true;

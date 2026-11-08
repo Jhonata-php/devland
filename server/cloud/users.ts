@@ -40,6 +40,8 @@ export interface Invite {
   createdBy: string;
   /** E-mail de quem foi convidado: o link vai para ele e a conta nasce com esse e-mail. */
   email?: string;
+  /** Nome sugerido pelo admin (a pessoa confirma ao criar a conta). */
+  name?: string;
 }
 
 /** O que sai pela API (sem o hash da senha). */
@@ -188,19 +190,34 @@ export class UserStore {
     this.save();
   }
 
-  createInvite(role: Role, allow: RemoteFeature[], createdBy: string, email?: string): { token: string; expiresAt: number } {
+  createInvite(role: Role, allow: RemoteFeature[], createdBy: string, email?: string, name?: string): { token: string; expiresAt: number } {
     const mail = email === undefined ? undefined : this.cleanEmail(email);
+    const label = name?.trim() || undefined;
+    if (label && !NAME_RE.test(label)) throw new UserError(tr('Nome inválido: use de 2 a 32 letras, números, ponto, hífen ou sublinhado.'));
     if (mail && this.byEmail(mail)) throw new UserError(tr('Esse e-mail já tem conta.'));
     const token = randomBytes(32).toString('base64url');
     const expiresAt = this.now() + INVITE_MS;
     this.prune();
-    this.data.invites.push({ hash: sha256(token), role, allow: role === 'admin' ? [...FEATURES] : cleanAllow(allow), expiresAt, createdBy, ...(mail ? { email: mail } : {}) });
+    this.data.invites.push({ hash: sha256(token), role, allow: role === 'admin' ? [...FEATURES] : cleanAllow(allow), expiresAt, createdBy, ...(mail ? { email: mail } : {}), ...(label ? { name: label } : {}) });
     this.save();
     return { token, expiresAt };
   }
 
   inviteValid(token: string): boolean {
     return !!this.findInvite(token);
+  }
+
+  /** Desfaz um convite que não chegou a ser entregue (o e-mail falhou). */
+  revokeInvite(token: string): void {
+    const invite = this.findInvite(token);
+    if (!invite) return;
+    this.data.invites = this.data.invites.filter((i) => i !== invite);
+    this.save();
+  }
+
+  /** Nome que o admin sugeriu para o convite. */
+  inviteName(token: string): string | undefined {
+    return this.findInvite(token)?.name;
   }
 
   /** E-mail para o qual o convite foi mandado (a conta nasce com ele). */

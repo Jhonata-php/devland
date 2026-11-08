@@ -47,6 +47,8 @@ async function setup(now = () => Date.now(), mailer?: Mailer) {
   return { store, cloud, call };
 }
 
+const invitePathOf = (m: Mail | undefined): string => /https?:\/\/[^/\s]+(\/convite\/[A-Za-z0-9_-]+)/.exec(m?.text ?? '')?.[1] ?? '';
+
 describe('DevLand Cloud', () => {
   it('sem usuários manda para /setup; o admin só nasce com o código de instalação', async () => {
     const { call, cloud } = await setup();
@@ -90,17 +92,28 @@ describe('DevLand Cloud', () => {
     expect((await call(path!)).text).toContain('Link inválido');
   });
 
-  it('convite: com SMTP o link vai para o e-mail da pessoa (e a página do convite já traz esse e-mail travado)', async () => {
+  it('convite: o link vai só por e-mail para a pessoa (nome e e-mail já preenchidos); sem SMTP ou com falha no envio não fica convite solto', async () => {
     const sent: Mail[] = [];
-    const { call } = await setup(undefined, { send: async (m) => void sent.push(m) });
-    const admin = (await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
-    const r = JSON.parse((await call('/api/cloud/invites', { body: { role: 'user', allow: [], email: 'Caio@Exemplo.com' }, cookie: admin, headers: { Host: 'devland.test', 'X-Forwarded-Proto': 'https' } })).text) as { path: string; sent: boolean };
-    expect(r.sent).toBe(true);
+    const ok = await setup(undefined, { send: async (m) => void sent.push(m) });
+    const admin = (await ok.call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
+    const r = await ok.call('/api/cloud/invites', { body: { role: 'user', allow: [], email: 'Caio@Exemplo.com', name: 'caio' }, cookie: admin, headers: { Host: 'devland.test', 'X-Forwarded-Proto': 'https' } });
+    expect(r.status).toBe(200);
+    expect(r.text).not.toContain('convite/'); // a resposta não traz o link
     expect(sent[0].to).toBe('caio@exemplo.com');
-    expect(sent[0].text).toMatch(new RegExp(`https://[^/\\s]+${r.path}`)); // o endereço vem do cabeçalho Host da requisição
-    const page = (await call(r.path)).text;
+    const path = invitePathOf(sent[0]);
+    expect(path).toBeTruthy();
+    const page = (await ok.call(path)).text;
     expect(page).toContain('value="caio@exemplo.com"');
+    expect(page).toContain('value="caio"');
     expect(page).toContain('readonly');
+
+    const none = await setup();
+    const adm2 = (await none.call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
+    expect((await none.call('/api/cloud/invites', { body: { role: 'user', allow: [], email: 'x@exemplo.com' }, cookie: adm2 })).status).toBe(400);
+
+    const bad = await setup(undefined, { send: async () => { throw new Error('SMTP 535'); } });
+    const adm3 = (await bad.call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
+    expect((await bad.call('/api/cloud/invites', { body: { role: 'user', allow: [], email: 'y@exemplo.com' }, cookie: adm3 })).status).toBe(502);
   });
 
   it('sem SMTP o /login não mostra o link e o /esqueci explica', async () => {
@@ -112,11 +125,13 @@ describe('DevLand Cloud', () => {
   });
 
   it('convite cria usuário com as permissões escolhidas; usuário comum não administra', async () => {
-    const { call } = await setup();
+    const sent: Mail[] = [];
+    const { call } = await setup(undefined, { send: async (m) => void sent.push(m) });
     const admin = (await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } })).cookie;
     expect((await call('/api/cloud/invites', { body: { role: 'user', allow: ['messages'] }, cookie: admin })).status).toBe(400); // sem e-mail
-    const inv = JSON.parse((await call('/api/cloud/invites', { body: { role: 'user', allow: ['messages'], email: 'bia@exemplo.com' }, cookie: admin })).text) as { path: string; sent: boolean };
-    expect(inv.sent).toBe(false); // sem SMTP o admin copia o link
+    expect((await call('/api/cloud/invites', { body: { role: 'user', allow: ['messages'], email: 'bia@exemplo.com', name: 'bia' }, cookie: admin })).status).toBe(200);
+    const inv = { path: invitePathOf(sent[0]) };
+    expect(inv.path).toBeTruthy();
     expect((await call(inv.path)).text).toContain('convidado');
     const token = inv.path.split('/').pop();
     const bia = (await call('/api/cloud/invite', { body: { token, name: 'bia', email: 'bia@exemplo.com', password: 'outra-senha-longa' } })).cookie;

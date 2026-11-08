@@ -12,7 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
-- **Entrada só por e-mail e convite por e-mail (Cloud):** a tela de login pede o e-mail (contas antigas, sem e-mail, ainda entram pelo nome até cadastrarem um). O admin digita o e-mail da pessoa em Usuários e o link do convite vai para ele por e-mail (com SMTP); a conta nasce com esse e-mail. Sem SMTP, o link aparece para copiar.
+- **Entrada só por e-mail e convite direto por e-mail (Cloud):** a tela de login pede o e-mail (contas antigas, sem e-mail, ainda entram pelo nome até cadastrarem um). Em Usuários o admin preenche e-mail, nome e permissão (Usuário ou Admin) e o convite sai direto para o e-mail da pessoa, sem mostrar link; a conta nasce com esse e-mail e o nome sugerido. Precisa do SMTP configurado; se o envio falhar, o convite é desfeito.
 - **Janela de Usuários refeita:** pessoas em cartões (inicial, nome, e-mail, papel, permissões em botões), convite em cartão próprio e janela do tamanho do conteúdo.
 - **Corrigido (causa de vários bugs visuais):** o minificador de CSS do build (lightningcss) apagava `backdrop-filter: none`; por isso a barra do topo ficava borrada e o trilho "fixed" da lateral ficava preso à altura dela. O build agora usa o esbuild para o CSS.
 - **Agentes depois da reimplantação:** conversas que demoram a voltar não saem mais da lista guardada nos primeiros 5 minutos, e o agente avulso "primeiro agente" não nasce mais quando já havia conversas para retomar.
