@@ -12361,3 +12361,10 @@ body::before {
   .ui-root.has-sidebar::before { display: none; }
   .ui-root:not(.has-sidebar) .ui-topbar__left { background: none; border-right: 0; box-shadow: none; }
 }
+
+/* Topo (computador): a barra em si nunca tem fundo nem blur (o blur criava uma faixa sobre o trilho da lateral e prendia o
+   trilho "fixed" à altura da barra). "+ Contas" mora em Configurações. */
+@media (min-width: 601px) {
+  .ui-root .ui-topbar.ui-topbar { background: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none; transform: none; box-shadow: none; border: 0; }
+  .ui-root .ui-topbar .ui-btn-accounts { display: none !important; }
+}

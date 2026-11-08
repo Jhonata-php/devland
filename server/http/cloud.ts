@@ -122,6 +122,51 @@ ${PAGE_STYLE}
     .job .code { font-size: 22px; letter-spacing: 2px; }
   }
 </style>
+<style>
+  /* Visual DevLand (verde neon sobre preto), igual ao login e ao escritório. Vem por último: troca as cores acima. */
+  :root { --bg: #050806; --card: #08130d; --line: rgba(57, 255, 136, .22); --txt: #d8f5e4; --mut: #7fa592; --gold: #39ff88; --gold2: #19c76a; --bad: #ff6b6b; --cy: #4de1ff; }
+  body { background: radial-gradient(900px 480px at 50% -10%, rgba(57, 255, 136, .14), transparent 60%), radial-gradient(700px 500px at 100% 100%, rgba(77, 225, 255, .08), transparent 60%),
+                     linear-gradient(rgba(57, 255, 136, .035) 1px, transparent 1px) 0 0 / 100% 24px, var(--bg); }
+  main { background: rgba(5, 14, 9, .92); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px -20px rgba(0, 0, 0, .8), 0 0 40px -18px rgba(57, 255, 136, .45); position: relative; }
+  main::before { content: 'DEVLAND'; position: absolute; top: -13px; left: 20px; padding: 2px 10px; font-size: 12px; font-weight: 800; letter-spacing: .2em; color: #39ff88; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; }
+  main::after { content: none; }
+  body { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  main { min-width: 0; overflow-wrap: anywhere; }
+  .tabs { max-width: 100%; }
+  h1, h2 { color: var(--gold); text-shadow: 0 0 18px rgba(57, 255, 136, .35); }
+  a { color: var(--cy); }
+  th, td { border-bottom: 1px solid var(--line); }
+  th { color: var(--mut); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
+  .tabs { border-bottom: 1px solid var(--line); overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { color: var(--mut); border-radius: 8px 8px 0 0; white-space: nowrap; transition: color .15s, background .15s; }
+  .tabs a:hover { color: var(--txt); background: rgba(57, 255, 136, .06); }
+  .tabs a.on { color: var(--gold); border-bottom-color: var(--gold); background: rgba(57, 255, 136, .08); }
+  .card { background: rgba(3, 9, 5, .75); border: 1px solid var(--line); border-radius: 14px; }
+  .card.on { border-color: rgba(57, 255, 136, .55); background: rgba(10, 30, 18, .8); }
+  select, input { background: #04100a; color: var(--txt); border: 1px solid var(--line); border-radius: 8px; }
+  input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(57, 255, 136, .18); outline: none; }
+  input[type=checkbox] { accent-color: #39ff88; }
+  button { color: #04100a; background: linear-gradient(180deg, #39ff88, #19c76a); border: 0; border-radius: 8px; box-shadow: 0 0 22px -6px rgba(57, 255, 136, .7); }
+  button:active { transform: translateY(1px); box-shadow: 0 0 10px -4px rgba(57, 255, 136, .7); }
+  button:focus-visible { outline: 2px solid rgba(57, 255, 136, .6); }
+  button.ghost, button.small.ghost { background: transparent; color: var(--gold); border: 1px solid var(--line); box-shadow: none; }
+  button.ghost:hover { border-color: var(--gold); background: rgba(57, 255, 136, .08); }
+  .pill { border-color: var(--line); color: var(--mut); }
+  .pill.on { color: #39ff88; border-color: rgba(57, 255, 136, .6); }
+  .card li.ok::before { color: #39ff88; }
+  .repo { background: rgba(3, 9, 5, .8); border: 1px solid var(--line); border-radius: 10px; }
+  .repo .lock, .job .code { color: var(--gold); }
+  .job { border-top: 1px solid var(--line); }
+  .job a.btn { background: linear-gradient(180deg, #39ff88, #19c76a); color: #04100a; }
+  .t-github { background: linear-gradient(160deg, #3b4a42, #17201b); }
+  @media (max-width: 640px) {
+    main { padding: 16px 12px; margin-top: 14px; }
+    th, td { padding: 8px 4px; }
+    .row > * { flex: 1 1 auto; }
+    .head { flex-wrap: wrap; }
+  }
+</style>
 </head>
 <body>
 ${body}
@@ -284,7 +329,7 @@ function accountsPage(isAdmin: boolean, embed = false): string {
   const tiles: Record<string, string> = { claude: 'C', codex: 'X', github: 'G' };
   const section = (id: string, title: string, intro: string) =>
     `<section class="card off" id="${id}-card"><div class="head"><span class="tile t-${id}" aria-hidden="true">${tiles[id]}</span><div class="ttl"><h2>${esc(title)}</h2><p>${esc(intro)}</p></div><span class="pill" id="${id}-pill"></span></div><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job" class="job"></div></section>`;
-  const body = `${embed ? '<style>body { display: block; padding: 0; min-height: 0; background: #1e2130; } main { border: 0; border-radius: 0; padding: 4px 12px 20px; max-width: none; } .card { margin: 10px 0; }</style>' : ''}<main>
+  const body = `${embed ? '<style>body { display: block; padding: 0; min-height: 0; background: #04100a; } main::before { display: none; } main { border: 0; box-shadow: none; background: none; border-radius: 0; padding: 4px 12px 20px; max-width: none; } .card { margin: 10px 0; }</style>' : ''}<main>
   ${embed ? '' : tabs('accounts', isAdmin)}
   <h1>${esc(tr('Contas'))}</h1>
   <p>${esc(tr('As contas são da instalação: os agentes de todos usam as contas conectadas aqui.'))}</p>
