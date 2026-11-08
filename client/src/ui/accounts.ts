@@ -23,6 +23,12 @@ export function openCloudPanel(root: HTMLElement, kind: CloudPanel): void {
     d.addEventListener('click', (e) => {
       if (e.target === d) d.close();
     });
+    // A página avisa a altura do conteúdo: no computador a janela acompanha o conteúdo (sem o vazio embaixo).
+    window.addEventListener('message', (e: MessageEvent) => {
+      const hgt = Number((e.data as { devlandEmbedH?: unknown } | null)?.devlandEmbedH);
+      if (e.source !== frame.contentWindow || e.origin !== location.origin || !(hgt > 0) || !window.matchMedia('(min-width: 641px)').matches) return;
+      frame.style.height = `${Math.min(Math.ceil(hgt), Math.floor(window.innerHeight * 0.86) - 56)}px`;
+    });
     root.append(d);
     dialogs.set(kind, d);
     dialog = d;

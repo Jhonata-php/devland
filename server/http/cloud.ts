@@ -232,7 +232,26 @@ function featureLabels(): Record<RemoteFeature, string> {
 }
 
 /** Estilo das páginas dentro das janelas do app (Contas e Usuários abrem em <dialog> com a página em iframe). */
-const EMBED_STYLE = '<style>body { display: block; padding: 0; min-height: 0; background: #04100a; } main::before { display: none; } main { border: 0; box-shadow: none; background: none; border-radius: 0; padding: 4px 12px 20px; max-width: none; } .card { margin: 10px 0; }</style>';
+const EMBED_STYLE = `<style>
+  body { display: block; padding: 0; min-height: 0; background: #04100a; font-size: 14px; }
+  main::before { display: none; }
+  main { border: 0; box-shadow: none; background: none; border-radius: 0; padding: 14px 18px 18px; max-width: none; }
+  /* O título já está na barra da janela. */
+  main > h1 { display: none; }
+  main > p { margin: 0 0 14px; font-size: 13px; }
+  h2 { font-size: 13px; margin: 20px 0 8px; text-transform: uppercase; letter-spacing: .1em; text-shadow: none; }
+  .card { margin: 10px 0; padding: 14px; }
+  table { margin-bottom: 8px; }
+  th, td { padding: 10px 6px; }
+  fieldset { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+  fieldset label, td label { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 7px 12px; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--txt); border: 1px solid var(--line); border-radius: 99px; background: rgba(57, 255, 136, .04); cursor: pointer; }
+  fieldset label:has(input:checked), td label:has(input:checked) { border-color: rgba(57, 255, 136, .6); background: rgba(57, 255, 136, .12); }
+  select { padding: 8px 10px; font-size: 14px; }
+  button { font-size: 14px; padding: 10px 16px; margin-top: 12px; width: auto; }
+  button.small { padding: 7px 12px; margin: 0; font-size: 13px; }
+  .row { margin-top: 12px; }
+  @media (max-width: 640px) { main { padding: 10px 14px 24px; } table { display: block; overflow-x: auto; } }
+</style><script>(function () { function post() { parent.postMessage({ devlandEmbedH: document.body.scrollHeight }, location.origin); } new ResizeObserver(post).observe(document.body); addEventListener('load', post); })();</script>`;
 
 function adminPage(): string {
   const labels = featureLabels();
