@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **X para fechar "O escritório está vazio":** o cartão ganha um X no canto; fechado, só volta quando o escritório tiver agentes e esvaziar de novo.
 - **Esqueci a senha por e-mail (Cloud):** a tela de login ganha o link "Esqueci a senha"; a pessoa digita o e-mail, recebe um link que vale 30 minutos e só funciona uma vez, escolhe a senha nova e as sessões abertas caem. A resposta é a mesma exista a conta ou não. O envio usa o SMTP do ambiente (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_SECURE`; com o prefixo `HABBLAUD_` também vale), sem dependência nova; sem SMTP o link não aparece.
 - **Teste de notificação que explica o resultado:** além do push pelo servidor, mostra um aviso local pelo service worker e diz o que aconteceu (aparelho não assinado, serviço de push recusou com o código X, ou enviado). O contato que o servidor manda ao serviço de push deixou de ser `mailto:habblaud@localhost`, que a Apple e outros serviços recusam: agora usa o domínio do acesso (ou `HABBLAUD_PUSH_SUBJECT`).
 - **Login no celular mais limpo:** sem o texto de apresentação, com a chuva de código mais fraca e o cartão opaco, para o formulário ler bem.

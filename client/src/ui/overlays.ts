@@ -1,8 +1,8 @@
 // Camadas de estado: splash de carregamento, escritório vazio e aviso de conexão perdida.
 import type { UiComponent, UiContext } from './context';
 import { accountsClick } from './accounts';
-import { h, prefersReducedMotion, setHidden, setText } from './dom';
-import { FALLBACK_MARK } from './icons';
+import { h, iconButton, prefersReducedMotion, setHidden, setText } from './dom';
+import { FALLBACK_MARK, ICONS } from './icons';
 import { emptyOfficeHint } from './provider';
 import { wordmark } from './widgets';
 import { tr } from '../../../shared/i18n';
@@ -78,6 +78,8 @@ export class EmptyState implements UiComponent {
   private cloudRow: HTMLElement;
   private termBtn: HTMLButtonElement;
   private busy = false;
+  /** Fechado pelo X: não volta até o escritório ter agentes (aí a próxima vez que esvaziar mostra de novo). */
+  private dismissed = false;
 
   constructor(
     private ctx: UiContext,
@@ -104,6 +106,10 @@ export class EmptyState implements UiComponent {
     this.el = h(
       'section',
       { class: 'ui-empty', hidden: true, attrs: { 'aria-labelledby': 'ui-empty-title' } },
+      iconButton(ICONS.close, tr('Fechar'), () => {
+        this.dismissed = true;
+        this.ctx.invalidate();
+      }, 'ui-icon-btn--sm ui-empty__close'),
       art,
       h('h2', { class: 'ui-empty__title', text: tr('O escritório está vazio'), attrs: { id: 'ui-empty-title' } }),
       this.hint,
@@ -131,7 +137,9 @@ export class EmptyState implements UiComponent {
   render(): void {
     const { store } = this.ctx;
     const snap = store.snapshot;
-    const show = officeIsEmpty(this.ctx);
+    const empty = officeIsEmpty(this.ctx);
+    if (!empty) this.dismissed = false;
+    const show = empty && !this.dismissed;
     setHidden(this.el, !show);
     if (!show || !snap) return;
     const cloud = !!access().cloud;
