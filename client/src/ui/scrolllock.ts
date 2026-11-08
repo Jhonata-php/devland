@@ -17,6 +17,16 @@ export function lockPageScroll(): void {
   });
 }
 
+/** Altura da área segura de cima (barra de status/ilha), em px. */
+function safeTop(): number {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top)';
+  document.body.append(probe);
+  const v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+  probe.remove();
+  return v;
+}
+
 /**
  * O app acompanha a área realmente visível (visualViewport): se o iOS desloca ou encolhe a janela (barra de status, teclado,
  * seletor), a camada do app anda junto em vez de ficar "subida" com um vazio embaixo. Só em telas de toque; client/index.html
@@ -29,9 +39,15 @@ export function followVisualViewport(): void {
   const apply = (): void => {
     // Leituras absurdas (0 no começo, ou muito menor que a tela) não valem: fica no 100dvh do CSS.
     if (vv.height < 200 || vv.width < 200) return;
-    root.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
+    // App da tela de início com a barra de status por cima do conteúdo (iOS novo): a janela informada é a tela menos a barra
+    // (ex.: 812 de 874) e o app, ancorado em 0, ficava com o topo sob a barra. Começa logo abaixo da barra e usa só o que resta
+    // da janela (sobra uma faixa de fora, que o iOS não deixa pintar); sem barra por cima (inset 0) nada muda.
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
+    const inset = standalone ? safeTop() : 0;
+    const under = inset > 0 && Math.abs(vv.height + inset - Math.max(screen.width, screen.height)) <= 2 && vv.offsetTop === 0;
+    root.style.setProperty('--vv-top', `${Math.round(vv.offsetTop) + (under ? inset : 0)}px`);
     root.style.setProperty('--vv-left', `${Math.round(vv.offsetLeft)}px`);
-    root.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
+    root.style.setProperty('--vv-h', `${Math.round(vv.height - (under ? inset : 0))}px`);
   };
   vv.addEventListener('resize', apply);
   vv.addEventListener('scroll', apply);
