@@ -31,11 +31,7 @@ export function followVisualViewport(): void {
     if (vv.height < 200 || vv.width < 200) return;
     root.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
     root.style.setProperty('--vv-left', `${Math.round(vv.offsetLeft)}px`);
-    // App instalado: o iOS informa uma janela menor que a tela (some a área do indicador de início, deixando uma faixa vazia
-    // embaixo); aí a tela inteira, na orientação atual, vale mais que a janela informada.
-    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
-    const screenH = innerWidth > innerHeight ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-    root.style.setProperty('--vv-h', `${Math.round(standalone && screenH > vv.height && screenH - vv.height < 120 ? screenH : vv.height)}px`);
+    root.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
   };
   vv.addEventListener('resize', apply);
   vv.addEventListener('scroll', apply);
