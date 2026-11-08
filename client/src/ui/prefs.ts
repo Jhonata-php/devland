@@ -32,7 +32,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   bubbles: DEFAULT_WORLD_OPTIONS.bubbles,
   liveliness: DEFAULT_WORLD_OPTIONS.liveliness,
   daylight: 'auto',
-  theme: 'auto',
+  theme: 'none',
   sound: false,
   sounds: DEFAULT_SOUND_SETTINGS,
   browserNotifications: false,

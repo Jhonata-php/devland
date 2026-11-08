@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Salas de projeto com visual DevLand:** piso de tapete escuro (grafite, azul-noite, vinho...) e paredes escuras com um neon diferente por sala (verde, roxo, ciano, âmbar, rosa...); mesas e cadeiras escuras. As decorações de Natal/Halloween agora vêm desligadas por padrão (dá para ligar em Ajustes › Aparência).
 - **Mapa sem rua nem carros:** no lugar da rua há um passeio de jardim com trilha de pedra, canteiros floridos, bancos e postes.
 - **Mapa no tema DevLand:** os rótulos das salas e dos agentes no mapa usam fonte de terminal, fundo preto e borda verde (o agente selecionado fica verde); vinheta escura nas bordas para destacar as salas; no celular em pé a visão geral aproxima 25% para as salas ficarem legíveis.
 - **Botão da lateral como o do WCAM:** uma bolinha com seta presa na borda do trilho/painel (abre e fecha), em vez de um quadrado; o logo na lateral agora é só o planeta, sem fundo nem quadrado em volta (o ícone do app e a aba continuam com o fundo escuro).
@@ -177,6 +178,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Bolinha da lateral recolhida espremida:** uma regra antiga a esticava para 48 px de altura; agora é redonda (26 px), entre o logo e os anéis de uso, que ganharam mais espaço.
 - **Revisão visual:** avisos de alerta com fundo sólido (o texto de trás aparecia); no celular um aviso por vez e nenhum por cima da caixa de mensagem dentro de uma conversa; a função do agente nas Conversas virou etiqueta pequena (ocupava a largura toda); a barra de baixo acende Ajustes quando os ajustes estão abertos; a Prévia ao vivo não cobre mais o trilho da esquerda.
 - **Atualização nativa não encontrava o pacote da versão nova (404):** a imagem principal era publicada antes do pacote `dist-`, e o servidor via a versão nova antes de o pacote existir. Agora o pacote sai primeiro.
 - **Celular: topo mínimo.** Uma linha fina de 48 px com o logo, os mostradores de uso (só os anéis) e o aviso de quem precisa de você; as ferramentas ficam na barra de baixo e o mapa ganha a tela. Também corrige a primeira linha dos agentes na lateral, que sobrepunha o papel e a função.

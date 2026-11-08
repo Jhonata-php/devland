@@ -1,18 +1,20 @@
-// Temas de sala (puros): paletas claras e bem distintas. Sementes consecutivas (slots vizinhos)
+// Temas de sala (puros): paletas bem distintas. Sementes consecutivas (slots vizinhos)
 // recebem temas diferentes; a ordem da lista alterna famílias de cor de propósito.
 import type { RoomTheme } from './api';
 
+// Visual DevLand: salas de projeto escuras, com piso grafite/azul-noite, paredes escuras e um neon diferente por sala
+// (o detalhe da parede, o tapete e o acento acendem na cor da sala). As salas comuns (recepção, copa...) ficam como eram.
 const THEMES: readonly RoomTheme[] = [
-  { carpet: '#c9d1dc', carpet2: '#bdc6d3', wall: { base: '#eef1f4', trim: '#9fb0c4', pattern: 'plain' }, accent: '#3f7fd8', deskVariant: 'white', chairVariant: 'blue' },
-  { carpet: '#dbcfba', carpet2: '#d0c2ab', wall: { base: '#f6f0e5', trim: '#b99f7a', pattern: 'stripes' }, accent: '#ec8a3c', deskVariant: 'wood', chairVariant: 'black' },
-  { carpet: '#c4cfbb', carpet2: '#b8c5af', wall: { base: '#f1f3ea', trim: '#93a487', pattern: 'wood_panel' }, accent: '#4cae6a', deskVariant: 'wood', chairVariant: 'green' },
-  { carpet: '#cdc8de', carpet2: '#c2bbd5', wall: { base: '#f3f1f8', trim: '#a59cc4', pattern: 'plain' }, accent: '#8d66cf', deskVariant: 'white', chairVariant: 'gray' },
-  { carpet: '#e4cdbe', carpet2: '#dbc1b0', wall: { base: '#f8f1eb', trim: '#c99a83', pattern: 'plain' }, accent: '#e2604f', deskVariant: 'wood', chairVariant: 'red' },
-  { carpet: '#bfd9d2', carpet2: '#b2cfc7', wall: { base: '#eef6f4', trim: '#7fb3a6', pattern: 'stripes' }, accent: '#36b0b0', deskVariant: 'white', chairVariant: 'green' },
-  { carpet: '#aab1bd', carpet2: '#9fa7b4', wall: { base: '#e8eaee', trim: '#6d7583', pattern: 'brick' }, accent: '#f2c14e', deskVariant: 'dark', chairVariant: 'black' },
-  { carpet: '#e0cad2', carpet2: '#d6bdc6', wall: { base: '#f9f2f4', trim: '#c08ea0', pattern: 'stripes' }, accent: '#e47aa8', deskVariant: 'white', chairVariant: 'black' },
-  { carpet: '#c0d2e7', carpet2: '#b3c7e0', wall: { base: '#eef4fa', trim: '#8aa6c8', pattern: 'wood_panel' }, accent: '#5b8fe0', deskVariant: 'wood', chairVariant: 'blue' },
-  { carpet: '#d1c5b8', carpet2: '#c5b8aa', wall: { base: '#f4efe8', trim: '#8a6a52', pattern: 'wood_panel' }, accent: '#c9713f', deskVariant: 'dark', chairVariant: 'gray' },
+  { carpet: '#1f2a36', carpet2: '#1a2430', wall: { base: '#2b3544', trim: '#39ff88', pattern: 'plain' }, accent: '#39ff88', deskVariant: 'dark', chairVariant: 'black' },
+  { carpet: '#231f36', carpet2: '#1d1a2f', wall: { base: '#30294a', trim: '#b18cff', pattern: 'stripes' }, accent: '#b18cff', deskVariant: 'dark', chairVariant: 'gray' },
+  { carpet: '#1b2c33', carpet2: '#16252b', wall: { base: '#253b44', trim: '#4de1ff', pattern: 'plain' }, accent: '#4de1ff', deskVariant: 'white', chairVariant: 'blue' },
+  { carpet: '#2f2420', carpet2: '#281e1b', wall: { base: '#3d302a', trim: '#ffb547', pattern: 'wood_panel' }, accent: '#ffb547', deskVariant: 'wood', chairVariant: 'black' },
+  { carpet: '#33202a', carpet2: '#2b1a23', wall: { base: '#432a37', trim: '#ff5c8a', pattern: 'plain' }, accent: '#ff5c8a', deskVariant: 'dark', chairVariant: 'red' },
+  { carpet: '#1c2e25', carpet2: '#17271f', wall: { base: '#263c31', trim: '#6ee7a0', pattern: 'stripes' }, accent: '#6ee7a0', deskVariant: 'dark', chairVariant: 'green' },
+  { carpet: '#262a30', carpet2: '#20242a', wall: { base: '#333942', trim: '#f2c14e', pattern: 'brick' }, accent: '#f2c14e', deskVariant: 'dark', chairVariant: 'black' },
+  { carpet: '#1e2238', carpet2: '#191c30', wall: { base: '#29304d', trim: '#6f8cff', pattern: 'wood_panel' }, accent: '#6f8cff', deskVariant: 'white', chairVariant: 'blue' },
+  { carpet: '#2c2333', carpet2: '#251d2b', wall: { base: '#3a2e44', trim: '#e47aff', pattern: 'stripes' }, accent: '#e47aff', deskVariant: 'dark', chairVariant: 'gray' },
+  { carpet: '#1d2b2b', carpet2: '#182424', wall: { base: '#283a3a', trim: '#36d6c3', pattern: 'plain' }, accent: '#36d6c3', deskVariant: 'wood', chairVariant: 'green' },
 ];
 
 export const THEME_COUNT = THEMES.length;

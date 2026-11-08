@@ -12310,3 +12310,12 @@ body::before {
 @media (max-width: 600px) {
   .ui-root:has(.ui-chats:not([hidden]) .ui-chats__screen--thread:not([hidden])) .ui-toasts { display: none; }
 }
+
+/* Bolinha da lateral: redonda de verdade (uma regra antiga a esticava para 48 px de altura) e entre o logo e os anéis. */
+@media (min-width: 601px) {
+  .ui-topbar .ui-btn-sidebar.ui-btn-sidebar { width: 26px !important; height: 26px !important; min-width: 0; min-height: 0; padding: 0 !important; top: 62px; left: calc(var(--rail-w) - 13px); }
+  .has-sidebar .ui-topbar .ui-btn-sidebar.ui-btn-sidebar { top: 16px; left: calc(var(--side-w) - 13px); }
+  .ui-topbar .ui-btn-sidebar.ui-btn-sidebar::before { margin: -2px 0 0 1px; }
+  .ui-usage { top: 100px; gap: 12px; }
+  .ui-topbar__left { align-items: center; }
+}
