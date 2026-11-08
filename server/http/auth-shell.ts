@@ -108,6 +108,11 @@ export const AUTH_STYLE = `<style>
     .card { border-radius: 18px 18px 0 0; border-bottom: 0; }
     .body { padding-bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px)); }
     .stage, footer.bot { display: none; }
+    /* Celular: só a marca no topo e o cartão de entrada; a chuva fica mais fraca e o cartão opaco, para o texto ler bem. */
+    .pitch { display: none; }
+    #rain { opacity: .5; }
+    .card { background: rgba(4, 10, 6, .97); }
+    main { min-height: calc(100dvh - 90px); }
   }
   @media (min-width: 768px) {
     header.top { padding: 22px 48px 0; }

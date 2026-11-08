@@ -89,6 +89,7 @@ export interface ApiDeps {
     subscribe(body: unknown): { ok: true } | { ok: false; error: string };
     unsubscribe(endpoint: unknown): void;
     notify(msg: { title: string; body: string; tag?: string }): Promise<number>;
+    notifyDetailed(msg: { title: string; body: string; tag?: string }): Promise<{ sent: number; subscribed: number; failed: number[] }>;
   };
   updates?: {
     status(): UpdateStatus;
@@ -748,8 +749,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       } else if (path === '/api/push/test') {
         req.resume();
         push
-          .notify({ title: tr('DevLand — teste'), body: tr('As notificações estão funcionando.'), tag: 'push-test' })
-          .then((sent) => sendJson(res, 200, { sent }))
+          .notifyDetailed({ title: tr('DevLand — teste'), body: tr('As notificações estão funcionando.'), tag: 'push-test' })
+          .then((r) => sendJson(res, 200, r))
           .catch((err) => fail(res, err));
       } else if (path === '/api/push/subscribe' || path === '/api/push/unsubscribe') {
         readJson(req)

@@ -59,6 +59,9 @@ export interface PushSubscription {
 
 export type PushOutcome = 'sent' | 'gone' | 'failed';
 
+/** Resultado do último envio de cada aparelho (status HTTP do serviço de push, ou 0 se nem chegou lá): para o teste explicar a falha. */
+export const lastPushStatus = { code: 0 };
+
 /** Manda uma mensagem a um aparelho. `gone` = a assinatura não vale mais (404/410): quem chama a remove. */
 export async function sendPush(sub: PushSubscription, message: unknown, keys: VapidKeys, subject: string, fetchFn: typeof fetch = fetch): Promise<PushOutcome> {
   try {
@@ -75,9 +78,11 @@ export async function sendPush(sub: PushSubscription, message: unknown, keys: Va
       body: new Uint8Array(body),
       signal: AbortSignal.timeout(15_000),
     });
+    lastPushStatus.code = res.status;
     if (res.status === 404 || res.status === 410) return 'gone';
     return res.ok ? 'sent' : 'failed';
   } catch {
+    lastPushStatus.code = 0;
     return 'failed';
   }
 }

@@ -78,13 +78,29 @@ export class Notifier implements UiComponent {
     }
   }
 
-  /** Manda uma notificação de teste a todos os aparelhos assinados. Devolve quantos receberam (ou -1 se falhou). */
-  async testPush(): Promise<number> {
+  /**
+   * Teste de notificação: assina este aparelho (se ainda não estiver), manda o push pelo servidor e mostra também um aviso
+   * local pelo service worker, para separar "o aparelho não mostra" de "o servidor não conseguiu enviar".
+   */
+  async testPush(): Promise<{ local: boolean; sent: number; subscribed: number; status?: number; error?: boolean }> {
+    await this.subscribePush();
+    let local = false;
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration('/sw.js');
+      if (reg && notificationState() === 'granted') {
+        await reg.showNotification(tr('DevLand — teste'), { body: tr('As notificações estão funcionando.'), tag: 'local-test', icon: '/assets/brand/icon-192.png' });
+        local = true;
+      }
+    } catch {
+      // sem service worker ou sem permissão: o resultado do push abaixo explica
+    }
     try {
       const res = await fetch('/api/push/test', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      return res.ok ? ((await res.json()) as { sent?: number }).sent ?? 0 : -1;
+      if (!res.ok) return { local, sent: 0, subscribed: 0, error: true };
+      const r = (await res.json()) as { sent?: number; subscribed?: number; failed?: number[] };
+      return { local, sent: r.sent ?? 0, subscribed: r.subscribed ?? 0, status: r.failed?.find((c) => c) };
     } catch {
-      return -1;
+      return { local, sent: 0, subscribed: 0, error: true };
     }
   }
 

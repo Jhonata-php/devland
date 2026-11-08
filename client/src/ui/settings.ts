@@ -389,8 +389,13 @@ export class SettingsPopover implements UiComponent {
 
   private async testNotify(): Promise<void> {
     setText(this.testHint, tr('Enviando…'));
-    const sent = await this.notifier.testPush();
-    setText(this.testHint, sent > 0 ? tr('Enviado. Se não chegou, confira a permissão de notificações do aparelho.') : sent === 0 ? tr('Nenhum aparelho assinado: ligue "Notificações do navegador" acima.') : tr('Não deu para enviar o teste.'));
+    const r = await this.notifier.testPush();
+    let text: string;
+    if (r.error) text = r.local ? tr('Aviso local mostrado, mas o servidor não respondeu ao teste de push.') : tr('Não deu para enviar o teste.');
+    else if (r.subscribed === 0) text = r.local ? tr('Aviso local mostrado. Este aparelho não está assinado no push do servidor: desligue e ligue "Notificações do navegador".') : tr('Nenhum aparelho assinado: ligue "Notificações do navegador" acima.');
+    else if (r.sent === 0) text = tr('O serviço de push recusou o envio (código {0}). O aviso local {1}.', [r.status ?? '?', r.local ? tr('apareceu') : tr('não apareceu')]);
+    else text = tr('Enviado. Se não chegou, confira a permissão de notificações do aparelho.');
+    setText(this.testHint, text);
   }
 
   private async toggleNotifications(): Promise<void> {

@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Teste de notificação que explica o resultado:** além do push pelo servidor, mostra um aviso local pelo service worker e diz o que aconteceu (aparelho não assinado, serviço de push recusou com o código X, ou enviado). O contato que o servidor manda ao serviço de push deixou de ser `mailto:habblaud@localhost`, que a Apple e outros serviços recusam: agora usa o domínio do acesso (ou `HABBLAUD_PUSH_SUBJECT`).
+- **Login no celular mais limpo:** sem o texto de apresentação, com a chuva de código mais fraca e o cartão opaco, para o formulário ler bem.
 - **Novo agente sem anexos no Cloud:** corrigido o erro "não deu para gravar os anexos (ENOENT ... chown)" que aparecia ao começar um agente sem anexar nada.
 - **Sem páginas soltas: Contas e Usuários viram janelas do app.** O `/contas` e o `/admin` deixaram de ser páginas à parte (sem as abas Escritório/Contas/Usuários/Configurações): abrem em janelas dentro do escritório, por Configurações (Contas conectadas e Usuários) ou pela barra de baixo. Os endereços antigos redirecionam para o app e abrem a janela certa.
 - **Páginas de administração no visual DevLand:** Escritório, Contas, Usuários e Configurações (`/admin`, `/contas`) agora são verde neon sobre preto, como o login e o escritório, e cabem no celular (as abas rolam de lado em vez de estourar a página).

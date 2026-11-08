@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'n
 import { join } from 'node:path';
 import { errMsg, log } from '../log';
 import { tr } from '../../shared/i18n';
-import { generateVapidKeys, sendPush, type PushSubscription, type VapidKeys } from './webpush';
+import { generateVapidKeys, lastPushStatus, sendPush, type PushSubscription, type VapidKeys } from './webpush';
 
 const MAX_SUBS = 30;
 /** Só os servidores de push dos navegadores (o endereço vem do navegador: nunca postamos em um endereço qualquer). */
@@ -72,20 +72,30 @@ export class PushService {
 
   /** Manda a todos os aparelhos assinados; tira os que o servidor de push diz que não existem mais. Devolve quantos receberam. */
   async notify(msg: PushMessage): Promise<number> {
+    return (await this.notifyDetailed(msg)).sent;
+  }
+
+  /** Como notify, mas diz também quantos aparelhos estão assinados e o status HTTP de quem recusou (para o teste explicar). */
+  async notifyDetailed(msg: PushMessage): Promise<{ sent: number; subscribed: number; failed: number[] }> {
     let sent = 0;
+    const failed: number[] = [];
+    const subscribed = this.subs.length;
     const gone = new Set<string>();
     await Promise.all(
       this.subs.map(async (s) => {
         const out = await sendPush(s, msg, this.keys, this.o.subject, this.o.fetchFn);
         if (out === 'sent') sent++;
-        else if (out === 'gone') gone.add(s.endpoint);
+        else {
+          failed.push(lastPushStatus.code);
+          if (out === 'gone') gone.add(s.endpoint);
+        }
       }),
     );
     if (gone.size) {
       this.subs = this.subs.filter((s) => !gone.has(s.endpoint));
       this.save();
     }
-    return sent;
+    return { sent, subscribed, failed };
   }
 
   private save(): { ok: true } | { ok: false; error: string } {

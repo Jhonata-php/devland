@@ -3510,4 +3510,9 @@ export const EN: Readonly<Record<string, string>> = {
   "Mais": "More",
   "Ajuda": "Help",
   "SEM": "WK",
+  "Aviso local mostrado, mas o servidor não respondeu ao teste de push.": "Local notice shown, but the server did not answer the push test.",
+  "Aviso local mostrado. Este aparelho não está assinado no push do servidor: desligue e ligue \"Notificações do navegador\".": "Local notice shown. This device is not subscribed to the server's push: turn \"Browser notifications\" off and on.",
+  "O serviço de push recusou o envio (código {0}). O aviso local {1}.": "The push service refused the delivery (code {0}). The local notice {1}.",
+  "apareceu": "showed up",
+  "não apareceu": "did not show up",
 };

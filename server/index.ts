@@ -223,7 +223,7 @@ const hub = new Hub(office, {
   canAnswer: (req) => (isRemoteRequest(req) ? remoteAllows(req, 'permissions') : isLoopbackHost(req.headers.host)),
 });
 // Notificações push (push/service.ts): no Cloud e no acesso remoto, para avisar o celular mesmo com o Habblaud fechado.
-const push = cloud || config.remote ? new PushService({ dir: join(config.dataDir, 'push'), subject: 'mailto:habblaud@localhost' }) : undefined;
+const push = cloud || config.remote ? new PushService({ dir: join(config.dataDir, 'push'), subject: process.env.HABBLAUD_PUSH_SUBJECT?.trim() || `mailto:push@${[...config.allowedHosts].find((h) => h.includes('.')) ?? 'devland.example.com'}` }) : undefined;
 if (push) {
   push.load();
   hub.onNotice((n) => {
