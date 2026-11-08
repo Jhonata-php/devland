@@ -1,7 +1,7 @@
 // Configurações (popover): opções do escritório, avisos, modo demonstração e Sobre (versão). O Habblaud World tem a
 // janela própria (ui/world/world-dialog.ts); daqui só sai a dica do tema em Aparência, que também vai para o prédio.
 import { access, remoteLogout } from '../net/access';
-import { openAccounts } from './accounts';
+import { openAccounts, openCloudPanel } from './accounts';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText } from './dom';
 import { ICONS } from './icons';
@@ -229,7 +229,10 @@ export class SettingsPopover implements UiComponent {
           h('span', { class: 'ui-set__label', text: tr('Usuários') }),
           h('span', { class: 'ui-set__hint', text: tr('Convidar pessoas, mudar papéis e o que cada uma pode fazer no escritório.') }),
         ),
-        h('a', { class: 'ui-btn', text: tr('Abrir'), attrs: { href: '/admin' } }),
+        h('button', { class: 'ui-btn', type: 'button', text: tr('Abrir'), on: { click: () => {
+          this.hide();
+          openCloudPanel(this.ctx.root, 'usuarios');
+        } } }),
       )),
     );
 

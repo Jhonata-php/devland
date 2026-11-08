@@ -72,6 +72,9 @@ describe('DevLand Cloud', () => {
     expect((await call('/', { cookie: bia })).text).toBe('escritorio terminal=false admin=false');
     expect((await call('/api/cloud/users', { cookie: bia })).status).toBe(403);
     expect((await call('/admin', { cookie: bia })).location).toBe('/');
+    // /admin só existe dentro da janela do app: direto, admin vai para o app (que abre a janela); embed devolve a página.
+    expect((await call('/admin', { cookie: admin })).location).toBe('/?painel=usuarios');
+    expect((await call('/admin?embed', { cookie: admin })).text).toContain('<h1>');
     expect((await call('/api/cloud/invite', { body: { token, name: 'caio', email: 'caio@exemplo.com', password: 'outra-senha-longa' } })).status).toBe(400);
 
     const users = JSON.parse((await call('/api/cloud/users', { cookie: admin })).text) as { users: { id: string; name: string }[] };

@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Sem páginas soltas: Contas e Usuários viram janelas do app.** O `/contas` e o `/admin` deixaram de ser páginas à parte (sem as abas Escritório/Contas/Usuários/Configurações): abrem em janelas dentro do escritório, por Configurações (Contas conectadas e Usuários) ou pela barra de baixo. Os endereços antigos redirecionam para o app e abrem a janela certa.
 - **Páginas de administração no visual DevLand:** Escritório, Contas, Usuários e Configurações (`/admin`, `/contas`) agora são verde neon sobre preto, como o login e o escritório, e cabem no celular (as abas rolam de lado em vez de estourar a página).
 - **Topo sem faixa borrada:** a barra do topo no computador não tem mais fundo nem blur, que cobriam o começo da lateral. O botão "+ Contas" saiu do topo: fica em Configurações › Contas conectadas.
 - **Plugins no Cloud novo:** corrigido o erro "Plugin not found in marketplace" que aparecia numa instalação limpa (o servidor deixou de achar a própria pasta depois que o pacote virou `devland`). O prefixo do log agora é `[devland]` e o certificado local do celular se chama "DevLand local CA".

@@ -29,6 +29,7 @@ import { ConnectionBanner, EmptyState, Splash } from './overlays';
 import { focusPermission, nextPermissionAgent } from './permission';
 import { loadPrefs, safeLocalStorage, savePrefs, worldOptionsFrom, type UiPrefs } from './prefs';
 import { SettingsPopover } from './settings';
+import { openCloudPanel } from './accounts';
 import { Sidebar } from './sidebar';
 import { SoundControl } from './sound';
 import { TERMINAL_UNAVAILABLE_HINT, TerminalPanel } from './terminal';
@@ -310,7 +311,14 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   }));
   drawer.onLayoutChange = () => applyLayout();
 
-  // /?settings (abas das páginas Contas e Usuários do Cloud): abre as Configurações já na chegada.
+  // /?painel=contas|usuarios (o /contas e o /admin antigos redirecionam para cá): abre a janela do Cloud já na chegada.
+  const painel = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('painel') : null;
+  if (painel === 'contas' || painel === 'usuarios') {
+    window.history.replaceState(null, '', location.pathname);
+    setTimeout(() => openCloudPanel(ctx.root, painel), 0);
+  }
+
+  // /?settings: abre as Configurações já na chegada.
   if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('settings')) {
     window.history.replaceState(null, '', location.pathname);
     setTimeout(() => settings.toggle(topbar.settingsBtn), 0);

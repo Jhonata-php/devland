@@ -223,11 +223,8 @@ function featureLabels(): Record<RemoteFeature, string> {
   };
 }
 
-/** Abas das páginas do Cloud: o escritório, as contas, os usuários (admin) e as configurações (abrem no escritório). */
-function tabs(active: 'accounts' | 'users', isAdmin: boolean): string {
-  const tab = (href: string, label: string, on = false) => `<a href="${href}"${on ? ' class="on" aria-current="page"' : ''}>${esc(label)}</a>`;
-  return `<nav class="tabs">${tab('/', tr('Escritório'))}${tab('/contas', tr('Contas'), active === 'accounts')}${isAdmin ? tab('/admin', tr('Usuários'), active === 'users') : ''}${tab('/?settings', tr('Configurações'))}</nav>`;
-}
+/** Estilo das páginas dentro das janelas do app (Contas e Usuários abrem em <dialog> com a página em iframe). */
+const EMBED_STYLE = '<style>body { display: block; padding: 0; min-height: 0; background: #04100a; } main::before { display: none; } main { border: 0; box-shadow: none; background: none; border-radius: 0; padding: 4px 12px 20px; max-width: none; } .card { margin: 10px 0; }</style>';
 
 function adminPage(): string {
   const labels = featureLabels();
@@ -242,8 +239,7 @@ function adminPage(): string {
     failed: tr('Não deu certo.'),
     allPerms: tr('todas'),
   };
-  const body = `<main>
-  ${tabs('users', true)}
+  const body = `${EMBED_STYLE}<main>
   <h1>${esc(tr('Usuários'))}</h1>
   <p>${esc(tr('Todos veem o escritório inteiro; as permissões dizem o que cada um pode fazer nele.'))}</p>
   <table><thead><tr><th>${esc(tr('Nome'))}</th><th>${esc(tr('Papel'))}</th><th>${esc(tr('Permissões'))}</th><th></th></tr></thead><tbody id="users"></tbody></table>
@@ -297,7 +293,7 @@ function adminPage(): string {
   return shell(tr('DevLand · usuários'), body, script);
 }
 
-function accountsPage(isAdmin: boolean, embed = false): string {
+function accountsPage(isAdmin: boolean): string {
   const t = {
     connect: tr('Conectar'),
     none: tr('Nenhuma conta conectada.'),
@@ -329,8 +325,7 @@ function accountsPage(isAdmin: boolean, embed = false): string {
   const tiles: Record<string, string> = { claude: 'C', codex: 'X', github: 'G' };
   const section = (id: string, title: string, intro: string) =>
     `<section class="card off" id="${id}-card"><div class="head"><span class="tile t-${id}" aria-hidden="true">${tiles[id]}</span><div class="ttl"><h2>${esc(title)}</h2><p>${esc(intro)}</p></div><span class="pill" id="${id}-pill"></span></div><ul id="${id}-list"></ul>${isAdmin ? `<button class="small" data-connect="${id}">${esc(t.connect)}</button>` : ''}<div id="${id}-job" class="job"></div></section>`;
-  const body = `${embed ? '<style>body { display: block; padding: 0; min-height: 0; background: #04100a; } main::before { display: none; } main { border: 0; box-shadow: none; background: none; border-radius: 0; padding: 4px 12px 20px; max-width: none; } .card { margin: 10px 0; }</style>' : ''}<main>
-  ${embed ? '' : tabs('accounts', isAdmin)}
+  const body = `${EMBED_STYLE}<main>
   <h1>${esc(tr('Contas'))}</h1>
   <p>${esc(tr('As contas são da instalação: os agentes de todos usam as contas conectadas aqui.'))}</p>
   ${section('claude', 'Claude Code', tr('Assinatura do Claude (Pro/Max) ou conta da Anthropic.'))}
@@ -585,8 +580,10 @@ export function createCloud(deps: CloudDeps): Cloud {
     }
     if (path === '/contas') {
       req.resume();
+      // A página só existe dentro da janela do app (iframe ?embed); aberta direto, leva ao app e abre a janela.
       if (!deps.connect?.()) redirect(res, '/');
-      else sendHtml(res, accountsPage(me.role === 'admin', url.searchParams.has('embed')), true);
+      else if (!url.searchParams.has('embed')) redirect(res, '/?painel=contas');
+      else sendHtml(res, accountsPage(me.role === 'admin'), true);
       return true;
     }
     if (path === '/api/cloud/me') {
@@ -633,7 +630,8 @@ export function createCloud(deps: CloudDeps): Cloud {
     }
     if (path === '/admin') {
       req.resume();
-      sendHtml(res, adminPage());
+      if (!url.searchParams.has('embed')) redirect(res, '/?painel=usuarios');
+      else sendHtml(res, adminPage());
       return true;
     }
     // Contas da instalação: só admin conecta.
