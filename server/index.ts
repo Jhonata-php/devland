@@ -356,6 +356,7 @@ function saveAttachments(id: string, files: readonly Attachment[]): string[] {
   if (!who) return writeAttachments(attachmentsRoot(), id, files);
   const root = join(who.home, '.habblaud', 'attachments');
   const paths = writeAttachments(root, id, files);
+  if (!paths.length) return paths; // sem anexos nada foi criado: não há o que entregar ao usuário dos agentes
   for (const p of [join(who.home, '.habblaud'), root, ...new Set(paths.map((f) => dirname(f))), ...paths]) chownSync(p, who.uid, who.gid);
   return paths;
 }
