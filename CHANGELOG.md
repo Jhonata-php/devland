@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **iPhone (app instalado): sem faixa vazia embaixo:** a altura do app passa a ser a da tela inteira quando o iOS informa uma janela menor (faltava a área do indicador de início).
 - **iPhone: o app segue a área visível da tela:** nas telas de toque as camadas do app (mapa, barras e painéis) acompanham o `visualViewport` (posição e altura reais da janela), em vez de ficarem presas a uma janela que o iOS desloca. Em Configurações › Sobre há o botão "Diagnóstico da tela", que mostra os números (janela, área visível, rolagem, áreas seguras, versão do iOS) para mandar em print se o app ainda sair do lugar.
 - **iPhone: o app não "sobe" mais:** a página agora fica presa à tela (`position: fixed`, `overscroll-behavior: none`, altura dinâmica `100dvh`) e uma trava devolve a rolagem a zero quando um campo ganha ou perde o foco, um seletor abre ou o teclado aparece. Antes o Safari deslocava o app para cima e deixava um vazio embaixo, com a barra de baixo flutuando.
 - **Conversas sem duplicar (celular):** a mesma conversa (conta + sessão) aparece uma vez só, mesmo depois de voltar numa reimplantação, e sessões que terminaram sem fazer nada (sem ferramenta e sem título, sobras de agente automático) saem da lista.
