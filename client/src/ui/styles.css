@@ -12202,7 +12202,7 @@ html.is-replay #world {
 @media (min-width: 601px) {
   .ui-usage { left: auto; right: 14px; top: calc(var(--top-h) + 6px); transition: right 0.32s var(--ease); }
   .has-sidebar .ui-usage { left: auto; }
-  .has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
+  .has-sidebar.has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
   .ui-usage-tip { left: auto; right: calc(100% + 10px); }
 }
 
@@ -12264,7 +12264,7 @@ html.is-replay #world {
   .has-sidebar .ui-topbar .ui-btn-sidebar { width: 36px; height: 36px; }
   .has-sidebar .ui-usage { left: auto; right: 14px; top: calc(var(--top-h) + 6px); flex-direction: column; }
   .has-sidebar .ui-usage-tip { left: auto; right: calc(100% + 10px); }
-  .has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
+  .has-sidebar.has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
 }
 
 /* Botão da lateral como o do WCAM: uma bolinha com seta presa na borda do trilho/painel (não é mais um quadrado grande).

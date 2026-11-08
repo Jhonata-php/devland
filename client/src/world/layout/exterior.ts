@@ -1,4 +1,4 @@
-// Área externa: grama, árvores, calçada e rua; pátio/jardim nos slots sem sala.
+// Área externa: grama, árvores, calçada e um passeio com jardim (sem rua nem carros); pátio/jardim nos slots sem sala.
 import type { WallStyle } from '../../art/api';
 import { mulberry32 } from '../../../../shared/hash';
 import { BUILDING_H, COL_W, CORE_COLS, CORRIDOR_Y, EXT_EAST, EXT_NORTH, EXT_SOUTH, EXT_WEST, SOUTH_Y, TILE } from '../constants';
@@ -41,8 +41,8 @@ export function layoutExterior(cols: number): ExteriorLayout {
   // calçada em volta do prédio
   const south = BUILDING_H;
   floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(south + 2), w: px(bounds.w), h: px(2), seed: 12 });
-  floors.push({ kind: 'street', x: px(bounds.x), y: px(south + 4), w: px(bounds.w), h: px(5), seed: 13 });
-  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(south + 9), w: px(bounds.w), h: px(2), seed: 14 });
+  // passeio do jardim (no lugar da antiga rua): uma trilha de pedra mais estreita, com canteiros e bancos dos dois lados
+  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(south + 6), w: px(bounds.w), h: px(1), seed: 13 });
   // caminho de pedra até a calçada, na frente da recepção
   floors.push({ kind: 'sidewalk', x: px(-3), y: px(CORRIDOR_Y), w: px(3), h: px(5), seed: 15 });
   floors.push({ kind: 'sidewalk', x: px(-3), y: px(CORRIDOR_Y + 5), w: px(2), h: px(south + 2 - CORRIDOR_Y - 5), seed: 16 });
@@ -83,6 +83,15 @@ export function layoutExterior(cols: number): ExteriorLayout {
   for (let x = bounds.x + 4; x < bounds.x + bounds.w; x += 10) {
     props.push({ kind: 'lamp', x: px(x), y: px(south + 3) + 6, seed: x });
   }
+  // canteiros floridos e bancos ao longo do passeio
+  for (let x = bounds.x + 2; x < bounds.x + bounds.w - 1; x += 3) {
+    props.push({ kind: (x % 9) === 0 ? 'bush' : 'flowers', x: px(x) + 4, y: px(south + 5) + 8, seed: x * 13 + 5 });
+    props.push({ kind: (x % 9) === 3 ? 'bush' : 'flowers', x: px(x) + 10, y: px(south + 8) + 4, seed: x * 17 + 9 });
+  }
+  for (let x = bounds.x + 7; x < bounds.x + bounds.w - 3; x += 12) {
+    props.push({ kind: 'bench', x: px(x), y: px(south + 7) + 10, seed: x });
+    props.push({ kind: 'lamp', x: px(x + 6), y: px(south + 7) + 6, seed: x + 1 });
+  }
   for (const row of [13, 17, 21]) {
     for (let x = bounds.x + 3; x < bounds.x + bounds.w - 2; x += 6 + Math.floor(rng() * 5)) {
       props.push({ kind: rng() < 0.2 ? 'pine' : 'tree', x: px(x) + Math.floor(rng() * 10), y: px(south + row) + Math.floor(rng() * 10), seed: Math.floor(rng() * 1e9) });
@@ -93,19 +102,8 @@ export function layoutExterior(cols: number): ExteriorLayout {
   // totem com a marca na entrada principal (oeste)
   props.push({ kind: 'totem', x: px(-3) + 6, y: px(CORRIDOR_Y + 1), seed: 2 });
 
-  const streetY = px(south + 4);
-  const streetH = px(5);
-  return {
-    bounds,
-    floors,
-    props,
-    lanes: [
-      { y: streetY + Math.round(streetH * 0.36), dir: 1 },
-      { y: streetY + Math.round(streetH * 0.86), dir: -1 },
-    ],
-    streetY,
-    streetH,
-  };
+  // ponytail: sem rua — os campos ficam vazios e o renderer não desenha faixas nem carros
+  return { bounds, floors, props, lanes: [], streetY: 0, streetH: 0 };
 }
 
 /** Parede externa + jardim de um slot vazio: deck de madeira com mesas e guarda-sóis, canteiros e caminho. */
