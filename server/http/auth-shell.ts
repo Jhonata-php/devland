@@ -218,7 +218,7 @@ export function authPage(o: AuthPageOptions): string {
 <meta name="theme-color" content="#050806">
 <title>${esc(o.title)}</title>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png?v=2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="${BRAND}">

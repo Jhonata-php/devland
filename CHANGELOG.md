@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Ícone da tela de início com fundo:** os ícones do app (iPhone e Android) agora têm um fundo escuro com brilho verde atrás da logo, em vez de transparente (que o iPhone pintava de preto chapado), mais uma versão "maskable" para o Android. A logo do topo e o favicon seguem sem fundo. Quem já adicionou à tela de início precisa remover e adicionar de novo para o iPhone atualizar o ícone.
 - **Sem sala "worktree" avulsa:** uma conversa dentro de um worktree do Claude Code ou do Codex (`projeto/.claude/worktrees/nome`) agora cai na sala do projeto, em todo o servidor (antes só a retomada depois da reimplantação era tratada).
 - **Chega de agente novo a cada abertura (Cloud):** o "primeiro agente automático" em `/workspace`, que nascia sempre que o servidor subia com o escritório vazio, agora vem desligado. O escritório vazio mostra "Abrir terminal" e "Conectar contas". Quem quiser o antigo comportamento define `HABBLAUD_AUTO_AGENT=1`.
 - **Logo nova, sem fundo:** o planeta com anel e prédio (arte em alta resolução, transparente) substitui a anterior no favicon, nos ícones do app (180, 192 e 512 px), no topo da lateral, na tela de carregamento e no login. O arquivo original fica em `scripts/assets/devland-logo-master.png`; tirei o `image-rendering: pixelated` da logo, que a deixaria serrilhada.
