@@ -10,6 +10,18 @@ describe('Conversas', () => {
     expect(list.map((a) => a.id)).toEqual(['b', 'a']);
   });
 
+  it('a mesma conversa aparece uma vez (fica a presente); sessão vazia e encerrada some', () => {
+    const a = (id: string, o: Partial<AgentInfo>) => ({ kind: 'main', account: '.claude', stats: { toolCalls: 3 }, title: 't', lastEventAt: 1, status: 'idle', ...o, id }) as AgentInfo;
+    const list = chatAgents([
+      a('velho', { sessionId: 's1', status: 'offline', lastEventAt: 90 }),
+      a('novo', { sessionId: 's1', status: 'idle', lastEventAt: 50 }),
+      a('outra', { sessionId: 's2', lastEventAt: 70 }),
+      a('vazia', { sessionId: 's3', title: undefined, stats: { toolCalls: 0 } as AgentInfo['stats'], status: 'done', lastEventAt: 99 }),
+      a('trabalhando-sem-titulo', { sessionId: 's4', title: undefined, stats: { toolCalls: 0 } as AgentInfo['stats'], status: 'working', lastEventAt: 10 }),
+    ]);
+    expect(list.map((x) => x.id)).toEqual(['outra', 'novo', 'trabalhando-sem-titulo']);
+  });
+
   it('o que vira balão, aviso ou linha de ferramenta', () => {
     const e = (x: object) => ({ id: '1', at: 1, ...x }) as TerminalEntry;
     expect(chatRole(e({ kind: 'user', text: 'oi' }))).toBe('me');

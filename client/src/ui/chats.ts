@@ -22,9 +22,28 @@ const RETRIES = 15;
 const RETRY_MS = 2_000;
 const MAX_ENTRIES = 400;
 
-/** Conversas principais (não subagentes), a mais recente primeiro. */
+/**
+ * Sessão que acabou sem fazer nada (nenhuma ferramenta, nenhum título, parada ou encerrada): sobra de agente automático ou de
+ * reimplantação, que só poluía a lista.
+ */
+const isEmptySession = (a: AgentInfo): boolean =>
+  !a.title && !!a.stats && a.stats.toolCalls === 0 && (a.status === 'offline' || a.status === 'idle' || a.status === 'done');
+
+/**
+ * Conversas principais (não subagentes), a mais recente primeiro. A mesma conversa (conta + sessão) aparece uma vez só: depois
+ * de uma reimplantação ela volta num processo novo e o antigo ficava na lista como encerrado. Fica o que está presente e, no
+ * empate, o mais recente.
+ */
 export function chatAgents(agents: readonly AgentInfo[]): AgentInfo[] {
-  return agents.filter((a) => a.kind === 'main').sort((a, b) => b.lastEventAt - a.lastEventAt);
+  const best = new Map<string, AgentInfo>();
+  for (const a of agents) {
+    if (a.kind !== 'main' || isEmptySession(a)) continue;
+    const key = a.sessionId ? `${a.account}:${a.sessionId}` : a.id;
+    const cur = best.get(key);
+    const better = !cur || (isPresent(a) && !isPresent(cur)) || (isPresent(a) === isPresent(cur) && a.lastEventAt > cur.lastEventAt);
+    if (better) best.set(key, a);
+  }
+  return [...best.values()].sort((a, b) => b.lastEventAt - a.lastEventAt);
 }
 
 /** O que cada entrada do transcript vira na conversa: balão, aviso ou linha de ferramenta (resultados e raciocínio não). */
