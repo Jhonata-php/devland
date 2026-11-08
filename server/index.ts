@@ -745,12 +745,13 @@ if (cloud && agentUser && ptys) {
     }, 3_000).unref(),
   );
   const liveBootAt = Date.now();
-  // Escritório vazio ao subir (nada para retomar, ou a retomada falhou): abre um primeiro agente em /workspace, como o botão
-  // "Abrir terminal", para o escritório já abrir funcionando. Só com uma conta do Claude conectada; HABBLAUD_AUTO_AGENT=0 desliga.
+  // Primeiro agente automático: DESLIGADO por padrão (criava um agente avulso em /workspace a cada reimplantação, e as pessoas
+  // reclamavam do agente "novo" a cada abertura). HABBLAUD_AUTO_AGENT=1 liga: com o escritório vazio ao subir, abre um agente
+  // em /workspace, como o botão "Abrir terminal". Só com uma conta do Claude conectada.
   void pluginsReady.then(() =>
     setTimeout(() => {
       // Se havia conversas para retomar, elas já estão voltando: o primeiro agente avulso só nasce com o escritório mesmo vazio.
-      if (process.env.HABBLAUD_AUTO_AGENT === '0' || liveNow().length > 0 || wasLive.length > 0) return;
+      if (process.env.HABBLAUD_AUTO_AGENT !== '1' || liveNow().length > 0 || wasLive.length > 0) return;
       if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
       try {
         ptys.create({ cwd: '/workspace' });
