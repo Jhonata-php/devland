@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Plugins no Cloud novo:** corrigido o erro "Plugin not found in marketplace" que aparecia numa instalação limpa (o servidor deixou de achar a própria pasta depois que o pacote virou `devland`). O prefixo do log agora é `[devland]` e o certificado local do celular se chama "DevLand local CA".
 - **Nome DevLand em todo lugar:** textos da tela, notificações, ajuda, mensagens do servidor e dos plugins, manuais e nome do pacote passam a dizer DevLand. O "Habblaud World", as variáveis `HABBLAUD_*`, as pastas em `~/.habblaud` e o nome da imagem no GitHub continuam como estavam, para não quebrar instalações existentes.
 - **Salas de projeto com visual DevLand:** piso de tapete escuro (grafite, azul-noite, vinho...) e paredes escuras com um neon diferente por sala (verde, roxo, ciano, âmbar, rosa...); mesas e cadeiras escuras. As decorações de Natal/Halloween agora vêm desligadas por padrão (dá para ligar em Ajustes › Aparência).
 - **Mapa sem rua nem carros:** no lugar da rua há um passeio de jardim com trilha de pedra, canteiros floridos, bancos e postes.
