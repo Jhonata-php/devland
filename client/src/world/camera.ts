@@ -28,10 +28,8 @@ export function overviewFrame(
   const r = { x: building.x - TILE / 2, y: building.y - 1.5 * TILE, w: building.w + TILE, h: building.h + 3.5 * TILE };
   const freeW = Math.max(80, viewW - insets.left - insets.right - 2 * m.side);
   const freeH = Math.max(80, viewH - insets.top - insets.bottom - m.top - m.bottom);
-  // Celular em pé: o prédio é largo e sobrava muito gramado em cima e embaixo; aproxima 25% (as pontas laterais ficam
-  // para arrastar) para as salas e os personagens ficarem legíveis.
-  const portrait = freeH > freeW * 1.4;
-  const zoom = Math.min(freeW / r.w * (portrait ? 1.25 : 1), freeH / r.h);
+  // Celular em pé: o prédio inteiro cabe na largura (antes aproximava 25% e cortava as salas das pontas; nada de cortar rótulos).
+  const zoom = Math.min(freeW / r.w, freeH / r.h);
   return { zoom, cx: r.x + r.w / 2, cy: r.y + r.h / 2, dy: (m.top - m.bottom) / 2 };
 }
 

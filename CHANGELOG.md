@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Mapa no celular mostra o prédio inteiro:** tirei a aproximação de 25% que cortava as salas das pontas e os rótulos.
+- **SMTP reconhece mais nomes de variável:** além de `SMTP_*`, valem `MAIL_*` e `EMAIL_*` (host, usuário, senha, remetente, porta), com ou sem o prefixo `HABBLAUD_`.
 - **Placa da recepção com o nome novo:** a placa pixelada do mapa dizia "Habblaud"; agora diz "DevLand" (o gerador `scripts/assets/pixelart.py` ainda desenhava o nome antigo por baixo).
 - **Entrada só por e-mail e convite direto por e-mail (Cloud):** a tela de login pede o e-mail (contas antigas, sem e-mail, ainda entram pelo nome até cadastrarem um). Em Usuários o admin preenche e-mail, nome e permissão (Usuário ou Admin) e o convite sai direto para o e-mail da pessoa, sem mostrar link; a conta nasce com esse e-mail e o nome sugerido. Precisa do SMTP configurado; se o envio falhar, o convite é desfeito.
 - **Janela de Usuários refeita:** pessoas em cartões (inicial, nome, e-mail, papel, permissões em botões), convite em cartão próprio e janela do tamanho do conteúdo.

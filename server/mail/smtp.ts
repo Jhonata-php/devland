@@ -1,6 +1,6 @@
 // Envio de e-mail por SMTP, sem dependências (node:net e node:tls). Serve só para o "esqueci a senha" do Cloud: uma
 // mensagem de texto por vez, autenticação PLAIN/LOGIN, TLS implícito (porta 465) ou STARTTLS (587 e outras).
-// Configuração pelo ambiente (o nome com HABBLAUD_ vale mais que o genérico):
+// Configuração pelo ambiente (o nome com HABBLAUD_ vale mais que o genérico; apelidos MAIL_* e EMAIL_* também valem):
 //   SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS (ou SMTP_PASSWORD), SMTP_FROM (padrão: SMTP_USER), SMTP_SECURE (1 = TLS implícito)
 import { randomBytes } from 'node:crypto';
 import net from 'node:net';
@@ -28,15 +28,22 @@ export interface Mailer {
 const TIMEOUT_MS = 15_000;
 
 export function mailConfigFromEnv(env: NodeJS.ProcessEnv = process.env): MailConfig | undefined {
-  const pick = (k: string) => (env[`HABBLAUD_${k}`] ?? env[k])?.trim() || undefined;
-  const host = pick('SMTP_HOST');
+  // Cada item aceita o nome com HABBLAUD_ na frente e os apelidos mais comuns (SMTP_*, MAIL_*, EMAIL_*).
+  const pick = (...names: string[]) => {
+    for (const n of names) {
+      const v = (env[`HABBLAUD_${n}`] ?? env[n])?.trim();
+      if (v) return v;
+    }
+    return undefined;
+  };
+  const host = pick('SMTP_HOST', 'SMTP_SERVER', 'MAIL_HOST', 'EMAIL_HOST');
   if (!host) return undefined;
-  const port = Number(pick('SMTP_PORT') ?? 587);
-  const user = pick('SMTP_USER');
-  const from = pick('SMTP_FROM') ?? user;
+  const port = Number(pick('SMTP_PORT', 'MAIL_PORT', 'EMAIL_PORT') ?? 587);
+  const user = pick('SMTP_USER', 'SMTP_USERNAME', 'MAIL_USER', 'MAIL_USERNAME', 'EMAIL_USER');
+  const from = pick('SMTP_FROM', 'SMTP_FROM_EMAIL', 'MAIL_FROM', 'EMAIL_FROM') ?? user;
   if (!from || !Number.isInteger(port) || port < 1 || port > 65535) return undefined;
-  const secureEnv = pick('SMTP_SECURE');
-  return { host, port, user, pass: pick('SMTP_PASS') ?? pick('SMTP_PASSWORD'), from, secure: secureEnv ? /^(1|true|yes|on)$/i.test(secureEnv) : port === 465 };
+  const secureEnv = pick('SMTP_SECURE', 'SMTP_SSL', 'MAIL_SECURE');
+  return { host, port, user, pass: pick('SMTP_PASS', 'SMTP_PASSWORD', 'MAIL_PASSWORD', 'EMAIL_PASSWORD'), from, secure: secureEnv ? /^(1|true|yes|on)$/i.test(secureEnv) : port === 465 };
 }
 
 export function mailerFromEnv(env: NodeJS.ProcessEnv = process.env): Mailer | undefined {

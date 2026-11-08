@@ -46,6 +46,7 @@ describe('smtp', () => {
       host: 'smtp.x.com', port: 465, user: 'a@x.com', pass: 'p', from: 'a@x.com', secure: true,
     });
     expect(mailConfigFromEnv({ SMTP_HOST: 'h', SMTP_PORT: '587' })).toBeUndefined(); // sem remetente
+    expect(mailConfigFromEnv({ MAIL_HOST: 'smtp.y.com', MAIL_USERNAME: 'b@y.com', MAIL_PASSWORD: 'q', EMAIL_FROM: 'DevLand <b@y.com>' })).toEqual({ host: 'smtp.y.com', port: 587, user: 'b@y.com', pass: 'q', from: 'DevLand <b@y.com>', secure: false }); // apelidos
   });
 
   it('envia uma mensagem (envelope, assunto em UTF-8 e corpo em base64)', async () => {
