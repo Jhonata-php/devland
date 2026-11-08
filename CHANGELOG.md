@@ -12,6 +12,10 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Entrada só por e-mail e convite por e-mail (Cloud):** a tela de login pede o e-mail (contas antigas, sem e-mail, ainda entram pelo nome até cadastrarem um). O admin digita o e-mail da pessoa em Usuários e o link do convite vai para ele por e-mail (com SMTP); a conta nasce com esse e-mail. Sem SMTP, o link aparece para copiar.
+- **Janela de Usuários refeita:** pessoas em cartões (inicial, nome, e-mail, papel, permissões em botões), convite em cartão próprio e janela do tamanho do conteúdo.
+- **Corrigido (causa de vários bugs visuais):** o minificador de CSS do build (lightningcss) apagava `backdrop-filter: none`; por isso a barra do topo ficava borrada e o trilho "fixed" da lateral ficava preso à altura dela. O build agora usa o esbuild para o CSS.
+- **Agentes depois da reimplantação:** conversas que demoram a voltar não saem mais da lista guardada nos primeiros 5 minutos, e o agente avulso "primeiro agente" não nasce mais quando já havia conversas para retomar.
 - **Janelas Contas e Usuários mais enxutas:** no computador a janela é mais estreita e tem a altura do conteúdo (sem o vazio embaixo); sem o título repetido dentro da página; permissões viram botões de marcar (chips) em vez de texto em maiúsculas.
 - **X para fechar "O escritório está vazio":** o cartão ganha um X no canto; fechado, só volta quando o escritório tiver agentes e esvaziar de novo.
 - **Esqueci a senha por e-mail (Cloud):** a tela de login ganha o link "Esqueci a senha"; a pessoa digita o e-mail, recebe um link que vale 30 minutos e só funciona uma vez, escolhe a senha nova e as sessões abertas caem. A resposta é a mesma exista a conta ou não. O envio usa o SMTP do ambiente (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_SECURE`; com o prefixo `HABBLAUD_` também vale), sem dependência nova; sem SMTP o link não aparece.

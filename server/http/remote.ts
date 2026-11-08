@@ -449,7 +449,7 @@ export function loginPage(opts: { caDownload: boolean; intro?: string; forgot?: 
 <form id="f" autocomplete="on" novalidate>
   <div id="err" class="alert err" role="alert"></div>
   <label class="l" for="u">${esc(tr('E-mail'))}</label>
-  <div class="field">${ICON.user}<input id="u" name="username" type="text" inputmode="email" placeholder="${esc(tr('seu@email.com ou usuário'))}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
+  <div class="field">${ICON.user}<input id="u" name="username" type="email" inputmode="email" placeholder="${esc(tr('seu@email.com'))}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
   <label class="l" for="p">${esc(tr('Senha'))}</label>
   <div class="field">${ICON.lock}<input id="p" name="password" type="password" autocomplete="current-password" required>
     <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">${ICON.eye}</button></div>
@@ -642,7 +642,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       if (go) {
         res.writeHead(302, { Location: go, 'Cache-Control': 'no-store' });
         res.end();
-      } else sendHtml(res, loginPage({ caDownload: caAvailable(), forgot: !!cloud?.forgotEnabled?.(), intro: cloud ? tr('Entre com seu usuário e senha do DevLand.') : undefined }));
+      } else sendHtml(res, loginPage({ caDownload: caAvailable(), forgot: !!cloud?.forgotEnabled?.(), intro: cloud ? tr('Entre com o seu e-mail e a senha do DevLand.') : undefined }));
       return true;
     }
 

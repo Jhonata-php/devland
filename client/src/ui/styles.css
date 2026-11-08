@@ -12381,7 +12381,7 @@ body::before {
 
 /* Janelas do Cloud no computador: mais estreitas e do tamanho do conteúdo (a página dentro avisa a altura). */
 @media (min-width: 641px) {
-  .ui-accounts { width: min(660px, 94vw); height: auto; max-height: 86vh; }
+  .ui-accounts { width: min(660px, 94vw); height: fit-content; max-height: 86vh; }
   .ui-accounts__frame { flex: none; height: 360px; min-height: 200px; }
   .ui-accounts__head h2 { font-size: 13px; }
 }

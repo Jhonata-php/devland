@@ -77,7 +77,7 @@ describe('UserStore', () => {
 });
 
 describe('entrada por e-mail', () => {
-  it('entra por e-mail (qualquer caixa) ou usuário; e-mail é único e validado', async () => {
+  it('entra só por e-mail (qualquer caixa); só conta antiga, sem e-mail, ainda entra pelo nome; e-mail é único e validado', async () => {
     const { mkdtempSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
@@ -85,9 +85,24 @@ describe('entrada por e-mail', () => {
     const u = await store.create('ana', 'senha-bem-longa', 'admin', [], 'Ana@Exemplo.com');
     expect(u.email).toBe('ana@exemplo.com');
     expect((await store.verify('ANA@exemplo.com', 'senha-bem-longa'))?.id).toBe(u.id);
-    expect((await store.verify('ana', 'senha-bem-longa'))?.id).toBe(u.id);
+    expect(await store.verify('ana', 'senha-bem-longa')).toBeUndefined();
+    const legado = await store.create('lia', 'senha-bem-longa', 'user', []);
+    expect((await store.verify('lia', 'senha-bem-longa'))?.id).toBe(legado.id);
     expect(await store.verify('ana@exemplo.com', 'errada')).toBeUndefined();
     await expect(store.create('bia', 'senha-bem-longa', 'user', [], 'ana@exemplo.com')).rejects.toThrow();
     await expect(store.create('caio', 'senha-bem-longa', 'user', [], 'sem-arroba')).rejects.toThrow();
+  });
+
+  it('convite por e-mail: a conta nasce com o e-mail do convite, mesmo que digitem outro; e-mail que já tem conta é recusado', async () => {
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const store = new UserStore(join(mkdtempSync(join(tmpdir(), 'usr-')), 'users.json'), Date.now, 10);
+    const admin = await store.create('ana', 'senha-bem-longa', 'admin', [], 'ana@exemplo.com');
+    expect(() => store.createInvite('user', [], admin.id, 'ANA@exemplo.com')).toThrow();
+    const { token } = store.createInvite('user', [], admin.id, 'Bia@Exemplo.com');
+    expect(store.inviteEmail(token)).toBe('bia@exemplo.com');
+    const bia = await store.acceptInvite(token, 'bia', 'senha-bem-longa', 'outro@exemplo.com');
+    expect(bia.email).toBe('bia@exemplo.com');
   });
 });

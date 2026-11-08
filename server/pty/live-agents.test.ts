@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { dedupeLive, loadLiveAgents, MAX_RESUME, saveLiveAgents } from './live-agents';
+import { dedupeLive, loadLiveAgents, MAX_RESUME, RESUME_GRACE_MS, saveLiveAgents, withResuming } from './live-agents';
 
 describe('agentes ativos guardados para retomar depois da reimplantação', () => {
   it('grava e lê, ignorando entradas inválidas e limitando a quantidade', () => {
@@ -25,5 +25,16 @@ describe('agentes ativos guardados para retomar depois da reimplantação', () =
   it('worktree volta para a raiz do projeto e a conversa repetida some', () => {
     const a = { account: '.claude', sessionId: 'a1b2c3d4-e5f6-7890', cwd: '/workspace/site/.claude/worktrees/fix' };
     expect(dedupeLive([a, { ...a, cwd: '/workspace/site' }])).toEqual([{ ...a, cwd: '/workspace/site' }]);
+  });
+});
+
+describe('withResuming', () => {
+  const a = { account: 'a', sessionId: 'aaaaaaaa', cwd: '/w/a' };
+  const b = { account: 'a', sessionId: 'bbbbbbbb', cwd: '/w/b' };
+  it('nos primeiros minutos a conversa que ainda está voltando não sai da lista', () => {
+    expect(withResuming([a], [a, b], 60_000).map((x) => x.sessionId)).toEqual(['aaaaaaaa', 'bbbbbbbb']);
+  });
+  it('depois do prazo vale só o que está vivo', () => {
+    expect(withResuming([a], [a, b], RESUME_GRACE_MS).map((x) => x.sessionId)).toEqual(['aaaaaaaa']);
   });
 });

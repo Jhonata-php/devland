@@ -12,6 +12,19 @@ export interface LiveAgent {
 }
 
 export const MAX_RESUME = 6;
+/** Depois de subir, as conversas retomadas (`claude --resume` demora) levam um tempo até aparecerem no escritório. */
+export const RESUME_GRACE_MS = 5 * 60_000;
+
+/**
+ * Lista a guardar. Nos primeiros minutos depois de subir, quem estava na lista anterior e ainda não apareceu continua nela:
+ * sem isso, a primeira foto (que sai antes de a retomada terminar) apagava as conversas lentas e elas sumiam do escritório
+ * na reimplantação seguinte.
+ */
+export function withResuming(now: readonly LiveAgent[], was: readonly LiveAgent[], sinceBootMs: number): LiveAgent[] {
+  if (sinceBootMs >= RESUME_GRACE_MS) return [...now];
+  const seen = new Set(now.map((a) => a.sessionId));
+  return dedupeLive([...now, ...was.filter((a) => !seen.has(a.sessionId))]);
+}
 
 /**
  * Pasta de worktree do Claude Code (<projeto>/.claude/worktrees/<nome>) volta para a raiz do projeto: a conversa nasceu

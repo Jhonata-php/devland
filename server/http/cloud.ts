@@ -184,11 +184,11 @@ ${script}
 }
 
 /** Formulário simples que manda JSON e, se der certo, vai para "/". */
-function formPage(opts: { title: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string }[]; endpoint: string; submit: string; extra?: Record<string, string>; done?: string; foot?: string }): string {
+function formPage(opts: { title: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string; value?: string; readonly?: boolean }[]; endpoint: string; submit: string; extra?: Record<string, string>; done?: string; foot?: string }): string {
   const icon = (f: { id: string; type?: string }) => (f.type === 'password' ? ICON.lock : ICON.user);
   const fields = opts.fields
     .map((f) => `<label class="l" for="${f.id}">${esc(f.label)}</label>
-  <div class="field">${icon(f)}<input id="${f.id}" name="${f.id}" type="${f.type ?? 'text'}" autocomplete="${f.auto ?? 'off'}" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>`)
+  <div class="field">${icon(f)}<input id="${f.id}" name="${f.id}" type="${f.type ?? 'text'}" autocomplete="${f.auto ?? 'off'}" autocapitalize="none" autocorrect="off" spellcheck="false"${f.value ? ` value="${esc(f.value)}"` : ''}${f.readonly ? ' readonly' : ''} required></div>`)
     .join('\n  ');
   const card = `<h1>${BRAND}</h1>
 <p class="sub">${esc(opts.intro)}</p>
@@ -250,8 +250,32 @@ const EMBED_STYLE = `<style>
   button { font-size: 14px; padding: 10px 16px; margin-top: 12px; width: auto; }
   button.small { padding: 7px 12px; margin: 0; font-size: 13px; }
   .row { margin-top: 12px; }
-  @media (max-width: 640px) { main { padding: 10px 14px 24px; } table { display: block; overflow-x: auto; } }
-</style><script>(function () { function post() { parent.postMessage({ devlandEmbedH: document.body.scrollHeight }, location.origin); } new ResizeObserver(post).observe(document.body); addEventListener('load', post); })();</script>`;
+  [hidden] { display: none !important; }
+  .users { display: grid; gap: 10px; }
+  .inv #invite { margin-top: 14px; }
+  .card.person { margin: 0; padding: 12px 14px; }
+  .u { display: flex; align-items: center; gap: 12px; }
+  .av { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; color: #04100a; background: linear-gradient(160deg, #39ff88, #19c76a); }
+  .who { flex: 1; min-width: 0; display: grid; }
+  .who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who small { color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { margin-left: 8px; padding: 1px 8px; font-size: 11px; font-weight: 600; color: var(--cy); border: 1px solid rgba(77, 225, 255, .45); border-radius: 99px; }
+  .perms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .perms label { padding: 4px 10px; font-size: 12px; }
+  .chip { padding: 4px 10px; font-size: 12px; border-radius: 99px; border: 1px solid var(--line); color: var(--mut); }
+  .chip.on { color: #39ff88; border-color: rgba(57, 255, 136, .5); }
+  button.danger:hover { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255, 107, 107, .08); }
+  .inv .row { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
+  .inv .row input { flex: 1; min-width: 0; }
+  .fl { margin: 0; font-size: 12px; color: var(--mut); }
+  .out { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; align-items: center; }
+  .out input { min-width: 0; padding: 9px 10px; font-size: 12px; }
+  .out small { grid-column: 1 / -1; color: var(--mut); }
+  .sess p { margin: 0 0 4px; font-size: 13px; color: var(--mut); }
+  #err { margin-top: 12px; min-height: 18px; font-size: 13px; color: var(--bad); text-align: left; }
+  #err.ok { color: #39ff88; }
+  @media (max-width: 640px) { main { padding: 10px 14px 24px; } .u { flex-wrap: wrap; } .who { flex: 1 1 60%; } }
+</style><script>addEventListener('DOMContentLoaded', function () { var m = document.querySelector('main'); function post() { parent.postMessage({ devlandEmbedH: m.offsetHeight + 4 }, location.origin); } new ResizeObserver(post).observe(m); post(); });</script>`;
 
 function adminPage(): string {
   const labels = featureLabels();
@@ -265,18 +289,24 @@ function adminPage(): string {
     expires: tr('Vale por 7 dias e uma vez só.'),
     failed: tr('Não deu certo.'),
     allPerms: tr('todas'),
+    sentTo: tr('Convite enviado para {0}.'),
+    notSent: tr('Convite criado, mas o e-mail não foi enviado (SMTP desligado ou com erro). Copie o link e envie você mesmo.'),
   };
   const body = `${EMBED_STYLE}<main>
   <h1>${esc(tr('Usuários'))}</h1>
   <p>${esc(tr('Todos veem o escritório inteiro; as permissões dizem o que cada um pode fazer nele.'))}</p>
-  <table><thead><tr><th>${esc(tr('Nome'))}</th><th>${esc(tr('Papel'))}</th><th>${esc(tr('Permissões'))}</th><th></th></tr></thead><tbody id="users"></tbody></table>
+  <h2>${esc(tr('Pessoas'))}</h2>
+  <div id="users" class="users"></div>
   <h2>${esc(tr('Convidar'))}</h2>
-  <div class="row"><select id="irole"><option value="user">${esc(t.user)}</option><option value="admin">${esc(t.admin)}</option></select></div>
-  <fieldset id="iperms">${FEATURES.map((f) => `<label><input type="checkbox" value="${f}"${f === 'permissions' ? ' checked' : ''}> ${esc(labels[f])}</label>`).join('')}</fieldset>
-  <button id="invite" class="small">${esc(tr('Gerar link de convite'))}</button>
-  <p id="out" hidden><span id="link"></span><br><button id="copy" class="small ghost">${esc(tr('Copiar'))}</button> ${esc(t.expires)}</p>
-  <h2>${esc(tr('Este aparelho'))}</h2>
-  <button id="all" class="small ghost">${esc(tr('Sair de todos os aparelhos'))}</button>
+  <div class="card inv">
+    <div class="row"><label class="fl" for="iemail">${esc(tr('E-mail da pessoa'))}</label><input id="iemail" type="email" autocomplete="off" placeholder="${esc(tr('nome@empresa.com'))}"></div>
+    <div class="row"><label class="fl" for="irole">${esc(tr('Papel'))}</label><select id="irole"><option value="user">${esc(t.user)}</option><option value="admin">${esc(t.admin)}</option></select></div>
+    <fieldset id="iperms">${FEATURES.map((f) => `<label><input type="checkbox" value="${f}"${f === 'permissions' ? ' checked' : ''}> ${esc(labels[f])}</label>`).join('')}</fieldset>
+    <button id="invite" class="small">${esc(tr('Enviar convite por e-mail'))}</button>
+    <div id="out" class="out" hidden><input id="link" readonly aria-label="${esc(tr('Link de convite'))}"><button id="copy" class="small ghost" type="button">${esc(tr('Copiar'))}</button><small id="outnote"></small></div>
+  </div>
+  <h2>${esc(tr('Esta sessão'))}</h2>
+  <div class="card sess"><p>${esc(tr('Encerra o seu login em todos os aparelhos (celular, outros navegadores).'))}</p><button id="all" class="small ghost">${esc(tr('Sair de todos os aparelhos'))}</button></div>
   <div id="err" role="alert"></div>
 </main>`;
   const script = `const T = ${JSON.stringify(t).replace(/</g, '\\u003c')}, L = ${JSON.stringify(labels).replace(/</g, '\\u003c')}, F = ${JSON.stringify(FEATURES)};
@@ -291,30 +321,38 @@ function adminPage(): string {
   const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
   async function load() {
     const { users, me } = await call('GET', '/api/cloud/users');
-    const tb = $('users'); tb.replaceChildren();
+    const box = $('users'); box.replaceChildren();
     for (const u of users) {
       const role = el('select', {}, el('option', { value: 'user', textContent: T.user }), el('option', { value: 'admin', textContent: T.admin }));
       role.value = u.role;
       role.onchange = () => call('PATCH', '/api/cloud/users/' + u.id, { role: role.value }).then(load, load);
-      const perms = el('td');
-      if (u.role === 'admin') perms.textContent = T.allPerms;
+      const rm = el('button', { className: 'small ghost danger', textContent: T.remove });
+      rm.onclick = () => { if (confirm(T.confirmRemove.replace('{0}', u.name))) call('DELETE', '/api/cloud/users/' + u.id).then(load, load); };
+      const who = el('div', { className: 'who' }, el('b', { textContent: u.name }), el('small', { textContent: u.email || '' }));
+      if (u.id === me) who.firstChild.append(el('span', { className: 'badge', textContent: T.you.replace(/[()]/g, '') }));
+      const row = el('div', { className: 'u' }, el('span', { className: 'av', textContent: u.name.slice(0, 1).toUpperCase() }), who, role, rm);
+      const perms = el('div', { className: 'perms' });
+      if (u.role === 'admin') perms.append(el('span', { className: 'chip on', textContent: T.allPerms }));
       else for (const f of F) {
         const cb = el('input', { type: 'checkbox', checked: u.allow.includes(f) });
         cb.onchange = () => call('PATCH', '/api/cloud/users/' + u.id, { allow: F.filter((x, i) => perms.querySelectorAll('input')[i].checked) }).catch(load);
         perms.append(el('label', {}, cb, ' ' + L[f]));
       }
-      const rm = el('button', { className: 'small ghost', textContent: T.remove });
-      rm.onclick = () => { if (confirm(T.confirmRemove.replace('{0}', u.name))) call('DELETE', '/api/cloud/users/' + u.id).then(load, load); };
-      tb.append(el('tr', {}, el('td', { textContent: u.name + (u.email ? ' · ' + u.email : '') + (u.id === me ? ' ' + T.you : '') }), el('td', {}, role), perms, el('td', {}, rm)));
+      box.append(el('div', { className: 'card person' }, row, perms));
     }
   }
   $('irole').onchange = () => { $('iperms').hidden = $('irole').value === 'admin'; };
   $('invite').onclick = async () => {
     const allow = [...$('iperms').querySelectorAll('input:checked')].map((i) => i.value);
-    const { path } = await call('POST', '/api/cloud/invites', { role: $('irole').value, allow });
-    $('link').textContent = location.origin + path; $('out').hidden = false;
+    const email = $('iemail').value.trim();
+    const { path, sent } = await call('POST', '/api/cloud/invites', { role: $('irole').value, allow, email });
+    $('link').value = location.origin + path;
+    // Com SMTP o link já foi para o e-mail; sem ele (ou se o envio falhou) o admin copia e manda por onde quiser.
+    $('out').hidden = !!sent; $('outnote').textContent = T.expires;
+    err.textContent = sent ? T.sentTo.replace('{0}', email) : T.notSent; err.className = sent ? 'ok' : '';
+    if (sent) $('iemail').value = ''; else $('link').select();
   };
-  $('copy').onclick = () => navigator.clipboard?.writeText($('link').textContent).then(() => { err.textContent = T.copied; });
+  $('copy').onclick = () => navigator.clipboard?.writeText($('link').value).then(() => { err.textContent = T.copied; err.className = 'ok'; });
   $('all').onclick = async () => { await call('POST', '/api/cloud/logout-all', {}); location.replace('/login'); };
   load().catch(() => {});`;
   return shell(tr('DevLand · usuários'), body, script);
@@ -520,7 +558,7 @@ export function createCloud(deps: CloudDeps): Cloud {
               intro: tr('Primeiro acesso: crie a conta de admin. O código de instalação aparece no Velix, em Credenciais do app, e no log do container.'),
               fields: [
                 { id: 'code', label: tr('Código de instalação') },
-                { id: 'name', label: tr('Usuário'), auto: 'username' },
+                { id: 'name', label: tr('Nome'), auto: 'name' },
                 { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email' },
                 { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
                 { id: 'password2', label: tr('Repita a senha'), type: 'password', auto: 'new-password' },
@@ -650,8 +688,8 @@ export function createCloud(deps: CloudDeps): Cloud {
               title: tr('DevLand · convite'),
               intro: tr('Você foi convidado para o DevLand. Escolha seu usuário e senha.'),
               fields: [
-                { id: 'name', label: tr('Usuário'), auto: 'username' },
-                { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email' },
+                { id: 'name', label: tr('Nome'), auto: 'name' },
+                { id: 'email', label: tr('E-mail'), type: 'email', auto: 'email', value: store.inviteEmail(invite[1]), readonly: !!store.inviteEmail(invite[1]) },
                 { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
                 { id: 'password2', label: tr('Repita a senha'), type: 'password', auto: 'new-password' },
               ],
@@ -803,9 +841,26 @@ export function createCloud(deps: CloudDeps): Cloud {
     }
     if (path === '/api/cloud/invites' && method === 'POST') {
       json(req)
-        .then((body) => {
-          const { token, expiresAt } = store.createInvite(role(body.role) ?? 'user', cleanAllow(body.allow), me.id);
-          sendJson(res, 200, { path: `/convite/${token}`, expiresAt });
+        .then(async (body) => {
+          const email = str(body.email).trim();
+          if (!email) throw new UserError(tr('Digite o e-mail da pessoa.'));
+          const { token, expiresAt } = store.createInvite(role(body.role) ?? 'user', cleanAllow(body.allow), me.id, email);
+          const path = `/convite/${token}`;
+          let sent = false;
+          if (deps.mailer) {
+            const link = `${deps.secure(req) ? 'https' : 'http'}://${req.headers.host ?? ''}${path}`;
+            try {
+              await deps.mailer.send({
+                to: email.toLowerCase(),
+                subject: tr('Convite para o DevLand'),
+                text: tr('Olá!\n\n{0} convidou você para o DevLand, o escritório virtual dos agentes de IA. Para criar a sua conta, abra o link abaixo (vale por 7 dias e só funciona uma vez):\n\n{1}\n\nSe você não esperava este convite, ignore este e-mail.\n', [me.name, link]),
+              });
+              sent = true;
+            } catch (err) {
+              deps.warn?.(tr('Não deu para enviar o e-mail do convite: {0}', [err instanceof Error ? err.message : String(err)]));
+            }
+          }
+          sendJson(res, 200, { path, expiresAt, sent });
         })
         .catch((err) => fail(res, err));
       return true;

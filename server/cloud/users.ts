@@ -38,6 +38,8 @@ export interface Invite {
   allow: RemoteFeature[];
   expiresAt: number;
   createdBy: string;
+  /** E-mail de quem foi convidado: o link vai para ele e a conta nasce com esse e-mail. */
+  email?: string;
 }
 
 /** O que sai pela API (sem o hash da senha). */
@@ -127,7 +129,9 @@ export class UserStore {
   /** Confere e-mail (ou usuário) e senha; o scrypt roda mesmo sem o usuário. */
   async verify(login: string, password: string): Promise<User | undefined> {
     const id = login.trim();
-    const user = id.includes('@') ? this.byEmail(id.toLowerCase()) : this.byName(id);
+    // A entrada é pelo e-mail. Só contas antigas, criadas antes de existir e-mail, ainda entram pelo nome.
+    const byName = id.includes('@') ? undefined : this.byName(id);
+    const user = id.includes('@') ? this.byEmail(id.toLowerCase()) : byName && !byName.email ? byName : undefined;
     this.dummy ??= hashPassword(randomBytes(16).toString('hex'), this.logN);
     const hash = parsePasswordHash(user?.passwordHash ?? (await this.dummy));
     const ok = !!hash && (await verifyPassword(password, hash));
@@ -184,11 +188,13 @@ export class UserStore {
     this.save();
   }
 
-  createInvite(role: Role, allow: RemoteFeature[], createdBy: string): { token: string; expiresAt: number } {
+  createInvite(role: Role, allow: RemoteFeature[], createdBy: string, email?: string): { token: string; expiresAt: number } {
+    const mail = email === undefined ? undefined : this.cleanEmail(email);
+    if (mail && this.byEmail(mail)) throw new UserError(tr('Esse e-mail já tem conta.'));
     const token = randomBytes(32).toString('base64url');
     const expiresAt = this.now() + INVITE_MS;
     this.prune();
-    this.data.invites.push({ hash: sha256(token), role, allow: role === 'admin' ? [...FEATURES] : cleanAllow(allow), expiresAt, createdBy });
+    this.data.invites.push({ hash: sha256(token), role, allow: role === 'admin' ? [...FEATURES] : cleanAllow(allow), expiresAt, createdBy, ...(mail ? { email: mail } : {}) });
     this.save();
     return { token, expiresAt };
   }
@@ -197,13 +203,18 @@ export class UserStore {
     return !!this.findInvite(token);
   }
 
+  /** E-mail para o qual o convite foi mandado (a conta nasce com ele). */
+  inviteEmail(token: string): string | undefined {
+    return this.findInvite(token)?.email;
+  }
+
   async acceptInvite(token: string, name: string, password: string, email?: string): Promise<User> {
     const invite = this.findInvite(token);
     if (!invite) throw new UserError(tr('Convite inválido, vencido ou já usado.'));
     // Gasta o convite antes do scrypt: duas aberturas ao mesmo tempo não criam duas contas.
     this.data.invites = this.data.invites.filter((i) => i !== invite);
     try {
-      return await this.create(name, password, invite.role, invite.allow, email);
+      return await this.create(name, password, invite.role, invite.allow, invite.email ?? email);
     } catch (err) {
       this.data.invites.push(invite);
       this.save();

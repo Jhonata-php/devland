@@ -17,6 +17,9 @@ export default defineConfig({
     // para client/public (nomes fixos, revalidados a cada acesso). Ver server/http/static.ts.
     assetsDir: 'bundle',
     assetsInlineLimit: 0,
+    // O minificador padrão do Vite 8 (lightningcss) apaga `backdrop-filter: none` quando vem junto de `-webkit-backdrop-filter: none`:
+    // a barra do topo ficava borrada e prendia o trilho `fixed` da lateral. O esbuild mantém as duas.
+    cssMinify: 'esbuild',
     rollupOptions: { input: { main: r('./client/index.html') } },
   },
   server: {

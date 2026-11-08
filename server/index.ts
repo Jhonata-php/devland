@@ -49,7 +49,7 @@ import { createBuildReader, readBuildInfo } from './build';
 import { ensureDevLandPlugins } from './accounts/plugins';
 import { PushService } from './push/service';
 import { pickAccountByLoad } from './pty/pick-account';
-import { dedupeLive, loadLiveAgents, saveLiveAgents, type LiveAgent } from './pty/live-agents';
+import { dedupeLive, loadLiveAgents, saveLiveAgents, withResuming, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
 import { stageVersion } from './updates/self-update';
@@ -749,7 +749,8 @@ if (cloud && agentUser && ptys) {
   // "Abrir terminal", para o escritório já abrir funcionando. Só com uma conta do Claude conectada; HABBLAUD_AUTO_AGENT=0 desliga.
   void pluginsReady.then(() =>
     setTimeout(() => {
-      if (process.env.HABBLAUD_AUTO_AGENT === '0' || liveNow().length > 0) return;
+      // Se havia conversas para retomar, elas já estão voltando: o primeiro agente avulso só nasce com o escritório mesmo vazio.
+      if (process.env.HABBLAUD_AUTO_AGENT === '0' || liveNow().length > 0 || wasLive.length > 0) return;
       if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
       try {
         ptys.create({ cwd: '/workspace' });
@@ -763,7 +764,7 @@ if (cloud && agentUser && ptys) {
     // Só depois de as conversas retomadas aparecerem (senão a foto perderia quem ainda está voltando).
     if (!persistLive || shuttingDown || Date.now() - liveBootAt < 45_000) return;
     try {
-      saveLiveAgents(liveFile, liveNow());
+      saveLiveAgents(liveFile, withResuming(liveNow(), wasLive, Date.now() - liveBootAt));
     } catch (err) {
       log.warnOnce('live-agents', tr('Não deu para guardar os agentes ativos: {0}', [errMsg(err)]));
     }
