@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **iPhone: o app não "sobe" mais:** a página agora fica presa à tela (`position: fixed`, `overscroll-behavior: none`, altura dinâmica `100dvh`) e uma trava devolve a rolagem a zero quando um campo ganha ou perde o foco, um seletor abre ou o teclado aparece. Antes o Safari deslocava o app para cima e deixava um vazio embaixo, com a barra de baixo flutuando.
 - **Conversas sem duplicar (celular):** a mesma conversa (conta + sessão) aparece uma vez só, mesmo depois de voltar numa reimplantação, e sessões que terminaram sem fazer nada (sem ferramenta e sem título, sobras de agente automático) saem da lista.
 - **Ícone da tela de início com fundo:** os ícones do app (iPhone e Android) agora têm um fundo escuro com brilho verde atrás da logo, em vez de transparente (que o iPhone pintava de preto chapado), mais uma versão "maskable" para o Android. A logo do topo e o favicon seguem sem fundo. Quem já adicionou à tela de início precisa remover e adicionar de novo para o iPhone atualizar o ícone.
 - **Sem sala "worktree" avulsa:** uma conversa dentro de um worktree do Claude Code ou do Codex (`projeto/.claude/worktrees/nome`) agora cai na sala do projeto, em todo o servidor (antes só a retomada depois da reimplantação era tratada).

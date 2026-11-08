@@ -32,8 +32,10 @@
     <meta name="apple-mobile-web-app-title" content="DevLand" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #12151d; }
-      #world, #city, #visit { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; image-rendering: pixelated; }
+      /* Página presa à tela: no iPhone, só overflow:hidden não impede o navegador de rolar o app sozinho (campo focado, seletor). */
+      html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; background: #12151d; }
+      html, body { position: fixed; inset: 0; width: 100%; }
+      #world, #city, #visit { position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh; display: block; image-rendering: pixelated; }
       #world[hidden], #city[hidden], #visit[hidden] { display: none; }
       #ui { position: fixed; inset: 0; pointer-events: none; }
       #ui > * { pointer-events: auto; }
