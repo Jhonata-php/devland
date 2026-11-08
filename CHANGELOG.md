@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Logo nova, sem fundo:** o planeta com anel e prédio (arte em alta resolução, transparente) substitui a anterior no favicon, nos ícones do app (180, 192 e 512 px), no topo da lateral, na tela de carregamento e no login. O arquivo original fica em `scripts/assets/devland-logo-master.png`; tirei o `image-rendering: pixelated` da logo, que a deixaria serrilhada.
 - **Mapa no celular mostra o prédio inteiro:** tirei a aproximação de 25% que cortava as salas das pontas e os rótulos.
 - **SMTP reconhece mais nomes de variável:** além de `SMTP_*`, valem `MAIL_*` e `EMAIL_*` (host, usuário, senha, remetente, porta), com ou sem o prefixo `HABBLAUD_`.
 - **Placa da recepção com o nome novo:** a placa pixelada do mapa dizia "Habblaud"; agora diz "DevLand" (o gerador `scripts/assets/pixelart.py` ainda desenhava o nome antigo por baixo).

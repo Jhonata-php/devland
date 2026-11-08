@@ -39,7 +39,7 @@ export const AUTH_STYLE = `<style>
   .crt::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55)); }
   header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: max(18px, calc(env(safe-area-inset-top) + 8px)) 20px 0; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: .04em; color: var(--acc); text-shadow: 0 0 14px rgba(57,255,136,.55); }
-  .mark { width: 38px; height: 38px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(57,255,136,.55)); }
+  .mark { width: 38px; height: 38px; filter: drop-shadow(0 0 10px rgba(57,255,136,.55)); }
   
   .clock { display: none; align-items: center; gap: 8px; font-size: 12px; color: var(--mut); font-variant-numeric: tabular-nums; }
   .clock::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 8px var(--acc); animation: pulse 1.6s infinite; }

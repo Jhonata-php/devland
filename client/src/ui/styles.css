@@ -702,7 +702,6 @@
 .ui-brand__mark img {
   width: 32px;
   height: 32px;
-  image-rendering: pixelated;
 }
 
 .ui-brand__mark .ui-mark {
@@ -12282,7 +12281,7 @@ html.is-replay #world {
   .has-sidebar .ui-topbar .ui-btn-sidebar { left: calc(var(--side-w) - 12px); width: 24px; height: 24px; }
   .has-sidebar .ui-topbar .ui-btn-sidebar::before { content: '‹'; }
   .ui-brand__mark { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
-  .ui-brand__mark img, .ui-brand img { width: 40px; height: 40px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(57, 255, 136, 0.35)); }
+  .ui-brand__mark img, .ui-brand img { width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(57, 255, 136, 0.35)); }
   .ui-topbar__left { padding-top: 14px; }
   .ui-usage { top: 78px; }
   .has-sidebar .ui-topbar__left { flex-direction: row; justify-content: flex-start; padding: 0 14px; }

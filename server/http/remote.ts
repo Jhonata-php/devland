@@ -407,7 +407,7 @@ export const PAGE_STYLE = `<style>
   form { width: 100%; max-width: 380px; background: linear-gradient(180deg, #1c2030, var(--card)); border: 2px solid var(--line); border-radius: 14px;
          padding: 28px 24px 24px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05); }
   .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 18px; text-align: center; }
-  .brand img { width: 72px; height: 72px; image-rendering: pixelated; filter: drop-shadow(0 6px 14px rgba(244, 201, 93, .25)); }
+  .brand img { width: 72px; height: 72px; filter: drop-shadow(0 6px 14px rgba(244, 201, 93, .25)); }
   h1 { margin: 0; font-size: 24px; letter-spacing: .5px; color: var(--gold); }
   p { margin: 0 0 18px; color: var(--mut); font-size: 13px; }
   .brand p { margin: 0; }
