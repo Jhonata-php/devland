@@ -178,6 +178,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Marca cortada na lateral em janelas menores:** até ~1040 px de largura, regras antigas escondiam o nome ou o punham por cima do logo; agora o trilho recolhido mostra o logo, a bolinha e os anéis com fundo de cima a baixo, e aberto mostra o logo e `DEVLAND_` lado a lado em qualquer largura.
 - **Bolinha da lateral recolhida espremida:** uma regra antiga a esticava para 48 px de altura; agora é redonda (26 px), entre o logo e os anéis de uso, que ganharam mais espaço.
 - **Revisão visual:** avisos de alerta com fundo sólido (o texto de trás aparecia); no celular um aviso por vez e nenhum por cima da caixa de mensagem dentro de uma conversa; a função do agente nas Conversas virou etiqueta pequena (ocupava a largura toda); a barra de baixo acende Ajustes quando os ajustes estão abertos; a Prévia ao vivo não cobre mais o trilho da esquerda.
 - **Atualização nativa não encontrava o pacote da versão nova (404):** a imagem principal era publicada antes do pacote `dist-`, e o servidor via a versão nova antes de o pacote existir. Agora o pacote sai primeiro.

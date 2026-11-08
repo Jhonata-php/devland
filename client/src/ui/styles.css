@@ -12319,3 +12319,34 @@ body::before {
   .ui-usage { top: 100px; gap: 12px; }
   .ui-topbar__left { align-items: center; }
 }
+
+/* ===== Marca e trilho da lateral: regra final (computador, todas as larguras) =====
+   Substitui as tentativas anteriores e as regras antigas de largura que escondiam ou giravam o nome. */
+@media (min-width: 601px) {
+  .ui-root .ui-topbar__left {
+    position: fixed; z-index: 56; left: 0; top: 0; bottom: 0; right: auto; width: var(--rail-w); height: auto; margin: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0; padding: 14px 0 0;
+    background: linear-gradient(180deg, rgba(5, 14, 9, 0.98), rgba(3, 9, 5, 0.96));
+    border: 0; border-right: 1px solid var(--ui-line-strong); border-radius: 0; box-shadow: 10px 0 30px -14px rgba(0, 0, 0, 0.7);
+    backdrop-filter: none; -webkit-backdrop-filter: none; overflow: visible;
+  }
+  .ui-root .ui-topbar__left .ui-brand { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 0; border: 0; width: auto; }
+  .ui-root .ui-topbar__left .ui-brand__text { display: none !important; }
+  .ui-root .ui-topbar__left .ui-brand__mark, .ui-root .ui-topbar__left .ui-brand img { width: 38px; height: 38px; flex: none; }
+  .ui-root.has-sidebar .ui-topbar__left {
+    bottom: auto; width: var(--side-w); height: var(--top-h); flex-direction: row; justify-content: flex-start; padding: 0 16px;
+    border-bottom: 1px solid var(--ui-line); box-shadow: none;
+  }
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__text { display: flex !important; align-items: center; }
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__text .ui-topbar__status { display: none !important; }
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__name {
+    display: inline-flex !important; writing-mode: horizontal-tb !important; font-size: 17px; letter-spacing: 0.12em; white-space: nowrap;
+  }
+  .ui-root.has-sidebar .ui-topbar__left .ui-wordtext__cur { margin: 0 0 0 2px; }
+  /* A lista abre logo abaixo do cabeçalho; o "~/escritório" dela não repete a marca. */
+  .ui-root .ui-sidebar { top: var(--top-h); left: 0; }
+}
+@media (min-width: 601px) {
+  /* Nas larguras menores uma regra antiga punha o texto da marca em posição absoluta, por cima do logo. */
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__text { position: static !important; inset: auto !important; transform: none !important; }
+}
