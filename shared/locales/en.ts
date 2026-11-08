@@ -3544,4 +3544,5 @@ export const EN: Readonly<Record<string, string>> = {
   "Para convidar, configure o envio de e-mail (SMTP) desta instalação.": "To invite people, set up email sending (SMTP) for this installation.",
   "Permissão": "Permission",
   "como vai aparecer": "how it will show up",
+  "Diagnóstico da tela": "Screen diagnostics",
 };

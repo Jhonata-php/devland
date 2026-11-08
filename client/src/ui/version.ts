@@ -4,6 +4,7 @@
 import type { Notice, OfficeSnapshot, UpdateStatus } from '../../../shared/types';
 import type { UiComponent, UiContext } from './context';
 import { h, setAttr, setHidden, setText, setTitle, setVariant } from './dom';
+import { viewportReport } from './scrolllock';
 import { formatDateTime, relativeTime } from './format';
 import { pixelIcon } from './icons';
 import { safeLocalStorage } from './prefs';
@@ -125,6 +126,7 @@ export class AboutGroup {
   private name: HTMLElement;
   private status: HTMLElement;
   private checkBtn: HTMLButtonElement;
+  private diag: HTMLButtonElement;
   private fresh: HTMLElement;
   private notes: HTMLAnchorElement;
   private repo: HTMLAnchorElement;
@@ -201,6 +203,7 @@ export class AboutGroup {
       h('button', { class: 'ui-btn ui-btn--sm ui-btn--accent', type: 'button', text: tr('Salvar'), on: { click: () => void this.saveCfg() } }),
       this.cfgMsg,
     ) as HTMLDetailsElement;
+    this.diag = h('button', { class: 'ui-link-btn', type: 'button', text: tr('Diagnóstico da tela'), on: { click: () => window.alert(viewportReport()) } });
     this.repo = h('a', { class: 'ui-link-btn', text: tr('Código no GitHub'), attrs: { target: '_blank', rel: 'noopener noreferrer' } });
     this.el = h(
       'div',
@@ -211,7 +214,7 @@ export class AboutGroup {
       this.fresh,
       this.autoRow,
       this.cfg,
-      this.repo,
+      h('div', { class: 'ui-about__links' }, this.diag, this.repo),
     );
   }
 

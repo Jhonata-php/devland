@@ -1,9 +1,10 @@
 // Ponto de entrada do cliente: primeiro o dicionário do idioma ativo (só ele vai para o navegador), depois o app
 // (client/src/app.ts), porque vários módulos chamam tr() ao carregar. Se o dicionário não carregar, fica em português.
 import { getLocale, registerDictionary, type Locale } from '../../shared/i18n';
-import { lockPageScroll } from './ui/scrolllock';
+import { followVisualViewport, lockPageScroll } from './ui/scrolllock';
 
 lockPageScroll();
+followVisualViewport();
 
 const LOADERS: Partial<Record<Locale, () => Promise<Readonly<Record<string, string>>>>> = {
   en: () => import('../../shared/locales/en').then((m) => m.EN),

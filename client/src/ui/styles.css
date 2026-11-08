@@ -12384,3 +12384,6 @@ body::before {
   .ui-accounts__frame { flex: none; height: 360px; min-height: 200px; }
   .ui-accounts__head h2 { font-size: 13px; }
 }
+
+/* Sobre: o diagnóstico da tela e o link do código lado a lado, com espaço. */
+.ui-about__links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
