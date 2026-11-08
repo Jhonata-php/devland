@@ -3,6 +3,7 @@
 // Sem login: /setup (criar o admin, com o código de instalação que sai no log) e /convite/<token> (aceitar convite).
 // Com login: /admin (só admin) e /api/cloud/*. Quem pode o quê no escritório: `allows(req, feature)`, pela lista do
 // usuário (cloud/users.ts).
+import type { Mailer } from '../mail/smtp';
 import { randomBytes } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getLocale, tr } from '../../shared/i18n';
@@ -26,6 +27,10 @@ import {
 
 export interface CloudDeps {
   store: UserStore;
+  /** E-mail (SMTP do ambiente) para o "esqueci a senha"; ausente = recurso desligado. */
+  mailer?: Mailer;
+  /** Falhas de envio (o usuário não vê o motivo, para não revelar quem tem conta). */
+  warn?: (msg: string) => void;
   sessions: RemoteSessions;
   secure: (req: IncomingMessage) => boolean;
   throttle?: LoginThrottle;
@@ -179,7 +184,7 @@ ${script}
 }
 
 /** Formulário simples que manda JSON e, se der certo, vai para "/". */
-function formPage(opts: { title: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string }[]; endpoint: string; submit: string; extra?: Record<string, string> }): string {
+function formPage(opts: { title: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string }[]; endpoint: string; submit: string; extra?: Record<string, string>; done?: string; foot?: string }): string {
   const icon = (f: { id: string; type?: string }) => (f.type === 'password' ? ICON.lock : ICON.user);
   const fields = opts.fields
     .map((f) => `<label class="l" for="${f.id}">${esc(f.label)}</label>
@@ -191,7 +196,8 @@ function formPage(opts: { title: string; intro: string; fields: { id: string; la
   <div id="err" class="alert err" role="alert"></div>
   ${fields}
   <button id="b" class="btn" type="submit"><span class="spin" aria-hidden="true"></span><span>${esc(opts.submit)}</span></button>
-</form>`;
+</form>
+<p id="done" class="sub" hidden role="status"></p>${opts.foot ? `\n<p class="sub">${opts.foot}</p>` : ''}`;
   const script = `(function () {
   const f = document.getElementById('f'), b = document.getElementById('b'), err = document.getElementById('err');
   const ids = ${JSON.stringify(opts.fields.map((x) => x.id))}, extra = ${JSON.stringify(opts.extra ?? {}).replace(/</g, '\\u003c')};
@@ -204,7 +210,9 @@ function formPage(opts: { title: string; intro: string; fields: { id: string; la
     for (const id of ids) if (id !== 'password2') body[id] = f[id].value;
     try {
       const r = await fetch(${js(opts.endpoint)}, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) });
-      if (r.ok) { location.replace('/'); return; }
+      if (r.ok) {
+        ${opts.done ? `f.hidden = true; const d = document.getElementById('done'); d.textContent = ${js(opts.done)}; d.hidden = false; return;` : `location.replace('/'); return;`}
+      }
       const j = await r.json().catch(() => ({}));
       fail(j.error || ${js(tr('Não deu certo.'))});
     } catch { fail(${js(tr('Sem conexão com o DevLand.'))}); }
@@ -478,6 +486,7 @@ export function createCloud(deps: CloudDeps): Cloud {
       return (await store.verify(name, password))?.id;
     },
     needsSetup: () => store.isEmpty(),
+    forgotEnabled: () => !!deps.mailer,
     publicRoute(req, res, url) {
       const path = url.pathname;
       const method = req.method ?? 'GET';
@@ -523,6 +532,89 @@ export function createCloud(deps: CloudDeps): Cloud {
           const admin = await store.create(str(body.name), str(body.password), 'admin', [], str(body.email));
           code = undefined;
           signIn(req, res, admin.id);
+          return true;
+        });
+        return true;
+      }
+      if (path === '/esqueci') {
+        req.resume();
+        if (!deps.mailer) {
+          sendHtml(res, shell(tr('DevLand · esqueci a senha'), `<form><h1>DevLand</h1><p>${esc(tr('O envio de e-mail não está configurado nesta instalação. Peça a quem administra o DevLand para redefinir a sua senha.'))}</p><a href="/login">${esc(tr('Voltar ao login'))}</a></form>`, ''));
+        } else
+          sendHtml(
+            res,
+            formPage({
+              title: tr('DevLand · esqueci a senha'),
+              intro: tr('Digite o e-mail da sua conta. Se ele existir, enviamos um link para escolher uma senha nova (vale por 30 minutos).'),
+              fields: [{ id: 'login', label: tr('E-mail'), type: 'email', auto: 'email' }],
+              endpoint: '/api/cloud/forgot',
+              submit: tr('Enviar link'),
+              done: tr('Se esse e-mail tem uma conta, o link já está a caminho. Confira também o spam.'),
+              foot: `<a href="/login">${esc(tr('Voltar ao login'))}</a>`,
+            }),
+          );
+        return true;
+      }
+      if (path === '/api/cloud/forgot') {
+        if (method !== 'POST') {
+          req.resume();
+          sendJson(res, 405, { error: tr('método não permitido') }, { Allow: 'POST' });
+          return true;
+        }
+        guarded(req, res, async (body) => {
+          if (!deps.mailer) {
+            sendJson(res, 404, { error: tr('O envio de e-mail não está configurado nesta instalação.') });
+            return false;
+          }
+          // Resposta igual exista a conta ou não (não revela quem tem conta); o e-mail sai em segundo plano.
+          const user = store.findForReset(str(body.login));
+          if (user?.email) {
+            const { token } = store.createReset(user.id);
+            const link = `${deps.secure(req) ? 'https' : 'http'}://${req.headers.host ?? ''}/redefinir/${token}`;
+            void deps.mailer
+              .send({
+                to: user.email,
+                subject: tr('DevLand: redefinir a senha'),
+                text: tr('Olá, {0}.\n\nPara escolher uma senha nova no DevLand, abra o link abaixo (vale por 30 minutos e só funciona uma vez):\n\n{1}\n\nSe não foi você que pediu, ignore este e-mail: a sua senha continua a mesma.\n', [user.name, link]),
+              })
+              .catch((err) => deps.warn?.(tr('Não deu para enviar o e-mail de redefinição: {0}', [err instanceof Error ? err.message : String(err)])));
+          }
+          sendJson(res, 200, { ok: true });
+          return true;
+        });
+        return true;
+      }
+      const reset = /^\/redefinir\/([A-Za-z0-9_-]{1,64})$/.exec(path);
+      if (reset) {
+        req.resume();
+        if (!store.resetValid(reset[1])) {
+          sendHtml(res, shell(tr('DevLand · redefinir a senha'), `<form><h1>DevLand</h1><p>${esc(tr('Link inválido, vencido ou já usado. Peça um novo.'))}</p><a href="/esqueci">${esc(tr('Pedir um link novo'))}</a></form>`, ''));
+        } else
+          sendHtml(
+            res,
+            formPage({
+              title: tr('DevLand · senha nova'),
+              intro: tr('Escolha a sua senha nova.'),
+              fields: [
+                { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
+                { id: 'password2', label: tr('Repita a senha'), type: 'password', auto: 'new-password' },
+              ],
+              endpoint: '/api/cloud/reset',
+              submit: tr('Salvar senha'),
+              extra: { token: reset[1] },
+            }),
+          );
+        return true;
+      }
+      if (path === '/api/cloud/reset') {
+        if (method !== 'POST') {
+          req.resume();
+          sendJson(res, 405, { error: tr('método não permitido') }, { Allow: 'POST' });
+          return true;
+        }
+        guarded(req, res, async (body) => {
+          const user = await store.resetPassword(str(body.token), str(body.password));
+          signIn(req, res, user.id);
           return true;
         });
         return true;

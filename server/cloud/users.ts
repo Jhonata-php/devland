@@ -16,6 +16,8 @@ export const PASSWORD_MIN = 10;
 export const NAME_RE = /^[\p{L}\p{N}._-]{2,32}$/u;
 export const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 export const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
+/** Link de "esqueci a senha": vale por 30 min e uma vez só. */
+export const RESET_MS = 30 * 60 * 1000;
 
 export interface User {
   id: string;
@@ -41,9 +43,17 @@ export interface Invite {
 /** O que sai pela API (sem o hash da senha). */
 export type PublicUser = Omit<User, 'passwordHash' | 'epoch'>;
 
+export interface Reset {
+  /** SHA-256 (hex) do token. */
+  hash: string;
+  userId: string;
+  expiresAt: number;
+}
+
 interface FileData {
   users: User[];
   invites: Invite[];
+  resets?: Reset[];
 }
 
 export class UserError extends Error {}
@@ -61,7 +71,7 @@ export function allowedOf(user: Pick<User, 'role' | 'allow'>): Set<RemoteFeature
 }
 
 export class UserStore {
-  private data: FileData = { users: [], invites: [] };
+  private data: FileData = { users: [], invites: [], resets: [] };
   /** Hash de verdade para conferir quando o usuário não existe (o scrypt roda igual: não denuncia quem existe). */
   private dummy?: Promise<string>;
 
@@ -72,7 +82,7 @@ export class UserStore {
   ) {
     try {
       const raw = JSON.parse(readFileSync(file, 'utf8')) as Partial<FileData>;
-      this.data = { users: Array.isArray(raw.users) ? raw.users : [], invites: Array.isArray(raw.invites) ? raw.invites : [] };
+      this.data = { users: Array.isArray(raw.users) ? raw.users : [], invites: Array.isArray(raw.invites) ? raw.invites : [], resets: Array.isArray(raw.resets) ? raw.resets : [] };
     } catch {
       // sem arquivo: instalação nova
     }
@@ -207,6 +217,54 @@ export class UserStore {
     return this.data.invites.find((i) => i.hash === hash && i.expiresAt > this.now());
   }
 
+  /** Quem tem este e-mail (ou, se vier um nome de usuário, esse usuário), desde que tenha e-mail para receber o link. */
+  findForReset(login: string): User | undefined {
+    const id = login.trim();
+    const user = id.includes('@') ? this.byEmail(id.toLowerCase()) : this.byName(id);
+    return user?.email ? user : undefined;
+  }
+
+  /** Token novo de redefinição de senha (um por usuário: o anterior deixa de valer). */
+  createReset(userId: string): { token: string; expiresAt: number } {
+    const token = randomBytes(32).toString('base64url');
+    const expiresAt = this.now() + RESET_MS;
+    this.prune();
+    this.data.resets = (this.data.resets ?? []).filter((r) => r.userId !== userId);
+    this.data.resets.push({ hash: sha256(token), userId, expiresAt });
+    this.save();
+    return { token, expiresAt };
+  }
+
+  resetValid(token: string): boolean {
+    return !!this.findReset(token);
+  }
+
+  /** Troca a senha com o token (uso único), derruba as sessões abertas e devolve o usuário. */
+  async resetPassword(token: string, password: string): Promise<User> {
+    const reset = this.findReset(token);
+    if (!reset) throw new UserError(tr('Link inválido, vencido ou já usado. Peça um novo.'));
+    if (password.length < PASSWORD_MIN) throw new UserError(tr('A senha precisa ter pelo menos {0} caracteres.', [PASSWORD_MIN]));
+    const user = this.get(reset.userId);
+    if (!user) throw new UserError(tr('Link inválido, vencido ou já usado. Peça um novo.'));
+    // Gasta o token antes do scrypt: dois envios ao mesmo tempo não valem os dois.
+    this.data.resets = (this.data.resets ?? []).filter((r) => r !== reset);
+    try {
+      user.passwordHash = await hashPassword(password, this.logN);
+    } catch (err) {
+      this.data.resets.push(reset);
+      throw err;
+    }
+    user.epoch++;
+    this.save();
+    return user;
+  }
+
+  private findReset(token: string): Reset | undefined {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return undefined;
+    const hash = sha256(token);
+    return (this.data.resets ?? []).find((r) => r.hash === hash && r.expiresAt > this.now());
+  }
+
   private byName(name: string): User | undefined {
     const key = name.toLowerCase();
     return this.data.users.find((u) => u.name.toLowerCase() === key);
@@ -219,6 +277,7 @@ export class UserStore {
   private prune(): void {
     const now = this.now();
     this.data.invites = this.data.invites.filter((i) => i.expiresAt > now);
+    this.data.resets = (this.data.resets ?? []).filter((r) => r.expiresAt > now);
   }
 
   private save(): void {

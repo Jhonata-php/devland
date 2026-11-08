@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { UserStore } from '../cloud/users';
+import type { Mail, Mailer } from '../mail/smtp';
 import { setQuiet } from '../log';
 import { tempDir } from '../test/fixtures';
 import { createCloud, userKeyOf } from './cloud';
@@ -14,11 +15,11 @@ afterEach(async () => {
   for (const c of closers.splice(0)) await c();
 });
 
-async function setup(now = () => Date.now()) {
+async function setup(now = () => Date.now(), mailer?: Mailer) {
   const t = tempDir();
   const store = new UserStore(join(t.dir, 'users.json'), now, 10);
   const sessions = new RemoteSessions(Buffer.alloc(32, 7), { user: '', passwordHashText: '' }, now, undefined, userKeyOf(store));
-  const cloud = createCloud({ store, sessions, secure: (req) => req.headers['x-forwarded-proto'] === 'https', setupCode: 'AAAA-BBBB-CCCC' });
+  const cloud = createCloud({ store, sessions, secure: (req) => req.headers['x-forwarded-proto'] === 'https', setupCode: 'AAAA-BBBB-CCCC', mailer });
   const gate = createRemoteGate({ sessions, secure: (req) => req.headers['x-forwarded-proto'] === 'https', cloud: cloud.gate });
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://x');
@@ -60,6 +61,41 @@ describe('DevLand Cloud', () => {
     expect((await call('/', { cookie: ok.cookie })).text).toBe('escritorio terminal=true admin=true');
     expect((await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'eve', password: 'senha-bem-longa' } })).status).toBe(409);
     expect((await call('/setup')).location).toBe('/login');
+  });
+
+  it('esqueci a senha: link por e-mail troca a senha uma vez só; resposta igual para e-mail que não existe', async () => {
+    const sent: Mail[] = [];
+    const { call } = await setup(undefined, { send: async (m) => void sent.push(m) });
+    await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } });
+    expect((await call('/login')).text).toContain('/esqueci');
+    expect((await call('/esqueci')).text).toContain('/api/cloud/forgot');
+    const nobody = await call('/api/cloud/forgot', { body: { login: 'ninguem@exemplo.com' } });
+    expect(nobody.status).toBe(200);
+    expect(sent).toHaveLength(0);
+    expect((await call('/api/cloud/forgot', { body: { login: 'Ana@Exemplo.com' }, headers: { Host: 'devland.test', 'X-Forwarded-Proto': 'https' } })).status).toBe(200);
+    await new Promise((ok) => setTimeout(ok, 10));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to).toBe('ana@exemplo.com');
+    const path = /https:\/\/[^/\s]+(\/redefinir\/[A-Za-z0-9_-]{43})/.exec(sent[0].text)?.[1];
+    expect(path).toBeTruthy();
+    expect((await call(path!)).text).toContain('/api/cloud/reset');
+    const token = path!.split('/').pop();
+    expect((await call('/api/cloud/reset', { body: { token, password: 'curta' } })).status).toBe(400);
+    const ok = await call('/api/cloud/reset', { body: { token, password: 'senha-nova-bem-longa' } });
+    expect(ok.status).toBe(200);
+    expect(ok.cookie).toBeTruthy();
+    expect((await call('/api/cloud/reset', { body: { token, password: 'outra-senha-longa' } })).status).toBe(400);
+    expect((await call('/api/remote/login', { body: { user: 'ana', password: 'senha-bem-longa' } })).status).toBe(401);
+    expect((await call('/api/remote/login', { body: { user: 'ana@exemplo.com', password: 'senha-nova-bem-longa' } })).status).toBe(200);
+    expect((await call(path!)).text).toContain('Link inválido');
+  });
+
+  it('sem SMTP o /login não mostra o link e o /esqueci explica', async () => {
+    const { call } = await setup();
+    await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } });
+    expect((await call('/login')).text).not.toContain('/esqueci');
+    expect((await call('/esqueci')).text).toContain('não está configurado');
+    expect((await call('/api/cloud/forgot', { body: { login: 'ana@exemplo.com' } })).status).toBe(404);
   });
 
   it('convite cria usuário com as permissões escolhidas; usuário comum não administra', async () => {

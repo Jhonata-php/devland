@@ -439,7 +439,7 @@ export const PAGE_STYLE = `<style>
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>`;
 
-export function loginPage(opts: { caDownload: boolean; intro?: string }): string {
+export function loginPage(opts: { caDownload: boolean; intro?: string; forgot?: boolean }): string {
   const ca = opts.caDownload
     ? `<p class="help">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="habblaud-ca.crt">${esc(tr('Instale o certificado do DevLand'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
     : '';
@@ -455,6 +455,7 @@ export function loginPage(opts: { caDownload: boolean; intro?: string }): string
     <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">${ICON.eye}</button></div>
   <button id="b" class="btn" type="submit"><span class="spin" aria-hidden="true"></span><span id="bt">${esc(tr('Entrar'))}</span></button>
 </form>
+${opts.forgot ? `<p class="help"><a href="/esqueci">${esc(tr('Esqueci a senha'))}</a></p>` : ''}
 ${ca}`;
   const script = `
   (function () {
@@ -506,6 +507,8 @@ export interface CloudGate {
   login(name: string, password: string): Promise<string | undefined>;
   /** Ainda sem nenhum usuário: a entrada é a tela de criar o admin. */
   needsSetup(): boolean;
+  /** O "esqueci a senha" por e-mail está ligado (SMTP configurado). */
+  forgotEnabled?(): boolean;
   /** Rotas sem login (criar admin, aceitar convite); true quando já respondeu. */
   publicRoute(req: IncomingMessage, res: ServerResponse, url: URL): boolean;
 }
@@ -639,7 +642,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       if (go) {
         res.writeHead(302, { Location: go, 'Cache-Control': 'no-store' });
         res.end();
-      } else sendHtml(res, loginPage({ caDownload: caAvailable(), intro: cloud ? tr('Entre com seu usuário e senha do DevLand.') : undefined }));
+      } else sendHtml(res, loginPage({ caDownload: caAvailable(), forgot: !!cloud?.forgotEnabled?.(), intro: cloud ? tr('Entre com seu usuário e senha do DevLand.') : undefined }));
       return true;
     }
 

@@ -25,6 +25,7 @@ import { TIMELINE_DIR, TimelineRecorder } from './history/timeline';
 import { DayStatsService } from './history/daystats';
 import { describeStateMigration, legacyEnvWarning, migrateLegacyStateDir } from './legacy';
 import { errMsg, log } from './log';
+import { mailerFromEnv, mailConfigFromEnv } from './mail/smtp';
 import { NameStore } from './model/names';
 import { Office } from './model/office';
 import { RoomAliases } from './model/room-aliases';
@@ -214,6 +215,8 @@ const cloud = cloudStore && remoteSessions ? createCloud({
       store: cloudStore,
       sessions: remoteSessions,
       secure: viaHttps,
+      mailer: mailerFromEnv(),
+      warn: (m) => log.warnOnce(`reset-mail:${m}`, m),
       setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined,
       connect: () => late.connect,
     }) : undefined;
@@ -619,6 +622,8 @@ if (config.remote) {
   remoteListener.server.once('listening', () => {
     if (cloud) {
       log.info(tr('   DevLand Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).', [remote.port]));
+      const smtp = mailConfigFromEnv();
+      log.info(smtp ? tr('   Esqueci a senha: ligado (e-mail por {0}:{1}).', [smtp.host, smtp.port]) : tr('   Esqueci a senha: desligado (defina SMTP_HOST, SMTP_USER, SMTP_PASS e SMTP_FROM para enviar o e-mail).'));
       const code = cloud.setupCode();
       if (code) log.info(tr('   DevLand Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}', [code]));
       return;
