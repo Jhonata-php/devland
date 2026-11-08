@@ -12350,3 +12350,14 @@ body::before {
   /* Nas larguras menores uma regra antiga punha o texto da marca em posição absoluta, por cima do logo. */
   .ui-root.has-sidebar .ui-topbar__left .ui-brand__text { position: static !important; inset: auto !important; transform: none !important; }
 }
+@media (min-width: 601px) {
+  /* Fundo do trilho num elemento próprio, preso à tela: não depende de nenhum painel acima (no servidor real ele ficava
+     só atrás do logo). O bloco da marca fica transparente quando recolhido. */
+  .ui-root::before {
+    content: ''; position: fixed; z-index: 54; left: 0; top: 0; bottom: 0; width: var(--rail-w); pointer-events: none;
+    background: linear-gradient(180deg, rgba(5, 14, 9, 0.98), rgba(3, 9, 5, 0.96));
+    border-right: 1px solid var(--ui-line-strong); box-shadow: 10px 0 30px -14px rgba(0, 0, 0, 0.7);
+  }
+  .ui-root.has-sidebar::before { display: none; }
+  .ui-root:not(.has-sidebar) .ui-topbar__left { background: none; border-right: 0; box-shadow: none; }
+}
