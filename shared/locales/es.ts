@@ -3549,8 +3549,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Resposta enviada ao agente.": "Respuesta enviada al agente.",
   "Não deu para responder daqui: abra o DevLand.": "No se pudo responder desde aquí: abre DevLand.",
   "DevLand — uso do plano": "DevLand — uso del plan",
-  "📊 {0} usou {1}% da sessão de 5 horas.": "📊 {0} usó el {1}% de la sesión de 5 horas.",
-  "📊 {0} usou {1}% do limite da semana.": "📊 {0} usó el {1}% del límite semanal.",
   "   Ditado: Whisper local.": "   Dictado: Whisper local.",
   "   Ditado: API da OpenAI (o áudio vai para a OpenAI).": "   Dictado: API de OpenAI (el audio va a OpenAI).",
   "   Ditado: desligado (defina OPENAI_API_KEY para transcrever pela OpenAI).": "   Dictado: desactivado (define OPENAI_API_KEY para transcribir con OpenAI).",
@@ -4047,4 +4045,8 @@ export const ES: Readonly<Record<string, string>> = {
   "O projeto não está em nenhuma branch.": "El proyecto no está en ninguna rama.",
   "Não deu para salvar as alterações (commit).": "No se pudieron guardar los cambios (commit).",
   "Não deu para enviar ao GitHub. Confira se a conta do GitHub está conectada e se você pode escrever neste repositório.": "No se pudo enviar a GitHub. Comprueba que la cuenta de GitHub esté conectada y que puedas escribir en este repositorio.",
+  "📊 {0} chegou a {1}% da sessão de 5 horas. Avisamos de novo quando renovar.": "📊 {0} llegó al {1}% de la sesión de 5 horas. Avisaremos de nuevo cuando se renueve.",
+  "📊 {0} chegou a {1}% do limite da semana. Avisamos de novo quando renovar.": "📊 {0} llegó al {1}% del límite semanal. Avisaremos de nuevo cuando se renueve.",
+  "✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.": "✅ {0}: la sesión de 5 horas se renovó. Ya puedes trabajar de nuevo.",
+  "✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.": "✅ {0}: el límite semanal se renovó. Ya puedes trabajar de nuevo.",
 };

@@ -3548,8 +3548,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Resposta enviada ao agente.": "Answer sent to the agent.",
   "Não deu para responder daqui: abra o DevLand.": "Couldn't answer from here: open DevLand.",
   "DevLand — uso do plano": "DevLand — plan usage",
-  "📊 {0} usou {1}% da sessão de 5 horas.": "📊 {0} used {1}% of the 5-hour session.",
-  "📊 {0} usou {1}% do limite da semana.": "📊 {0} used {1}% of the weekly limit.",
   "   Ditado: Whisper local.": "   Dictation: local Whisper.",
   "   Ditado: API da OpenAI (o áudio vai para a OpenAI).": "   Dictation: OpenAI API (audio is sent to OpenAI).",
   "   Ditado: desligado (defina OPENAI_API_KEY para transcrever pela OpenAI).": "   Dictation: off (set OPENAI_API_KEY to transcribe with OpenAI).",
@@ -4046,4 +4044,8 @@ export const EN: Readonly<Record<string, string>> = {
   "O projeto não está em nenhuma branch.": "The project isn't on any branch.",
   "Não deu para salvar as alterações (commit).": "Couldn't save the changes (commit).",
   "Não deu para enviar ao GitHub. Confira se a conta do GitHub está conectada e se você pode escrever neste repositório.": "Couldn't send to GitHub. Check that the GitHub account is connected and that you can write to this repository.",
+  "📊 {0} chegou a {1}% da sessão de 5 horas. Avisamos de novo quando renovar.": "📊 {0} reached {1}% of the 5-hour session. We'll tell you again when it renews.",
+  "📊 {0} chegou a {1}% do limite da semana. Avisamos de novo quando renovar.": "📊 {0} reached {1}% of the weekly limit. We'll tell you again when it renews.",
+  "✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.": "✅ {0}: the 5-hour session renewed. You can work again.",
+  "✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.": "✅ {0}: the weekly limit renewed. You can work again.",
 };

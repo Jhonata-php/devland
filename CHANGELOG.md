@@ -17,6 +17,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Aviso de limite do plano só uma vez, e outro quando renova.** Antes a notificação de uso (sessão de 5 horas e semana) chegava toda hora: o aviso era lembrado só na memória, então cada reinício ou atualização do servidor avisava tudo de novo, e o horário de renovação que muda um pouco entre leituras fazia o mesmo limite parecer "novo". Agora cada conta e janela avisa **uma vez** ao chegar a 95%, guarda isso em disco (`usage-alerts.json`) e só considera renovado depois de ficar abaixo de 60% por 3 minutos seguidos; aí manda **uma** notificação de "renovou, já dá para trabalhar de novo" (que substitui a anterior no aparelho, em vez de empilhar). Leituras antigas não mexem no estado, e a primeira leitura de uma conta já acima do limite não dispara aviso.
 - **IA local mais bonita e sem botões saindo do cartão:** nos modelos baixados, os botões quebram a linha e o Remover vai para a direita; tamanho, "carregado" e velocidade viram etiquetas. Em "Baixar mais modelos", o tamanho e a memória necessária aparecem inteiros em etiquetas (antes eram cortados com "…") e o botão Baixar fica sempre no pé do cartão.
 
 ### Adicionado

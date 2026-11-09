@@ -61,7 +61,7 @@ import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
 import { fetchOAuthUsage } from './accounts/oauth-usage';
-import { usageAlerts } from './accounts/usage-alert';
+import { UsageAlerts } from './accounts/usage-alert';
 import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { PluginStore } from './plugins/store';
 import { locateTranscript } from './sources/transcript-locate';
@@ -346,15 +346,22 @@ const deliveryFiles = deliveries
 const timelineDir = join(config.dataDir, TIMELINE_DIR);
 const timeline = config.timeline ? new TimelineRecorder({ dir: timelineDir }) : undefined;
 if (timeline) hub.onSnapshot((snap) => timeline.ingest(snap));
-// Uso do plano: aviso no escritório e no celular ao passar de 80% e de 95% (sessão de 5 h ou semana), uma vez por janela.
-const usageFired = new Set<string>();
+// Uso do plano: UM aviso (escritório e celular) ao chegar perto do limite da sessão de 5 h ou da semana, e UM quando renova.
+// O estado fica em <dataDir>/usage-alerts.json: reiniciar o servidor não avisa tudo de novo (ver accounts/usage-alert.ts).
+const usageAlerts = new UsageAlerts(join(config.dataDir, 'usage-alerts.json'));
 hub.onSnapshot((snap) => {
-  for (const u of usageAlerts(snap.accounts, usageFired)) {
-    const text = u.window === 'fiveHour'
-      ? tr('📊 {0} usou {1}% da sessão de 5 horas.', [u.accountName, u.utilization])
-      : tr('📊 {0} usou {1}% do limite da semana.', [u.accountName, u.utilization]);
-    // 'warn' (não 'alert'): o aviso de "precisa de você" viraria uma segunda notificação.
-    office.noticeSystem(`usage:${u.accountId}`, 'warn', text);
+  for (const u of usageAlerts.check(snap.accounts)) {
+    const five = u.window === 'fiveHour';
+    const text = u.kind === 'limit'
+      ? five
+        ? tr('📊 {0} chegou a {1}% da sessão de 5 horas. Avisamos de novo quando renovar.', [u.accountName, u.utilization])
+        : tr('📊 {0} chegou a {1}% do limite da semana. Avisamos de novo quando renovar.', [u.accountName, u.utilization])
+      : five
+        ? tr('✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.', [u.accountName])
+        : tr('✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.', [u.accountName]);
+    // 'warn' (não 'alert'): o aviso de "precisa de você" viraria uma segunda notificação. Mesma `tag`: a notificação de
+    // renovação substitui a do limite no aparelho em vez de empilhar.
+    office.noticeSystem(`usage:${u.accountId}`, u.kind === 'limit' ? 'warn' : 'success', text);
     void push?.notify({ title: tr('DevLand — uso do plano'), body: text, tag: `usage-${u.accountId}-${u.window}`, url: '/' });
   }
 });
