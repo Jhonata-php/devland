@@ -269,10 +269,14 @@ export class AiPage {
       h('div', { class: 'dash-model__top' }, h('b', { text: nameOf(m.name) }),
         st.agentModel === m.name ? h('span', { class: 'dash-badge is-blue', text: tr('Agentes usam este') }) : null,
         this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null),
-      h('p', { text: [gb(m.size), loadedSet.has(m.name) ? tr('carregado') : '', speedOf(m.name)].filter(Boolean).join(' · ') }),
+      h('div', { class: 'dash-model__meta' },
+        h('span', { class: 'dash-badge', text: gb(m.size) }),
+        loadedSet.has(m.name) ? h('span', { class: 'dash-badge is-admin', text: tr('carregado') }) : null,
+        speedOf(m.name) ? h('span', { class: 'dash-badge', text: speedOf(m.name) }) : null),
       h('div', { class: 'dash-model__foot' },
         h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Testar'), on: { click: () => this.openTest(m.name) } }),
-        st.agentModel === m.name ? h('span', { class: 'dash-grow' }) : h('button', { class: 'dash-btn', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
+        st.agentModel === m.name ? null : h('button', { class: 'dash-btn', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
+        h('span', { class: 'dash-grow' }),
         h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [nameOf(m.name)])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } })))));
 
     // 5) Baixar modelos: os que cabem primeiro; os grandes demais só em "Ver todos".
@@ -287,10 +291,13 @@ export class AiPage {
           m.id === st.recommended ? h('span', { class: 'dash-badge is-admin', text: tr('Recomendado') }) : null,
           m.agent ? h('span', { class: 'dash-badge is-blue', text: tr('para agentes') }) : null),
         h('p', { text: m.use }),
+        h('div', { class: 'dash-model__meta' },
+          h('span', { class: 'dash-badge', text: `${m.sizeGb.toLocaleString()} GB` }),
+          h('span', { class: `dash-badge${fit(m) ? '' : ' is-warn'}`, text: fit(m) ? tr('precisa de {0} GB de memória', [m.ramGb]) : tr('Precisa de {0} GB de memória', [m.ramGb]) })),
         mineNow ? h('div', { class: 'dash-bar' }, h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${pulling!.percent ?? 0}%` })), h('small', { text: tr('Baixando… {0}%', [pulling!.percent ?? 0]) })) : null,
         pulling?.model === m.id && pulling.error ? h('p', { class: 'dash-bad', text: pulling.error }) : null,
         h('div', { class: 'dash-model__foot' },
-          h('small', { class: fit(m) ? 'dash-muted' : 'dash-bad', text: fit(m) ? tr('{0} GB · precisa de {1} GB de memória', [m.sizeGb.toLocaleString(), m.ramGb]) : tr('Precisa de {0} GB de memória', [m.ramGb]) }),
+          h('span', { class: 'dash-grow' }),
           mineNow ? h('button', { class: 'dash-btn', type: 'button', text: tr('Cancelar'), on: { click: () => this.act(() => this.post('/api/ai/cancel')) } })
             : h('button', { class: `dash-btn${m.id === st.recommended ? ' dash-btn--primary' : ''}`, type: 'button', attrs: { disabled: working }, text: tr('Baixar'), on: { click: () => this.act(() => this.post('/api/ai/pull', { model: m.id })) } })));
     }));

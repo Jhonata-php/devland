@@ -996,3 +996,15 @@ html.theme-light .dash-plug-tab em { background: rgba(0, 0, 0, 0.06); }
 .dash-mcp-rename { flex: 1; min-width: 120px; height: 30px; padding: 0 10px; font: inherit; color: inherit; background: var(--d-card); border: 1px solid var(--d-line); border-radius: 8px; }
 .dash-mcp-rename:focus { outline: none; border-color: #f4c95d; }
 .dash-mcp-card .dash-model__foot { flex-wrap: wrap; }
+
+/* IA local: cartões de modelo com etiquetas, botões que quebram a linha e rodapé sempre embaixo. */
+.dash-models { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.dash-model { gap: 10px; padding: 16px; transition: border-color 0.15s, background-color 0.15s; }
+.dash-model:hover { border-color: var(--d-line2); }
+.dash-model.is-in:hover { border-color: rgba(74, 222, 128, 0.55); }
+.dash-model__top b { font-size: 15px; overflow-wrap: anywhere; }
+.dash-model__meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.dash-model__foot { flex-wrap: wrap; justify-content: flex-start; margin-top: auto; padding-top: 4px; }
+.dash-model__foot small { overflow: visible; text-overflow: clip; white-space: normal; }
+.dash-ai-agents { align-items: flex-end; }
+.dash-ai-agents__txt { align-self: center; }

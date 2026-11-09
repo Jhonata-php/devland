@@ -3942,7 +3942,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Ver também os {0} modelos maiores (precisam de servidor com mais memória)": "Also see the {0} larger models (need a server with more memory)",
   "carregado": "loaded",
   "nada": "nothing",
-  "{0} GB · precisa de {1} GB de memória": "{0} GB · needs {1} GB of memory",
 
   // Novo agente em passos
   "Ative a IA local e baixe um modelo na página IA local.": "Turn on local AI and download a model on the Local AI page.",
@@ -4019,4 +4018,5 @@ export const EN: Readonly<Record<string, string>> = {
   "o mais forte para tarefas difíceis": "the strongest for hard tasks",
   "equilíbrio entre qualidade e velocidade": "balance of quality and speed",
   "o mais rápido e barato": "the fastest and cheapest",
+  "precisa de {0} GB de memória": "needs {0} GB of memory",
 };

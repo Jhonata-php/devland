@@ -10,6 +10,10 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **IA local mais bonita e sem botões saindo do cartão:** nos modelos baixados, os botões quebram a linha e o Remover vai para a direita; tamanho, "carregado" e velocidade viram etiquetas. Em "Baixar mais modelos", o tamanho e a memória necessária aparecem inteiros em etiquetas (antes eram cortados com "…") e o botão Baixar fica sempre no pé do cartão.
+
 ### Adicionado
 
 - **Escolher o modelo do Claude no Novo agente:** no passo do pedido há uma linha **Modelo** com Padrão da conta, Fable, Opus, Sonnet e Haiku (o apelido sempre aponta para o mais novo da família). Vale para o agente que começa na hora e para os agendados, e some quando o agente é da IA local, que usa o modelo dela. O terminal interativo também aceita o modelo (`model` em `POST /api/pty`).
