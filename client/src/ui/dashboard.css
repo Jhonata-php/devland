@@ -402,3 +402,24 @@ html.is-panel .ui-root .ui-settings .ui-set-group { padding-top: 14px; }
 html.is-panel .ui-root .ui-accounts__head { padding: 16px 16px 8px 22px; background: none; border-bottom: 0; }
 html.is-panel .ui-root .ui-accounts__head h2 { font: 650 18px/1.2 var(--font-ui); letter-spacing: -0.01em; text-transform: none; color: #edece9; text-shadow: none; }
 html.is-panel .ui-root .ui-accounts__frame { background: #1a1a18; }
+
+/* Conversas encaixadas com o menu recolhido; lista em cartões. */
+@media (min-width: 901px) {
+  html.is-panel.dash-on-chats.dash-collapsed .ui-chats { left: 68px; }
+}
+html.is-panel.dash-on-chats .ui-chats { background: #111110; }
+html.is-panel.dash-on-chats .ui-chats__head { padding-top: 14px; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+html.is-panel.dash-on-chats .ui-chats__screen--list > .ui-chats__head { display: none; }
+html.is-panel.dash-on-chats .ui-chats__list { padding-top: 24px; padding-bottom: 24px; display: flex; flex-direction: column; gap: 8px; }
+html.is-panel .ui-chats__item { border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; background: #1a1a18; transition: border-color 0.12s, background 0.12s; }
+html.is-panel .ui-chats__item:hover { border-color: rgba(255, 255, 255, 0.16); background: #1f1f1d; }
+
+/* Plugins no visual do painel. */
+html.is-panel .ui-root .ui-plugins__body { padding: 8px 22px 22px; gap: 12px; }
+html.is-panel .ui-root .ui-plugins__search { height: 42px; padding: 0 14px; font-size: 14px; }
+html.is-panel .ui-root .ui-plugins__item { padding: 14px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; background: #20201e; }
+html.is-panel .ui-root .ui-plugins__item.is-on { border-color: rgba(74, 222, 128, 0.4); }
+html.is-panel .ui-root .ui-plugins__text b, html.is-panel .ui-root .ui-plugins__text strong { font-weight: 600; }
+html.is-panel .ui-root .ui-plugins__text span { color: #b9b7b2; font-size: 13px; }
+html.is-panel .ui-root .ui-plugins__item .ui-btn { min-height: 32px; }
+html.is-panel .ui-root .ui-plugins__note { color: #8f8c86; }

@@ -90,12 +90,14 @@ export class Dashboard implements UiComponent {
       h('aside', { class: 'dash-side' }, brand, this.nav, h('div', { class: 'dash-grow' }), tools, this.meEl),
       h('div', { class: 'dash-body' }, this.top, this.main), this.tabs);
     try {
-      if (localStorage.getItem(COLLAPSE_KEY) === '1') this.el.classList.add('is-collapsed');
+      if (localStorage.getItem(COLLAPSE_KEY) === '1') this.setCollapsed(true);
     } catch { /* sem armazenamento: menu aberto */ }
   }
 
   private setCollapsed(on: boolean): void {
     this.el.classList.toggle('is-collapsed', on);
+    // A janela de conversas encaixada (fora do .dash) também precisa saber a largura do menu.
+    document.documentElement.classList.toggle('dash-collapsed', on);
     try {
       localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0');
     } catch { /* só nesta visita */ }
