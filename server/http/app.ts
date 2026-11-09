@@ -72,6 +72,8 @@ export interface ApiDeps {
   schedules?: ScheduleStore;
   /** Loja de plugins do Claude Code (plugins/store.ts): só admin (Cloud) ou o próprio computador. */
   plugins?: PluginStore;
+  /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
+  onPreviewOpen?: (port: number) => void;
   /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
   preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
@@ -516,7 +518,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       } else handleCodexEvent(req, res, { live: deps.codexLive, entries: () => accounts.entriesOf('codex') }).catch((err) => fail(res, err));
       return true;
     }
-    if (path === '/api/preview' || path === '/api/preview/ports') {
+    if (path === '/api/preview' || path === '/api/preview/ports' || path === '/api/preview/open') {
       // Mostra o que roda nas portas do computador: a mesma trava do terminal (local, ou Cloud com a permissão).
       const preview = deps.preview;
       if (!preview) sendJson(res, 403, { error: tr('prévia ao vivo desligada') });
@@ -525,6 +527,16 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         if (!isRead) methodNotAllowed(res, 'GET');
         else preview.detect().then((ports) => sendJson(res, 200, { ports }), (err) => fail(res, err));
       } else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (path === '/api/preview/open')
+        // O agente pede para mostrar o site (skill do plugin do DevLand): as páginas abertas abrem a prévia na porta.
+        readJson(req)
+          .then((body) => {
+            const port = parsePort((body as { port?: unknown } | null)?.port);
+            if (port === undefined || !preview.issue(port)) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do DevLand)') });
+            deps.onPreviewOpen?.(port);
+            sendJson(res, 200, { ok: true, port });
+          })
+          .catch((err) => fail(res, err));
       else
         readJson(req)
           .then((body) => {

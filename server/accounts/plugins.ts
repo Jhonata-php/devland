@@ -42,6 +42,9 @@ export async function ensureDevLandPlugins(dirs: readonly string[], claudeBin: s
         const r = await run(claudeBin, ['plugin', 'install', `${p}@${MARKETPLACE}`], dir);
         if (!r.ok && !/already|já/i.test(r.out)) failed.push(`${p}: ${r.out.split('\n').pop()?.slice(0, 160) ?? ''}`);
       }
+      // Já instalado não pega a versão nova sozinho: atualiza o marketplace e os plugins (ex.: skill nova no mod).
+      await run(claudeBin, ['plugin', 'marketplace', 'update', MARKETPLACE], dir);
+      for (const p of PLUGINS) await run(claudeBin, ['plugin', 'update', `${p}@${MARKETPLACE}`], dir);
       if (failed.length) log.warnOnce(`plugins:${dir}`, tr('Plugins do DevLand em {0}: {1}', [dir, failed.join('; ')]));
     } catch (err) {
       log.warnOnce(`plugins:${dir}`, tr('Plugins do DevLand em {0}: {1}', [dir, errMsg(err)]));

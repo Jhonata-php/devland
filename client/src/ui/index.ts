@@ -220,6 +220,10 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   topbar.panelGroup.prepend(deliveries.button);
   // Prévia ao vivo do site do projeto (proxy autenticado do servidor).
   const previewPanel = new PreviewPanel(ctx);
+  // Agente pediu a prévia (skill do plugin do DevLand): abre aqui, já na porta.
+  store.on('notice', (n) => {
+    if (n.previewPort && (access().preview || store.mock)) previewPanel.openPort(n.previewPort);
+  });
   topbar.panelGroup.prepend(previewPanel.button);
   // Links com ?agent= / ?delivery= (abrem o agente ou a entrega ao carregar).
   const openLink = (url: URL) => {

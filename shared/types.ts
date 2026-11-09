@@ -435,6 +435,8 @@ export interface Notice {
   agentId?: string;
   roomId?: string;
   at: number;
+  /** Um agente pediu para mostrar o site: a página abre a prévia ao vivo nesta porta (POST /api/preview/open). */
+  previewPort?: number;
 }
 
 /**

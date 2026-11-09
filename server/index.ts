@@ -571,6 +571,7 @@ const api = createApiHandler({
   spawn,
   schedules,
   plugins: pluginStore,
+  onPreviewOpen: (port) => office.noticeSystem('preview', 'info', tr('🌐 Abrindo a prévia do site na porta {0}.', [port]), { previewPort: port }),
   attachments,
   dictation,
   deliveries,

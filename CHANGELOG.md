@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **O agente abre a prévia:** peça "abre o preview" e o agente sobe o servidor e abre a prévia ao vivo no DevLand, já na porta certa (skill `devland-preview` no plugin do DevLand e rota `POST /api/preview/open`, só pelo próprio computador). No Cloud o plugin se atualiza sozinho ao iniciar.
 - **PC: Conversas e prévia lado a lado:** botão Conversas no topo (antes só existia na barra de baixo do celular); com a conversa aberta, a prévia ao vivo fica à esquerda dela, alta, e não fecha mais ao clicar na conversa (Esc ou o X fecham).
 - **Terminal e conversas sem mensagens (Cloud):** o serviço de segundo plano do Claude Code grava a conversa na pasta da conta com que foi iniciado, e uma sessão da Conta B ficava procurada em `.claude-2` enquanto estava em `.claude`. O servidor agora procura a mesma sessão nas pastas das outras contas.
 - **Colar imagem:** colar um print ou uma foto no Pedido do Novo agente, ou na caixa de mensagem de um agente (Cloud), vira anexo, como pelo botão Anexar.

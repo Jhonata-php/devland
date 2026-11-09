@@ -752,8 +752,8 @@ export class Office {
    * você" (o mesmo pedido, outro caminho).
    */
   /** Aviso do escritório sem agente (ex.: uso do plano perto do limite): toast na página, com o nível dado. */
-  noticeSystem(key: string, level: NoticeLevel, text: string): void {
-    this.notice('room', key, level, text);
+  noticeSystem(key: string, level: NoticeLevel, text: string, extra: { previewPort?: number } = {}): void {
+    this.notice('room', key, level, text, undefined, { dedupeMs: extra.previewPort ? 0 : undefined }, extra);
     this.markDirty();
   }
 
@@ -1080,6 +1080,7 @@ export class Office {
     text: string,
     roomId?: string,
     opts: { dedupeKey?: string; dedupeMs?: number } = {},
+    extra: { previewPort?: number } = {},
   ): void {
     if (this.booting) return;
     const now = this.now();
@@ -1095,6 +1096,7 @@ export class Office {
     const n: Notice = { id: `n-${now.toString(36)}-${++this.seq}`, level, text, at: now };
     if (kind !== 'room') n.agentId = key;
     if (roomId) n.roomId = roomId;
+    if (extra.previewPort) n.previewPort = extra.previewPort;
     this.pendingNotices.push(n);
   }
 }

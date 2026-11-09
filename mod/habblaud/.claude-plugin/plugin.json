@@ -1,11 +1,20 @@
 {
   "name": "habblaud",
   "displayName": "DevLand",
-  "version": "1.0.3",
-  "description": "Liga a sessão ao DevLand: grava o uso do plano (5h e semanal) para o escritório, avisa embaixo do prompt quando outra sessão precisa de você e adiciona o comando /habblaud.",
-  "author": { "name": "Márcio Junior", "url": "https://github.com/marmottajr" },
+  "version": "1.0.4",
+  "description": "Liga a sessão ao DevLand: grava o uso do plano (5h e semanal) para o escritório, avisa embaixo do prompt quando outra sessão precisa de você e adiciona o comando /habblaud, e a skill devland-preview (o agente abre a prévia ao vivo do site no DevLand).",
+  "author": {
+    "name": "Márcio Junior",
+    "url": "https://github.com/marmottajr"
+  },
   "homepage": "https://github.com/marmottajr/habblaud#readme",
   "repository": "https://github.com/marmottajr/habblaud",
   "license": "MIT",
-  "keywords": ["habblaud", "escritorio", "uso", "rate-limits", "status"]
+  "keywords": [
+    "habblaud",
+    "escritorio",
+    "uso",
+    "rate-limits",
+    "status"
+  ]
 }

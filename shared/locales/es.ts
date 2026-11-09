@@ -3616,4 +3616,5 @@ export const ES: Readonly<Record<string, string>> = {
   "{0} de {1} plugins dos marketplaces configurados. Plugins rodam código no servidor: instale só os que você conhece.": "{0} de {1} plugins de los marketplaces configurados. Los plugins ejecutan código en el servidor: instala solo los que conoces.",
   "{0} instalado. As sessões novas já vêm com ele.": "{0} instalado. Las sesiones nuevas ya lo traen.",
   "{0} removido. As sessões novas já vêm sem ele.": "{0} quitado. Las sesiones nuevas ya vienen sin él.",
+  "🌐 Abrindo a prévia do site na porta {0}.": "🌐 Abriendo la vista previa del sitio en el puerto {0}.",
 };

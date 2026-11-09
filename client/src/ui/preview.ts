@@ -97,6 +97,16 @@ export class PreviewPanel implements UiComponent {
     }
   }
 
+  /** Um agente pediu para mostrar o site: abre a prévia já na porta. */
+  openPort(port: number): void {
+    this.input.value = String(port);
+    if (!this.isOpen) {
+      if (typeof this.el.showPopover === 'function') this.el.showPopover();
+      else this.el.classList.add('is-open');
+    }
+    void this.go(port);
+  }
+
   toggle(): void {
     if (this.isOpen) this.hide();
     else {
