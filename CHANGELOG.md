@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Conectores mais fáceis de usar:** cada cartão mostra o nome, o tipo (HTTP, SSE ou comando) e o endereço sem o "(HTTP)" solto, e os que precisam de você vêm primeiro. **Entrar** abre o Claude Code num terminal já no menu de conectores (`/mcp`) para entrar na conta do serviço, e a página confere sozinha até conectar. **Testar** confere a conexão na hora, e **Renomear** muda o nome só na tela (os agentes continuam usando o nome técnico, e o login do conector não se perde). Um resumo no topo diz quantos estão conectados e quantos precisam entrar.
 - **Plugins no painel:** página com Instalados e Descobrir, busca, instalar e remover em todas as contas, e os marketplaces (acrescente pelo dono/repositório do GitHub para achar plugins que não aparecem, como os de terceiros).
 - **Conectores por conversa:** a página mostra só os seus conectores; "+ Adicionar conector" abre uma conversa onde você cola o comando `claude mcp add`, o JSON de mcpServers, o endereço ou o nome (ou toca num sugerido). Ele adiciona na hora e diz se conectou, se falta entrar no serviço ou se falhou.
 - **Testar modelo com os dados:** a janela de teste mostra tamanho, memória, velocidade, se os agentes usam e se está carregado, com Medir velocidade e Usar nos agentes ali mesmo.
