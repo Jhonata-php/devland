@@ -14,6 +14,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Agentes duplicados no Cloud:** a atualização nativa reinicia só o servidor, e os `claude --resume` que ele tinha aberto continuavam vivos; ao subir, ele retomava as mesmas conversas por cima e o mesmo agente aparecia 2 ou 3 vezes. Agora encerra esses terminais órfãos e retoma cada conversa uma vez só, e não retoma por cima de uma sessão que segue viva em outro lugar (ex.: segundo plano).
+- **Sem a sala "workspace":** o botão do escritório vazio abre o Novo agente (para escolher o projeto) em vez de um terminal na raiz `/workspace`, e conversa aberta na raiz não volta sozinha a cada reinício.
 - **Mensagem para sessão sem o plugin:** em vez de "Esta conversa começou antes do plugin", a caixa fica liberada e o envio retoma a sessão num terminal do DevLand com o texto como pedido (`claude --resume <sessão> -- <texto>`); se ela já está num terminal daqui, o texto é colado e enviado.
 - **Push e merge pelos agentes (Cloud, admin):** em Ajustes, "Agentes podem fazer push e merge" grava em todas as contas do Claude as regras `Bash(git push:*)`, `Bash(git merge:*)` e `Bash(gh pr merge:*)`; o modo automático do Claude Code deixa de recusar subir na main quando você pede. Desligar tira só essas regras.
 - **Aprovar dentro da conversa:** quando o agente pede permissão (ou faz uma pergunta), o cartão com Aprovar, Recusar e as regras de "sempre permitir" aparece na própria conversa, acima da caixa de mensagem.

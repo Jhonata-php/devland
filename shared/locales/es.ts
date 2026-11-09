@@ -3439,7 +3439,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Conectar contas pela web está desligado neste servidor: as contas do Claude Code e do Codex são as do próprio computador.": "Conectar cuentas por la web está desactivado en este servidor: las cuentas de Claude Code y Codex son las del propio equipo.",
   "ferramenta inválida": "herramienta no válida",
   "Conectar contas": "Conectar cuentas",
-  "Abre o Claude Code em /workspace (os projetos clonados ficam lá)": "Abre Claude Code en /workspace (ahí quedan los proyectos clonados)",
   "Não foi possível abrir o terminal.": "No se pudo abrir la terminal.",
   "Conecte uma conta do Claude ou do Codex e abra um terminal: o agente aparece aqui no escritório.": "Conecta una cuenta de Claude o de Codex y abre una terminal: el agente aparece aquí en la oficina.",
   "Abrir contas": "Abrir cuentas",
@@ -3638,4 +3637,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Ligado: os agentes podem dar push e merge, inclusive na main. Vale para as sessões novas (as abertas, depois de retomadas).": "Activado: los agentes pueden hacer push y merge, incluso en main. Vale para las sesiones nuevas (las abiertas, después de retomarlas).",
   "Ligar": "Activar",
   "O modo automático do Claude Code não deixa subir direto na main, mesmo a pedido. Ligado, os agentes podem dar git push, git merge e gh pr merge (inclusive na main).": "El modo automático de Claude Code no deja subir directo a main, ni a pedido. Activado, los agentes pueden usar git push, git merge y gh pr merge (incluso en main).",
+  "Encerrei {0} terminal(is) da rodada anterior para retomar cada conversa uma vez só.": "Cerré {0} terminal(es) de la ejecución anterior para retomar cada conversación una sola vez.",
+  "Escolha o projeto e comece um agente": "Elige el proyecto y empieza un agente",
 };

@@ -302,7 +302,8 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     get enabled() {
       return pty.enabled;
     },
-    open: (cwd) => pty.newSession(cwd),
+    // Escritório vazio: escolher o projeto no Novo agente (o terminal fixo na raiz /workspace criava uma sala sem projeto).
+    open: async () => topbar.toggleSpawn(),
   });
   const banner = new ConnectionBanner(ctx);
   const update = new UpdateBanner(store);

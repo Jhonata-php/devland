@@ -117,7 +117,7 @@ export class EmptyState implements UiComponent {
         'div',
         { class: 'ui-empty__actions', hidden: true },
         h('a', { class: 'ui-btn ui-btn--primary ui-btn-accounts', text: tr('Conectar contas'), attrs: { href: '/contas' }, on: { click: accountsClick(ctx.root) } }),
-        (this.termBtn = h('button', { class: 'ui-btn ui-btn--primary', type: 'button', text: tr('Abrir terminal'), title: tr('Abre o Claude Code em /workspace (os projetos clonados ficam lá)'), on: { click: () => void this.openTerminal() } }) as HTMLButtonElement),
+        (this.termBtn = h('button', { class: 'ui-btn ui-btn--primary', type: 'button', text: tr('Novo agente'), title: tr('Escolha o projeto e comece um agente'), on: { click: () => void this.openTerminal() } }) as HTMLButtonElement),
       )),
       this.demoBtn,
     );

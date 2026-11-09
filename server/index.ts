@@ -2,7 +2,7 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
-import { chownSync, existsSync, rmSync } from 'node:fs';
+import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
 import { dirname, join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
@@ -63,6 +63,7 @@ import { usageAlerts } from './accounts/usage-alert';
 import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { PluginStore } from './plugins/store';
 import { locateTranscript } from './sources/transcript-locate';
+import { killOrphanResumes } from './pty/orphans';
 import { DevRunner } from './preview/devrun';
 import { withPreviewHint } from './messages/preview-hint';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
@@ -794,16 +795,32 @@ if (cloud && agentUser && ptys) {
     const out: LiveAgent[] = [];
     for (const a of snap.agents) {
       const cwd = snap.rooms.find((r) => r.id === a.roomId)?.path;
-      if (a.kind === 'main' && a.sessionId && a.status !== 'offline' && cwd && !isDemoId(a.id)) out.push({ account: a.account, sessionId: a.sessionId, cwd });
+      // A raiz /workspace não é projeto: conversa aberta lá não volta sozinha a cada reinício (criava a sala "workspace").
+      if (a.kind === 'main' && a.sessionId && a.status !== 'offline' && cwd && cwd !== WORKSPACE && !isDemoId(a.id)) out.push({ account: a.account, sessionId: a.sessionId, cwd });
     }
     return dedupeLive(out);
   };
   // Só depois de os plugins estarem instalados: uma sessão que começa antes deles nunca carrega o plugin de mensagens.
+  // Terminais da rodada anterior que ficaram vivos (a atualização nativa reinicia só o Node): encerra antes de retomar,
+  // senão a mesma conversa voltava 2, 3 vezes no escritório (pty/orphans.ts).
+  const orphans = killOrphanResumes();
+  if (orphans.size) log.info(tr('Encerrei {0} terminal(is) da rodada anterior para retomar cada conversa uma vez só.', [orphans.size]));
+  const recentlyWritten = (sessionId: string): boolean => {
+    const path = locateTranscript(join(config.claudeDirs[0] ?? '', 'projects', '-', `${sessionId}.jsonl`), config.claudeDirs);
+    try {
+      return !!path && Date.now() - statSync(path).mtimeMs < 3 * 60_000;
+    } catch {
+      return false;
+    }
+  };
   void pluginsReady.then(() =>
     setTimeout(() => {
       const present = new Set(liveNow().map((a) => a.sessionId));
       for (const a of wasLive) {
-        if (present.has(a.sessionId)) continue;
+        // Órfão encerrado acima: volta aqui, uma vez. Fora isso, quem já está no escritório ou foi gravado há pouco
+        // (viva em outro lugar, ex.: o serviço de segundo plano do Claude) não é retomada por cima.
+        if (a.cwd === WORKSPACE) continue;
+        if (!orphans.has(a.sessionId) && (present.has(a.sessionId) || recentlyWritten(a.sessionId))) continue;
         try {
           ptys.resume(a);
           log.info(tr('Retomando a conversa {0} em {1}.', [a.sessionId, a.cwd]));
@@ -811,7 +828,8 @@ if (cloud && agentUser && ptys) {
           log.warn(tr('Não deu para retomar {0}: {1}', [a.sessionId, errMsg(err)]));
         }
       }
-    }, 3_000).unref(),
+    // 15 s: dá tempo de o escritório ver as sessões que seguem vivas (ex.: as de segundo plano) antes de decidir.
+    }, 15_000).unref(),
   );
   const liveBootAt = Date.now();
   // Primeiro agente automático: DESLIGADO por padrão (criava um agente avulso em /workspace a cada reimplantação, e as pessoas

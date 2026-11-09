@@ -3438,7 +3438,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Conectar contas pela web está desligado neste servidor: as contas do Claude Code e do Codex são as do próprio computador.": "Connecting accounts on the web is off on this server: the Claude Code and Codex accounts are the computer's own.",
   "ferramenta inválida": "invalid tool",
   "Conectar contas": "Connect accounts",
-  "Abre o Claude Code em /workspace (os projetos clonados ficam lá)": "Opens Claude Code in /workspace (cloned projects live there)",
   "Não foi possível abrir o terminal.": "Couldn't open the terminal.",
   "Conecte uma conta do Claude ou do Codex e abra um terminal: o agente aparece aqui no escritório.": "Connect a Claude or Codex account and open a terminal: the agent shows up here in the office.",
   "Abrir contas": "Open accounts",
@@ -3637,4 +3636,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Ligado: os agentes podem dar push e merge, inclusive na main. Vale para as sessões novas (as abertas, depois de retomadas).": "On: agents can push and merge, including to main. Applies to new sessions (open ones after they resume).",
   "Ligar": "Turn on",
   "O modo automático do Claude Code não deixa subir direto na main, mesmo a pedido. Ligado, os agentes podem dar git push, git merge e gh pr merge (inclusive na main).": "Claude Code's auto mode won't push straight to main, even when asked. When on, agents can run git push, git merge and gh pr merge (including on main).",
+  "Encerrei {0} terminal(is) da rodada anterior para retomar cada conversa uma vez só.": "Closed {0} terminal(s) from the previous run so each conversation resumes once.",
+  "Escolha o projeto e comece um agente": "Pick the project and start an agent",
 };
