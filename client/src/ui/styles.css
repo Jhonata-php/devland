@@ -12400,3 +12400,31 @@ body::before {
 @media (max-width: 600px) {
   .ui-popover { top: calc(var(--top-h) + var(--gap)) !important; }
 }
+
+/* Caixas de mensagem: anexo e microfone do mesmo tamanho, centrados na linha; gravando fica vermelho, pulsando. */
+.ui-msg .ui-msg__attach.ui-msg__attach,
+.ui-msg .ui-msg__mic.ui-msg__mic {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--ui-line-strong);
+  background: none;
+}
+.ui-msg .ui-msg__mic .ui-px-icon,
+.ui-msg .ui-msg__attach svg { width: 18px; height: 18px; }
+/* Painel do agente: a linha alinha caixa e botões pelo meio, e o Enviar tem a mesma altura dos outros. */
+.ui-msg--drawer .ui-msg__row.ui-msg__row { align-items: center; }
+.ui-msg--drawer .ui-msg__send.ui-msg__send { height: 40px; min-height: 40px; align-self: center; }
+.ui-msg__mic.ui-msg__mic.is-recording {
+  border-color: #e5534b;
+  background: rgba(229, 83, 75, 0.16);
+  color: #ff8a8a;
+  animation: ui-dictate-pulse 1.2s ease-in-out infinite;
+}

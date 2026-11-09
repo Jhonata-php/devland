@@ -1556,6 +1556,7 @@ export const FR: Readonly<Record<string, string>> = {
   "Terminal: linha do transcript ignorada ({0}).": "Terminal : ligne du transcript ignorée ({0}).",
   "terminais abertos demais (máximo de {0}); feche algum e tente de novo": "trop de terminaux ouverts (maximum {0}) ; fermez-en un et réessayez",
   "Terminal de {0}: não foi possível ler o transcript ({1}).": "Terminal de {0} : impossible de lire le transcript ({1}).",
+  "Terminal de {0}: conversa vazia em {1} ({2} bytes).": "Terminal de {0} : conversation vide dans {1} ({2} octets).",
   "não foi possível ler o transcript": "impossible de lire le transcript",
   "transcript do agente não encontrado": "transcript de l'agent introuvable",
   "Terminal de {0}: {1}": "Terminal de {0} : {1}",

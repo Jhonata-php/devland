@@ -10,6 +10,7 @@
 // novo. Agentes do demo não têm transcript: a conversa fictícia sai de demoTerminalEntries a cada ~500 ms.
 // Sessões do histórico (GET /api/sessions/:conta/:sessionId/terminal, http/sessions.ts) usam o mesmo
 // leitor sobre o transcript já validado pela rota, com polling mais espaçado (~2 s).
+import { statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { demoTerminalEntries } from '../../shared/demo/terminal';
 import type { Activity, AgentInfo, TerminalEntry, TerminalInit } from '../../shared/types';
@@ -110,6 +111,11 @@ class TranscriptSource implements ConversationSource {
     readonly intervalMs: number,
   ) {
     this.tail = new FileTail(path);
+  }
+
+  /** Arquivo lido (diagnóstico: conversa que abre vazia). */
+  get path(): string {
+    return this.tail.path;
   }
 
   load(): TerminalInit {
@@ -274,6 +280,16 @@ export class TerminalStreams {
     } catch (err) {
       log.warnOnce(`terminal-load:${id}:${errMsg(err)}`, tr('Terminal de {0}: não foi possível ler o transcript ({1}).', [id, errMsg(err)]));
       return sendJson(res, 500, { error: tr('não foi possível ler o transcript') });
+    }
+    // Conversa que abre vazia com o agente trabalhando: registra qual arquivo foi lido, para achar o transcript certo.
+    if (init.entries.length === 0 && source instanceof TranscriptSource) {
+      let size = -1;
+      try {
+        size = statSync(source.path).size;
+      } catch {
+        /* não existe */
+      }
+      log.warnOnce(`terminal-empty:${id}:${source.path}`, tr('Terminal de {0}: conversa vazia em {1} ({2} bytes).', [id, source.path, size]));
     }
     req.socket.setTimeout(0);
     req.socket.setNoDelay(true);

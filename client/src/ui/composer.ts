@@ -307,7 +307,18 @@ export class MessageComposer {
   }
 
   private toggleSpeech(): void {
-    if (this.speech) return this.speech.stop();
+    // Segundo toque para sempre: no iPhone (app da tela de início) o reconhecimento às vezes não dispara onend e o botão
+    // ficava preso em "gravando".
+    if (this.speech) {
+      const rec = this.speech;
+      try {
+        rec.stop();
+      } catch {
+        /* já parado */
+      }
+      rec.onend?.();
+      return;
+    }
     const Ctor = speechCtor();
     if (!Ctor) return;
     const rec = new Ctor();
@@ -320,7 +331,11 @@ export class MessageComposer {
       if (text.trim()) this.insertDictated(text);
     };
     rec.onerror = (e) => this.sayDictation(e.error === 'not-allowed' ? tr('Sem permissão para usar o microfone.') : tr('Não deu para ouvir: {0}', [e.error]), true);
+    // Trava de segurança: sem fim em 60 s (iPhone sem resposta do serviço de voz), solta o botão.
+    const guard = setTimeout(() => rec.onend?.(), 60_000);
     rec.onend = () => {
+      clearTimeout(guard);
+      if (this.speech !== rec) return;
       this.speech = null;
       this.speechBtn.classList.remove('is-recording');
       this.speechBtn.setAttribute('aria-pressed', 'false');

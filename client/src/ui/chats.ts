@@ -185,7 +185,9 @@ export class ChatsView implements UiComponent {
       this.seen.clear();
       this.msgs.replaceChildren();
       this.add(init.entries);
-      setHidden(this.note, true);
+      // Sem nenhuma mensagem gravada: avisa em vez de deixar a tela em branco.
+      setHidden(this.note, init.entries.length > 0);
+      if (!init.entries.length) setText(this.note, tr('Esta conversa ainda não tem mensagens gravadas, ou o agente já foi fechado.'));
       this.scrollEnd(true);
     });
     es.addEventListener('append', (ev) => {
