@@ -76,6 +76,11 @@ export interface OfficeDeps {
   messages?: () => ReadonlySet<string>;
   /** Verificação de versão nova no GitHub (ver OfficeSnapshot.meta.updates). */
   updates?: () => UpdateStatus;
+  /**
+   * Silêncio dos avisos "chegou" e "Nova sala" depois de subir (ms a partir de startedAt). No Cloud as conversas são
+   * retomadas logo depois de cada atualização, e cada uma virava um aviso.
+   */
+  arrivalQuietMs?: number;
   /** Terminais interativos (PtyManager): estado do recurso e os abertos. */
   ptys?: () => { status: PtyStatus; list: PtyInfo[] };
   /** Habblaud World (WorldService.meta; ver OfficeSnapshot.meta.world). */
@@ -1084,6 +1089,7 @@ export class Office {
   ): void {
     if (this.booting) return;
     const now = this.now();
+    if ((kind === 'arrive' || kind === 'room') && now - this.deps.startedAt < (this.deps.arrivalQuietMs ?? 0)) return;
     const k = opts.dedupeKey ?? `${key}|${kind}`;
     const window = opts.dedupeMs ?? NOTICE_DEDUPE_MS;
     const last = this.noticeAt.get(k);

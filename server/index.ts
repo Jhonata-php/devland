@@ -191,6 +191,8 @@ const office = new Office({
   // No modo dev o Vite serve o cliente direto do código-fonte: não há build para comparar.
   build: config.dev ? undefined : createBuildReader(config.rootDir),
   startedAt,
+  // Cloud: as conversas voltam sozinhas depois de cada atualização; 3 minutos sem avisos de chegada.
+  arrivalQuietMs: config.remote?.cloud ? 180_000 : 0,
   accounts: (sessions) => accounts.list(sessions),
   sources: () => late.agents?.sources() ?? [],
   accountName: (id) => accounts.find(id)?.detected.name,

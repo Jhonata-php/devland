@@ -595,6 +595,13 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       const action = path === '/api/plugins/install' ? 'install' : path === '/api/plugins/uninstall' ? 'uninstall' : null;
       if (!store) sendJson(res, 404, { error: tr('loja de plugins indisponível (Claude Code não encontrado)') });
       else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/plugins/marketplaces' && isRead) store.marketplaces().then((list) => sendJson(res, 200, { marketplaces: list }), (err: Error) => sendJson(res, 502, { error: err.message }));
+      else if (path === '/api/plugins/marketplaces' && method === 'POST')
+        readJson(req)
+          .then((body) => store.addMarketplace(String((body as { source?: unknown }).source ?? '')))
+          .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
+      else if (path.startsWith('/api/plugins/marketplaces/') && method === 'DELETE')
+        store.removeMarketplace(decodeURIComponent(path.slice('/api/plugins/marketplaces/'.length))).then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
       else if (path === '/api/plugins' && isRead) {
         const q = new URL(req.url ?? '/', 'http://x').searchParams.get('q') ?? '';
         store.list(q.slice(0, 100)).then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 502, { error: err.message }));

@@ -33,6 +33,8 @@ export class AiPage {
   private readonly chatModel: HTMLSelectElement;
   /** Janela de teste: a conversa com um modelo, aberta pelo botão Testar de cada modelo. */
   private readonly modal: HTMLElement;
+  private readonly testTitle: HTMLElement;
+  private readonly testInfo: HTMLElement;
   /** Tokens por segundo medidos em cada modelo (botão Medir velocidade). */
   private speed = new Map<string, number | 'run' | 'err'>();
 
@@ -55,11 +57,14 @@ export class AiPage {
       this.chat.msgs = [];
       this.drawChat();
     } } });
+    this.testTitle = h('b', { text: tr('Assistente local') });
+    this.testInfo = h('div', { class: 'dash-ai-info' });
     this.chatEl = h('section', { class: 'dash-card dash-ai-chat' },
       h('div', { class: 'dash-ai-chat__head' },
         h('span', { class: 'dash-ai-av', attrs: { 'aria-hidden': 'true' } }),
-        h('div', {}, h('b', { text: tr('Assistente local') }), h('small', { text: tr('Roda no seu servidor, sem conta e sem enviar nada para fora.') })),
-        this.chatModel, clear, h('button', { class: 'dash-ai-x', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: () => this.closeTest() } })),
+        h('div', {}, this.testTitle, h('small', { text: tr('Roda no seu servidor, sem conta e sem enviar nada para fora.') })),
+        clear, h('button', { class: 'dash-ai-x', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: () => this.closeTest() } })),
+      this.testInfo,
       this.chatLog,
       h('div', { class: 'dash-ai-compose' }, this.chatInput, this.chatSend));
     this.modal = h('div', { class: 'dash-ai-modal', hidden: true, on: { click: (e) => e.target === this.modal && this.closeTest() } }, this.chatEl);
@@ -75,8 +80,32 @@ export class AiPage {
     this.chat.model = model;
     this.chatModel.value = model;
     this.modal.hidden = false;
+    this.drawInfo();
     this.drawChat();
     requestAnimationFrame(() => this.chatInput.focus());
+  }
+
+  /** Os dados do modelo em teste: tamanho, memória, velocidade, uso nos agentes e se está carregado. */
+  private drawInfo(): void {
+    const st = this.st;
+    const m = this.chat.model;
+    if (!st || !m) return;
+    const c = st.catalog.find((x) => x.id === m || `${x.id}:latest` === m);
+    const size = st.models.find((x) => x.name === m)?.size ?? 0;
+    const sp = this.speed.get(m);
+    this.testTitle.textContent = tr('Testar {0}', [c?.name ?? m]);
+    const item = (label: string, value: string) => h('div', { class: 'dash-ai-info__item' }, h('span', { text: label }), h('b', { text: value }));
+    const kids: (HTMLElement | null)[] = [
+      item(tr('Tamanho'), gb(size)),
+      item(tr('Memória'), c ? tr('{0} GB', [c.ramGb]) : '—'),
+      item(tr('Velocidade'), typeof sp === 'number' ? tr('{0} tokens/s', [sp]) : sp === 'run' ? tr('medindo…') : '—'),
+      item(tr('Agentes'), st.agentModel === m ? tr('usam este') : c?.agent ? tr('serve') : tr('não indicado')),
+      item(tr('Agora'), st.loaded.some((x) => x.name === m) ? tr('carregado') : tr('em disco')),
+      h('button', { class: 'dash-btn', type: 'button', attrs: { disabled: sp === 'run' }, text: tr('Medir velocidade'), on: { click: () => void this.bench([m]).then(() => this.drawInfo()) } }),
+      st.agentModel === m ? null : h('button', { class: 'dash-btn', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m })) } }),
+      c?.use ? h('p', { class: 'dash-ai-info__use', text: c.use }) : null,
+    ];
+    this.testInfo.replaceChildren(...kids.filter((k): k is HTMLElement => !!k));
   }
 
   private closeTest(): void {
@@ -103,6 +132,7 @@ export class AiPage {
       } catch {
         this.speed.set(m, 'err');
       }
+      if (!this.modal.hidden) this.drawInfo();
       this.invalidate();
     }
   }

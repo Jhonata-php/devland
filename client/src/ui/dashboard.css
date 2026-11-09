@@ -942,3 +942,47 @@ html .ui-root .ui-spawn__go:hover { background: #fff; color: #111110; }
 html.theme-light .dash-ai-modal { background: rgba(0, 0, 0, 0.25); }
 .dash-model__foot .dash-grow { flex: 1; }
 @media (max-width: 600px) { .dash-ai-modal { place-items: end center; padding: 0; } .dash-ai-modal .dash-ai-chat { border-radius: 18px 18px 0 0; max-height: 92vh; } }
+/* Campo de mensagem do assistente: uma borda só (a do contorno), sem o estilo geral de campos. */
+html .ui-root .dash-ai-compose textarea, html .ui-root .dash-ai-compose textarea:focus { border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding: 8px 0 !important; border-radius: 0 !important; }
+.dash-ai-compose:focus-within { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04); }
+.dash-ai-send { cursor: pointer; }
+.dash-ai-send:disabled { cursor: default; }
+/* Dados do modelo na janela de teste. */
+.dash-ai-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 18px; border-bottom: 1px solid var(--d-line); }
+.dash-ai-info__item { display: grid; gap: 1px; min-width: 92px; padding: 8px 12px; border-radius: 10px; background: var(--d-card2); }
+.dash-ai-info__item span { color: var(--d-mut); font-size: 11.5px; }
+.dash-ai-info__item b { font-size: 14px; font-weight: 600; }
+.dash-ai-info .dash-btn { height: 34px; font-size: 13px; }
+.dash-ai-info__use { flex-basis: 100%; margin: 2px 0 0; color: var(--d-mut); font-size: 13px; }
+.dash-mcp-chat .dash-ai-log { min-height: 0; max-height: 46vh; }
+.dash-mcp-found { display: grid; gap: 8px; width: 100%; }
+.dash-mcp-found p { margin: 0; color: #e6e4df; font-size: 14.5px; }
+.dash-mcp-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--d-line); border-radius: 12px; background: var(--d-card2); }
+.dash-mcp-item > div { flex: 1; min-width: 0; display: grid; }
+.dash-mcp-item b { font-weight: 600; }
+.dash-mcp-item small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--d-mut); font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; }
+html.theme-light .dash-mcp-found p { color: #2a2927; }
+html .ui-root .dash-mcp-chat .dash-ai-compose textarea { flex: 1; min-width: 0; min-height: 36px; resize: none; color: var(--d-txt); font: 15px/1.45 var(--d-font); }
+.dash-mcp-target { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px !important; }
+.dash-mcp-chat { width: min(760px, 100%); }
+.dash-mcp-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.dash-mcp-chip { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--d-line); border-radius: 12px; background: var(--d-card2); color: var(--d-txt); text-align: left; font: inherit; cursor: pointer; }
+.dash-mcp-chip:hover:not(:disabled) { border-color: var(--d-line2); background: #262624; }
+.dash-mcp-chip small { color: var(--d-mut); font-size: 12px; }
+.dash-mcp-sug p { margin: 0 0 8px; }
+.dash-mcp-res { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; }
+.dash-mcp-item .cw-wait, .dash-mcp-item .dash-bad, .dash-mcp-item .dash-muted { margin: 6px 0 0; font-size: 13px; }
+.dash-mcp-warn { margin: 0 16px 14px !important; }
+html.theme-light .dash-mcp-chip:hover:not(:disabled) { background: #f1f0eb; }
+/* Plugins */
+.dash-plug-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.dash-plug-tabs { display: inline-flex; padding: 3px; border-radius: 11px; background: var(--d-bg); border: 1px solid var(--d-line); }
+.dash-plug-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 0; border-radius: 8px; background: none; color: var(--d-mut); font-weight: 550; }
+.dash-plug-tab.is-on { background: var(--d-card2); color: var(--d-txt); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+.dash-plug-tab em { font-style: normal; font-size: 11.5px; padding: 0 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); }
+html .ui-root .dash .dash-plug-search, html .ui-root .dash .dash-plug-add input { height: 38px; min-width: 260px; flex: 1; max-width: 420px; padding: 0 12px; border-radius: 10px; }
+.dash-plug-add { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+html .ui-root .dash .dash-plug-add input { max-width: none; }
+.dash-plug-hint { margin: -4px 0 10px; font-size: 13px; }
+.dash-ok { margin: 0; color: var(--d-acc); }
+html.theme-light .dash-plug-tab em { background: rgba(0, 0, 0, 0.06); }

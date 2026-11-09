@@ -76,7 +76,50 @@ export class PluginStore {
 
   async list(q: string): Promise<{ plugins: PluginEntry[]; total: number }> {
     const c = await this.load();
-    return { plugins: searchPlugins(c.available, q), total: c.available.length };
+    // Instalados que não estão em nenhum marketplace configurado (ex.: o marketplace foi removido) também aparecem.
+    const known = new Set(c.available.map((p) => p.id));
+    const orphans: PluginEntry[] = [...c.installed].filter((id) => !known.has(id)).map((id) => ({ id, name: id.split('@')[0]!, description: '', marketplace: id.split('@')[1] ?? '', installed: true }));
+    const all = [...c.available, ...orphans];
+    return { plugins: searchPlugins(all, q), total: all.length };
+  }
+
+  /** Marketplaces configurados (de onde vêm os plugins). */
+  async marketplaces(): Promise<{ name: string; source: string }[]> {
+    const dir = this.dirs()[0];
+    if (!dir) return [];
+    const r = await runClaude(this.bin, ['plugin', 'marketplace', 'list', '--json'], dir);
+    try {
+      return (JSON.parse(r.stdout) as { name: string; source: string; repo?: string; url?: string; path?: string }[]).map((m) => ({ name: m.name, source: m.repo ?? m.url ?? m.path ?? m.source }));
+    } catch {
+      return [];
+    }
+  }
+
+  /** Acrescenta um marketplace (dono/repositório do GitHub ou endereço git) em todas as contas. */
+  async addMarketplace(source: string): Promise<{ ok: true }> {
+    const src = source.trim().replace(/^https:\/\/github\.com\/([\w.-]+\/[\w.-]+?)(\.git)?\/?$/, '$1');
+    if (!/^[\w.-]+\/[\w.-]+$/.test(src) && !/^https:\/\/[\w.-]+\/[\w./-]+$/.test(src)) throw new Error(tr('Use dono/repositório do GitHub (ex.: obra/superpowers-marketplace) ou o endereço https do repositório.'));
+    if (this.busy) throw new Error(tr('Outra instalação está em andamento: espere terminar.'));
+    this.busy = true;
+    try {
+      const failed: string[] = [];
+      for (const dir of this.dirs()) {
+        const r = await runClaude(this.bin, ['plugin', 'marketplace', 'add', src], dir);
+        if (!r.ok && !/already|já/i.test(r.out)) failed.push(r.out.split('\n').pop()?.slice(0, 200) ?? '');
+      }
+      if (failed.length) throw new Error(failed[0]!);
+      return { ok: true };
+    } finally {
+      this.busy = false;
+      this.catalog = null;
+    }
+  }
+
+  async removeMarketplace(name: string): Promise<{ ok: true }> {
+    if (!/^[\w.-]{1,80}$/.test(name)) throw new Error(tr('Marketplace inválido.'));
+    for (const dir of this.dirs()) await runClaude(this.bin, ['plugin', 'marketplace', 'remove', name], dir);
+    this.catalog = null;
+    return { ok: true };
   }
 
   /** Instala ou remove em todas as contas; só ids do catálogo. */

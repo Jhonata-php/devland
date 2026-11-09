@@ -12,6 +12,9 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Plugins no painel:** página com Instalados e Descobrir, busca, instalar e remover em todas as contas, e os marketplaces (acrescente pelo dono/repositório do GitHub para achar plugins que não aparecem, como os de terceiros).
+- **Conectores por conversa:** a página mostra só os seus conectores; "+ Adicionar conector" abre uma conversa onde você cola o comando `claude mcp add`, o JSON de mcpServers, o endereço ou o nome (ou toca num sugerido). Ele adiciona na hora e diz se conectou, se falta entrar no serviço ou se falhou.
+- **Testar modelo com os dados:** a janela de teste mostra tamanho, memória, velocidade, se os agentes usam e se está carregado, com Medir velocidade e Usar nos agentes ali mesmo.
 - **Testar cada modelo:** na IA local, o botão Testar de cada modelo abre a conversa com ele numa janela (no lugar do bloco grande de assistente na página).
 - **Novo agente em passos:** 1) quem vai trabalhar (conta do Claude, com a escolha da conta, ou a IA local do servidor); 2) o projeto; 3) a função e o pedido. Voltar e Próximo passo entre eles.
 - **Proteção de memória da IA local:** um modelo carregado por vez, um pedido por vez, cache de contexto menor e prioridade baixa para o motor; antes de carregar, o DevLand confere se o modelo cabe deixando uma reserva para o painel, e se a memória acabar ele tira o modelo da memória na hora. A IA local não derruba mais o painel.
@@ -42,6 +45,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Avisos a cada atualização:** no Cloud, os avisos "chegou" e "Nova sala" ficam em silêncio nos 3 primeiros minutos depois de subir (as conversas retomadas não enchem mais a tela).
+- **Campo de mensagem do assistente:** uma borda só, sem o contorno verde por dentro.
 - **Página IA local mais simples:** ativar com um botão, o modelo dos agentes num seletor, seus modelos em cartões com botões, e para baixar primeiro os que cabem no servidor (os maiores ficam em "Ver também"). Sem termos técnicos (motor, endereço, porta).
 - **Telas mais largas** no painel (sem ficar espremido no meio) e janela de **Novo agente** redesenhada: projetos em grade, conta e função em botões, pedido maior.
 - **Conversa no painel:** texto do agente solto e legível, a sua mensagem em balão, ferramentas numa linha discreta e um campo de mensagem único e arredondado (o campo azul com borda dupla saiu). Mensagens vazias não deixam mais faixas em branco.
