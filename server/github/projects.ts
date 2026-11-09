@@ -95,3 +95,51 @@ export async function githubUser(ghBin: string | undefined, run: Run = defaultRu
 export async function pull(dir: string, run: Run = defaultRun): Promise<boolean> {
   return (await run('git', ['pull', '--ff-only'], dir)) !== null;
 }
+
+export interface ProjectDetail {
+  files: { status: string; path: string }[];
+  diff: string;
+  truncated: boolean;
+  prs: { number: number; title: string; branch: string; url: string; draft: boolean; checks: 'ok' | 'fail' | 'pending' | 'none' }[];
+}
+
+const DIFF_MAX = 150_000;
+
+/** Estado de CI de um PR a partir do statusCheckRollup do gh. */
+export function checksOf(rollup: readonly { conclusion?: string; state?: string; status?: string }[] | undefined): ProjectDetail['prs'][number]['checks'] {
+  if (!rollup?.length) return 'none';
+  const v = rollup.map((c) => (c.conclusion || c.state || c.status || '').toUpperCase());
+  if (v.some((x) => ['FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED'].includes(x))) return 'fail';
+  if (v.some((x) => ['PENDING', 'IN_PROGRESS', 'QUEUED', 'EXPECTED', ''].includes(x))) return 'pending';
+  return 'ok';
+}
+
+/** O que mudou (arquivos e diff contra o último commit, novos incluídos) e os PRs abertos do repositório. */
+export async function projectDetail(dir: string, ghBin: string | undefined, run: Run = defaultRun): Promise<ProjectDetail> {
+  const [status, diff, prs] = await Promise.all([
+    run('git', ['status', '--porcelain'], dir),
+    run('git', ['diff', 'HEAD', '--no-color', '--no-ext-diff'], dir),
+    ghBin ? run(ghBin, ['pr', 'list', '--state', 'open', '--limit', '20', '--json', 'number,title,headRefName,url,isDraft,statusCheckRollup'], dir) : Promise.resolve(null),
+  ]);
+  const files = (status ?? '').split('\n').filter((l) => l.trim()).map((l) => ({ status: l.slice(0, 2).trim() || 'M', path: l.slice(3) }));
+  let list: ProjectDetail['prs'] = [];
+  try {
+    list = (JSON.parse(prs ?? '[]') as { number: number; title: string; headRefName: string; url: string; isDraft: boolean; statusCheckRollup?: { conclusion?: string; state?: string; status?: string }[] }[])
+      .map((p) => ({ number: p.number, title: p.title, branch: p.headRefName, url: p.url, draft: p.isDraft, checks: checksOf(p.statusCheckRollup) }));
+  } catch {
+    // gh sem login ou repositório fora do GitHub: sem PRs
+  }
+  const text = diff ?? '';
+  return { files, diff: text.slice(0, DIFF_MAX), truncated: text.length > DIFF_MAX, prs: list };
+}
+
+/** Envia a branch atual e abre o PR com o título e a descrição dos commits. Nunca na branch principal. */
+export async function createPr(dir: string, ghBin: string | undefined, run: Run = defaultRun): Promise<string> {
+  if (!ghBin) throw new Error('gh');
+  const branch = (await run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], dir))?.trim();
+  if (!branch || branch === 'HEAD' || branch === 'main' || branch === 'master') throw new Error('main');
+  if ((await run('git', ['push', '-u', 'origin', 'HEAD'], dir)) === null) throw new Error('push');
+  const url = await run(ghBin, ['pr', 'create', '--fill'], dir);
+  if (url === null) throw new Error('pr');
+  return url.trim().split('\n').pop() ?? '';
+}

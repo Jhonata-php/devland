@@ -12,6 +12,11 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Busca (⌘K / Ctrl+K):** acha agente, projeto, página ou ação e vai direto; também pelo botão Buscar no topo.
+- **Alterações e PRs dos projetos:** na página GitHub, cada projeto mostra os arquivos alterados, o diff colorido, os PRs abertos com o estado do CI e o botão para enviar a branch e abrir o PR (nunca a partir da branch principal).
+- **Tokens por projeto:** gráfico de onde o plano foi gasto nos últimos 14 dias.
+- **Medir velocidade dos modelos locais:** a IA local testa cada modelo baixado e marca o mais rápido em tokens por segundo.
+- **Puxar para atualizar** no celular, no topo do painel.
 - **Escritório no visual novo:** o modo com o mapa usa as mesmas cores neutras, conversas, janelas, botões e avisos do painel (sai o verde neon de terminal).
 - **Aprovar na Visão geral:** em "Precisam de você", o pedido de permissão aparece com Aprovar e Negar ali mesmo, sem abrir a conversa.
 - **Aviso de limite:** a Visão geral avisa quando uma conta passa de 80% da semana ou de 90% das 5 horas, com a hora em que renova.

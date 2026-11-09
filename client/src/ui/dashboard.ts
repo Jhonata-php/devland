@@ -14,6 +14,7 @@ import { activityFallback, isPresent, statusLabel } from './model';
 import { AiPage } from './dashboard-ai';
 import { GithubData } from './dashboard-github';
 import { PermissionCard } from './permission';
+import { SearchPalette, type SearchItem } from './dashboard-search';
 
 export type DashPage = 'home' | 'agents' | 'chats' | 'github' | 'accounts' | 'people' | 'ai';
 
@@ -78,6 +79,7 @@ export class Dashboard implements UiComponent {
   private readonly gh: GithubData;
   /** Cartões de aprovar/negar da Visão geral, um por agente (guardam o estado do botão entre os redesenhos). */
   private readonly perms = new Map<string, PermissionCard>();
+  private readonly search: SearchPalette;
   private readonly meEl: HTMLElement;
   private people: { users: CloudUser[]; me: string } | null = null;
   private peopleErr = '';
@@ -100,9 +102,61 @@ export class Dashboard implements UiComponent {
     this.el = h('div', { class: 'dash', hidden: true },
       h('aside', { class: 'dash-side' }, brand, this.nav, h('div', { class: 'dash-grow' }), tools, this.meEl),
       h('div', { class: 'dash-body' }, this.top, this.main), this.tabs);
+    this.search = new SearchPalette(() => this.searchItems());
+    this.el.append(this.search.el);
+    addEventListener('keydown', (e) => {
+      if (this.el.hidden || !(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'k') return;
+      e.preventDefault();
+      if (this.search.isOpen) this.search.close();
+      else this.search.open();
+    });
+    this.pullToRefresh();
     try {
       if (localStorage.getItem(COLLAPSE_KEY) === '1') this.setCollapsed(true);
     } catch { /* sem armazenamento: menu aberto */ }
+  }
+
+  /** O que a busca (⌘K) encontra: páginas, agentes, projetos e ações. */
+  private searchItems(): SearchItem[] {
+    const snap = this.ctx.store.snapshot;
+    const pages = PAGES.map((p) => ({ group: tr('Páginas'), label: p.label(), run: () => this.go(p.id) }));
+    const agents = this.agents().map((a) => ({ group: tr('Agentes'), label: a.name, hint: `${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''} · ${statusLabel(a.status)}`, run: () => this.openChat(a.id) }));
+    const projects = (this.gh.data?.projects ?? []).map((p) => ({ group: tr('Projetos'), label: p.name, hint: p.branch, run: () => this.go('github') }));
+    const actions: SearchItem[] = [
+      ...(this.act.canSpawn() ? [{ group: tr('Ações'), label: tr('Novo agente'), run: () => this.act.newAgent() }] : []),
+      { group: tr('Ações'), label: tr('Entregas'), run: () => this.act.openDeliveries() },
+      { group: tr('Ações'), label: tr('Escritório'), hint: tr('mapa em pixel art'), run: () => this.act.openOffice() },
+      { group: tr('Ações'), label: tr('Configurações'), run: () => this.act.openSettings() },
+    ];
+    return [...agents, ...projects, ...pages, ...actions];
+  }
+
+  /** Celular: puxar a página para baixo no topo atualiza os números (projetos, gráficos, IA). */
+  private pullToRefresh(): void {
+    let startY = -1;
+    let pulled = 0;
+    const hint = h('div', { class: 'dash-ptr', text: tr('Solte para atualizar') });
+    this.main.before(hint);
+    this.main.addEventListener('touchstart', (e) => {
+      startY = this.main.scrollTop <= 0 ? e.touches[0]!.clientY : -1;
+      pulled = 0;
+    }, { passive: true });
+    this.main.addEventListener('touchmove', (e) => {
+      if (startY < 0) return;
+      pulled = Math.max(0, e.touches[0]!.clientY - startY);
+      hint.style.setProperty('--pull', `${Math.min(pulled, 90)}px`);
+      hint.classList.toggle('is-ready', pulled > 70);
+    }, { passive: true });
+    this.main.addEventListener('touchend', () => {
+      if (startY >= 0 && pulled > 70) {
+        void this.gh.load();
+        this.lastKey = '';
+        this.ctx.invalidate();
+      }
+      startY = -1;
+      hint.style.setProperty('--pull', '0px');
+      hint.classList.remove('is-ready');
+    });
   }
 
   private setCollapsed(on: boolean): void {
@@ -121,6 +175,7 @@ export class Dashboard implements UiComponent {
     const waiting = agents.filter((a) => a.status === 'waiting').length;
     const page = PAGES.find((p) => p.id === this.page)!;
     const chats = h('button', { class: `dash-btn${this.page === 'chats' ? ' is-on' : ''}`, type: 'button', on: { click: () => this.go('chats') } }, icon(ICONS.feed), h('span', { class: 'dash-hide-sm', text: tr('Conversas') }), waiting ? h('em', { class: 'dash-count', text: String(waiting) }) : null);
+    const find = h('button', { class: 'dash-btn dash-find', type: 'button', title: tr('Buscar (⌘K)'), attrs: { 'aria-label': tr('Buscar') }, on: { click: () => this.search.open() } }, icon(ICONS.search), h('span', { class: 'dash-hide-sm', text: tr('Buscar') }), h('kbd', { class: 'dash-hide-sm', text: '⌘K' }));
     const deliveries = h('button', { class: 'dash-btn', type: 'button', title: tr('Entregas: o que os agentes terminaram'), on: { click: () => this.act.openDeliveries() } }, icon(ICONS.delivery), h('span', { class: 'dash-hide-sm', text: tr('Entregas') }));
     const office = h('button', { class: 'dash-btn', type: 'button', title: tr('Ver os agentes no mapa em pixel art'), on: { click: () => this.act.openOffice() } }, icon(ICONS.office), h('span', { class: 'dash-hide-sm', text: tr('Escritório') }));
     const settings = h('button', { class: 'dash-btn dash-only-sm', type: 'button', attrs: { 'aria-label': tr('Configurações') }, on: { click: () => this.act.openSettings() } }, icon(ICONS.settings));
@@ -128,7 +183,7 @@ export class Dashboard implements UiComponent {
       h('img', { class: 'dash-only-sm dash-top__logo', attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
       h('div', { class: 'dash-top__title' }, h('b', { text: page.label() }),
         h('span', { class: 'dash-live dash-hide-sm' }, h('i', { class: working ? 'is-on' : '' }), h('span', { text: working ? tr('{0} trabalhando', [working]) : tr('Ninguém trabalhando agora') }))),
-      h('div', { class: 'dash-top__act' }, chats, deliveries, office, settings, this.newBtn(true)));
+      h('div', { class: 'dash-top__act' }, find, chats, deliveries, office, settings, this.newBtn(true)));
   }
 
   private toolBtn(svg: string, label: string, fn: () => void, cls = ''): HTMLButtonElement {

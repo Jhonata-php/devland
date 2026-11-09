@@ -19,7 +19,7 @@ import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
 import type { LocalAi } from '../ai/local';
-import { githubUser, listProjects, pull, ACTIVITY_DAYS } from '../github/projects';
+import { createPr, githubUser, listProjects, projectDetail, pull, ACTIVITY_DAYS } from '../github/projects';
 import { addDays } from '../../shared/daystats';
 import type { DevRunner } from '../preview/devrun';
 import { parsePort, type Preview } from './preview';
@@ -606,6 +606,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       // Gráficos da Visão geral e página GitHub: tokens e tempo por dia (Meu dia), projetos git e a conta do GitHub.
       const tz = new URL(req.url ?? '/', 'http://x').searchParams.get('tz') || deps.stats?.tz || 'UTC';
       const days: { day: string; tokens: number; workMs: number; sessions: number }[] = [];
+      const byProject = new Map<string, number>();
       try {
         const today = deps.stats?.today(tz);
         if (deps.stats && today) {
@@ -614,14 +615,43 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
             const r = deps.stats.day(day, tz, 'real');
             const t = r?.stats.totals;
             days.push({ day, tokens: t ? t.counts.tokensIn + t.counts.tokensOut : 0, workMs: t ? (t.ms.working ?? 0) + (t.ms.shell ?? 0) : 0, sessions: t?.sessions ?? 0 });
+            for (const room of r?.stats.rooms ?? []) byProject.set(room.name, (byProject.get(room.name) ?? 0) + room.counts.tokensIn + room.counts.tokensOut);
           }
         }
       } catch {
         // fuso inválido ou sem estatísticas: os gráficos de uso ficam vazios
       }
       Promise.all([listProjects(deps.projectDirs?.() ?? []), githubUser(deps.ghBin)])
-        .then(([projects, github]) => sendJson(res, 200, { days, projects, github, ghAvailable: !!deps.ghBin }))
+        .then(([projects, github]) => {
+          const tokensByProject = [...byProject].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, tokens]) => ({ name, tokens }));
+          sendJson(res, 200, { days, projects, github, ghAvailable: !!deps.ghBin, tokensByProject });
+        })
         .catch((err: Error) => sendJson(res, 500, { error: err.message }));
+      return true;
+    }
+    if (path === '/api/dash/project' || path === '/api/dash/pr') {
+      // Diff, PRs e abrir PR de um projeto da lista: só quem administra (Cloud) ou o próprio computador.
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const known = (dir: string) => (deps.projectDirs?.() ?? []).includes(dir);
+      if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/dash/project' && isRead) {
+        const dir = new URL(req.url ?? '/', 'http://x').searchParams.get('path') ?? '';
+        if (!known(dir)) sendJson(res, 400, { error: tr('projeto desconhecido') });
+        else projectDetail(dir, deps.ghBin).then((d) => sendJson(res, 200, d), (err: Error) => sendJson(res, 500, { error: err.message }));
+      } else if (path === '/api/dash/pr' && method === 'POST')
+        readJson(req)
+          .then(async (b) => {
+            const dir = String((b as { path?: unknown }).path ?? '');
+            if (!known(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            try {
+              sendJson(res, 200, { url: await createPr(dir, deps.ghBin) });
+            } catch (err) {
+              const why = (err as Error).message;
+              sendJson(res, 409, { error: why === 'main' ? tr('Crie uma branch antes: o PR não sai da branch principal.') : why === 'push' ? tr('Não deu para enviar a branch ao GitHub.') : why === 'gh' ? tr('O GitHub CLI (gh) não está instalado neste servidor.') : tr('O GitHub não aceitou o PR (talvez já exista um para esta branch).') });
+            }
+          })
+          .catch((err) => fail(res, err));
+      else methodNotAllowed(res, 'GET');
       return true;
     }
     if (path === '/api/dash/pull' && method === 'POST') {

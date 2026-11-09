@@ -29,6 +29,8 @@ export class AiPage {
   private readonly chatInput: HTMLTextAreaElement;
   private readonly chatSend: HTMLButtonElement;
   private readonly chatModel: HTMLSelectElement;
+  /** Tokens por segundo medidos em cada modelo (botão Medir velocidade). */
+  private speed = new Map<string, number | 'run' | 'err'>();
 
   constructor(private invalidate: () => void, private header: (title: string, sub: string) => HTMLElement) {
     this.chatLog = h('div', { class: 'dash-ai-log', attrs: { role: 'log', 'aria-live': 'polite' } });
@@ -68,6 +70,21 @@ export class AiPage {
     this.chatSend.disabled = this.chat.busy;
   }
 
+  /** Mede a velocidade de cada modelo baixado, um por vez, com uma pergunta curta. */
+  private async bench(models: string[]): Promise<void> {
+    for (const m of models) this.speed.set(m, 'run');
+    this.invalidate();
+    for (const m of models) {
+      try {
+        const r = (await this.post('/api/ai/chat', { model: m, messages: [{ role: 'user', content: tr('Escreva uma frase curta sobre programação.') }] })) as { tokensPerS: number };
+        this.speed.set(m, r.tokensPerS);
+      } catch {
+        this.speed.set(m, 'err');
+      }
+      this.invalidate();
+    }
+  }
+
   private send(): void {
     const text = this.chatInput.value.trim();
     if (!text || this.chat.busy || !this.chat.model) return;
@@ -91,7 +108,7 @@ export class AiPage {
   /** Muda quando a página precisa redesenhar. */
   key(): string {
     const j = this.st?.job;
-    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}`;
+    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}|${[...this.speed].join(',')}`;
   }
 
   /** Liga a atualização (a cada 3 s, mais rápido com download em andamento) enquanto a página está aberta. */
@@ -177,8 +194,14 @@ export class AiPage {
     }));
 
     const loadedSet = new Set(st.loaded.map((m) => m.name));
+    const speeds = [...this.speed.values()].filter((v): v is number => typeof v === 'number');
+    const fastest = speeds.length > 1 ? Math.max(...speeds) : -1;
+    const speedText = (name: string) => {
+      const v = this.speed.get(name);
+      return v === undefined ? '' : v === 'run' ? ` · ${tr('medindo…')}` : v === 'err' ? ` · ${tr('não respondeu')}` : ` · ${tr('{0} tokens/s', [v])}`;
+    };
     const mine = st.models.length ? h('div', { class: 'dash-list' }, ...st.models.map((m) => h('div', { class: 'dash-agent dash-agent--static' },
-      h('span', { class: 'dash-agent__main' }, h('span', { class: 'dash-agent__top' }, h('b', { text: m.name }), loadedSet.has(m.name) ? h('span', { class: 'dash-status is-working', text: tr('Na memória') }) : null), h('span', { class: 'dash-agent__act', text: gb(m.size) })),
+      h('span', { class: 'dash-agent__main' }, h('span', { class: 'dash-agent__top' }, h('b', { text: m.name }), loadedSet.has(m.name) ? h('span', { class: 'dash-status is-working', text: tr('Na memória') }) : null, this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null), h('span', { class: 'dash-agent__act', text: gb(m.size) + speedText(m.name) })),
       h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [m.name])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } }))))
       : h('p', { class: 'dash-muted', text: tr('Nenhum modelo baixado ainda. Comece pelo recomendado.') });
 
@@ -201,7 +224,8 @@ export class AiPage {
       jobEl,
       st.models.length ? this.chatEl : null,
       h('div', { class: 'dash-cols' },
-        h('section', { class: 'dash-card' }, h('h2', { text: tr('Seus modelos') }), mine),
+        h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Seus modelos') }),
+          st.models.length ? h('button', { class: 'dash-link', type: 'button', text: tr('Medir velocidade'), attrs: { disabled: [...this.speed.values()].includes('run') }, on: { click: () => void this.bench(st.models.map((m) => m.name)) } }) : null), mine),
         h('section', { class: 'dash-card' }, h('h2', { text: tr('Como usar') }), h('p', { class: 'dash-muted', text: tr('Instale o Ollama, baixe um modelo e converse com ele no assistente acima. Os agentes e outros programas do servidor usam pelo endereço http://127.0.0.1:11434.') }))),
       h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Modelos leves') }), h('small', { class: 'dash-muted', text: tr('Recomendado para {0} de RAM', [gb(s.ramTotal)]) })), catalog));
   }

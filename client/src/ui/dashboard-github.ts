@@ -7,7 +7,27 @@ import { h } from './dom';
 import { formatTokens, relativeTime } from './format';
 
 export interface Project { name: string; path: string; branch: string; dirty: number; ahead: number | null; lastCommitAt: number; lastCommit: string; url?: string; commits: number[] }
-export interface Activity { days: { day: string; tokens: number; workMs: number; sessions: number }[]; projects: Project[]; github: { login: string; name: string; avatar: string } | null; ghAvailable: boolean }
+export interface Activity { days: { day: string; tokens: number; workMs: number; sessions: number }[]; projects: Project[]; github: { login: string; name: string; avatar: string } | null; ghAvailable: boolean; tokensByProject?: { name: string; tokens: number }[] }
+interface Detail { files: { status: string; path: string }[]; diff: string; truncated: boolean; prs: { number: number; title: string; branch: string; url: string; draft: boolean; checks: 'ok' | 'fail' | 'pending' | 'none' }[] }
+
+/** Barras horizontais (uma série): nome, barra e valor em texto ao lado. */
+export function hBars(rows: { name: string; value: number }[], color: string, fmt: (n: number) => string): HTMLElement {
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return h('div', { class: 'dash-hbars' }, ...rows.map((r) => h('div', { class: 'dash-hbar', title: `${r.name}: ${fmt(r.value)}` },
+    h('span', { class: 'dash-hbar__name', text: r.name }),
+    h('span', { class: 'dash-hbar__track' }, h('i', { style: `width:${Math.max(2, (r.value / max) * 100)}%;background:${color}` })),
+    h('b', { class: 'dash-hbar__val', text: fmt(r.value) }))));
+}
+
+/** Diff unificado com as linhas coloridas (adição, remoção, cabeçalho do trecho). */
+function diffView(text: string): HTMLElement {
+  const pre = h('pre', { class: 'dash-diff' });
+  for (const line of text.split('\n').slice(0, 4000)) {
+    const cls = line.startsWith('+++') || line.startsWith('---') || line.startsWith('diff ') || line.startsWith('index ') ? 'is-meta' : line.startsWith('+') ? 'is-add' : line.startsWith('-') ? 'is-del' : line.startsWith('@@') ? 'is-hunk' : '';
+    pre.append(h('span', { class: cls, text: `${line}\n` }));
+  }
+  return pre;
+}
 
 const SVG = 'http://www.w3.org/2000/svg';
 const svg = (tag: string, attrs: Record<string, string | number>) => {
@@ -72,12 +92,15 @@ export class GithubData {
   private loading = false;
   msg = '';
   remote: { name: string; private: boolean; cloned: boolean }[] | null = null;
+  /** Projeto aberto (alterações e PRs) e o que já foi lido dele. */
+  private open: string | null = null;
+  private details = new Map<string, Detail | string>();
 
   constructor(private invalidate: () => void) {}
 
   key(): string {
     const d = this.data;
-    return d ? `${d.projects.map((p) => `${p.path}:${p.dirty}:${p.ahead}:${p.lastCommitAt}`).join(',')}|${d.days.map((x) => x.tokens).join(',')}|${d.github?.login}|${this.msg}|${this.remote?.length}` : `-${this.err}`;
+    return d ? `${d.projects.map((p) => `${p.path}:${p.dirty}:${p.ahead}:${p.lastCommitAt}`).join(',')}|${d.days.map((x) => x.tokens).join(',')}|${d.github?.login}|${this.msg}|${this.remote?.length}|${this.open}|${[...this.details.keys()].join(',')}` : `-${this.err}`;
   }
 
   active(on: boolean): void {
@@ -123,7 +146,9 @@ export class GithubData {
       h('section', { class: 'dash-card dash-chartcard' }, h('div', { class: 'dash-card__head' }, h('h2', { text: title }), h('small', { class: 'dash-muted', text: sub })), h('b', { class: 'dash-chartcard__total', text: total }), chart);
     return h('div', { class: 'dash-cols dash-cols--even' },
       d.days.length ? card(tr('Uso de tokens'), formatTokens(sum(d.days.map((x) => x.tokens))), tr('últimos {0} dias', [d.days.length]), barChart(d.days.map((x) => x.tokens), labels, 'var(--d-s1)', formatTokens, tr('tokens'))) : null,
-      card(tr('Commits'), String(sum(commits)), tr('{0} projetos · últimos {1} dias', [d.projects.length, labels.length]), barChart(commits, labels, 'var(--d-s3)', (n) => String(n), tr('commits'))));
+      card(tr('Commits'), String(sum(commits)), tr('{0} projetos · últimos {1} dias', [d.projects.length, labels.length]), barChart(commits, labels, 'var(--d-s3)', (n) => String(n), tr('commits'))),
+      d.tokensByProject?.length ? h('section', { class: 'dash-card dash-span2' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Tokens por projeto') }), h('small', { class: 'dash-muted', text: tr('onde o plano foi gasto · últimos {0} dias', [labels.length]) })),
+        hBars(d.tokensByProject.map((x) => ({ name: x.name, value: x.tokens })), 'var(--d-s1)', formatTokens)) : null);
   }
 
   page(header: (title: string, sub: string, ...right: (HTMLElement | null)[]) => HTMLElement, openCloud: () => void, newSession?: (path: string) => void): HTMLElement {
@@ -147,7 +172,8 @@ export class GithubData {
     const now = Date.now();
     const rows = d.projects.map((p) => {
       const spark = h('span', { class: 'dash-spark', attrs: { 'aria-label': tr('{0} commits em 14 dias', [p.commits.reduce((a, b) => a + b, 0)]) } }, ...p.commits.map((c) => h('i', { style: `height:${c ? Math.min(100, 20 + c * 16) : 8}%`, class: c ? 'is-on' : '' })));
-      return h('div', { class: 'dash-repo' },
+      const detail = this.open === p.path ? this.detailView(p) : null;
+      return h('div', { class: `dash-repo-wrap${detail ? ' is-open' : ''}` }, h('div', { class: 'dash-repo' },
         h('div', { class: 'dash-repo__main' },
           h('div', { class: 'dash-repo__top' }, h('b', { text: p.name }), h('code', { text: p.branch }),
             p.dirty ? h('span', { class: 'dash-badge is-warn', text: tr('{0} alterados', [p.dirty]) }) : null,
@@ -156,13 +182,14 @@ export class GithubData {
           h('small', { text: p.lastCommit ? `${p.lastCommit} · ${relativeTime(p.lastCommitAt, now)}` : tr('sem commits') })),
         spark,
         h('div', { class: 'dash-repo__act' },
+          admin ? h('button', { class: `dash-btn${this.open === p.path ? ' is-on' : ''}`, type: 'button', text: tr('Alterações e PRs'), on: { click: () => this.toggle(p.path) } }) : null,
           newSession ? h('button', { class: 'dash-btn', type: 'button', text: tr('Abrir agente'), title: tr('Abre o Claude Code nesta pasta'), on: { click: () => newSession(p.path) } }) : null,
           p.url ? h('a', { class: 'dash-btn', attrs: { href: p.url, target: '_blank', rel: 'noopener' }, text: tr('GitHub ↗') }) : null,
           admin && p.url ? h('button', { class: 'dash-btn', type: 'button', text: tr('Puxar'), title: tr('git pull: traz o que está no GitHub (só avança, nunca faz merge)'), on: { click: () => {
             this.msg = tr('Atualizando {0}…', [p.name]);
             this.invalidate();
             this.post('/api/dash/pull', { path: p.path }).then(() => (this.msg = tr('{0} atualizado.', [p.name])), (e: Error) => (this.msg = e.message)).finally(() => void this.load());
-          } } }) : null));
+          } } }) : null)), detail);
     });
     const remote = this.remote ? h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Repositórios no GitHub') }), h('button', { class: 'dash-link', type: 'button', text: tr('Fechar'), on: { click: () => { this.remote = null; this.invalidate(); } } })),
       h('div', { class: 'dash-list' }, ...this.remote.map((r) => h('div', { class: 'dash-agent dash-agent--static' },
@@ -187,6 +214,47 @@ export class GithubData {
       this.charts(),
       h('section', { class: 'dash-card dash-repos' }, h('h2', { text: tr('Projetos') }),
         rows.length ? h('div', { class: 'dash-repo-list' }, ...rows) : h('p', { class: 'dash-muted', text: tr('Nenhum projeto com git ainda. Clone um repositório ou abra um agente numa pasta com git.') })));
+  }
+
+  private toggle(path: string): void {
+    this.open = this.open === path ? null : path;
+    if (this.open) {
+      this.details.delete(path);
+      fetch(`/api/dash/project?path=${encodeURIComponent(path)}`, { credentials: 'same-origin', cache: 'no-store' })
+        .then(async (r) => {
+          const j = await r.json();
+          this.details.set(path, r.ok ? (j as Detail) : (j.error as string) || tr('Não deu certo.'));
+        }, () => this.details.set(path, tr('Não deu certo.')))
+        .finally(() => this.invalidate());
+    }
+    this.invalidate();
+  }
+
+  private detailView(p: Project): HTMLElement {
+    const d = this.details.get(p.path);
+    if (!d) return h('div', { class: 'dash-repo-detail' }, h('p', { class: 'dash-muted', text: tr('Lendo as alterações…') }));
+    if (typeof d === 'string') return h('div', { class: 'dash-repo-detail' }, h('p', { class: 'dash-bad', text: d }));
+    const main = p.branch === 'main' || p.branch === 'master';
+    const ico = { ok: '✓', fail: '✕', pending: '•', none: '–' } as const;
+    return h('div', { class: 'dash-repo-detail' },
+      h('div', { class: 'dash-repo-detail__cols' },
+        h('div', {}, h('h3', { text: tr('Arquivos alterados ({0})', [d.files.length]) }),
+          d.files.length ? h('ul', { class: 'dash-files' }, ...d.files.map((f) => h('li', {}, h('i', { class: `is-${f.status === '??' ? 'new' : f.status[0] === 'D' ? 'del' : 'mod'}`, text: f.status === '??' ? 'N' : f.status[0] ?? 'M' }), h('span', { text: f.path })))) : h('p', { class: 'dash-muted', text: tr('Nada mudou desde o último commit.') })),
+        h('div', {}, h('h3', { text: tr('PRs abertos ({0})', [d.prs.length]) }),
+          d.prs.length ? h('ul', { class: 'dash-prs' }, ...d.prs.map((r) => h('li', {}, h('i', { class: `dash-ci is-${r.checks}`, text: ico[r.checks], title: r.checks === 'ok' ? tr('CI passou') : r.checks === 'fail' ? tr('CI falhou') : r.checks === 'pending' ? tr('CI rodando') : tr('sem CI') }),
+            h('a', { attrs: { href: r.url, target: '_blank', rel: 'noopener' }, text: `#${r.number} ${r.title}` }), r.draft ? h('span', { class: 'dash-badge', text: tr('rascunho') }) : null))) : h('p', { class: 'dash-muted', text: tr('Nenhum PR aberto.') }),
+          p.url && !main && (p.ahead ?? 1) > 0 ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Criar PR de {0}', [p.branch]), on: { click: () => {
+            if (!confirm(tr('Enviar a branch {0} ao GitHub e abrir o PR?', [p.branch]))) return;
+            this.msg = tr('Abrindo o PR…');
+            this.invalidate();
+            this.post('/api/dash/pr', { path: p.path }).then((x) => {
+              this.msg = tr('PR aberto: {0}', [(x as { url: string }).url]);
+              this.details.delete(p.path);
+              this.toggle(p.path);
+              this.toggle(p.path);
+            }, (e: Error) => (this.msg = e.message)).finally(() => this.invalidate());
+          } } }) : main ? h('p', { class: 'dash-muted', text: tr('Na branch principal: peça ao agente para criar uma branch antes de abrir PR.') }) : null)),
+      d.diff ? h('details', { class: 'dash-diff-wrap' }, h('summary', { text: tr('Ver o diff') }), diffView(d.diff), d.truncated ? h('p', { class: 'dash-muted', text: tr('Diff grande: mostrando só o começo.') }) : null) : null);
   }
 
   private async loadRemote(): Promise<void> {
