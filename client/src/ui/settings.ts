@@ -191,7 +191,7 @@ export class SettingsPopover implements UiComponent {
           'div',
           { class: 'ui-set__text' },
           h('span', { class: 'ui-set__label', text: tr('Sair deste aparelho') }),
-          h('span', { class: 'ui-set__hint', text: tr('Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com usuário e senha.') }),
+          h('span', { class: 'ui-set__hint', text: tr('Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com e-mail e senha.') }),
         ),
         this.logoutBtn,
       ),

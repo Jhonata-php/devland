@@ -333,6 +333,8 @@ function adminPage(): string {
       rm.onclick = () => { if (confirm(T.confirmRemove.replace('{0}', u.name))) call('DELETE', '/api/cloud/users/' + u.id).then(load, load); };
       const who = el('div', { className: 'who' }, el('b', { textContent: u.name }), el('small', { textContent: u.email || '' }));
       if (u.id === me) who.firstChild.append(el('span', { className: 'badge', textContent: T.you.replace(/[()]/g, '') }));
+      // A própria linha não se remove nem se rebaixa (sem querer, a pessoa ficaria sem acesso de admin).
+      if (u.id === me) { rm.hidden = true; role.disabled = true; }
       const row = el('div', { className: 'u' }, el('span', { className: 'av', textContent: u.name.slice(0, 1).toUpperCase() }), who, role, rm);
       const perms = el('div', { className: 'perms' });
       if (u.role === 'admin') perms.append(el('span', { className: 'chip on', textContent: T.allPerms }));
@@ -737,8 +739,11 @@ export function createCloud(deps: CloudDeps): Cloud {
     if (path === '/contas') {
       req.resume();
       // A página só existe dentro da janela do app (iframe ?embed); aberta direto, leva ao app e abre a janela.
-      if (!deps.connect?.()) redirect(res, '/');
-      else if (!url.searchParams.has('embed')) redirect(res, '/?painel=contas');
+      // Sem a conexão pela web (fora do container do Cloud), a janela mostra um aviso em vez de carregar o app dentro dela.
+      if (!deps.connect?.()) {
+        if (url.searchParams.has('embed')) sendHtml(res, shell(tr('Contas'), `${EMBED_STYLE}<main><p>${esc(tr('Conectar contas pela web está desligado neste servidor: as contas do Claude Code e do Codex são as do próprio computador.'))}</p></main>`, ''), true);
+        else redirect(res, '/');
+      } else if (!url.searchParams.has('embed')) redirect(res, '/?painel=contas');
       else sendHtml(res, accountsPage(me.role === 'admin'), true);
       return true;
     }

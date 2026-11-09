@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Revisão no PC e no celular:** a janela Contas, num servidor sem conexão de contas pela web, mostra um aviso em vez de carregar o escritório dentro dela; Usuários não deixa remover nem rebaixar a própria conta por engano; "Sair" e o aviso de login falam em e-mail e senha (o login é por e-mail).
 - **Novo agente (celular):** o cabeçalho com o X fica no topo enquanto a lista rola, e a ajuda não cita mais a pasta antiga `~/.habblaud`.
 - **Caixa de mensagem (celular):** anexo, microfone e Enviar com o mesmo tamanho e alinhados; gravando, o microfone fica vermelho pulsando, e o segundo toque sempre para a gravação (no iPhone ela às vezes ficava presa). Uma conversa sem mensagens gravadas avisa em vez de ficar em branco, e o servidor registra no log qual transcript leu, para achar a causa.
 - **Celular: menus abrem abaixo do topo:** Novo agente, Entregas, Histórico e a prévia começavam atrás da barra de status no app da tela de início; agora começam logo abaixo do topo.

@@ -2425,7 +2425,7 @@ export const ES: Readonly<Record<string, string>> = {
   "Usuário ou senha incorretos.": "Usuario o contraseña incorrectos.",
   "requisição inválida": "solicitud inválida",
   "sem certificado da CA": "sin certificado de la CA",
-  "faça login: abra o DevLand por esta porta no navegador e entre com usuário e senha": "inicia sesión: abre DevLand por este puerto en el navegador y entra con usuario y contraseña",
+  "faça login: abra o DevLand por esta porta no navegador e entre com e-mail e senha": "inicia sesión: abre DevLand por este puerto en el navegador y entra con correo y contraseña",
   "Acesso remoto: não deu para escutar na porta {0} ({1}).": "Acceso remoto: no se pudo escuchar en el puerto {0} ({1}).",
   "   Acesso remoto: certificado recarregado.": "   Acceso remoto: certificado recargado.",
   "   Acesso remoto: certificado novo ilegível, mantendo o anterior ({0}).": "   Acceso remoto: el certificado nuevo es ilegible, se mantiene el anterior ({0}).",
@@ -2579,7 +2579,7 @@ export const ES: Readonly<Record<string, string>> = {
   "Sair": "Salir",
   "Acesso pelo celular": "Acceso desde el celular",
   "Sair deste aparelho": "Cerrar sesión en este dispositivo",
-  "Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com usuário e senha.": "Cierra el inicio de sesión aquí (una copia de la cookie también deja de valer). Para volver, entra con tu usuario y contraseña.",
+  "Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com e-mail e senha.": "Cierra el inicio de sesión aquí (una copia de la cookie también deja de valer). Para volver, entra con tu correo y contraseña.",
 
   // client/src/art/character/appearance.ts
   "Não combina com este cabelo": "No combina con este pelo",
@@ -3436,6 +3436,7 @@ export const ES: Readonly<Record<string, string>> = {
   "DevLand · contas": "DevLand · cuentas",
   "Precisa da permissão de terminal.": "Necesita el permiso de terminal.",
   "Conectar contas pela web está desligado.": "Conectar cuentas por la web está desactivado.",
+  "Conectar contas pela web está desligado neste servidor: as contas do Claude Code e do Codex são as do próprio computador.": "Conectar cuentas por la web está desactivado en este servidor: las cuentas de Claude Code y Codex son las del propio equipo.",
   "ferramenta inválida": "herramienta no válida",
   "Conectar contas": "Conectar cuentas",
   "Abre o Claude Code em /workspace (os projetos clonados ficam lá)": "Abre Claude Code en /workspace (ahí quedan los proyectos clonados)",

@@ -665,7 +665,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
 
     req.resume();
     if (path === '/api' || path.startsWith('/api/')) {
-      sendJson(res, 401, { error: tr('faça login: abra o DevLand por esta porta no navegador e entre com usuário e senha') });
+      sendJson(res, 401, { error: tr('faça login: abra o DevLand por esta porta no navegador e entre com e-mail e senha') });
     } else {
       res.writeHead(302, { Location: cloud?.needsSetup() ? '/setup' : '/login', 'Cache-Control': 'no-store' });
       res.end();

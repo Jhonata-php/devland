@@ -2425,7 +2425,7 @@ export const EN: Readonly<Record<string, string>> = {
   "Usuário ou senha incorretos.": "Incorrect username or password.",
   "requisição inválida": "invalid request",
   "sem certificado da CA": "no CA certificate",
-  "faça login: abra o DevLand por esta porta no navegador e entre com usuário e senha": "sign in: open DevLand on this port in your browser and enter your username and password",
+  "faça login: abra o DevLand por esta porta no navegador e entre com e-mail e senha": "sign in: open DevLand on this port in your browser and enter your email and password",
   "Acesso remoto: não deu para escutar na porta {0} ({1}).": "Remote access: couldn't listen on port {0} ({1}).",
   "   Acesso remoto: certificado recarregado.": "   Remote access: certificate reloaded.",
   "   Acesso remoto: certificado novo ilegível, mantendo o anterior ({0}).": "   Remote access: new certificate unreadable, keeping the previous one ({0}).",
@@ -2579,7 +2579,7 @@ export const EN: Readonly<Record<string, string>> = {
   "Sair": "Sign out",
   "Acesso pelo celular": "Phone access",
   "Sair deste aparelho": "Sign out of this device",
-  "Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com usuário e senha.": "Ends the login here (a copy of the cookie stops working too). To come back, sign in with your username and password.",
+  "Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com e-mail e senha.": "Ends the login here (a copy of the cookie stops working too). To come back, sign in with your email and password.",
 
   // client/src/art/character/appearance.ts
   "Não combina com este cabelo": "Doesn't go with this hair",
@@ -3435,6 +3435,7 @@ export const EN: Readonly<Record<string, string>> = {
   "DevLand · contas": "DevLand · accounts",
   "Precisa da permissão de terminal.": "Needs the terminal permission.",
   "Conectar contas pela web está desligado.": "Connecting accounts on the web is off.",
+  "Conectar contas pela web está desligado neste servidor: as contas do Claude Code e do Codex são as do próprio computador.": "Connecting accounts on the web is off on this server: the Claude Code and Codex accounts are the computer's own.",
   "ferramenta inválida": "invalid tool",
   "Conectar contas": "Connect accounts",
   "Abre o Claude Code em /workspace (os projetos clonados ficam lá)": "Opens Claude Code in /workspace (cloned projects live there)",
