@@ -59,6 +59,7 @@ import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
 import { fetchOAuthUsage } from './accounts/oauth-usage';
+import { usageAlerts } from './accounts/usage-alert';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -232,7 +233,17 @@ if (push) {
   hub.onNotice((n) => {
     // "Precisa de você" e "concluiu" (o texto do aviso de conclusão começa com ✅); o resto não vira notificação.
     if (n.level !== 'alert' && !(n.level === 'success' && n.text.startsWith('✅'))) return;
-    void push.notify({ title: n.level === 'alert' ? tr('DevLand — precisa de você') : tr('DevLand — terminou'), body: n.text, tag: n.agentId ?? n.id });
+    // Tocar abre o agente; pedido de permissão (não pergunta) leva o id para Permitir/Negar direto da notificação.
+    const pending = n.level === 'alert' && n.agentId ? late.permissions?.snapshot().get(n.agentId) : undefined;
+    void push.notify({
+      title: n.level === 'alert' ? tr('DevLand — precisa de você') : tr('DevLand — terminou'),
+      body: n.text,
+      tag: n.agentId ?? n.id,
+      url: n.agentId ? `/?agent=${encodeURIComponent(n.agentId)}` : '/',
+      ...(pending && !pending.questions?.length
+        ? { permissionId: pending.id, labels: { allow: tr('Permitir'), deny: tr('Negar'), done: tr('Resposta enviada ao agente.'), failed: tr('Não deu para responder daqui: abra o DevLand.') } }
+        : {}),
+    });
   });
 }
 // "Meu dia": amostra o escritório a cada segundo e persiste em <dataDir>/stats/ (ver history/daystats.ts).
@@ -316,12 +327,26 @@ const deliveryFiles = deliveries
 const timelineDir = join(config.dataDir, TIMELINE_DIR);
 const timeline = config.timeline ? new TimelineRecorder({ dir: timelineDir }) : undefined;
 if (timeline) hub.onSnapshot((snap) => timeline.ingest(snap));
+// Uso do plano: aviso no escritório e no celular ao passar de 80% e de 95% (sessão de 5 h ou semana), uma vez por janela.
+const usageFired = new Set<string>();
+hub.onSnapshot((snap) => {
+  for (const u of usageAlerts(snap.accounts, usageFired)) {
+    const text = u.window === 'fiveHour'
+      ? tr('📊 {0} usou {1}% da sessão de 5 horas.', [u.accountName, u.utilization])
+      : tr('📊 {0} usou {1}% do limite da semana.', [u.accountName, u.utilization]);
+    // 'warn' (não 'alert'): o aviso de "precisa de você" viraria uma segunda notificação.
+    office.noticeSystem(`usage:${u.accountId}`, 'warn', text);
+    void push?.notify({ title: tr('DevLand — uso do plano'), body: text, tag: `usage-${u.accountId}-${u.window}`, url: '/' });
+  }
+});
 // Responder pelo escritório (hook PermissionRequest): age sobre as sessões, então segue a mesma trava.
 const permissions = config.terminal
   ? new PermissionRegistry({
       office,
-      viewers: () => hub.localSize,
-      answerLater: () => !!config.remote?.allow.has('permissions'),
+      // No Cloud, um celular com as notificações ligadas também conta: o pedido espera a resposta pela notificação
+      // mesmo com o app fechado (sem isso, ele ia direto para o terminal, que no Cloud ninguém vê).
+      viewers: () => hub.localSize + (cloud && push ? push.count() : 0),
+      answerLater: () => !!config.remote?.allow.has('permissions') || (!!cloud && !!push && push.count() > 0),
       // Só o Claude Code: a busca da resposta dada no terminal lê o formato do transcript dele.
       transcriptPathOf: (id) => claude.transcriptPathOf(id),
       // Pedidos do hook do Codex: a conta pela pasta CODEX_HOME que ele manda.

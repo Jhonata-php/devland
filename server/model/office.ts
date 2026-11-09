@@ -751,6 +751,12 @@ export class Office {
    * Aviso de pedido de permissão (ou de pergunta do AskUserQuestion) vindo do hook; usa o dedupe do "precisa de
    * você" (o mesmo pedido, outro caminho).
    */
+  /** Aviso do escritório sem agente (ex.: uso do plano perto do limite): toast na página, com o nível dado. */
+  noticeSystem(key: string, level: NoticeLevel, text: string): void {
+    this.notice('room', key, level, text);
+    this.markDirty();
+  }
+
   noticePermission(id: string, what: string, kind: 'permission' | 'question' = 'permission'): void {
     const info = this.agents.get(id)?.info;
     if (!info) return;

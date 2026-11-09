@@ -14,6 +14,12 @@ export interface PushMessage {
   title: string;
   body: string;
   tag?: string;
+  /** Endereço aberto ao tocar na notificação (ex.: /?agent=<id>, que abre o agente). */
+  url?: string;
+  /** Pedido de permissão em aberto: Android e computador mostram Permitir/Negar na própria notificação. */
+  permissionId?: string;
+  /** Rótulos dos botões, no idioma do servidor (o service worker não tem as traduções). */
+  labels?: { allow: string; deny: string; done: string; failed: string };
 }
 
 export interface PushServiceOptions {

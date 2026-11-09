@@ -3547,4 +3547,11 @@ export const EN: Readonly<Record<string, string>> = {
   "Permissão": "Permission",
   "como vai aparecer": "how it will show up",
   "Diagnóstico da tela": "Screen diagnostics",
+  "Permitir": "Allow",
+  "Negar": "Deny",
+  "Resposta enviada ao agente.": "Answer sent to the agent.",
+  "Não deu para responder daqui: abra o DevLand.": "Couldn't answer from here: open DevLand.",
+  "DevLand — uso do plano": "DevLand — plan usage",
+  "📊 {0} usou {1}% da sessão de 5 horas.": "📊 {0} used {1}% of the 5-hour session.",
+  "📊 {0} usou {1}% do limite da semana.": "📊 {0} used {1}% of the weekly limit.",
 };

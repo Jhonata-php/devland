@@ -239,6 +239,13 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     if (url.search && location.search === url.search) window.window.history.replaceState(null, '', location.pathname);
   };
   if (typeof location !== 'undefined') openLink(new URL(location.href));
+  // Notificação tocada com o app já aberto: o service worker pede para abrir o agente (sw.js).
+  if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', (e: MessageEvent) => {
+      const url = (e.data as { devlandOpen?: unknown } | null)?.devlandOpen;
+      if (typeof url === 'string' && url.startsWith('/')) openLink(new URL(url, location.origin));
+    });
+  }
   drawer = new Drawer(ctx, terminal, pty);
   const feed = new FeedPanel(ctx);
   const toasts = new Toasts(ctx);
