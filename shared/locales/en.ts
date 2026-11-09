@@ -3554,4 +3554,7 @@ export const EN: Readonly<Record<string, string>> = {
   "DevLand — uso do plano": "DevLand — plan usage",
   "📊 {0} usou {1}% da sessão de 5 horas.": "📊 {0} used {1}% of the 5-hour session.",
   "📊 {0} usou {1}% do limite da semana.": "📊 {0} used {1}% of the weekly limit.",
+  "   Ditado: Whisper local.": "   Dictation: local Whisper.",
+  "   Ditado: API da OpenAI (o áudio vai para a OpenAI).": "   Dictation: OpenAI API (audio is sent to OpenAI).",
+  "   Ditado: desligado (defina OPENAI_API_KEY para transcrever pela OpenAI).": "   Dictation: off (set OPENAI_API_KEY to transcribe with OpenAI).",
 };

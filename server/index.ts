@@ -66,6 +66,7 @@ import { WORKSPACE } from './cloud/connect';
 import { isDemoId } from '../shared/timeline';
 import { DictationService } from './dictation/dictation';
 import { createWhisperTranscriber, findWhisper } from './dictation/whisper';
+import { createOpenAITranscriber, openAIKeyFromEnv } from './dictation/openai';
 import { DeliveryIndex } from './deliveries/deliveries';
 import { FileFetcher } from './deliveries/fetcher';
 import { WorldClient } from './world/client';
@@ -403,8 +404,16 @@ const spawn = spawnOn
   : undefined;
 // Ditado: no Docker quem transcreve é o auxiliar do host; no Node, o servidor, se achar o Whisper local.
 const whisper = config.messages && !config.inDocker ? findWhisper() : undefined;
+// Sem Whisper local (ex.: Cloud), a API da OpenAI transcreve se houver chave (OPENAI_API_KEY): opt-in, o áudio sai daqui.
+const openAIKey = openAIKeyFromEnv();
 const dictation = config.messages
-  ? new DictationService(whisper && !('missing' in whisper) ? { transcriber: createWhisperTranscriber(whisper) } : {})
+  ? new DictationService(
+      whisper && !('missing' in whisper)
+        ? { transcriber: createWhisperTranscriber(whisper) }
+        : openAIKey
+          ? { transcriber: createOpenAITranscriber(openAIKey, process.env.HABBLAUD_DICTATION_MODEL?.trim() || 'whisper-1') }
+          : {},
+    )
   : undefined;
 const messages = config.messages
   ? new MessageRegistry({
@@ -649,6 +658,7 @@ if (config.remote) {
       log.info(tr('   DevLand Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).', [remote.port]));
       const smtp = mailConfigFromEnv();
       log.info(smtp ? tr('   Esqueci a senha: ligado (e-mail por {0}:{1}).', [smtp.host, smtp.port]) : tr('   Esqueci a senha: desligado (defina SMTP_HOST, SMTP_USER, SMTP_PASS e SMTP_FROM para enviar o e-mail).'));
+      log.info(whisper && !('missing' in whisper) ? tr('   Ditado: Whisper local.') : openAIKey ? tr('   Ditado: API da OpenAI (o áudio vai para a OpenAI).') : tr('   Ditado: desligado (defina OPENAI_API_KEY para transcrever pela OpenAI).'));
       const code = cloud.setupCode();
       if (code) log.info(tr('   DevLand Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}', [code]));
       return;

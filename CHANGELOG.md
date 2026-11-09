@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Ditado pelo servidor no Cloud:** com `OPENAI_API_KEY` definida, o áudio gravado no celular é transcrito pela API da OpenAI (Whisper), no lugar do reconhecimento de voz do iPhone, que trava no app da tela de início. O log de início diz qual motor de ditado está ligado.
 - **Responder pela notificação:** no Android e no computador, a notificação de pedido de permissão traz Permitir e Negar, que respondem ali mesmo; no iPhone (que não mostra botões), tocar abre o DevLand já no agente. No Cloud, com um celular inscrito nas notificações, o pedido espera a resposta mesmo com o app fechado.
 - **Alerta de uso do plano:** aviso no escritório e notificação quando uma conta passa de 80% e de 95% da sessão de 5 horas ou do limite da semana (uma vez por janela).
 - **Revisão no PC e no celular:** a janela Contas, num servidor sem conexão de contas pela web, mostra um aviso em vez de carregar o escritório dentro dela; Usuários não deixa remover nem rebaixar a própria conta por engano; "Sair" e o aviso de login falam em e-mail e senha (o login é por e-mail).
