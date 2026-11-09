@@ -239,6 +239,8 @@ export class ChatsView implements UiComponent {
     if (role === 'tool' && e.kind === 'tool') return h('div', { class: 'ui-chats__tool', text: `⚙ ${e.title}` });
     if (role === 'note' && e.kind === 'system') return h('div', { class: 'ui-chats__sys', text: e.text });
     if ((role === 'me' || role === 'agent') && (e.kind === 'user' || e.kind === 'assistant')) {
+      // Texto vazio (só ferramentas no turno) deixava uma faixa em branco entre as mensagens.
+      if (!e.text.trim()) return null;
       const body = h('div', { class: 'ui-chats__body' });
       if (role === 'agent') body.append(renderMarkdown(e.text));
       else body.textContent = e.text;

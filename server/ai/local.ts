@@ -2,7 +2,7 @@
 // mostra o consumo (memória, CPU, disco e o que está carregado) e faz um teste rápido. Fala com o Ollama pela API HTTP
 // dele em 127.0.0.1 (nunca exposta). Linux e macOS; o pacote vem do GitHub do Ollama.
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, statfsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, statfsSync } from 'node:fs';
 import { cpus, freemem, loadavg, totalmem } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -65,9 +65,16 @@ export class LocalAi {
   private readonly host = '127.0.0.1:11434';
   private server: ChildProcess | null = null;
   private job: Job | null = null;
+  /** Cancela o download em andamento (instalação ou modelo). */
+  private abort: AbortController | null = null;
 
   constructor(dataDir: string) {
     this.dir = join(dataDir, 'ollama');
+  }
+
+  /** Instalado pelo DevLand (na pasta de dados): só esse dá para desinstalar por aqui. */
+  private own(): boolean {
+    return existsSync(join(this.dir, 'bin', 'ollama')) || existsSync(join(this.dir, 'ollama'));
   }
 
   /** Binário instalado por nós (pasta de dados) ou o do sistema. */
@@ -132,7 +139,7 @@ export class LocalAi {
     const total = totalmem();
     return {
       system: { platform: process.platform, arch: process.arch, cpus: cpus().length, cpuModel: cpus()[0]?.model ?? '', load: loadavg()[0], ramTotal: total, ramFree: availableMem(), disk },
-      ollama: { installed: !!this.bin(), running: !!version, version, package: packageName(process.platform, process.arch) },
+      ollama: { installed: !!this.bin(), own: this.own(), running: !!version, version, package: packageName(process.platform, process.arch) },
       models: models.map((m) => ({ name: m.name, size: m.size, modified: Date.parse(m.modified_at) || 0 })),
       loaded: loaded.map((m) => ({ name: m.name, size: m.size, vram: m.size_vram, until: Date.parse(m.expires_at) || 0 })),
       catalog: catalog(),
@@ -152,19 +159,23 @@ export class LocalAi {
     if (!pkg) throw new Error(tr('Sem pacote do Ollama para este sistema.'));
     const job: Job = { kind: 'install', status: tr('Baixando o Ollama…'), percent: 0, done: false };
     this.job = job;
+    const abort = (this.abort = new AbortController());
     void (async () => {
       try {
         mkdirSync(this.dir, { recursive: true });
-        const res = await fetch(`https://github.com/ollama/ollama/releases/latest/download/${pkg}`);
+        const res = await fetch(`https://github.com/ollama/ollama/releases/latest/download/${pkg}`, { signal: abort.signal });
         if (!res.ok || !res.body) throw new Error(tr('Download falhou ({0}).', [res.status]));
         const size = Number(res.headers.get('content-length')) || 0;
         let got = 0;
         const body = Readable.fromWeb(res.body as never);
+        const mb = (n: number) => `${Math.round(n / 1e6)} MB`;
         body.on('data', (c: Buffer) => {
           got += c.length;
           if (size) job.percent = Math.round((got / size) * 100);
+          job.status = size ? tr('Baixando o Ollama: {0} de {1}', [mb(got), mb(size)]) : tr('Baixando o Ollama: {0}', [mb(got)]);
         });
         const tar = spawn('tar', ['-x', '-C', this.dir], { stdio: ['pipe', 'ignore', 'pipe'] });
+        abort.signal.addEventListener('abort', () => tar.kill());
         let err = '';
         tar.stderr.on('data', (d: Buffer) => (err += d.toString()));
         body.pipe(pkg.endsWith('.zst') ? createZstdDecompress() : createGunzip()).pipe(tar.stdin);
@@ -172,13 +183,16 @@ export class LocalAi {
           tar.on('error', reject);
           tar.on('close', resolve);
         });
+        if (abort.signal.aborted) throw new Error(tr('Cancelado.'));
         if (code !== 0) throw new Error(err.trim() || tr('Não deu para extrair o pacote.'));
         job.status = tr('Iniciando…');
         await this.start();
         if (!(await this.running())) throw new Error(tr('O Ollama foi instalado mas não iniciou.'));
         job.status = tr('Instalado');
       } catch (e) {
-        job.error = e instanceof Error ? e.message : String(e);
+        job.error = abort.signal.aborted ? tr('Cancelado.') : e instanceof Error ? e.message : String(e);
+        // Pacote pela metade não conta como instalado.
+        if (!(await this.running())) rmSync(join(this.dir, 'bin'), { recursive: true, force: true }), rmSync(join(this.dir, 'lib'), { recursive: true, force: true });
       }
       job.done = true;
     })();
@@ -190,10 +204,11 @@ export class LocalAi {
     if (!/^[a-z0-9][a-z0-9._/-]{0,80}(:[a-z0-9._-]{1,40})?$/i.test(model)) throw new Error(tr('Nome de modelo inválido.'));
     const job: Job = { kind: 'pull', model, status: tr('Preparando…'), percent: 0, done: false };
     this.job = job;
+    const abort = (this.abort = new AbortController());
     void (async () => {
       try {
         await this.start();
-        const res = await fetch(`http://${this.host}/api/pull`, { method: 'POST', body: JSON.stringify({ model, stream: true }) });
+        const res = await fetch(`http://${this.host}/api/pull`, { method: 'POST', body: JSON.stringify({ model, stream: true }), signal: abort.signal });
         if (!res.ok || !res.body) throw new Error(tr('O Ollama recusou o download ({0}).', [res.status]));
         let buf = '';
         for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
@@ -212,7 +227,7 @@ export class LocalAi {
         job.status = tr('Pronto');
         job.percent = 100;
       } catch (e) {
-        job.error = e instanceof Error ? e.message : String(e);
+        job.error = abort.signal.aborted ? tr('Cancelado.') : e instanceof Error ? e.message : String(e);
       }
       job.done = true;
     })();
@@ -222,12 +237,29 @@ export class LocalAi {
     await this.api('/api/delete', { method: 'DELETE', body: JSON.stringify({ model }) }, 10_000);
   }
 
-  /** Uma pergunta rápida, para ver se roda e a velocidade (tokens por segundo). */
-  async test(model: string, prompt: string): Promise<{ text: string; tokensPerS: number; seconds: number }> {
+  cancel(): void {
+    this.abort?.abort();
+  }
+
+  /** Para o Ollama e apaga a pasta dele (programa e modelos). Só o instalado pelo DevLand. */
+  async uninstall(): Promise<void> {
+    this.busy();
+    if (!this.own()) throw new Error(tr('Este Ollama foi instalado fora do DevLand; desinstale pelo sistema.'));
+    this.stop();
+    for (let i = 0; i < 10 && (await this.running()); i++) await new Promise((r) => setTimeout(r, 300));
+    rmSync(this.dir, { recursive: true, force: true });
+    this.job = null;
+  }
+
+  /** Conversa com o modelo (o assistente local): manda o histórico, devolve a resposta e a velocidade. */
+  async chat(model: string, messages: { role: string; content: string }[]): Promise<{ text: string; tokensPerS: number; seconds: number }> {
     await this.start();
-    const r = await this.api<{ response: string; eval_count?: number; eval_duration?: number; total_duration?: number }>(
-      '/api/generate', { method: 'POST', body: JSON.stringify({ model, prompt: prompt.slice(0, 2000), stream: false }) }, 180_000);
+    const msgs = messages.filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-20).map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
+    if (!msgs.length) throw new Error(tr('Escreva uma mensagem.'));
+    const system = { role: 'system', content: tr('Você é um assistente de programação que roda no servidor do DevLand. Responda em português do Brasil, direto e com exemplos de código quando ajudar.') };
+    const r = await this.api<{ message?: { content: string }; eval_count?: number; eval_duration?: number; total_duration?: number }>(
+      '/api/chat', { method: 'POST', body: JSON.stringify({ model, messages: [system, ...msgs], stream: false }) }, 300_000);
     const tps = r.eval_count && r.eval_duration ? r.eval_count / (r.eval_duration / 1e9) : 0;
-    return { text: r.response, tokensPerS: Math.round(tps * 10) / 10, seconds: Math.round((r.total_duration ?? 0) / 1e8) / 10 };
+    return { text: r.message?.content ?? '', tokensPerS: Math.round(tps * 10) / 10, seconds: Math.round((r.total_duration ?? 0) / 1e8) / 10 };
   }
 }

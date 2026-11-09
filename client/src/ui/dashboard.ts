@@ -192,6 +192,11 @@ export class Dashboard implements UiComponent {
       h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Conversas fechadas') }), h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Ver conversas'), on: { click: () => this.act.showChats(true) } })));
   }
 
+  /** Só contas conectadas de verdade: com e-mail, números de uso ou sessão aberta (pasta vazia do Codex não conta). */
+  private accounts(): AccountInfo[] {
+    return (this.ctx.store.snapshot?.accounts ?? []).filter((a) => !!a.email || !!a.usage || a.sessions > 0);
+  }
+
   private agents(): AgentInfo[] {
     return (this.ctx.store.snapshot?.agents ?? []).filter((a) => a.kind === 'main' && isPresent(a));
   }
@@ -218,7 +223,7 @@ export class Dashboard implements UiComponent {
     const hello = hour < 12 ? tr('Bom dia') : hour < 18 ? tr('Boa tarde') : tr('Boa noite');
     const name = this.me?.name ? `, ${this.me.name.split(' ')[0]}` : '';
     const stat = (label: string, value: string, hint: string, tone = '') => h('div', { class: `dash-stat ${tone}` }, h('span', { text: label }), h('b', { text: value }), h('small', { text: hint }));
-    const accounts = snap?.accounts ?? [];
+    const accounts = this.accounts();
     return h('div', { class: 'dash-page' },
       this.header(`${hello}${name}`, tr('Tudo o que os seus agentes estão fazendo agora.')),
       h('section', { class: 'dash-stats' },
@@ -253,7 +258,7 @@ export class Dashboard implements UiComponent {
   private accountsPage(): HTMLElement {
     const snap = this.ctx.store.snapshot;
     const now = this.ctx.now();
-    const accounts = snap?.accounts ?? [];
+    const accounts = this.accounts();
     const agents = this.agents();
     const connect = access().cloud ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('+ Conectar conta'), on: { click: () => this.act.openCloud('contas') } }) : null;
     return h('div', { class: 'dash-page' },

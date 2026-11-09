@@ -7,7 +7,7 @@ import { h } from './dom';
 interface CatalogModel { id: string; name: string; use: string; sizeGb: number; ramGb: number; code?: boolean }
 interface AiStatus {
   system: { platform: string; arch: string; cpus: number; cpuModel: string; load: number; ramTotal: number; ramFree: number; disk: { free: number; total: number } | null };
-  ollama: { installed: boolean; running: boolean; version: string | null; package: string | null };
+  ollama: { installed: boolean; own: boolean; running: boolean; version: string | null; package: string | null };
   models: { name: string; size: number }[];
   loaded: { name: string; size: number }[];
   catalog: CatalogModel[];
@@ -22,14 +22,76 @@ export class AiPage {
   private err = '';
   private loading = false;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private test: { model: string; prompt: string; busy: boolean; out?: string; meta?: string } = { model: '', prompt: tr('Escreva uma função em JavaScript que inverte uma string.'), busy: false };
+  /** Conversa com o assistente local: o elemento fica montado entre os redesenhos (a página só o recoloca). */
+  private chat: { model: string; msgs: { role: 'user' | 'assistant'; content: string; meta?: string }[]; busy: boolean } = { model: '', msgs: [], busy: false };
+  private readonly chatEl: HTMLElement;
+  private readonly chatLog: HTMLElement;
+  private readonly chatInput: HTMLTextAreaElement;
+  private readonly chatSend: HTMLButtonElement;
+  private readonly chatModel: HTMLSelectElement;
 
-  constructor(private invalidate: () => void, private header: (title: string, sub: string) => HTMLElement) {}
+  constructor(private invalidate: () => void, private header: (title: string, sub: string) => HTMLElement) {
+    this.chatLog = h('div', { class: 'dash-ai-log', attrs: { role: 'log', 'aria-live': 'polite' } });
+    this.chatInput = h('textarea', { attrs: { rows: 1, placeholder: tr('Pergunte algo ao assistente local…'), 'aria-label': tr('Mensagem para o assistente local') } });
+    this.chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        this.send();
+      }
+    });
+    this.chatInput.addEventListener('input', () => {
+      this.chatInput.style.height = 'auto';
+      this.chatInput.style.height = `${Math.min(this.chatInput.scrollHeight, 200)}px`;
+    });
+    this.chatSend = h('button', { class: 'dash-ai-send', type: 'button', text: '↑', attrs: { 'aria-label': tr('Mandar') }, on: { click: () => this.send() } });
+    this.chatModel = h('select', { class: 'dash-ai-model', attrs: { 'aria-label': tr('Modelo') }, on: { change: () => (this.chat.model = this.chatModel.value) } });
+    const clear = h('button', { class: 'dash-link', type: 'button', text: tr('Nova conversa'), on: { click: () => {
+      this.chat.msgs = [];
+      this.drawChat();
+    } } });
+    this.chatEl = h('section', { class: 'dash-card dash-ai-chat' },
+      h('div', { class: 'dash-ai-chat__head' },
+        h('span', { class: 'dash-ai-av', attrs: { 'aria-hidden': 'true' } }),
+        h('div', {}, h('b', { text: tr('Assistente local') }), h('small', { text: tr('Roda no seu servidor, sem conta e sem enviar nada para fora.') })),
+        this.chatModel, clear),
+      this.chatLog,
+      h('div', { class: 'dash-ai-compose' }, this.chatInput, this.chatSend));
+    this.drawChat();
+  }
+
+  private drawChat(): void {
+    const bubbles = this.chat.msgs.map((m) => h('div', { class: `dash-ai-msg is-${m.role}` }, h('div', { class: 'dash-ai-msg__text', text: m.content }), m.meta ? h('small', { text: m.meta }) : null));
+    if (!bubbles.length) bubbles.push(h('div', { class: 'dash-ai-empty' }, h('b', { text: tr('Converse com o modelo que você baixou') }), h('span', { text: tr('Ex.: "explique este erro", "escreva um teste para esta função", "resuma este texto".') })));
+    if (this.chat.busy) bubbles.push(h('div', { class: 'dash-ai-msg is-assistant is-typing' }, h('div', { class: 'dash-ai-msg__text' }, h('i'), h('i'), h('i'))));
+    this.chatLog.replaceChildren(...bubbles);
+    this.chatLog.scrollTop = this.chatLog.scrollHeight;
+    this.chatSend.disabled = this.chat.busy;
+  }
+
+  private send(): void {
+    const text = this.chatInput.value.trim();
+    if (!text || this.chat.busy || !this.chat.model) return;
+    this.chat.msgs.push({ role: 'user', content: text });
+    this.chatInput.value = '';
+    this.chatInput.style.height = 'auto';
+    this.chat.busy = true;
+    this.drawChat();
+    this.post('/api/ai/chat', { model: this.chat.model, messages: this.chat.msgs.map(({ role, content }) => ({ role, content })) }).then((r) => {
+      const x = r as { text: string; tokensPerS: number; seconds: number };
+      this.chat.msgs.push({ role: 'assistant', content: x.text || '…', meta: tr('{0} · {1} tokens/s · {2} s', [this.chat.model, x.tokensPerS, x.seconds]) });
+    }, (e: Error) => {
+      this.chat.msgs.push({ role: 'assistant', content: e.message, meta: tr('erro') });
+    }).finally(() => {
+      this.chat.busy = false;
+      this.drawChat();
+      this.invalidate();
+    });
+  }
 
   /** Muda quando a página precisa redesenhar. */
   key(): string {
     const j = this.st?.job;
-    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}|${this.test.busy}|${this.test.out?.length}`;
+    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}`;
   }
 
   /** Liga a atualização (a cada 3 s, mais rápido com download em andamento) enquanto a página está aberta. */
@@ -87,16 +149,18 @@ export class AiPage {
     };
     const job = st.job;
     const jobEl = job && (!job.done || job.error) ? h('section', { class: `dash-card dash-job${job.error ? ' is-bad' : ''}` },
-      h('div', { class: 'dash-card__head' }, h('h2', { text: job.kind === 'install' ? tr('Instalando o Ollama') : tr('Baixando {0}', [job.model ?? '']) }), h('small', { class: 'dash-muted', text: job.error ? tr('falhou') : `${job.percent ?? 0}%` })),
+      h('div', { class: 'dash-card__head' }, h('h2', { text: job.kind === 'install' ? tr('Instalando o Ollama') : tr('Baixando {0}', [job.model ?? '']) }),
+        job.done ? h('small', { class: 'dash-muted', text: tr('falhou') }) : h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Cancelar'), on: { click: () => this.act(() => this.post('/api/ai/cancel')) } })),
       job.error ? h('p', { class: 'dash-bad', text: job.error }) : h('div', { class: 'dash-bar' }, h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${job.percent ?? 0}%` })), h('small', { text: job.status }))) : null;
     const working = !!job && !job.done;
 
+    const uninstall = st.ollama.own ? h('button', { class: 'dash-btn', type: 'button', attrs: { disabled: working }, text: tr('Desinstalar'), on: { click: () => confirm(tr('Desinstalar o Ollama e apagar todos os modelos baixados?')) && this.act(() => this.post('/api/ai/uninstall')) } }) : null;
     const engine = st.ollama.running
-      ? h('div', { class: 'dash-engine is-on' }, h('span', { class: 'dash-engine__dot' }), h('div', {}, h('b', { text: tr('Ollama {0} rodando', [st.ollama.version ?? '']) }), h('small', { text: tr('Só dentro do servidor (127.0.0.1:11434). Os modelos ficam na pasta de dados do DevLand.') })))
+      ? h('div', { class: 'dash-engine is-on' }, h('span', { class: 'dash-engine__dot' }), h('div', {}, h('b', { text: tr('Ollama {0} rodando', [st.ollama.version ?? '']) }), h('small', { text: tr('Só dentro do servidor (127.0.0.1:11434). Os modelos ficam na pasta de dados do DevLand.') })), uninstall)
       : h('div', { class: 'dash-engine' }, h('span', { class: 'dash-engine__dot' }), h('div', {},
           h('b', { text: st.ollama.installed ? tr('Ollama instalado, parado') : tr('Ollama ainda não está instalado') }),
           h('small', { text: st.ollama.package ? tr('O motor que roda os modelos. Baixa do GitHub do Ollama ({0}) e fica na pasta de dados: sobrevive às atualizações.', [st.ollama.package.includes('linux') ? '~1,5 GB' : '~185 MB']) : tr('Sem pacote pronto para este sistema.') })),
-          st.ollama.package && !st.ollama.installed ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', attrs: { disabled: working }, text: tr('Instalar o Ollama'), on: { click: () => this.act(() => this.post('/api/ai/install')) } }) : null);
+          st.ollama.package && !st.ollama.installed ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', attrs: { disabled: working }, text: tr('Instalar o Ollama'), on: { click: () => this.act(() => this.post('/api/ai/install')) } }) : uninstall);
 
     const have = new Set(st.models.map((m) => m.name));
     const ramGb = s.ramTotal / 1e9;
@@ -118,31 +182,14 @@ export class AiPage {
       h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [m.name])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } }))))
       : h('p', { class: 'dash-muted', text: tr('Nenhum modelo baixado ainda. Comece pelo recomendado.') });
 
-    if (!this.test.model || !have.has(this.test.model)) this.test.model = st.models[0]?.name ?? '';
-    const select = h('select', { attrs: { 'aria-label': tr('Modelo') }, on: { change: (e) => (this.test.model = (e.target as HTMLSelectElement).value) } }, ...st.models.map((m) => h('option', { attrs: { value: m.name, selected: m.name === this.test.model }, text: m.name })));
-    const prompt = h('textarea', { attrs: { rows: 3, 'aria-label': tr('Pergunta') }, on: { input: (e) => (this.test.prompt = (e.target as HTMLTextAreaElement).value) } });
-    prompt.value = this.test.prompt;
-    const run = () => {
-      this.test.busy = true;
-      this.test.out = undefined;
-      this.invalidate();
-      this.post('/api/ai/test', { model: this.test.model, prompt: this.test.prompt }).then((r) => {
-        const x = r as { text: string; tokensPerS: number; seconds: number };
-        this.test.out = x.text;
-        this.test.meta = tr('{0} tokens/s · {1} s no total', [x.tokensPerS, x.seconds]);
-      }, (e: Error) => {
-        this.test.out = e.message;
-        this.test.meta = '';
-      }).finally(() => {
-        this.test.busy = false;
-        this.invalidate();
-      });
-    };
-    const tester = st.models.length ? h('section', { class: 'dash-card dash-tester' }, h('h2', { text: tr('Testar') }),
-      h('div', { class: 'dash-tester__row' }, select, h('button', { class: 'dash-btn dash-btn--primary', type: 'button', attrs: { disabled: this.test.busy }, text: this.test.busy ? tr('Pensando…') : tr('Perguntar'), on: { click: run } })),
-      prompt,
-      this.test.out !== undefined ? h('div', { class: 'dash-tester__out' }, h('pre', { text: this.test.out }), this.test.meta ? h('small', { class: 'dash-muted', text: this.test.meta }) : null) : null) : null;
-
+    // Assistente: só com modelo baixado; a lista de modelos se ajusta sem refazer a conversa.
+    if (!this.chat.model || !have.has(this.chat.model)) this.chat.model = st.models[0]?.name ?? '';
+    const names = st.models.map((m) => m.name).join('|');
+    if (this.chatModel.dataset.names !== names) {
+      this.chatModel.dataset.names = names;
+      this.chatModel.replaceChildren(...st.models.map((m) => h('option', { attrs: { value: m.name }, text: m.name })));
+    }
+    this.chatModel.value = this.chat.model;
     return h('div', { class: 'dash-page' }, head,
       this.err ? h('p', { class: 'dash-bad', text: this.err }) : null,
       h('section', { class: 'dash-stats' },
@@ -152,9 +199,10 @@ export class AiPage {
         h('div', { class: 'dash-stat' }, h('span', { text: tr('Na memória agora') }), h('b', { text: st.loaded.length ? gb(st.loaded.reduce((n, m) => n + m.size, 0)) : '0' }), h('small', { text: st.loaded.map((m) => m.name).join(', ') || tr('nenhum modelo carregado') }))),
       h('section', { class: 'dash-card' }, engine),
       jobEl,
+      st.models.length ? this.chatEl : null,
       h('div', { class: 'dash-cols' },
         h('section', { class: 'dash-card' }, h('h2', { text: tr('Seus modelos') }), mine),
-        tester ?? h('section', { class: 'dash-card' }, h('h2', { text: tr('Como usar') }), h('p', { class: 'dash-muted', text: tr('Instale o Ollama, baixe um modelo e teste aqui. Os agentes e outros programas do servidor usam pelo endereço http://127.0.0.1:11434.') }))),
+        h('section', { class: 'dash-card' }, h('h2', { text: tr('Como usar') }), h('p', { class: 'dash-muted', text: tr('Instale o Ollama, baixe um modelo e converse com ele no assistente acima. Os agentes e outros programas do servidor usam pelo endereço http://127.0.0.1:11434.') }))),
       h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Modelos leves') }), h('small', { class: 'dash-muted', text: tr('Recomendado para {0} de RAM', [gb(s.ramTotal)]) })), catalog));
   }
 }

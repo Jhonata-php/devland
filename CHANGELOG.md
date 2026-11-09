@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Assistente local:** na IA local, com um modelo baixado, dá para conversar com ele como se fosse um agente (histórico, velocidade em tokens por segundo, nova conversa). Também dá para **desinstalar** o Ollama e **cancelar** um download; a instalação mostra os MB baixados.
 - **IA local (modo Painel):** instala o Ollama no servidor com um clique (na pasta de dados, sem root, sobrevive às atualizações), lista modelos leves que rodam só com CPU e recomenda o que cabe na memória, baixa e remove modelos, mostra memória, CPU, disco e o que está carregado, e tem um teste rápido com a velocidade em tokens por segundo. Só para admin ou pelo próprio computador.
 - **Conversas dentro do painel:** a página Conversas mostra a lista e a conversa no lugar do conteúdo; tocar num agente ou no aviso de entrega abre ali, sem ir ao escritório.
 - **Painel reorganizado:** barra no topo com Conversas, Escritório (um botão só) e Novo agente; menu lateral recolhível (lembra a escolha) e o perfil com Sair no pé do menu.
@@ -21,6 +22,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Conversa no painel:** texto do agente solto e legível, a sua mensagem em balão, ferramentas numa linha discreta e um campo de mensagem único e arredondado (o campo azul com borda dupla saiu). Mensagens vazias não deixam mais faixas em branco.
+- **Contas no painel:** aparecem só as contas conectadas de verdade (com e-mail, uso ou sessão aberta).
 - **Conversa retomada na pasta errada (Cloud):** ao reiniciar, o DevLand agora usa a pasta gravada no próprio histórico da conversa. Antes, uma lista salva com pastas trocadas fazia a mesma conversa voltar no projeto errado a cada atualização.
 - **Conversas com o menu recolhido:** a lista não fica mais deslocada com uma faixa vazia à esquerda; as conversas aparecem em cartões. A janela de Plugins também ganhou o visual do painel.
 - **Janelas do modo Painel:** Configurações, Contas, Usuários, Novo agente e as outras janelas abrem no centro, mais largas, com o fundo escurecido e botões neutros (os botões verdes e os campos do tema hacker saíram dessas janelas no painel).

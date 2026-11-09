@@ -607,7 +607,9 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       else if (path === '/api/ai' && isRead) answer(ai.status());
       else if (path === '/api/ai/install' && method === 'POST') answer(Promise.resolve().then(() => ai.install()));
       else if (path === '/api/ai/pull' && method === 'POST') answer(readJson(req).then((b) => ai.pull(String((b as { model?: unknown }).model ?? ''))));
-      else if (path === '/api/ai/test' && method === 'POST') answer(readJson(req).then((b) => ai.test(String((b as { model?: unknown }).model ?? ''), String((b as { prompt?: unknown }).prompt ?? ''))));
+      else if (path === '/api/ai/chat' && method === 'POST') answer(readJson(req).then((b) => ai.chat(String((b as { model?: unknown }).model ?? ''), Array.isArray((b as { messages?: unknown }).messages) ? (b as { messages: { role: string; content: string }[] }).messages : [])));
+      else if (path === '/api/ai/cancel' && method === 'POST') answer(Promise.resolve().then(() => ai.cancel()));
+      else if (path === '/api/ai/uninstall' && method === 'POST') answer(ai.uninstall());
       else if (model && method === 'DELETE') answer(ai.remove(decodeURIComponent(model[1]!)));
       else methodNotAllowed(res, 'GET');
       return true;
