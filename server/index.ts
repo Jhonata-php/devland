@@ -580,7 +580,8 @@ const api = createApiHandler({
     for (const a of snap.agents) last.set(a.roomId, Math.max(last.get(a.roomId) ?? 0, a.lastEventAt ?? 0));
     const rooms = snap.rooms.filter((r) => !isDemoId(r.id)).map((r) => ({ path: r.path, lastAt: last.get(r.id) ?? 0 }));
     const recent = recentFolders(history ? await history.list().catch(() => []) : [], rooms);
-    return cloud ? mergeFolders(recent, workspaceFolders(WORKSPACE)) : recent;
+    // A raiz /workspace não é projeto (só guarda os projetos clonados): não aparece como opção de pasta.
+    return cloud ? mergeFolders(recent, workspaceFolders(WORKSPACE)).filter((f) => f.path.replace(/\/+$/, '') !== WORKSPACE) : recent;
   },
   codexLive,
   stats,

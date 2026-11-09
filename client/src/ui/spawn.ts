@@ -47,6 +47,8 @@ export function spawnFolders(snap: Pick<OfficeSnapshot, 'rooms' | 'agents'> | nu
   for (const a of snap.agents) last.set(a.roomId, Math.max(last.get(a.roomId) ?? 0, a.lastEventAt ?? 0));
   const paths = [...snap.rooms]
     .filter((r) => !isDemoId(r.id) && /^(\/|[A-Za-z]:[\\/])/.test(r.path ?? ''))
+    // Cloud: a raiz /workspace só guarda os projetos clonados, não é um projeto.
+    .filter((r) => r.path.replace(/\/+$/, '') !== '/workspace')
     .sort((a, b) => (last.get(b.id) ?? 0) - (last.get(a.id) ?? 0))
     .map((r) => r.path);
   return [...new Set(paths)];
