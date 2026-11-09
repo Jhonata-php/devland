@@ -2,7 +2,7 @@
 // mostra o consumo (memória, CPU, disco e o que está carregado) e faz um teste rápido. Fala com o Ollama pela API HTTP
 // dele em 127.0.0.1 (nunca exposta). Linux e macOS; o pacote vem do GitHub do Ollama.
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, statfsSync } from 'node:fs';
+import { chownSync, existsSync, mkdirSync, readFileSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
 import { cpus, freemem, loadavg, totalmem } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -19,27 +19,29 @@ export interface CatalogModel {
   /** Memória para rodar com folga (GB). */
   ramGb: number;
   code?: boolean;
+  /** Usa ferramentas bem: serve para a conta "IA local" (agente do Claude Code). */
+  agent?: boolean;
 }
 
 /** Modelos leves que rodam só com CPU. ponytail: lista fixa; atualizar à mão quando sair modelo melhor. */
 /** A lista com os textos no idioma do servidor (tr na hora, depois do dicionário carregado). */
 export const catalog = (): CatalogModel[] => [
-  { id: 'qwen2.5-coder:1.5b', name: 'Qwen2.5 Coder 1.5B', use: tr('Código: completar e explicar, bem rápido'), sizeGb: 1.0, ramGb: 2, code: true },
-  { id: 'qwen2.5-coder:3b', name: 'Qwen2.5 Coder 3B', use: tr('Código: o melhor equilíbrio para servidor pequeno'), sizeGb: 1.9, ramGb: 4, code: true },
-  { id: 'qwen2.5-coder:7b', name: 'Qwen2.5 Coder 7B', use: tr('Código: respostas melhores, pede 8 GB'), sizeGb: 4.7, ramGb: 8, code: true },
-  { id: 'llama3.2:1b', name: 'Llama 3.2 1B', use: tr('Conversa e resumos, mínimo de memória'), sizeGb: 1.3, ramGb: 2 },
+  { id: 'qwen3-coder:30b', name: 'Qwen3 Coder 30B', use: tr('O melhor para agentes de código: entende o projeto e usa ferramentas (MoE, rápido para o tamanho)'), sizeGb: 19, ramGb: 24, code: true, agent: true },
+  { id: 'gpt-oss:20b', name: 'GPT-OSS 20B', use: tr('Modelo aberto da OpenAI: raciocínio forte e uso de ferramentas'), sizeGb: 14, ramGb: 16, agent: true },
+  { id: 'devstral:24b', name: 'Devstral 24B', use: tr('Feito para agentes de código (Mistral): edita vários arquivos com segurança'), sizeGb: 14, ramGb: 16, code: true, agent: true },
+  { id: 'qwen3:14b', name: 'Qwen3 14B', use: tr('Muito bom em código e ferramentas, multilíngue'), sizeGb: 9.3, ramGb: 12, agent: true },
+  { id: 'qwen2.5-coder:14b', name: 'Qwen2.5 Coder 14B', use: tr('Código de alta qualidade para servidor médio'), sizeGb: 9, ramGb: 12, code: true, agent: true },
+  { id: 'qwen3:8b', name: 'Qwen3 8B', use: tr('O melhor equilíbrio para agentes em servidor de 8 a 16 GB'), sizeGb: 5.2, ramGb: 8, agent: true },
+  { id: 'qwen2.5-coder:7b', name: 'Qwen2.5 Coder 7B', use: tr('Código: bom para completar, explicar e corrigir'), sizeGb: 4.7, ramGb: 8, code: true, agent: true },
+  { id: 'qwen3:4b', name: 'Qwen3 4B', use: tr('Agente leve: tarefas simples com ferramentas'), sizeGb: 2.5, ramGb: 5, agent: true },
   { id: 'llama3.2:3b', name: 'Llama 3.2 3B', use: tr('Conversa geral em português e inglês'), sizeGb: 2.0, ramGb: 4 },
-  { id: 'gemma3:1b', name: 'Gemma 3 1B', use: tr('Texto curto e classificação, muito leve'), sizeGb: 0.8, ramGb: 2 },
-  { id: 'gemma3:4b', name: 'Gemma 3 4B', use: tr('Texto e imagens, bom em português'), sizeGb: 3.3, ramGb: 6 },
-  { id: 'qwen3:4b', name: 'Qwen3 4B', use: tr('Raciocínio e ferramentas, multilíngue'), sizeGb: 2.5, ramGb: 5 },
-  { id: 'phi4-mini', name: 'Phi-4 Mini', use: tr('Raciocínio e matemática, compacto'), sizeGb: 2.5, ramGb: 5 },
-  { id: 'deepseek-r1:1.5b', name: 'DeepSeek-R1 1.5B', use: tr('Raciocínio passo a passo, leve'), sizeGb: 1.1, ramGb: 2 },
+  { id: 'qwen2.5-coder:1.5b', name: 'Qwen2.5 Coder 1.5B', use: tr('Código: completar e explicar, bem rápido'), sizeGb: 1.0, ramGb: 2, code: true },
 ];
 
-/** O maior modelo de código que cabe com folga na memória (ou o menor, se nada couber). */
+/** O melhor modelo para agentes que cabe com folga na memória (a lista vem do maior para o menor). */
 export function recommend(totalGb: number): string {
-  const fit = catalog().filter((m) => m.code && m.ramGb <= totalGb * 0.7);
-  return (fit.at(-1) ?? catalog()[0]!).id;
+  const list = catalog();
+  return (list.find((m) => m.agent && m.ramGb <= totalGb * 0.8) ?? list.at(-1)!).id;
 }
 
 /** Nome do pacote do Ollama para este sistema (null = sem pacote pronto). */
@@ -57,6 +59,11 @@ function availableMem(): number {
   } catch { /* fora do Linux */ }
   return freemem();
 }
+
+/** Pasta de configuração da conta "IA local" (no home do usuário dos agentes). */
+export const LOCAL_ACCOUNT_DIR = '.claude-ollama';
+/** Id da conta "IA local" no Novo agente. */
+export const LOCAL_ACCOUNT_ID = 'ollama';
 
 interface Job { kind: 'install' | 'pull'; model?: string; status: string; percent?: number; error?: string; done: boolean }
 
@@ -107,7 +114,8 @@ export class LocalAi {
     if (!bin || this.server) return;
     mkdirSync(join(this.dir, 'models'), { recursive: true });
     const child = spawn(bin, ['serve'], {
-      env: { ...process.env, OLLAMA_HOST: this.host, OLLAMA_MODELS: join(this.dir, 'models'), OLLAMA_KEEP_ALIVE: '5m' },
+      // 32 mil tokens de contexto: o Claude Code (agente com a IA local) manda um prompt de sistema grande.
+      env: { ...process.env, OLLAMA_HOST: this.host, OLLAMA_MODELS: join(this.dir, 'models'), OLLAMA_KEEP_ALIVE: '10m', OLLAMA_CONTEXT_LENGTH: '32768' },
       stdio: 'ignore',
     });
     child.on('exit', () => {
@@ -143,6 +151,7 @@ export class LocalAi {
       models: models.map((m) => ({ name: m.name, size: m.size, modified: Date.parse(m.modified_at) || 0 })),
       loaded: loaded.map((m) => ({ name: m.name, size: m.size, vram: m.size_vram, until: Date.parse(m.expires_at) || 0 })),
       catalog: catalog(),
+      agentModel: this.agentModel(models.map((m) => m.name)),
       recommended: recommend(total / 1e9),
       job: this.job,
     };
@@ -235,6 +244,56 @@ export class LocalAi {
 
   async remove(model: string): Promise<void> {
     await this.api('/api/delete', { method: 'DELETE', body: JSON.stringify({ model }) }, 10_000);
+  }
+
+  /** Modelo que os agentes da conta "IA local" usam: o escolhido (se ainda baixado) ou o primeiro de código baixado. */
+  agentModel(installed: string[]): string | null {
+    let saved = '';
+    try {
+      saved = (JSON.parse(readFileSync(join(this.dir, 'agent.json'), 'utf8')) as { model?: string }).model ?? '';
+    } catch { /* ainda sem escolha */ }
+    if (saved && installed.includes(saved)) return saved;
+    return installed.find((m) => catalog().some((c) => c.agent && (c.id === m || `${c.id}:latest` === m))) ?? installed[0] ?? null;
+  }
+
+  setAgentModel(model: string): void {
+    if (!/^[\w.:/-]{1,120}$/.test(model)) throw new Error(tr('Nome de modelo inválido.'));
+    mkdirSync(this.dir, { recursive: true });
+    writeFileSync(join(this.dir, 'agent.json'), JSON.stringify({ model }));
+  }
+
+  /**
+   * A conta "IA local" para o Novo agente: uma pasta própria do Claude Code (sem login: o token aponta para o Ollama, que
+   * fala a API da Anthropic) e as variáveis que levam o Claude Code ao modelo local. null = Ollama ou modelo ausente.
+   */
+  async agent(home: string, owner?: { uid: number; gid: number }): Promise<{ dir: string; model: string; env: Record<string, string> } | null> {
+    await this.start();
+    if (!(await this.running())) return null;
+    const models = await this.api<{ models: { name: string }[] }>('/api/tags').then((r) => r.models.map((m) => m.name), () => []);
+    const model = this.agentModel(models);
+    if (!model) return null;
+    const dir = join(home, LOCAL_ACCOUNT_DIR);
+    if (!existsSync(join(dir, '.claude.json'))) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, '.claude.json'), JSON.stringify({ hasCompletedOnboarding: true, bypassPermissionsModeAccepted: false }));
+      if (owner) for (const p of [dir, join(dir, '.claude.json')]) chownSync(p, owner.uid, owner.gid);
+    }
+    const url = `http://${this.host}`;
+    return {
+      dir,
+      model,
+      env: {
+        ANTHROPIC_BASE_URL: url,
+        ANTHROPIC_AUTH_TOKEN: 'ollama',
+        ANTHROPIC_API_KEY: '',
+        ANTHROPIC_MODEL: model,
+        ANTHROPIC_DEFAULT_OPUS_MODEL: model,
+        ANTHROPIC_DEFAULT_SONNET_MODEL: model,
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: model,
+        ANTHROPIC_SMALL_FAST_MODEL: model,
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+      },
+    };
   }
 
   cancel(): void {

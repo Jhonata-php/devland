@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **IA local como conta de agentes:** no Novo agente aparece a conta "IA local · modelo". O agente é o Claude Code de verdade (escritório, conversas, permissões), falando com o Ollama do servidor; na página IA local você escolhe o modelo ("Usar nos agentes"). O Ollama sobe com 32 mil tokens de contexto.
+- **Modelos melhores na IA local:** Qwen3 Coder 30B, GPT-OSS 20B, Devstral 24B, Qwen3 14B/8B/4B e Qwen2.5 Coder, com a marca "para agentes" nos que usam ferramentas e a recomendação pelo que cabe na memória.
 - **Conectar conta passo a passo:** escolha o tipo (Claude Code, Codex ou GitHub), entre pelo link (colando o código, no Claude, ou confirmando o código no site) e pronto. Substitui a janela antiga de Contas em todos os botões.
 - **Conectores (MCP):** página nova no painel para adicionar e remover servidores MCP em todas as contas do Claude: sugeridos (Context7, Playwright, Sentry, Notion, Linear, Figma) com um toque, ou qualquer outro por endereço ou comando, com o estado de cada um.
 - **Revisão automática:** no Novo agente, escolha o projeto e a função Revisão sem escrever nada; o agente instala, roda build e testes, sobe o projeto, testa o fluxo principal e manda um relatório das falhas antes de corrigir.

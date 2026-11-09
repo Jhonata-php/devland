@@ -285,6 +285,7 @@ export class SpawnPanel {
     if (!this.folders.length) this.setFolders(spawnFolders(this.ctx.store.snapshot).map((path) => ({ path, name: path.split(/[\\/]/).pop() || path, lastAt: 0 })));
     this.renderAccounts();
     void this.loadFolders();
+    void this.loadLocalModel();
     void this.checkDictation();
     void this.loadSchedules();
     if (!this.busy) setText(this.status, '');
@@ -325,17 +326,31 @@ export class SpawnPanel {
     );
   }
 
+  /** Modelo da conta "IA local" (do /api/ai, só admin); null = sem Ollama ou sem modelo baixado. */
+  private localModel: string | null = null;
+
+  private async loadLocalModel(): Promise<void> {
+    try {
+      const r = await fetch('/api/ai', { credentials: 'same-origin', cache: 'no-store' });
+      this.localModel = r.ok ? (((await r.json()) as { agentModel?: string | null }).agentModel ?? null) : null;
+    } catch {
+      this.localModel = null;
+    }
+    this.renderAccounts();
+  }
+
   private renderAccounts(): void {
-    const list = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => a.provider !== 'codex');
-    const many = list.length > 1;
+    const list = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => a.provider !== 'codex' && !a.configDir.endsWith('.claude-ollama'));
+    const many = list.length > 1 || !!this.localModel;
     setHidden(this.accountLabel, !many);
     setHidden(this.accountRow, !many);
     if (!many) {
       this.account = '';
       return;
     }
-    if (this.account && !list.some((a) => a.id === this.account)) this.account = '';
-    const opts: [string, string, AccountInfo | undefined][] = [['', tr('Automática'), undefined], ...list.map((a): [string, string, AccountInfo] => [a.id, a.name, a])];
+    if (this.account && this.account !== 'ollama' && !list.some((a) => a.id === this.account)) this.account = '';
+    const opts: [string, string, AccountInfo | undefined][] = [['', tr('Automática'), undefined], ...list.map((a): [string, string, AccountInfo] => [a.id, a.name, a]),
+      ...(this.localModel ? [['ollama', tr('IA local · {0}', [this.localModel]), undefined] as [string, string, undefined]] : [])];
     this.accountRow.replaceChildren(
       ...opts.map(([id, name, a]) => {
         const chip = createAccountChip('sm');

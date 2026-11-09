@@ -51,6 +51,9 @@ export interface SpawnRequest {
   configDir?: string;
   /** Função do agente (front-end, back-end...): vira a etiqueta `[id]` no nome da sessão. */
   role?: RoleId;
+  /** Conta "IA local": variáveis que levam o Claude Code ao Ollama e o modelo (`--model`). */
+  extraEnv?: Record<string, string>;
+  model?: string;
 }
 
 export type SpawnStatus = 'queued' | 'sent' | 'opened' | 'failed';
@@ -116,7 +119,7 @@ export function sessionName(prompt: string, role?: RoleId): string {
 
 /** Argumentos do `claude`: o pedido depois de `--` (um pedido "doctor" ou "-x" continua sendo pedido). */
 export function cliArgs(req: SpawnRequest): string[] {
-  const args = ['--bg', '-n', sessionName(req.prompt, req.role)];
+  const args = ['--bg', '-n', sessionName(req.prompt, req.role), ...(req.model ? ['--model', req.model] : [])];
   return req.prompt.trim() ? [...args, '--', req.prompt] : args;
 }
 
@@ -128,7 +131,7 @@ export function trustFolder(folder: string, who = agentRunAs()): void {
   if (!who) return;
   const files = [join(who.home, '.claude.json')];
   try {
-    for (const n of readdirSync(who.home)) if (n === '.claude' || /^\.claude-\d+$/.test(n)) files.push(join(who.home, n, '.claude.json'));
+    for (const n of readdirSync(who.home)) if (n === '.claude' || /^\.claude-(\d+|ollama)$/.test(n)) files.push(join(who.home, n, '.claude.json'));
   } catch {
     // sem home: só o arquivo padrão
   }
@@ -155,7 +158,7 @@ export function createCliRunner(bin: string, timeoutMs = CLI_TIMEOUT_MS): CliRun
     new Promise((ok) => {
       trustFolder(req.folder);
       const runAs = runAsOptions(process.env);
-      const env = req.configDir ? { ...runAs.env, CLAUDE_CONFIG_DIR: req.configDir } : runAs.env;
+      const env = { ...(req.configDir ? { ...runAs.env, CLAUDE_CONFIG_DIR: req.configDir } : runAs.env), ...req.extraEnv };
       const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8', ...runAs, env }, (err, out, stderr) => {
         const id = /backgrounded\s*·\s*([\w-]+)/.exec(out ?? '')?.[1];
         if (!err && id) return ok({ ok: true, id });
@@ -236,6 +239,8 @@ export interface SpawnServiceOptions {
   newId?: () => string;
   /** Conta do pedido -> pasta de configuração (undefined = conta padrão). Cloud: escolhe a conta quando não vem uma. */
   accountDir?: (account: string | undefined) => string | undefined;
+  /** Conta "IA local" (ai/local.ts): pasta, modelo e variáveis; null = sem Ollama ou sem modelo. */
+  localAgent?: () => Promise<{ dir: string; model: string; env: Record<string, string> } | null>;
 }
 
 export type SpawnSubmit = { spawn: SpawnInfo } | { error: 'invalid' | 'unavailable' | 'too-many'; reason: string };
@@ -333,8 +338,11 @@ export class SpawnService {
     } finally {
       this.dropFiles(e);
     }
-    const configDir = this.opts.accountDir?.(e.req.account);
-    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}) };
+    // Conta "IA local": o Claude Code numa pasta própria, falando com o Ollama do servidor.
+    const local = e.req.account === 'ollama' ? await this.opts.localAgent?.() : undefined;
+    if (e.req.account === 'ollama' && !local) return this.resolve(e, { ok: false, error: tr('IA local sem modelo: instale o Ollama e baixe um modelo na página IA local.') });
+    const configDir = local ? local.dir : this.opts.accountDir?.(e.req.account);
+    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}), ...(local ? { extraEnv: local.env, model: local.model } : {}) };
     this.resolve(e, await launch(req, opener, this.opts.cli));
   }
 

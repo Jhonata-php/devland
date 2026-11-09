@@ -3,7 +3,7 @@
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
 import { McpStore } from './accounts/mcp';
-import { LocalAi } from './ai/local';
+import { LocalAi, LOCAL_ACCOUNT_DIR } from './ai/local';
 import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
 import { dirname, join } from 'node:path';
@@ -411,8 +411,15 @@ const spawn = spawnOn
       writeFiles: saveAttachments,
       ...(config.inDocker ? { attachments } : { opener: createOpener(), cli: spawnBin ? createCliRunner(spawnBin) : undefined, attachments }),
       // Cloud: a conta escolhida na tela; sem escolha ("Automática"), a de mais folga (a mesma regra das sessões novas).
+      localAgent: async () => {
+        const who = agentRunAs();
+        const a = await localAi.agent(who?.home ?? config.home, who);
+        if (a) accounts.addDir(a.dir);
+        return a;
+      },
       accountDir: (id) => {
-        const list = accounts.entries();
+        // A conta "IA local" só entra quando escolhida pelo nome (ver localAgent): a escolha automática fica nas do Claude.
+        const list = accounts.entries().filter((e) => !e.dir.endsWith(LOCAL_ACCOUNT_DIR));
         const a = (id && id !== 'auto' ? list.find((e) => e.id === id) : undefined) ?? (cloud ? list.find((e) => e.id === pickAccountId(list.map((x) => ({ id: x.id, dir: x.dir, isDefault: isDefaultDir(x.dir, config.home) })))) : undefined);
         return a && !isDefaultDir(a.dir, config.home) ? a.dir : undefined;
       },
@@ -453,6 +460,11 @@ const pluginStore = claudeBin ? new PluginStore(claudeBin, () => accounts.entrie
 // IA local (Ollama na pasta de dados): sobe sozinho se já estiver instalado; rotas só para admin ou o próprio computador.
 const localAi = new LocalAi(config.dataDir);
 void localAi.start();
+// Conta "IA local" já usada antes: as sessões dela aparecem no escritório desde a subida.
+{
+  const localDir = join(agentRunAs()?.home ?? config.home, LOCAL_ACCOUNT_DIR);
+  if (existsSync(localDir)) accounts.addDir(localDir);
+}
 process.once('exit', () => localAi.stop());
 // Agentes agendados: a cada 30 s, abre pelo Novo agente os agendamentos cuja hora chegou (no fuso de quem agendou).
 const schedules = spawn ? new ScheduleStore(join(config.dataDir, 'schedules.json')) : undefined;

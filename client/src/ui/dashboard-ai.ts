@@ -4,13 +4,14 @@ import { access } from '../net/access';
 import { tr } from '../../../shared/i18n';
 import { h } from './dom';
 
-interface CatalogModel { id: string; name: string; use: string; sizeGb: number; ramGb: number; code?: boolean }
+interface CatalogModel { id: string; name: string; use: string; sizeGb: number; ramGb: number; code?: boolean; agent?: boolean }
 interface AiStatus {
   system: { platform: string; arch: string; cpus: number; cpuModel: string; load: number; ramTotal: number; ramFree: number; disk: { free: number; total: number } | null };
   ollama: { installed: boolean; own: boolean; running: boolean; version: string | null; package: string | null };
   models: { name: string; size: number }[];
   loaded: { name: string; size: number }[];
   catalog: CatalogModel[];
+  agentModel: string | null;
   recommended: string;
   job: { kind: 'install' | 'pull'; model?: string; status: string; percent?: number; error?: string; done: boolean } | null;
 }
@@ -183,9 +184,9 @@ export class AiPage {
     const ramGb = s.ramTotal / 1e9;
     const catalog = h('div', { class: 'dash-models' }, ...st.catalog.map((m) => {
       const installed = have.has(m.id) || have.has(`${m.id}:latest`);
-      const fits = m.ramGb <= ramGb * 0.7;
+      const fits = m.ramGb <= ramGb * 0.8;
       return h('div', { class: `dash-model${installed ? ' is-in' : ''}${fits ? '' : ' is-heavy'}` },
-        h('div', { class: 'dash-model__top' }, h('b', { text: m.name }), m.id === st.recommended ? h('span', { class: 'dash-badge is-admin', text: tr('Recomendado') }) : null, m.code ? h('span', { class: 'dash-badge', text: tr('código') }) : null),
+        h('div', { class: 'dash-model__top' }, h('b', { text: m.name }), m.id === st.recommended ? h('span', { class: 'dash-badge is-admin', text: tr('Recomendado') }) : null, m.agent ? h('span', { class: 'dash-badge is-blue', text: tr('para agentes') }) : null, m.code ? h('span', { class: 'dash-badge', text: tr('código') }) : null),
         h('p', { text: m.use }),
         h('div', { class: 'dash-model__foot' },
           h('small', { class: fits ? 'dash-muted' : 'dash-bad', text: `${m.sizeGb.toLocaleString()} GB · ${tr('{0} GB de RAM', [m.ramGb])}${fits ? '' : ` · ${tr('pesado para este servidor')}`}` }),
@@ -201,7 +202,9 @@ export class AiPage {
       return v === undefined ? '' : v === 'run' ? ` · ${tr('medindo…')}` : v === 'err' ? ` · ${tr('não respondeu')}` : ` · ${tr('{0} tokens/s', [v])}`;
     };
     const mine = st.models.length ? h('div', { class: 'dash-list' }, ...st.models.map((m) => h('div', { class: 'dash-agent dash-agent--static' },
-      h('span', { class: 'dash-agent__main' }, h('span', { class: 'dash-agent__top' }, h('b', { text: m.name }), loadedSet.has(m.name) ? h('span', { class: 'dash-status is-working', text: tr('Na memória') }) : null, this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null), h('span', { class: 'dash-agent__act', text: gb(m.size) + speedText(m.name) })),
+      h('span', { class: 'dash-agent__main' }, h('span', { class: 'dash-agent__top' }, h('b', { text: m.name }), loadedSet.has(m.name) ? h('span', { class: 'dash-status is-working', text: tr('Na memória') }) : null, this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null,
+        st.agentModel === m.name ? h('span', { class: 'dash-badge is-blue', text: tr('Agentes usam este') }) : null), h('span', { class: 'dash-agent__act', text: gb(m.size) + speedText(m.name) })),
+      st.agentModel === m.name ? null : h('button', { class: 'dash-link', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
       h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [m.name])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } }))))
       : h('p', { class: 'dash-muted', text: tr('Nenhum modelo baixado ainda. Comece pelo recomendado.') });
 
@@ -222,6 +225,10 @@ export class AiPage {
         h('div', { class: 'dash-stat' }, h('span', { text: tr('Na memória agora') }), h('b', { text: st.loaded.length ? gb(st.loaded.reduce((n, m) => n + m.size, 0)) : '0' }), h('small', { text: st.loaded.map((m) => m.name).join(', ') || tr('nenhum modelo carregado') }))),
       h('section', { class: 'dash-card' }, engine),
       jobEl,
+      st.agentModel ? h('section', { class: 'dash-card dash-ai-agentcard' },
+        h('span', { class: 'dash-ai-av', attrs: { 'aria-hidden': 'true' } }),
+        h('div', {}, h('b', { text: tr('Conta "IA local" para agentes') }),
+          h('small', { text: tr('No Novo agente, escolha a conta "IA local · {0}": o agente é o Claude Code de verdade (escritório, conversas, permissões), só que rodando com o modelo do seu servidor. Modelos maiores fazem tarefas melhores; os de 1–3B servem para coisas simples.', [st.agentModel]) }))) : null,
       st.models.length ? this.chatEl : null,
       h('div', { class: 'dash-cols' },
         h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Seus modelos') }),

@@ -727,3 +727,6 @@ html .ui-root .ui-spawn__repeat { font-family: var(--font-ui); color: #c9c7c2; }
 .dash-status.is-bad { color: var(--d-bad); background: rgba(248, 113, 113, 0.12); }
 .dash-model__foot small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 @media (max-width: 900px) { .dash-mcp-form { grid-template-columns: minmax(0, 1fr); } .dash-more { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dash-ai-agentcard { display: flex; align-items: center; gap: 14px; border-color: rgba(20, 184, 166, 0.35); }
+.dash-ai-agentcard > div { display: grid; gap: 3px; }
+.dash-ai-agentcard small { color: var(--d-mut); line-height: 1.5; }
