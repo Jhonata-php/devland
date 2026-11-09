@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Terminal e conversas sem mensagens (Cloud):** o serviço de segundo plano do Claude Code grava a conversa na pasta da conta com que foi iniciado, e uma sessão da Conta B ficava procurada em `.claude-2` enquanto estava em `.claude`. O servidor agora procura a mesma sessão nas pastas das outras contas.
 - **Colar imagem:** colar um print ou uma foto no Pedido do Novo agente, ou na caixa de mensagem de um agente (Cloud), vira anexo, como pelo botão Anexar.
 - **Novo agente (Cloud):** a raiz `/workspace` não aparece mais como projeto na lista de pastas (ela só guarda os projetos clonados).
 - **Loja de plugins do Claude Code:** em Configurações › Plugins do Claude Code (admin ou o próprio computador), busca no catálogo dos marketplaces configurados e instala ou remove com um toque, em todas as contas do Claude. Só instala o que está no catálogo, e a janela avisa que plugin roda código no servidor.

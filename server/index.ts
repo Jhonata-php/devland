@@ -62,6 +62,7 @@ import { fetchOAuthUsage } from './accounts/oauth-usage';
 import { usageAlerts } from './accounts/usage-alert';
 import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { PluginStore } from './plugins/store';
+import { locateTranscript } from './sources/transcript-locate';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -291,7 +292,7 @@ if (worldUplink && worldSocial) {
 // Terminal: só existe com bind local (ver terminalOffReason em config.ts).
 // Cada agente com o parser da ferramenta dele (o do Claude Code por padrão).
 const terminals = config.terminal
-  ? new TerminalStreams({ office, transcriptPathOf: (id) => agents.transcriptPathOf(id), parserFor: (id) => agents.parserFor(id) })
+  ? new TerminalStreams({ office, transcriptPathOf: (id) => locateTranscript(agents.transcriptPathOf(id), config.claudeDirs), parserFor: (id) => agents.parserFor(id) })
   : undefined;
 // Histórico do terminal (sessões recentes, abertas ou encerradas, de todas as ferramentas): mesma trava.
 const history = config.terminal
