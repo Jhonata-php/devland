@@ -12428,3 +12428,8 @@ body::before {
   color: #ff8a8a;
   animation: ui-dictate-pulse 1.2s ease-in-out infinite;
 }
+
+/* Novo agente (celular): o cabeçalho com o X fica no topo enquanto a lista rola. */
+@media (max-width: 600px) {
+  .ui-spawn .ui-popover__head { position: sticky; top: 0; z-index: 2; background: #12151d; }
+}

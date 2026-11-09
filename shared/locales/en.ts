@@ -2331,7 +2331,7 @@ export const EN: Readonly<Record<string, string>> = {
   "Anexos": "Attachments",
   "Começar": "Start",
   "Novo agente": "New agent",
-  "Começa na hora uma sessão do Claude Code em segundo plano no computador, na pasta escolhida; as permissões chegam aqui. Pasta que o Claude Code ainda não conhece abre no app do Claude e espera o Enter lá. Anexos vão para ~/.habblaud/attachments e o pedido leva os caminhos.": "Instantly starts a Claude Code session in the background on the computer, in the chosen folder; permissions come here. A folder Claude Code doesn't know yet opens in the Claude app and waits for Enter there. Attachments go to ~/.habblaud/attachments and the request includes their paths.",
+  "Começa na hora uma sessão do Claude Code em segundo plano no computador, na pasta escolhida; as permissões chegam aqui. Pasta que o Claude Code ainda não conhece abre no app do Claude e espera o Enter lá. Anexos vão para a pasta de anexos do DevLand e o pedido leva os caminhos.": "Instantly starts a Claude Code session in the background on the computer, in the chosen folder; permissions come here. A folder Claude Code doesn't know yet opens in the Claude app and waits for Enter there. Attachments go to DevLand's attachments folder and the request includes their paths.",
   "No máximo {0} anexos por pedido.": "At most {0} attachments per request.",
   "{0} passa de {1} MB.": "{0} is over {1} MB.",
   "Tirar {0}": "Remove {0}",

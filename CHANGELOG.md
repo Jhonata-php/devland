@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Novo agente (celular):** o cabeçalho com o X fica no topo enquanto a lista rola, e a ajuda não cita mais a pasta antiga `~/.habblaud`.
 - **Caixa de mensagem (celular):** anexo, microfone e Enviar com o mesmo tamanho e alinhados; gravando, o microfone fica vermelho pulsando, e o segundo toque sempre para a gravação (no iPhone ela às vezes ficava presa). Uma conversa sem mensagens gravadas avisa em vez de ficar em branco, e o servidor registra no log qual transcript leu, para achar a causa.
 - **Celular: menus abrem abaixo do topo:** Novo agente, Entregas, Histórico e a prévia começavam atrás da barra de status no app da tela de início; agora começam logo abaixo do topo.
 - **iPhone (app da tela de início): barra de baixo no fim da tela:** o layout segue o do wsat (topo com a área segura, camadas fixas em tela cheia, documento com altura de tela, sem travas de rolagem nem ajustes pela área visível). Antes, com o corpo da página vazio, o iOS deixava a área do app 62 pt mais curta que a tela: topo cortado atrás da barra de status e uma faixa morta embaixo da barra de baixo. Barra de status translúcida: quem já adicionou o ícone precisa removê-lo e adicionar de novo.
