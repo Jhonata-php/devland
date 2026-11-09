@@ -3845,4 +3845,12 @@ export const ES: Readonly<Record<string, string>> = {
   "{0} projetos · últimos {1} dias": "{0} proyectos · últimos {1} días",
   "últimos 14 dias": "últimos 14 días",
   "últimos {0} dias": "últimos {0} días",
+
+  // Painel: aprovar na Visão geral, limite, abrir agente
+  "Abre o Claude Code nesta pasta": "Abre Claude Code en esta carpeta",
+  "Abrir agente": "Abrir agente",
+  "Perto do limite": "Cerca del límite",
+  "Ver contas": "Ver cuentas",
+  "{0}: {1}% da semana (renova {2})": "{0}: {1}% de la semana (se renueva {2})",
+  "{0}: {1}% das 5 horas (renova {2})": "{0}: {1}% de las 5 horas (se renueva {2})",
 };

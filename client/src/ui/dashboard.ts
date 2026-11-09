@@ -13,6 +13,7 @@ import { clampPercent, formatResetAt, formatTokens, prettyModel, relativeTime, u
 import { activityFallback, isPresent, statusLabel } from './model';
 import { AiPage } from './dashboard-ai';
 import { GithubData } from './dashboard-github';
+import { PermissionCard } from './permission';
 
 export type DashPage = 'home' | 'agents' | 'chats' | 'github' | 'accounts' | 'people' | 'ai';
 
@@ -26,6 +27,10 @@ export interface DashActions {
   openOffice(): void;
   openSettings(): void;
   openPlugins(): void;
+  /** Entregas: o que os agentes terminaram (a mesma janela do escritório). */
+  openDeliveries(): void;
+  /** Sessão nova do Claude Code na pasta (terminal interativo); ausente quando o terminal interativo está desligado. */
+  newSessionIn?(path: string): void;
   /** Janelas do Cloud: conectar contas ou permissões detalhadas das pessoas. */
   openCloud(kind: 'contas' | 'usuarios'): void;
 }
@@ -71,6 +76,8 @@ export class Dashboard implements UiComponent {
   private readonly top: HTMLElement;
   private readonly ai: AiPage;
   private readonly gh: GithubData;
+  /** Cartões de aprovar/negar da Visão geral, um por agente (guardam o estado do botão entre os redesenhos). */
+  private readonly perms = new Map<string, PermissionCard>();
   private readonly meEl: HTMLElement;
   private people: { users: CloudUser[]; me: string } | null = null;
   private peopleErr = '';
@@ -114,13 +121,14 @@ export class Dashboard implements UiComponent {
     const waiting = agents.filter((a) => a.status === 'waiting').length;
     const page = PAGES.find((p) => p.id === this.page)!;
     const chats = h('button', { class: `dash-btn${this.page === 'chats' ? ' is-on' : ''}`, type: 'button', on: { click: () => this.go('chats') } }, icon(ICONS.feed), h('span', { class: 'dash-hide-sm', text: tr('Conversas') }), waiting ? h('em', { class: 'dash-count', text: String(waiting) }) : null);
+    const deliveries = h('button', { class: 'dash-btn', type: 'button', title: tr('Entregas: o que os agentes terminaram'), on: { click: () => this.act.openDeliveries() } }, icon(ICONS.delivery), h('span', { class: 'dash-hide-sm', text: tr('Entregas') }));
     const office = h('button', { class: 'dash-btn', type: 'button', title: tr('Ver os agentes no mapa em pixel art'), on: { click: () => this.act.openOffice() } }, icon(ICONS.office), h('span', { class: 'dash-hide-sm', text: tr('Escritório') }));
     const settings = h('button', { class: 'dash-btn dash-only-sm', type: 'button', attrs: { 'aria-label': tr('Configurações') }, on: { click: () => this.act.openSettings() } }, icon(ICONS.settings));
     this.top.replaceChildren(
       h('img', { class: 'dash-only-sm dash-top__logo', attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
       h('div', { class: 'dash-top__title' }, h('b', { text: page.label() }),
         h('span', { class: 'dash-live dash-hide-sm' }, h('i', { class: working ? 'is-on' : '' }), h('span', { text: working ? tr('{0} trabalhando', [working]) : tr('Ninguém trabalhando agora') }))),
-      h('div', { class: 'dash-top__act' }, chats, office, settings, this.newBtn(true)));
+      h('div', { class: 'dash-top__act' }, chats, deliveries, office, settings, this.newBtn(true)));
   }
 
   private toolBtn(svg: string, label: string, fn: () => void, cls = ''): HTMLButtonElement {
@@ -163,7 +171,7 @@ export class Dashboard implements UiComponent {
     this.pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
     this.renderNav();
     this.renderTop();
-    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas')) : this.homePage();
+    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas'), this.act.newSessionIn) : this.homePage();
     // A animação de entrada só na troca de página (não a cada snapshot).
     if (this.page !== this.shown) page.classList.add('is-enter');
     this.shown = this.page;
@@ -243,7 +251,8 @@ export class Dashboard implements UiComponent {
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('ai') } }, icon(ICONS.terminal), h('span', { text: tr('IA local') })),
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('github') } }, icon(ICONS.browser), h('span', { text: tr('GitHub') })),
         this.pluginsBtn.hidden ? null : h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.act.openPlugins() } }, icon(ICONS.plugin), h('span', { text: tr('Plugins') }))),
-      waiting.length ? h('section', { class: 'dash-card dash-attn' }, h('h2', { text: tr('Precisam de você') }), h('div', { class: 'dash-list' }, ...waiting.map((a) => this.agentRow(a, now)))) : null,
+      this.usageAlert(now),
+      waiting.length ? h('section', { class: 'dash-card dash-attn' }, h('h2', { text: tr('Precisam de você') }), h('div', { class: 'dash-list' }, ...waiting.map((a) => this.waitingRow(a, now)))) : null,
       h('div', { class: 'dash-cols' },
         h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Agentes') }), h('button', { class: 'dash-link', type: 'button', text: tr('Ver todos'), on: { click: () => this.go('agents') } })),
           agents.length ? h('div', { class: 'dash-list' }, ...agents.slice().sort((a, b) => b.lastEventAt - a.lastEventAt).slice(0, 6).map((a) => this.agentRow(a, now))) : this.emptyAgents()),
@@ -323,6 +332,36 @@ export class Dashboard implements UiComponent {
       h('span', { class: 'dash-agent__side' },
         acc ? h('span', { class: 'dash-dot', style: `background:${acc.color}`, title: acc.name }) : null,
         h('small', { text: relativeTime(a.lastEventAt, now) })));
+  }
+
+  /** Agente esperando: a linha e, quando há pedido de permissão, o cartão para aprovar ou negar ali mesmo. */
+  private waitingRow(a: AgentInfo, now: number): HTMLElement {
+    const full = this.ctx.agent(a.id) ?? a;
+    if (!full.permission) return this.agentRow(a, now);
+    let card = this.perms.get(a.id);
+    if (!card) {
+      card = new PermissionCard(this.ctx);
+      card.el.classList.add('dash-perm');
+      this.perms.set(a.id, card);
+    }
+    card.render(full);
+    for (const id of this.perms.keys()) if (!this.ctx.agent(id)?.permission) this.perms.delete(id);
+    return h('div', { class: 'dash-waiting' }, this.agentRow(a, now), card.el);
+  }
+
+  /** Aviso quando uma conta está perto do limite (semana a partir de 80%, 5 horas a partir de 90%). */
+  private usageAlert(now: number): HTMLElement | null {
+    const hot = this.accounts().filter((a) => (a.usage?.sevenDay?.utilization ?? 0) >= 80 || (a.usage?.fiveHour?.utilization ?? 0) >= 90);
+    if (!hot.length) return null;
+    return h('section', { class: 'dash-alert' }, h('b', { text: tr('Perto do limite') }),
+      h('span', { text: hot.map((a) => {
+        const w = a.usage?.sevenDay;
+        const f = a.usage?.fiveHour;
+        return (w?.utilization ?? 0) >= 80
+          ? tr('{0}: {1}% da semana (renova {2})', [a.name, Math.round(w!.utilization), w!.resetsAt ? formatResetAt(w!.resetsAt, now) : '—'])
+          : tr('{0}: {1}% das 5 horas (renova {2})', [a.name, Math.round(f!.utilization), f!.resetsAt ? formatResetAt(f!.resetsAt, now) : '—']);
+      }).join(' · ') }),
+      h('button', { class: 'dash-link', type: 'button', text: tr('Ver contas'), on: { click: () => this.go('accounts') } }));
   }
 
   private emptyAgents(): HTMLElement {

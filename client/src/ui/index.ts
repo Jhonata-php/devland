@@ -341,6 +341,10 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     openSettings: () => ctx.toggleSettings(),
     openPlugins: () => openPlugins(ctx.root),
     openCloud: (kind) => openCloudPanel(ctx.root, kind),
+    openDeliveries: () => deliveries.button.click(),
+    get newSessionIn() {
+      return router.interactiveEnabled ? (path: string) => void router.newSession(path) : undefined;
+    },
   });
   const setView = (view: 'office' | 'panel') => {
     if (view !== prefs.view) ctx.updatePrefs({ view });

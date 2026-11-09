@@ -126,7 +126,7 @@ export class GithubData {
       card(tr('Commits'), String(sum(commits)), tr('{0} projetos · últimos {1} dias', [d.projects.length, labels.length]), barChart(commits, labels, 'var(--d-s3)', (n) => String(n), tr('commits'))));
   }
 
-  page(header: (title: string, sub: string, ...right: (HTMLElement | null)[]) => HTMLElement, openCloud: () => void): HTMLElement {
+  page(header: (title: string, sub: string, ...right: (HTMLElement | null)[]) => HTMLElement, openCloud: () => void, newSession?: (path: string) => void): HTMLElement {
     const d = this.data;
     const head = header(tr('GitHub'), tr('Seus projetos, o que mudou e o que falta enviar.'),
       h('button', { class: 'dash-btn', type: 'button', text: tr('Atualizar'), on: { click: () => void this.load() } }));
@@ -156,6 +156,7 @@ export class GithubData {
           h('small', { text: p.lastCommit ? `${p.lastCommit} · ${relativeTime(p.lastCommitAt, now)}` : tr('sem commits') })),
         spark,
         h('div', { class: 'dash-repo__act' },
+          newSession ? h('button', { class: 'dash-btn', type: 'button', text: tr('Abrir agente'), title: tr('Abre o Claude Code nesta pasta'), on: { click: () => newSession(p.path) } }) : null,
           p.url ? h('a', { class: 'dash-btn', attrs: { href: p.url, target: '_blank', rel: 'noopener' }, text: tr('GitHub ↗') }) : null,
           admin && p.url ? h('button', { class: 'dash-btn', type: 'button', text: tr('Puxar'), title: tr('git pull: traz o que está no GitHub (só avança, nunca faz merge)'), on: { click: () => {
             this.msg = tr('Atualizando {0}…', [p.name]);

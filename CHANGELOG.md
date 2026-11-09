@@ -12,6 +12,10 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Escritório no visual novo:** o modo com o mapa usa as mesmas cores neutras, conversas, janelas, botões e avisos do painel (sai o verde neon de terminal).
+- **Aprovar na Visão geral:** em "Precisam de você", o pedido de permissão aparece com Aprovar e Negar ali mesmo, sem abrir a conversa.
+- **Aviso de limite:** a Visão geral avisa quando uma conta passa de 80% da semana ou de 90% das 5 horas, com a hora em que renova.
+- **Entregas no painel:** botão no topo com o que os agentes terminaram; nos projetos do GitHub, "Abrir agente" começa uma sessão do Claude Code na pasta.
 - **GitHub no painel:** página com a conta do GitHub conectada (foto e login), os projetos git (branch, arquivos alterados, commits a enviar, últimos 14 dias de commits e o link do repositório), puxar do GitHub (só avança, nunca faz merge) e, no Cloud, clonar os seus repositórios.
 - **Gráficos na Visão geral:** tokens usados por dia e commits por dia nos últimos 14 dias, com o valor de cada dia ao passar o mouse. O uso das contas mostra também o limite semanal.
 - **Assistente local:** na IA local, com um modelo baixado, dá para conversar com ele como se fosse um agente (histórico, velocidade em tokens por segundo, nova conversa). Também dá para **desinstalar** o Ollama e **cancelar** um download; a instalação mostra os MB baixados.
