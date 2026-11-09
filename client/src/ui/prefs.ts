@@ -27,6 +27,8 @@ export interface UiPrefs {
   worldVisitNotify: boolean;
   /** Modo da tela: o escritório em pixel art (mapa) ou o painel (ui/dashboard.ts). */
   view: 'office' | 'panel';
+  /** Cores da interface: escuro, claro ou seguindo o sistema. */
+  uiTheme: 'dark' | 'light' | 'auto';
 }
 
 export const DEFAULT_PREFS: UiPrefs = {
@@ -43,6 +45,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   hiddenAccounts: [],
   worldVisitNotify: true,
   view: 'office',
+  uiTheme: 'dark',
 };
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
@@ -70,6 +73,7 @@ export function sanitizePrefs(raw: unknown): UiPrefs {
     hiddenAccounts: Array.isArray(o.hiddenAccounts) ? o.hiddenAccounts.filter((x): x is string => typeof x === 'string').slice(0, 20) : [],
     worldVisitNotify: bool(o.worldVisitNotify, d.worldVisitNotify),
     view: oneOf(o.view, ['office', 'panel'] as const, d.view),
+    uiTheme: oneOf(o.uiTheme, ['dark', 'light', 'auto'] as const, d.uiTheme),
   };
 }
 

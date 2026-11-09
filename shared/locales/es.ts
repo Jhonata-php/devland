@@ -3945,4 +3945,10 @@ export const ES: Readonly<Record<string, string>> = {
   "O melhor para agentes de código: entende o projeto e usa ferramentas (MoE, rápido para o tamanho)": "El mejor para agentes de código: entiende el proyecto y usa herramientas (MoE, rápido para su tamaño)",
   "Usar nos agentes": "Usar en los agentes",
   "para agentes": "para agentes",
+
+  // Tema claro
+  "Automático: segue o tema do sistema (claro de dia, escuro à noite, se ele trocar sozinho).": "Automático: sigue el tema del sistema (claro de día, oscuro de noche, si cambia solo).",
+  "Claro": "Claro",
+  "Cores": "Colores",
+  "Escuro": "Oscuro",
 };
