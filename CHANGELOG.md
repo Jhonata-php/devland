@@ -12,8 +12,16 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **IA local (modo Painel):** instala o Ollama no servidor com um clique (na pasta de dados, sem root, sobrevive às atualizações), lista modelos leves que rodam só com CPU e recomenda o que cabe na memória, baixa e remove modelos, mostra memória, CPU, disco e o que está carregado, e tem um teste rápido com a velocidade em tokens por segundo. Só para admin ou pelo próprio computador.
+- **Conversas dentro do painel:** a página Conversas mostra a lista e a conversa no lugar do conteúdo; tocar num agente ou no aviso de entrega abre ali, sem ir ao escritório.
+- **Painel reorganizado:** barra no topo com Conversas, Escritório (um botão só) e Novo agente; menu lateral recolhível (lembra a escolha) e o perfil com Sair no pé do menu.
+- **Lembrar de mim no login:** desmarcado, a sessão acaba ao fechar o navegador. O "Esqueci a senha" fica ao lado do campo da senha.
 - **Modo Painel:** o DevLand sem o mapa, com cara de plataforma. Tem visão geral (quem está trabalhando, quem precisa de você, tokens e linhas), agentes agrupados por projeto, contas com logo e barras de uso do plano, e pessoas (convidar por e-mail, papel, remover). Tocar num agente abre a conversa ao lado. A troca fica no botão Painel da barra do topo, em Configurações › Aparência › Tela e no cartão Escritório do painel; a escolha fica salva. No celular as seções viram abas embaixo.
 - **Telas de entrada novas:** login, esqueci a senha, senha nova, convite e criar o admin no visual do painel, com uma prévia do DevLand ao lado no computador. O link "Esqueci a senha" aparece sempre no Cloud; sem e-mail configurado, a página explica que quem administra redefine a senha.
+
+### Corrigido
+
+- O botão principal do painel (ex.: "+ Conectar conta") aparecia branco, sem o texto.
 
 ## [1.0.4] - 2026-11-09
 

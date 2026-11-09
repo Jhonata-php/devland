@@ -11,12 +11,15 @@ import { ICONS } from './icons';
 import { createAvatar } from './avatar';
 import { clampPercent, formatResetAt, formatTokens, prettyModel, relativeTime, usageLevel } from './format';
 import { activityFallback, isPresent, statusLabel } from './model';
+import { AiPage } from './dashboard-ai';
 
-export type DashPage = 'home' | 'agents' | 'accounts' | 'people';
+export type DashPage = 'home' | 'agents' | 'chats' | 'accounts' | 'people' | 'ai';
 
 export interface DashActions {
   openChat(agentId: string): void;
-  openChats(): void;
+  /** Mostra ou esconde a lista de conversas (na página Conversas ela fica encaixada no conteúdo). */
+  showChats(on: boolean): void;
+  chatsOpen(): boolean;
   newAgent(): void;
   canSpawn(): boolean;
   openOffice(): void;
@@ -28,12 +31,16 @@ export interface DashActions {
 
 interface CloudUser { id: string; name: string; email?: string; role: 'admin' | 'user'; createdAt: number; totpEnabled?: boolean }
 
-const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => string }[] = [
+const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => string; side?: boolean }[] = [
   { id: 'home', icon: ICONS.overview, label: () => tr('Visão geral'), short: () => tr('Início') },
   { id: 'agents', icon: ICONS.newAgent, label: () => tr('Agentes') },
+  { id: 'chats', icon: ICONS.feed, label: () => tr('Conversas') },
   { id: 'accounts', icon: ICONS.lock, label: () => tr('Contas') },
-  { id: 'people', icon: ICONS.hand, label: () => tr('Pessoas') },
+  { id: 'people', icon: ICONS.hand, label: () => tr('Pessoas'), side: true },
+  { id: 'ai', icon: ICONS.terminal, label: () => tr('IA local'), short: () => tr('IA'), side: true },
 ];
+/** Chave do menu recolhido (preferência só deste navegador). */
+const COLLAPSE_KEY = 'devland:dash-collapsed';
 
 const LOGO = {
   claude: '<svg viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round">' +
@@ -59,28 +66,55 @@ export class Dashboard implements UiComponent {
   private lastKey = '';
   private shown: DashPage | null = null;
   private readonly pluginsBtn: HTMLButtonElement;
+  private readonly top: HTMLElement;
+  private readonly ai: AiPage;
+  private readonly meEl: HTMLElement;
   private people: { users: CloudUser[]; me: string } | null = null;
   private peopleErr = '';
   private me: { name: string; email: string | null; role: string } | null = null;
 
   constructor(private ctx: UiContext, private act: DashActions) {
+    const collapse = h('button', { class: 'dash-collapse', type: 'button', title: tr('Recolher o menu'), attrs: { 'aria-label': tr('Recolher o menu') }, on: { click: () => this.setCollapsed(!this.el.classList.contains('is-collapsed')) } }, icon(ICONS.sidebar));
     const brand = h('div', { class: 'dash-brand' },
       h('img', { attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: '', width: 30, height: 30 } }),
-      h('span', { text: BRAND }));
+      h('span', { text: BRAND }), collapse);
     this.nav = h('nav', { class: 'dash-nav', attrs: { 'aria-label': tr('Seções') } });
-    const office = h('button', { class: 'dash-office', type: 'button', on: { click: () => act.openOffice() } },
-      h('span', { class: 'dash-office__art', attrs: { 'aria-hidden': 'true' } }),
-      h('span', { class: 'dash-office__txt' }, h('b', { text: tr('Escritório') }), h('small', { text: tr('Ver os agentes no mapa em pixel art') })));
     this.pluginsBtn = this.toolBtn(ICONS.plugin, tr('Plugins'), () => act.openPlugins());
-    const tools = h('div', { class: 'dash-tools' },
-      this.toolBtn(ICONS.feed, tr('Conversas'), () => act.openChats()),
-      this.pluginsBtn,
-      this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
+    this.meEl = h('div', { class: 'dash-me', hidden: true });
+    const tools = h('div', { class: 'dash-tools' }, this.pluginsBtn, this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
+    this.top = h('header', { class: 'dash-top' });
+    this.ai = new AiPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
     this.main = h('main', { class: 'dash-main' });
     this.tabs = h('nav', { class: 'dash-tabs', attrs: { 'aria-label': tr('Seções') } });
     this.el = h('div', { class: 'dash', hidden: true },
-      h('aside', { class: 'dash-side' }, brand, this.nav, h('div', { class: 'dash-grow' }), tools, office),
-      this.main, this.tabs);
+      h('aside', { class: 'dash-side' }, brand, this.nav, h('div', { class: 'dash-grow' }), tools, this.meEl),
+      h('div', { class: 'dash-body' }, this.top, this.main), this.tabs);
+    try {
+      if (localStorage.getItem(COLLAPSE_KEY) === '1') this.el.classList.add('is-collapsed');
+    } catch { /* sem armazenamento: menu aberto */ }
+  }
+
+  private setCollapsed(on: boolean): void {
+    this.el.classList.toggle('is-collapsed', on);
+    try {
+      localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0');
+    } catch { /* só nesta visita */ }
+  }
+
+  /** Barra do topo: título da página, quem precisa de você, Conversas, Escritório e Novo agente. */
+  private renderTop(): void {
+    const agents = this.agents();
+    const working = agents.filter((a) => a.status === 'working' || a.status === 'shell').length;
+    const waiting = agents.filter((a) => a.status === 'waiting').length;
+    const page = PAGES.find((p) => p.id === this.page)!;
+    const chats = h('button', { class: `dash-btn${this.page === 'chats' ? ' is-on' : ''}`, type: 'button', on: { click: () => this.go('chats') } }, icon(ICONS.feed), h('span', { class: 'dash-hide-sm', text: tr('Conversas') }), waiting ? h('em', { class: 'dash-count', text: String(waiting) }) : null);
+    const office = h('button', { class: 'dash-btn', type: 'button', title: tr('Ver os agentes no mapa em pixel art'), on: { click: () => this.act.openOffice() } }, icon(ICONS.office), h('span', { class: 'dash-hide-sm', text: tr('Escritório') }));
+    const settings = h('button', { class: 'dash-btn dash-only-sm', type: 'button', attrs: { 'aria-label': tr('Configurações') }, on: { click: () => this.act.openSettings() } }, icon(ICONS.settings));
+    this.top.replaceChildren(
+      h('img', { class: 'dash-only-sm dash-top__logo', attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
+      h('div', { class: 'dash-top__title' }, h('b', { text: page.label() }),
+        h('span', { class: 'dash-live dash-hide-sm' }, h('i', { class: working ? 'is-on' : '' }), h('span', { text: working ? tr('{0} trabalhando', [working]) : tr('Ninguém trabalhando agora') }))),
+      h('div', { class: 'dash-top__act' }, chats, office, settings, this.newBtn(true)));
   }
 
   private toolBtn(svg: string, label: string, fn: () => void, cls = ''): HTMLButtonElement {
@@ -91,11 +125,16 @@ export class Dashboard implements UiComponent {
     this.el.hidden = !on;
     this.lastKey = '';
     this.shown = null;
+    if (!on && this.page === 'chats') this.go('home');
+    this.ai.active(on && this.page === 'ai');
     if (on && access().cloud && !this.me) void this.loadMe();
   }
 
   go(page: DashPage): void {
+    if (page !== this.page && (page === 'chats' || this.page === 'chats')) this.act.showChats(page === 'chats');
     this.page = page;
+    document.documentElement.classList.toggle('dash-on-chats', page === 'chats');
+    this.ai.active(page === 'ai' && !this.el.hidden);
     this.lastKey = '';
     if (page === 'people') void this.loadPeople();
     this.main.scrollTop = 0;
@@ -107,12 +146,16 @@ export class Dashboard implements UiComponent {
     const snap = this.ctx.store.snapshot;
     const minute = Math.floor(this.ctx.now() / 30_000);
     // Pessoas não depende do snapshot: redesenhar apagaria o que se digita no convite.
-    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}`;
+    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}|${this.act.chatsOpen()}|${this.ai.key()}`;
     if (key === this.lastKey) return;
+    // Alguém digitando na página (convite, pergunta à IA): não redesenha por baixo dele.
+    const focus = document.activeElement;
+    if (this.shown === this.page && focus && this.main.contains(focus) && /^(INPUT|TEXTAREA|SELECT)$/.test(focus.tagName)) return;
     this.lastKey = key;
     this.pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
     this.renderNav();
-    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.homePage();
+    this.renderTop();
+    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.homePage();
     // A animação de entrada só na troca de página (não a cada snapshot).
     if (this.page !== this.shown) page.classList.add('is-enter');
     this.shown = this.page;
@@ -122,14 +165,29 @@ export class Dashboard implements UiComponent {
   private renderNav(): void {
     const waiting = this.agents().filter((a) => a.status === 'waiting').length;
     const make = (cls: string) => PAGES.map((p) => {
-      return h('button', { class: `${cls}${p.id === this.page ? ' is-on' : ''}`, type: 'button', attrs: { 'aria-current': p.id === this.page ? 'page' : undefined }, on: { click: () => this.go(p.id) } },
-        icon(p.icon), h('span', { text: cls === 'dash-tab' && p.short ? p.short() : p.label() }), p.id === 'agents' && waiting ? h('em', { text: String(waiting) }) : null);
+      return h('button', { class: `${cls}${p.id === this.page ? ' is-on' : ''}`, type: 'button', title: p.label(), attrs: { 'aria-current': p.id === this.page ? 'page' : undefined }, on: { click: () => this.go(p.id) } },
+        icon(p.icon), h('span', { text: cls === 'dash-tab' && p.short ? p.short() : p.label() }), p.id === 'chats' && waiting ? h('em', { text: String(waiting) }) : null);
     });
-    const user = this.me ? h('div', { class: 'dash-me' }, h('span', { class: 'dash-av', text: initials(this.me.name) }), h('span', { class: 'dash-me__txt' }, h('b', { text: this.me.name }), h('small', { text: this.me.email ?? (this.me.role === 'admin' ? tr('Admin') : tr('Usuário')) })),
-      h('button', { class: 'dash-link', type: 'button', text: tr('Sair'), on: { click: () => void this.logout() } })) : null;
-    this.nav.replaceChildren(...make('dash-nav__item'), user ?? '');
-    const office = h('button', { class: 'dash-tab', type: 'button', on: { click: () => this.act.openOffice() } }, icon(ICONS.office), h('span', { text: tr('Escritório') }));
-    this.tabs.replaceChildren(...make('dash-tab'), office);
+    // Perfil no pé do menu (só no Cloud, onde há login).
+    this.meEl.hidden = !this.me;
+    if (this.me) this.meEl.replaceChildren(h('span', { class: 'dash-av', text: initials(this.me.name) }), h('span', { class: 'dash-me__txt' }, h('b', { text: this.me.name }), h('small', { text: this.me.email ?? (this.me.role === 'admin' ? tr('Admin') : tr('Usuário')) })),
+      h('button', { class: 'dash-link', type: 'button', text: tr('Sair'), on: { click: () => void this.logout() } }));
+    this.nav.replaceChildren(...make('dash-nav__item'));
+    // Celular: só as páginas principais nas abas; Pessoas e IA local ficam na página Mais (Visão geral tem os atalhos).
+    this.tabs.replaceChildren(...make('dash-tab').filter((_, i) => !PAGES[i]!.side));
+  }
+
+  /** Abre a conversa com o agente na página Conversas (encaixada no conteúdo, sem sair do painel). */
+  openChat(id: string): void {
+    this.go('chats');
+    this.act.openChat(id);
+  }
+
+  private chatsPage(): HTMLElement {
+    // A conversa em si é a janela de conversas do DevLand, encaixada no lugar do conteúdo (dashboard.css).
+    if (this.act.chatsOpen()) return h('div', { class: 'dash-page dash-chats-ph' });
+    return h('div', { class: 'dash-page' }, this.header(tr('Conversas'), tr('Fale com qualquer agente e aprove pedidos sem sair do painel.')),
+      h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Conversas fechadas') }), h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Ver conversas'), on: { click: () => this.act.showChats(true) } })));
   }
 
   private agents(): AgentInfo[] {
@@ -137,17 +195,12 @@ export class Dashboard implements UiComponent {
   }
 
   private header(title: string, sub: string, ...right: (HTMLElement | null)[]): HTMLElement {
-    const mtools = h('div', { class: 'dash-mtools' },
-      h('img', { attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
-      h('span', { class: 'dash-grow' }),
-      this.toolBtn(ICONS.feed, tr('Conversas'), () => this.act.openChats()),
-      this.toolBtn(ICONS.settings, tr('Configurações'), () => this.act.openSettings()));
-    return h('header', { class: 'dash-head' }, mtools, h('div', {}, h('h1', { text: title }), h('p', { text: sub })), h('div', { class: 'dash-head__act' }, ...right));
+    return h('header', { class: 'dash-head' }, h('div', {}, h('h1', { text: title }), h('p', { text: sub })), h('div', { class: 'dash-head__act' }, ...right));
   }
 
-  private newBtn(): HTMLElement | null {
+  private newBtn(compact = false): HTMLElement | null {
     if (!this.act.canSpawn()) return null;
-    return h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('+ Novo agente'), on: { click: () => this.act.newAgent() } });
+    return h('button', { class: 'dash-btn dash-btn--primary', type: 'button', attrs: { 'aria-label': tr('Novo agente') }, on: { click: () => this.act.newAgent() } }, compact ? h('span', { class: 'dash-only-sm', text: '+' }) : null, h('span', { class: compact ? 'dash-hide-sm' : '', text: tr('+ Novo agente') }));
   }
 
   // ------------------------------------------------------------------ páginas
@@ -165,12 +218,16 @@ export class Dashboard implements UiComponent {
     const stat = (label: string, value: string, hint: string, tone = '') => h('div', { class: `dash-stat ${tone}` }, h('span', { text: label }), h('b', { text: value }), h('small', { text: hint }));
     const accounts = snap?.accounts ?? [];
     return h('div', { class: 'dash-page' },
-      this.header(`${hello}${name}`, tr('Tudo o que os seus agentes estão fazendo agora.'), this.newBtn()),
+      this.header(`${hello}${name}`, tr('Tudo o que os seus agentes estão fazendo agora.')),
       h('section', { class: 'dash-stats' },
         stat(tr('Trabalhando'), String(working), agents.length === 1 ? tr('1 agente aberto') : tr('{0} agentes abertos', [agents.length]), working ? 'is-live' : ''),
         stat(tr('Precisam de você'), String(waiting.length), waiting.length ? tr('Responda para eles seguirem') : tr('Nada pendente'), waiting.length ? 'is-warn' : ''),
         stat(tr('Tokens das sessões'), formatTokens(tokens), tr('entrada + saída')),
         stat(tr('Linhas escritas'), lines.toLocaleString(), tr('nas sessões abertas'))),
+      h('section', { class: 'dash-more' },
+        h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('people') } }, icon(ICONS.hand), h('span', { text: tr('Pessoas') })),
+        h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('ai') } }, icon(ICONS.terminal), h('span', { text: tr('IA local') })),
+        this.pluginsBtn.hidden ? null : h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.act.openPlugins() } }, icon(ICONS.plugin), h('span', { text: tr('Plugins') }))),
       waiting.length ? h('section', { class: 'dash-card dash-attn' }, h('h2', { text: tr('Precisam de você') }), h('div', { class: 'dash-list' }, ...waiting.map((a) => this.agentRow(a, now)))) : null,
       h('div', { class: 'dash-cols' },
         h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Agentes') }), h('button', { class: 'dash-link', type: 'button', text: tr('Ver todos'), on: { click: () => this.go('agents') } })),
@@ -185,8 +242,7 @@ export class Dashboard implements UiComponent {
     const agents = this.agents();
     const groups = (snap?.rooms ?? []).map((r) => ({ room: r, list: agents.filter((a) => a.roomId === r.id) })).filter((g) => g.list.length);
     return h('div', { class: 'dash-page' },
-      this.header(tr('Agentes'), agents.length === 1 ? tr('1 sessão aberta, agrupada por projeto.') : tr('{0} sessões abertas, agrupadas por projeto.', [agents.length]),
-        h('button', { class: 'dash-btn', type: 'button', text: tr('Conversas'), on: { click: () => this.act.openChats() } }), this.newBtn()),
+      this.header(tr('Agentes'), agents.length === 1 ? tr('1 sessão aberta, agrupada por projeto.') : tr('{0} sessões abertas, agrupadas por projeto.', [agents.length])),
       groups.length ? h('div', { class: 'dash-groups' }, ...groups.map((g) => h('section', { class: 'dash-card' },
         h('div', { class: 'dash-card__head' }, h('h2', {}, h('span', { class: 'dash-folder', text: '▸' }), g.room.name), h('small', { class: 'dash-muted', text: g.room.path })),
         h('div', { class: 'dash-list' }, ...g.list.map((a) => this.agentRow(a, now, true)))))) : h('section', { class: 'dash-card' }, this.emptyAgents()));
@@ -241,7 +297,7 @@ export class Dashboard implements UiComponent {
   private agentRow(a: AgentInfo, now: number, full = false): HTMLElement {
     const acc = this.ctx.account(a.account);
     const st = a.status === 'shell' ? 'working' : a.status;
-    return h('button', { class: 'dash-agent', type: 'button', on: { click: () => this.act.openChat(a.id) } },
+    return h('button', { class: 'dash-agent', type: 'button', on: { click: () => this.openChat(a.id) } },
       createAvatar(a, 'sm'),
       h('span', { class: 'dash-agent__main' },
         h('span', { class: 'dash-agent__top' }, h('b', { text: a.name }), h('span', { class: `dash-status is-${st}`, text: statusLabel(a.status) })),

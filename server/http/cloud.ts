@@ -16,6 +16,7 @@ import {
   PAGE_STYLE,
   cookieHeader,
   esc,
+  loginCookies,
   readBody,
   remoteUserOf,
   safeEqual,
@@ -523,7 +524,7 @@ export function createCloud(deps: CloudDeps): Cloud {
 
   const signIn = (req: IncomingMessage, res: ServerResponse, uid: string) => {
     const { token, maxAgeS } = sessions.issue(uid);
-    sendJson(res, 200, { ok: true }, { 'Set-Cookie': cookieHeader(token, maxAgeS, deps.secure(req)) });
+    sendJson(res, 200, { ok: true }, { 'Set-Cookie': loginCookies(token, maxAgeS, true, deps.secure(req)) });
   };
   const fail = (res: ServerResponse, err: unknown) => {
     if (res.headersSent) return;

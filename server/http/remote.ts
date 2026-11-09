@@ -450,14 +450,14 @@ export function loginPage(opts: { caDownload: boolean; intro?: string; forgot?: 
   <div id="err" class="alert err" role="alert"></div>
   <label class="l" for="u">${esc(tr('E-mail'))}</label>
   <div class="field">${ICON.user}<input id="u" name="username" type="email" inputmode="email" placeholder="${esc(tr('seu@email.com'))}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></div>
-  <label class="l" for="p">${esc(tr('Senha'))}</label>
+  <div class="lrow"><label class="l" for="p">${esc(tr('Senha'))}</label>${opts.forgot ? `<a class="lnk" href="/esqueci">${esc(tr('Esqueci a senha'))}</a>` : ''}</div>
   <div class="field">${ICON.lock}<input id="p" name="password" type="password" autocomplete="current-password" required>
     <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">${ICON.eye}</button></div>
   <div id="cw" hidden><label class="l" for="c">${esc(tr('Código de verificação'))}</label>
   <div class="field">${ICON.lock}<input id="c" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="9"></div></div>
+  <label class="check"><input id="r" name="remember" type="checkbox" checked><span>${esc(tr('Lembrar de mim neste aparelho'))}</span></label>
   <button id="b" class="btn" type="submit"><span class="spin" aria-hidden="true"></span><span id="bt">${esc(tr('Entrar'))}</span></button>
 </form>
-${opts.forgot ? `<p class="help"><a href="/esqueci">${esc(tr('Esqueci a senha'))}</a></p>` : ''}
 ${ca}`;
   const script = `
   (function () {
@@ -475,7 +475,7 @@ ${ca}`;
       b.disabled = true; b.classList.add('busy'); err.className = 'alert err';
       try {
         var r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value, code: f.code.value }) });
+          credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value, code: f.code.value, remember: f.remember.checked }) });
         if (r.ok) { location.replace('/'); return; }
         var body = await r.json().catch(function () { return {}; });
         if (body.needCode) { var cw = document.getElementById('cw'); var first = cw.hidden; cw.hidden = false; f.code.focus(); if (first && !f.code.value) { err.className = 'alert err'; b.disabled = false; b.classList.remove('busy'); return; } }
@@ -500,8 +500,19 @@ export function sendHtml(res: ServerResponse, html: string, frameable = false): 
   res.end(html);
 }
 
-export function cookieHeader(value: string, maxAgeS: number, secure: boolean): string {
-  return `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeS}${secure ? '; Secure' : ''}`;
+/** `maxAgeS` null = cookie de sessão do navegador (some ao fechar): login sem "Lembrar de mim". */
+export function cookieHeader(value: string, maxAgeS: number | null, secure: boolean, name = COOKIE): string {
+  return `${name}=${value}; Path=/; HttpOnly; SameSite=Strict${maxAgeS === null ? '' : `; Max-Age=${maxAgeS}`}${secure ? '; Secure' : ''}`;
+}
+
+/** Marca "Lembrar de mim": a renovação do login mantém o cookie persistente só para quem marcou. */
+export const KEEP_COOKIE = `${COOKIE}_keep`;
+
+/** Cookies do login: com `remember`, persistentes; sem, só enquanto o navegador estiver aberto. */
+export function loginCookies(token: string, maxAgeS: number, remember: boolean, secure: boolean): string[] {
+  return remember
+    ? [cookieHeader(token, maxAgeS, secure), cookieHeader('1', maxAgeS, secure, KEEP_COOKIE)]
+    : [cookieHeader(token, null, secure), cookieHeader('', 0, secure, KEEP_COOKIE)];
 }
 
 /** Habblaud Cloud (HABBLAUD_CLOUD=1): login pelos usuários de <dataDir>/users.json (http/cloud.ts). */
@@ -579,7 +590,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
         .then(async (raw) => {
           if (!throttle.begin()) return tooMany();
           begun = true;
-          let body: { user?: unknown; password?: unknown; code?: unknown } = {};
+          let body: { user?: unknown; password?: unknown; code?: unknown; remember?: unknown } = {};
           try {
             body = JSON.parse(raw) as typeof body;
           } catch {
@@ -605,7 +616,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
           }
           ok = true;
           const { token, maxAgeS } = deps.sessions.issue(who);
-          sendJson(res, 200, { ok: true }, { 'Set-Cookie': cookieHeader(token, maxAgeS, secure) });
+          sendJson(res, 200, { ok: true }, { 'Set-Cookie': loginCookies(token, maxAgeS, body.remember !== false, secure) });
         })
         .catch(() => {
           if (!res.headersSent) sendJson(res, 400, { error: tr('requisição inválida') });
@@ -621,7 +632,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       if (method !== 'POST') sendJson(res, 405, { error: tr('método não permitido') }, { Allow: 'POST' });
       else {
         deps.sessions.revoke(cookie);
-        sendJson(res, 200, { ok: true }, { 'Set-Cookie': cookieHeader('', 0, secure) });
+        sendJson(res, 200, { ok: true }, { 'Set-Cookie': [cookieHeader('', 0, secure), cookieHeader('', 0, secure, KEEP_COOKIE)] });
       }
       return true;
     }
@@ -664,7 +675,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       remoteRequests.add(req);
       if (uid !== undefined) remoteUsers.set(req, uid);
       const fresh = deps.sessions.renew(cookie);
-      if (fresh) res.setHeader('Set-Cookie', cookieHeader(fresh.token, fresh.maxAgeS, secure));
+      if (fresh) res.setHeader('Set-Cookie', cookieHeader(fresh.token, readCookie(req.headers.cookie, KEEP_COOKIE) ? fresh.maxAgeS : null, secure));
       return false;
     }
     // Ícone e manifesto do app (Tela de Início): públicos, o celular os busca antes do login (e sem o cookie).

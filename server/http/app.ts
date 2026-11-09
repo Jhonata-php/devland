@@ -18,6 +18,7 @@ import { tr } from '../../shared/i18n';
 import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
+import type { LocalAi } from '../ai/local';
 import type { DevRunner } from '../preview/devrun';
 import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
@@ -73,6 +74,8 @@ export interface ApiDeps {
   schedules?: ScheduleStore;
   /** Loja de plugins do Claude Code (plugins/store.ts): só admin (Cloud) ou o próprio computador. */
   plugins?: PluginStore;
+  /** IA local (ai/local.ts): instalar o Ollama, baixar modelos, consumo. Só admin (Cloud) ou o próprio computador. */
+  localAi?: LocalAi;
   /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
   onPreviewOpen?: (port: number) => void;
   /** Rodar o projeto para a prévia (preview/devrun.ts). */
@@ -591,6 +594,22 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           .then((body) => store.change(String((body as { id?: unknown }).id ?? ''), action))
           .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
       else methodNotAllowed(res, action ? 'POST' : 'GET');
+      return true;
+    }
+    if (path === '/api/ai' || path.startsWith('/api/ai/')) {
+      // Instala programa e roda modelos no servidor: só quem administra (Cloud) ou o próprio computador.
+      const ai = deps.localAi;
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const model = /^\/api\/ai\/models\/(.+)$/.exec(path);
+      const answer = (p: Promise<unknown>) => p.then((r) => sendJson(res, 200, r ?? { ok: true }), (err: Error) => sendJson(res, 400, { error: err.message }));
+      if (!ai) sendJson(res, 404, { error: tr('IA local indisponível') });
+      else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/ai' && isRead) answer(ai.status());
+      else if (path === '/api/ai/install' && method === 'POST') answer(Promise.resolve().then(() => ai.install()));
+      else if (path === '/api/ai/pull' && method === 'POST') answer(readJson(req).then((b) => ai.pull(String((b as { model?: unknown }).model ?? ''))));
+      else if (path === '/api/ai/test' && method === 'POST') answer(readJson(req).then((b) => ai.test(String((b as { model?: unknown }).model ?? ''), String((b as { prompt?: unknown }).prompt ?? ''))));
+      else if (model && method === 'DELETE') answer(ai.remove(decodeURIComponent(model[1]!)));
+      else methodNotAllowed(res, 'GET');
       return true;
     }
     if (path === '/api/schedules' || path.startsWith('/api/schedules/')) {

@@ -2,6 +2,7 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
+import { LocalAi } from './ai/local';
 import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
 import { dirname, join } from 'node:path';
@@ -448,6 +449,10 @@ const claudeBinSetting = process.env.HABBLAUD_CLAUDE_BIN?.trim();
 const claudeBin = claudeBinFrom();
 // Loja de plugins (Configurações): instala nas contas do Claude Code pelo CLI; rotas só para admin ou o próprio computador.
 const pluginStore = claudeBin ? new PluginStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir)) : undefined;
+// IA local (Ollama na pasta de dados): sobe sozinho se já estiver instalado; rotas só para admin ou o próprio computador.
+const localAi = new LocalAi(config.dataDir);
+void localAi.start();
+process.once('exit', () => localAi.stop());
 // Agentes agendados: a cada 30 s, abre pelo Novo agente os agendamentos cuja hora chegou (no fuso de quem agendou).
 const schedules = spawn ? new ScheduleStore(join(config.dataDir, 'schedules.json')) : undefined;
 if (schedules && spawn) {
@@ -587,6 +592,7 @@ const api = createApiHandler({
   spawn,
   schedules,
   plugins: pluginStore,
+  localAi,
   devRunner,
   resumeWithMessage: ptys ? (id, text) => ptys.sendMessage(id, withPreviewHint(text)) : undefined,
   onPreviewOpen: (port) => office.noticeSystem('preview', 'info', tr('🌐 Abrindo a prévia do site na porta {0}.', [port]), { previewPort: port }),

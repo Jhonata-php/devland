@@ -313,7 +313,8 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   if (typeof document !== 'undefined' && typeof matchMedia === 'function') enableDraggablePanels();
   const chats = new ChatsView(ctx);
   // Aviso "fulano entregou": tocar abre a conversa com ele.
-  deliveries.onOpenChat = (id) => chats.openChat(id);
+  // (no modo Painel, na página Conversas dele)
+  deliveries.onOpenChat = (id) => (prefs.view === 'panel' ? dashboard.openChat(id) : chats.openChat(id));
   // PC: botão Conversas no topo (no celular ele fica na barra de baixo). As conversas abrem ao lado, à direita.
   const chatsBtn = iconButton(ICONS.feed, tr('Conversas'), () => chats.toggle(), 'ui-btn-chats');
   chatsBtn.setAttribute('data-label', tr('Conversas'));
@@ -332,7 +333,8 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   // Modo Painel (sem o mapa): o mesmo DevLand como plataforma de gestão. prefs.view lembra a escolha.
   const dashboard = new Dashboard(ctx, {
     openChat: (id) => chats.openChat(id),
-    openChats: () => chats.toggle(),
+    showChats: (on) => (on ? chats.show() : chats.close()),
+    chatsOpen: () => chats.isOpen,
     newAgent: () => topbar.toggleSpawn(),
     canSpawn: () => topbar.canSpawn,
     openOffice: () => setView('office'),

@@ -55,6 +55,14 @@ export const AUTH_STYLE = `<style>
   .help { margin: 20px 0 0; text-align: center; font-size: 13.5px; line-height: 1.6; color: var(--mut); }
   .help a { color: var(--txt); }
   .foot { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--mut); }
+  .lrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .lnk { font-size: 13px; color: var(--mut); text-decoration: none; }
+  .lnk:hover { color: var(--txt); text-decoration: underline; }
+  .check { display: flex; align-items: center; gap: 10px; margin: 2px 0 18px; font-size: 14px; color: var(--mut); cursor: pointer; user-select: none; }
+  .check input { appearance: none; -webkit-appearance: none; flex: none; width: 18px; height: 18px; margin: 0; border: 1px solid var(--line2); border-radius: 5px; background: var(--card); display: grid; place-items: center; cursor: pointer; transition: background .15s, border-color .15s; }
+  .check input:checked { background: var(--acc); border-color: var(--acc); }
+  .check input:checked::after { content: ''; width: 5px; height: 9px; margin-top: -2px; border: solid #0b1f12; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .check input:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
   .show { display: none; }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
   @keyframes spin { to { transform: rotate(360deg); } }
