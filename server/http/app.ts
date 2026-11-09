@@ -16,6 +16,7 @@ import { handleStatsRoute } from './stats';
 import type { TerminalStreams } from './terminal';
 import { tr } from '../../shared/i18n';
 import type { SpawnService } from '../spawn/spawn';
+import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
 import type { SpawnFolder } from '../spawn/folders';
@@ -66,6 +67,8 @@ export interface ApiDeps {
   codexLive?: CodexLive;
   /** Novo agente pelo escritório (/api/spawn e, para o auxiliar do host, /api/host/spawn/*; server/spawn/spawn.ts). */
   spawn?: SpawnService;
+  /** Agentes agendados (schedule/schedules.ts): mesma trava do Novo agente. */
+  schedules?: ScheduleStore;
   /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
   preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
@@ -528,6 +531,35 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
             sendJson(res, 200, { url });
           })
           .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/schedules' || path.startsWith('/api/schedules/')) {
+      // Agendar abre agentes sozinho mais tarde: a mesma trava do Novo agente.
+      const store = deps.schedules;
+      const one = /^\/api\/schedules\/([0-9a-f-]{36})$/.exec(path);
+      if (!store || !deps.spawn) sendJson(res, 403, { error: tr('novo agente pelo escritório desligado') });
+      else if (!trusted(req, 'spawn')) sendJson(res, 403, { error: denied(req, tr('agentes novos só são abertos pelo próprio computador (http://localhost)')) });
+      else if (path === '/api/schedules' && isRead) sendJson(res, 200, { schedules: store.all() });
+      else if (path === '/api/schedules' && method === 'POST')
+        readJson(req)
+          .then((body) => {
+            try {
+              sendJson(res, 201, { schedule: store.add(parseSchedule(body, Date.now())) });
+            } catch (err) {
+              sendJson(res, 400, { error: err instanceof Error ? err.message : String(err) });
+            }
+          })
+          .catch((err) => fail(res, err));
+      else if (one && method === 'DELETE') sendJson(res, store.remove(one[1]) ? 200 : 404, { ok: true });
+      else if (one && method === 'PATCH')
+        readJson(req)
+          .then((body) => {
+            const s = store.setEnabled(one[1], !!(body as { enabled?: unknown }).enabled);
+            if (s) sendJson(res, 200, { schedule: s });
+            else sendJson(res, 404, { error: tr('agendamento não encontrado') });
+          })
+          .catch((err) => fail(res, err));
+      else methodNotAllowed(res, one ? 'DELETE, PATCH' : 'GET, POST');
       return true;
     }
     if (path === '/api/spawn' || path.startsWith('/api/spawn/')) {

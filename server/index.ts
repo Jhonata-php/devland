@@ -60,6 +60,7 @@ import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
 import { fetchOAuthUsage } from './accounts/oauth-usage';
 import { usageAlerts } from './accounts/usage-alert';
+import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -432,6 +433,21 @@ late.messages = messages;
 // do Docker, com node-pty e o executável do claude no PATH.
 const claudeBinSetting = process.env.HABBLAUD_CLAUDE_BIN?.trim();
 const claudeBin = claudeBinFrom();
+// Agentes agendados: a cada 30 s, abre pelo Novo agente os agendamentos cuja hora chegou (no fuso de quem agendou).
+const schedules = spawn ? new ScheduleStore(join(config.dataDir, 'schedules.json')) : undefined;
+if (schedules && spawn) {
+  schedules.load();
+  const tickSchedules = () => {
+    const now = Date.now();
+    for (const s of dueSchedules(schedules.all(), now)) {
+      schedules.markRun(s.id, now);
+      const r = spawn.submit({ folder: s.folder, prompt: s.prompt, account: s.account, role: s.role });
+      if ('error' in r) log.warn(tr('Agendamento em {0} não abriu: {1}', [s.folder, r.reason]));
+      else log.info(tr('Agendamento: agente novo em {0} ({1}).', [s.folder, s.time]));
+    }
+  };
+  setInterval(tickSchedules, 30_000).unref();
+}
 let spawnPty: SpawnPty | null = null;
 let ptyScreen: ScreenFactory | undefined;
 let ptyOff: string | undefined;
@@ -549,6 +565,7 @@ const api = createApiHandler({
   // Habblaud Cloud: o terminal interativo também pela porta com login, para quem tem a permissão "terminal".
   pty: ptys ? createPtyRoutes(ptys, cloud ? (req) => isRemoteRequest(req) && remoteAllows(req, 'terminal') : undefined) : undefined,
   spawn,
+  schedules,
   attachments,
   dictation,
   deliveries,

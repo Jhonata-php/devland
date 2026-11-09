@@ -83,6 +83,15 @@ function fileToBase64(file: Blob): Promise<string> {
   });
 }
 
+interface ScheduleView {
+  id: string;
+  folder: string;
+  prompt: string;
+  time: string;
+  days: number[];
+  enabled: boolean;
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -138,6 +147,13 @@ export class SpawnPanel {
   private readonly dictate: DictationButton;
   private readonly submitBtn: HTMLButtonElement;
   private readonly status: HTMLElement;
+  // Agendar: repetir o pedido nos dias e no horário escolhidos (server/schedule/schedules.ts).
+  private readonly repeat: HTMLInputElement;
+  private readonly repeatBox: HTMLElement;
+  private readonly timeInput: HTMLInputElement;
+  private readonly dayRow: HTMLElement;
+  private readonly schedList: HTMLElement;
+  private days = new Set<number>([1, 2, 3, 4, 5]);
   private anchor?: HTMLElement;
   private busy = false;
   private folders: FolderOption[] = [];
@@ -190,6 +206,13 @@ export class SpawnPanel {
     this.fileList = h('ul', { class: 'ui-spawn__files', attrs: { 'aria-label': tr('Anexos') } });
     this.submitBtn = h('button', { class: 'ui-btn ui-perm__btn ui-perm__btn--allow ui-spawn__go', type: 'button', on: { click: () => void this.submit() } }, tr('Começar'));
     this.status = h('p', { class: 'ui-rename__hint ui-spawn__status', attrs: { role: 'status', 'aria-live': 'polite' } });
+    this.repeat = h('input', { type: 'checkbox', on: { change: () => this.syncRepeat() } });
+    this.timeInput = h('input', { class: 'ui-rename__input ui-spawn__time', type: 'time', attrs: { 'aria-label': tr('Horário'), value: '09:00' } });
+    this.timeInput.value = '09:00';
+    this.dayRow = h('div', { class: 'ui-spawn__accounts ui-spawn__days', role: 'group', attrs: { 'aria-label': tr('Dias') } });
+    this.renderDays();
+    this.repeatBox = h('div', { class: 'ui-spawn__repeat', hidden: true }, this.timeInput, this.dayRow);
+    this.schedList = h('div', { class: 'ui-spawn__scheds', hidden: true });
     for (const field of [this.folder, this.prompt] as HTMLElement[]) {
       field.addEventListener('keydown', (e: KeyboardEvent) => {
         e.stopPropagation();
@@ -225,8 +248,11 @@ export class SpawnPanel {
         h('div', { class: 'ui-spawn__tools' }, this.dictate.el, attachBtn, this.fileInput),
         this.fileList,
         h('p', { class: 'ui-rename__hint', text: tr('Começa na hora uma sessão do Claude Code em segundo plano no computador, na pasta escolhida; as permissões chegam aqui. Pasta que o Claude Code ainda não conhece abre no app do Claude e espera o Enter lá. Anexos vão para a pasta de anexos do DevLand e o pedido leva os caminhos.') }),
+        h('label', { class: 'ui-spawn__repeat-toggle' }, this.repeat, ' ', tr('Repetir em dias e horário (agendar)')),
+        this.repeatBox,
         this.submitBtn,
         this.status,
+        this.schedList,
       ),
     );
     this.el.addEventListener('toggle', () => {
@@ -251,6 +277,7 @@ export class SpawnPanel {
     this.renderAccounts();
     void this.loadFolders();
     void this.checkDictation();
+    void this.loadSchedules();
     if (!this.busy) setText(this.status, '');
     const r = anchor.getBoundingClientRect();
     this.el.style.top = `${Math.round(r.bottom + 8)}px`;
@@ -416,11 +443,89 @@ export class SpawnPanel {
     this.status.classList.toggle('is-error', error);
   }
 
+  private renderDays(): void {
+    const names = [tr('dom'), tr('seg'), tr('ter'), tr('qua'), tr('qui'), tr('sex'), tr('sáb')];
+    this.dayRow.replaceChildren(
+      ...[1, 2, 3, 4, 5, 6, 0].map((d) =>
+        h('button', {
+          class: `ui-btn ui-spawn__acc${this.days.has(d) ? ' is-on' : ''}`,
+          type: 'button',
+          attrs: { 'aria-pressed': String(this.days.has(d)) },
+          text: names[d],
+          on: { click: () => { if (this.days.has(d)) this.days.delete(d); else this.days.add(d); this.renderDays(); } },
+        }),
+      ),
+    );
+  }
+
+  private syncRepeat(): void {
+    setHidden(this.repeatBox, !this.repeat.checked);
+    setText(this.submitBtn, this.repeat.checked ? tr('Agendar') : tr('Começar'));
+  }
+
+  private async loadSchedules(): Promise<void> {
+    try {
+      const { schedules } = await api<{ schedules: ScheduleView[] }>('/api/schedules');
+      const names = [tr('dom'), tr('seg'), tr('ter'), tr('qua'), tr('qui'), tr('sex'), tr('sáb')];
+      setHidden(this.schedList, !schedules.length);
+      this.schedList.replaceChildren(
+        h('p', { class: 'ui-spawn__label', text: tr('Agendados') }),
+        ...schedules.map((sc) => {
+          const days = sc.days.length === 7 ? tr('todo dia') : sc.days.map((d) => names[d]).join(' ');
+          const toggle = h('button', { class: 'ui-btn', type: 'button', text: sc.enabled ? tr('Pausar') : tr('Retomar'), on: { click: () => void this.patchSchedule(sc.id, !sc.enabled) } });
+          const del = h('button', { class: 'ui-btn', type: 'button', text: tr('Apagar'), on: { click: () => void this.deleteSchedule(sc.id) } });
+          return h(
+            'div',
+            { class: `ui-spawn__sched${sc.enabled ? '' : ' is-off'}` },
+            h('div', { class: 'ui-spawn__sched-text' }, h('strong', { text: `${sc.time} · ${days}` }), h('span', { text: `${sc.folder.split(/[\\/]/).pop() || sc.folder} — ${sc.prompt}` })),
+            h('div', { class: 'ui-spawn__sched-tools' }, toggle, del),
+          );
+        }),
+      );
+    } catch {
+      setHidden(this.schedList, true);
+    }
+  }
+
+  private async patchSchedule(id: string, enabled: boolean): Promise<void> {
+    await api(`/api/schedules/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled }) }).catch((e: Error) => this.say(e.message, true));
+    void this.loadSchedules();
+  }
+
+  private async deleteSchedule(id: string): Promise<void> {
+    await api(`/api/schedules/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch((e: Error) => this.say(e.message, true));
+    void this.loadSchedules();
+  }
+
+  private async schedule(folder: string): Promise<void> {
+    if (this.files.length) return this.say(tr('Anexos não entram no agendamento: tire os anexos ou comece agora.'), true);
+    this.busy = true;
+    this.submitBtn.disabled = true;
+    try {
+      await api('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder, prompt: this.prompt.value, time: this.timeInput.value, days: [...this.days], tz: Intl.DateTimeFormat().resolvedOptions().timeZone, ...(this.account ? { account: this.account } : {}), ...(this.role ? { role: this.role } : {}) }),
+      });
+      this.say(tr('Agendado: o agente abre sozinho às {0}.', [this.timeInput.value]));
+      this.prompt.value = '';
+      this.repeat.checked = false;
+      this.syncRepeat();
+      void this.loadSchedules();
+    } catch (err) {
+      this.say(tr('Não agendou: {0}', [(err as Error).message]), true);
+    } finally {
+      this.busy = false;
+      this.submitBtn.disabled = false;
+    }
+  }
+
   private async submit(): Promise<void> {
     if (this.busy) return;
     if (this.dictate.busy) return this.say(tr('Espere o ditado terminar.'), true);
     const folder = (this.typing ? this.folder.value : this.selected).trim();
     if (!folder) return this.say(tr('Escolha o projeto.'), true);
+    if (this.repeat.checked) return this.schedule(folder);
     this.busy = true;
     this.submitBtn.disabled = true;
     try {
