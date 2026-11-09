@@ -260,15 +260,36 @@ export class PtyManager {
    * conversa aqui (`claude --resume <sessão>`, na pasta e na conta originais). O que pode impedir a sessão nova
    * (pasta, conta, limite) é conferido antes de encerrar a de lá; pedidos repetidos esperam o primeiro.
    */
-  takeover(agentId: string, size: { cols?: unknown; rows?: unknown } = {}): Promise<PtyInfo> {
+  takeover(agentId: string, size: { cols?: unknown; rows?: unknown } = {}, prompt?: string): Promise<PtyInfo> {
     const pending = this.takeovers.get(agentId);
     if (pending) return pending;
-    const run = this.doTakeover(agentId, size).finally(() => this.takeovers.delete(agentId));
+    const run = this.doTakeover(agentId, size, prompt).finally(() => this.takeovers.delete(agentId));
     this.takeovers.set(agentId, run);
     return run;
   }
 
-  private async doTakeover(agentId: string, size: { cols?: unknown; rows?: unknown }): Promise<PtyInfo> {
+  /**
+   * Mensagem para uma sessão sem o plugin de mensagens (ex.: sessão de segundo plano parada): se ela já está num
+   * terminal daqui, cola o texto e aperta Enter; senão assume a sessão com o texto como primeiro pedido
+   * (`claude --resume <sessão> -- <texto>`).
+   */
+  async sendMessage(agentId: string, text: string): Promise<PtyInfo> {
+    const own = this.byAgent(agentId);
+    if (own) {
+      own.proc.write(`\u001b[200~${text}\u001b[201~`);
+      setTimeout(() => {
+        try {
+          own.proc.write('\r');
+        } catch {
+          // terminal fechou no meio
+        }
+      }, 150);
+      return { ...own.info };
+    }
+    return this.takeover(agentId, {}, text);
+  }
+
+  private async doTakeover(agentId: string, size: { cols?: unknown; rows?: unknown }, prompt?: string): Promise<PtyInfo> {
     // Um tique: o pedido já está em this.takeovers (conta no limite abaixo como "esta" tomada).
     await Promise.resolve();
     if (!this.opts.spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
@@ -299,7 +320,7 @@ export class PtyManager {
     }
     let info: PtyInfo;
     try {
-      info = this.spawn(plan, { resume: agent.sessionId, from: agentId });
+      info = this.spawn(plan, { resume: agent.sessionId, from: agentId, prompt });
     } catch (err) {
       // A sessão de lá já foi encerrada: dizer como continuar a conversa.
       throw new PtyError(500, tr('a sessão foi encerrada no outro terminal, mas não abriu aqui ({0}); para continuar: claude --resume {1}', [errMsg(err), agent.sessionId]));
@@ -402,7 +423,7 @@ export class PtyManager {
     return { cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30) };
   }
 
-  private spawn(plan: SpawnPlan, p: { resume?: string; from?: string } = {}): PtyInfo {
+  private spawn(plan: SpawnPlan, p: { resume?: string; from?: string; prompt?: string } = {}): PtyInfo {
     const spawn = this.opts.spawn;
     if (!spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
     const { cwd, account, cols, rows } = plan;
@@ -414,6 +435,8 @@ export class PtyManager {
     let proc: PtyProcess;
     try {
       const args = p.resume ? ['--resume', p.resume] : [];
+      // Primeiro pedido já na abertura (mensagem para sessão sem o plugin); `--` para um texto que comece com "-".
+      if (p.prompt) args.push('--', p.prompt);
       proc = spawn(this.opts.claudeBin, args, { cwd, cols, rows, env });
     } catch (err) {
       throw new PtyError(500, tr('não consegui abrir o Claude Code: {0}', [errMsg(err)]));

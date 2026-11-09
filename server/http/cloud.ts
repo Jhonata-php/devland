@@ -9,6 +9,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getLocale, tr } from '../../shared/i18n';
 import type { ConnectProvider, ConnectService } from '../cloud/connect';
 import { authPage, BRAND, ICON } from './auth-shell';
+import { gitPushAllowed, setGitPush } from '../accounts/git-permissions';
 import { FEATURES, UserError, allowedOf, cleanAllow, type Role, type UserStore } from '../cloud/users';
 import {
   LoginThrottle,
@@ -27,6 +28,8 @@ import {
 
 export interface CloudDeps {
   store: UserStore;
+  /** Pastas das contas do Claude Code (para a regra de push/merge dos agentes). */
+  claudeDirs?: () => readonly string[];
   /** E-mail (SMTP do ambiente) para o "esqueci a senha"; ausente = recurso desligado. */
   mailer?: Mailer;
   /** Falhas de envio (o usuário não vê o motivo, para não revelar quem tem conta). */
@@ -814,6 +817,25 @@ export function createCloud(deps: CloudDeps): Cloud {
       req.resume();
       if (path === '/admin') redirect(res, '/');
       else sendJson(res, 403, { error: tr('Só admin.') });
+      return true;
+    }
+    // Push e merge pelos agentes (inclusive na main): regra explícita no settings.json de cada conta do Claude.
+    if (path === '/api/cloud/git-push') {
+      const dirs = deps.claudeDirs?.() ?? [];
+      if (method === 'GET') {
+        req.resume();
+        sendJson(res, 200, { allowed: gitPushAllowed(dirs), accounts: dirs.length });
+      } else if (method === 'POST')
+        json(req)
+          .then((body) => {
+            setGitPush(dirs, body.allow === true);
+            sendJson(res, 200, { allowed: gitPushAllowed(dirs) });
+          })
+          .catch((err) => fail(res, err));
+      else {
+        req.resume();
+        sendJson(res, 405, { error: tr('método não permitido') }, { Allow: 'GET, POST' });
+      }
       return true;
     }
     if (path === '/admin') {

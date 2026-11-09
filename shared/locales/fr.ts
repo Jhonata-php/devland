@@ -3645,4 +3645,13 @@ export const FR: Readonly<Record<string, string>> = {
   "Sobe o servidor de desenvolvimento (npm run dev) da pasta e abre a prévia": "Lance le serveur de développement (npm run dev) du dossier et ouvre l’aperçu",
   "Subindo o servidor do projeto (npm run dev)…": "Démarrage du serveur du projet (npm run dev)…",
   "Plugins": "Plugins",
+  "esperado {agentId, text}": "attendu {agentId, text}",
+  "terminal interativo desligado": "terminal interactif désactivé",
+  "Anexos não vão por aqui nesta conversa: mande só o texto.": "Les pièces jointes ne passent pas ici dans cette conversation : envoyez seulement le texte.",
+  "Agentes podem fazer push e merge": "Les agents peuvent faire push et merge",
+  "Desligado: subir na main volta a pedir um PR.": "Désactivé : pousser sur main redemande une PR.",
+  "Desligar": "Désactiver",
+  "Ligado: os agentes podem dar push e merge, inclusive na main. Vale para as sessões novas (as abertas, depois de retomadas).": "Activé : les agents peuvent faire push et merge, y compris sur main. Vaut pour les nouvelles sessions (celles ouvertes, après reprise).",
+  "Ligar": "Activer",
+  "O modo automático do Claude Code não deixa subir direto na main, mesmo a pedido. Ligado, os agentes podem dar git push, git merge e gh pr merge (inclusive na main).": "Le mode automatique de Claude Code ne pousse pas directement sur main, même sur demande. Activé, les agents peuvent faire git push, git merge et gh pr merge (y compris sur main).",
 };

@@ -64,6 +64,7 @@ import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { PluginStore } from './plugins/store';
 import { locateTranscript } from './sources/transcript-locate';
 import { DevRunner } from './preview/devrun';
+import { withPreviewHint } from './messages/preview-hint';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -225,6 +226,7 @@ const cloud = cloudStore && remoteSessions ? createCloud({
       warn: (m) => log.warnOnce(`reset-mail:${m}`, m),
       setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined,
       connect: () => late.connect,
+      claudeDirs: () => config.claudeDirs,
     }) : undefined;
 /** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou HABBLAUD_REMOTE_ALLOW. */
 const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (cloud ? cloud.allows(req, f) : !!config.remote?.allow.has(f));
@@ -578,6 +580,7 @@ const api = createApiHandler({
   schedules,
   plugins: pluginStore,
   devRunner,
+  resumeWithMessage: ptys ? (id, text) => ptys.sendMessage(id, withPreviewHint(text)) : undefined,
   onPreviewOpen: (port) => office.noticeSystem('preview', 'info', tr('🌐 Abrindo a prévia do site na porta {0}.', [port]), { previewPort: port }),
   attachments,
   dictation,

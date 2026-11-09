@@ -99,6 +99,11 @@ export class SettingsPopover implements UiComponent {
   private logoutBtn: HTMLButtonElement;
   private usersRow: HTMLElement;
   private pluginsRow!: HTMLElement;
+  private gitRow!: HTMLElement;
+  private gitHint!: HTMLElement;
+  private gitBtn!: HTMLButtonElement;
+  private gitOn = false;
+  private gitLoaded = false;
   private testHint: HTMLElement;
   /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
   private profileRow: HTMLElement;
@@ -240,6 +245,17 @@ export class SettingsPopover implements UiComponent {
           openAccounts(this.ctx.root);
         } } }),
       )),
+      (this.gitRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Agentes podem fazer push e merge') }),
+          (this.gitHint = h('span', { class: 'ui-set__hint', text: tr('O modo automático do Claude Code não deixa subir direto na main, mesmo a pedido. Ligado, os agentes podem dar git push, git merge e gh pr merge (inclusive na main).') })),
+        ),
+        (this.gitBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Ligar'), on: { click: () => void this.toggleGit() } })),
+      )),
       (this.pluginsRow = h(
         'div',
         { class: 'ui-set', hidden: true },
@@ -379,6 +395,8 @@ export class SettingsPopover implements UiComponent {
     setHidden(this.remoteGroup, !access().remote);
     setHidden(this.usersRow, !access().admin);
     setHidden(this.pluginsRow, !(access().admin || (access().local && !access().remote)));
+    setHidden(this.gitRow, !access().admin);
+    if (access().admin && !this.gitLoaded) void this.loadGit();
     setHidden(this.profileRow, !access().cloud);
     setHidden(this.totpRow, !access().cloud);
     setHidden(this.accountsRow, !access().cloud);
@@ -410,6 +428,32 @@ export class SettingsPopover implements UiComponent {
     } catch {
       this.meLoaded = false;
       setText(this.profileText, tr('Não deu para ler o perfil.'));
+    }
+  }
+
+  private syncGit(on: boolean): void {
+    this.gitOn = on;
+    setText(this.gitBtn, on ? tr('Desligar') : tr('Ligar'));
+    this.gitRow.classList.toggle('is-on', on);
+  }
+
+  private async loadGit(): Promise<void> {
+    this.gitLoaded = true;
+    try {
+      const r = await fetch('/api/cloud/git-push', { credentials: 'same-origin' });
+      if (r.ok) this.syncGit(((await r.json()) as { allowed?: boolean }).allowed === true);
+    } catch {
+      this.gitLoaded = false;
+    }
+  }
+
+  private async toggleGit(): Promise<void> {
+    try {
+      const { allowed } = await this.cloudPost<{ allowed: boolean }>('/api/cloud/git-push', { allow: !this.gitOn });
+      this.syncGit(allowed);
+      setText(this.gitHint, allowed ? tr('Ligado: os agentes podem dar push e merge, inclusive na main. Vale para as sessões novas (as abertas, depois de retomadas).') : tr('Desligado: subir na main volta a pedir um PR.'));
+    } catch (err) {
+      setText(this.gitHint, (err as Error).message);
     }
   }
 

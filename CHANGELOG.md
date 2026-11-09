@@ -14,6 +14,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Mensagem para sessão sem o plugin:** em vez de "Esta conversa começou antes do plugin", a caixa fica liberada e o envio retoma a sessão num terminal do DevLand com o texto como pedido (`claude --resume <sessão> -- <texto>`); se ela já está num terminal daqui, o texto é colado e enviado.
+- **Push e merge pelos agentes (Cloud, admin):** em Ajustes, "Agentes podem fazer push e merge" grava em todas as contas do Claude as regras `Bash(git push:*)`, `Bash(git merge:*)` e `Bash(gh pr merge:*)`; o modo automático do Claude Code deixa de recusar subir na main quando você pede. Desligar tira só essas regras.
 - **Aprovar dentro da conversa:** quando o agente pede permissão (ou faz uma pergunta), o cartão com Aprovar, Recusar e as regras de "sempre permitir" aparece na própria conversa, acima da caixa de mensagem.
 - **Janelas arrastáveis (PC):** segure o cabeçalho de uma janela (Novo agente, Prévia, Entregas, Histórico, Ajustes, Contas, Plugins) e arraste para organizar a tela; dois cliques no cabeçalho a devolvem ao lugar.
 - **Reforço da prévia:** mensagem mandada pelo DevLand pedindo para ver o site ("abre o preview", "mostra como ficou") leva junto como abrir a prévia no DevLand, então até uma sessão aberta antes da skill faz o certo.

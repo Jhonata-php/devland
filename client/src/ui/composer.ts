@@ -184,6 +184,7 @@ export class MessageComposer {
       local: store.mock || access().messages,
       replaying: store.replaying,
       cloud: !!access().cloud,
+      resume: !store.mock && !!this.ctx.terminals?.interactiveEnabled,
     });
     this.mode = mode;
     const ready = mode.kind === 'ready';
@@ -386,6 +387,24 @@ export class MessageComposer {
     if (this.mode.kind !== 'ready' || !(canSend(raw) || (files.length && raw.length <= MESSAGE_MAX)) || this.states.get(agentId)?.phase === 'sending') return;
     this.providers.set(agentId, this.provider);
     this.setState(agentId, { phase: 'sending', at: Date.now() });
+    // Sessão sem o plugin de mensagens: retoma a sessão num terminal daqui com o texto (sem anexos por esse caminho).
+    if (this.mode.kind === 'ready' && this.mode.resume) {
+      if (files.length) return this.setState(agentId, { phase: 'rejected', error: tr('Anexos não vão por aqui nesta conversa: mande só o texto.'), at: Date.now() });
+      try {
+        const res = await fetch('/api/messages/resume', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId, text: messageText(raw) }) });
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) return this.setState(agentId, { phase: 'rejected', error: body.error ?? OFFLINE_ERROR, at: Date.now() });
+      } catch {
+        return this.setState(agentId, { phase: 'rejected', error: OFFLINE_ERROR, at: Date.now() });
+      }
+      this.drafts.delete(agentId);
+      if (this.agentId === agentId) {
+        this.box.value = '';
+        this.resize();
+      }
+      this.setState(agentId, { phase: 'delivered', at: Date.now() });
+      return;
+    }
     let r: { message: OutboxMessage } | { error: string };
     try {
       const ids: string[] = [];

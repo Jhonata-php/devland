@@ -77,6 +77,8 @@ export interface ApiDeps {
   onPreviewOpen?: (port: number) => void;
   /** Rodar o projeto para a prévia (preview/devrun.ts). */
   devRunner?: DevRunner;
+  /** Mensagem para sessão sem o plugin: retoma a sessão num terminal daqui com o texto (PtyManager.sendMessage). */
+  resumeWithMessage?: (agentId: string, text: string) => Promise<unknown>;
   /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
   preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
@@ -761,6 +763,29 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           })
           .catch((err) => fail(res, err));
       }
+      return true;
+    }
+    if (path === '/api/messages/resume') {
+      // Sessão sem o plugin de mensagens: assume a sessão num terminal daqui (mesma trava do terminal interativo).
+      const resume = deps.resumeWithMessage;
+      if (!resume) sendJson(res, 403, { error: tr('terminal interativo desligado') });
+      else if (!trusted(req, 'messages') || (isRemote(req) && !(deps.remote?.isAdmin && trusted(req, 'terminal')))) sendJson(res, 403, { error: denied(req, tr('o terminal interativo só pode ser usado no próprio computador')) });
+      else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else
+        readJson(req)
+          .then(async (body) => {
+            const b = (body ?? {}) as { agentId?: unknown; text?: unknown };
+            const agentId = typeof b.agentId === 'string' ? b.agentId : '';
+            const text = typeof b.text === 'string' ? b.text.slice(0, 20_000) : '';
+            if (!agentId || !text.trim()) return sendJson(res, 400, { error: tr('esperado {agentId, text}') });
+            try {
+              await resume(agentId, text);
+              sendJson(res, 200, { ok: true });
+            } catch (err) {
+              sendJson(res, (err as { status?: number }).status ?? 500, { error: err instanceof Error ? err.message : String(err) });
+            }
+          })
+          .catch((err) => fail(res, err));
       return true;
     }
     if (isMessagesPath(path)) {
