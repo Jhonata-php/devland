@@ -33,7 +33,8 @@ import { ConnectionBanner, EmptyState, Splash } from './overlays';
 import { focusPermission, nextPermissionAgent } from './permission';
 import { loadPrefs, safeLocalStorage, savePrefs, worldOptionsFrom, type UiPrefs } from './prefs';
 import { SettingsPopover } from './settings';
-import { openCloudPanel } from './accounts';
+import { openCloudPanel, setContasHandler } from './accounts';
+import { ConnectWizard } from './connect-wizard';
 import { Sidebar } from './sidebar';
 import { SoundControl } from './sound';
 import { TERMINAL_UNAVAILABLE_HINT, TerminalPanel } from './terminal';
@@ -346,6 +347,10 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
       return router.interactiveEnabled ? (path: string) => void router.newSession(path) : undefined;
     },
   });
+  // Conectar conta passo a passo (Cloud): substitui a página antiga de Contas em todos os botões.
+  const wizard = new ConnectWizard(() => invalidate());
+  root.append(wizard.el);
+  setContasHandler(() => wizard.open());
   const setView = (view: 'office' | 'panel') => {
     if (view !== prefs.view) ctx.updatePrefs({ view });
     const panel = view === 'panel';

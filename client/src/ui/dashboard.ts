@@ -13,10 +13,11 @@ import { clampPercent, formatResetAt, formatTokens, prettyModel, relativeTime, u
 import { activityFallback, isPresent, statusLabel } from './model';
 import { AiPage } from './dashboard-ai';
 import { GithubData } from './dashboard-github';
+import { McpPage } from './dashboard-mcp';
 import { PermissionCard } from './permission';
 import { SearchPalette, type SearchItem } from './dashboard-search';
 
-export type DashPage = 'home' | 'agents' | 'chats' | 'github' | 'accounts' | 'people' | 'ai';
+export type DashPage = 'home' | 'agents' | 'chats' | 'github' | 'accounts' | 'connectors' | 'people' | 'ai';
 
 export interface DashActions {
   openChat(agentId: string): void;
@@ -44,6 +45,7 @@ const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => st
   { id: 'chats', icon: ICONS.feed, label: () => tr('Conversas') },
   { id: 'github', icon: ICONS.browser, label: () => tr('GitHub'), side: true },
   { id: 'accounts', icon: ICONS.lock, label: () => tr('Contas') },
+  { id: 'connectors', icon: ICONS.plugin, label: () => tr('Conectores'), side: true },
   { id: 'people', icon: ICONS.hand, label: () => tr('Pessoas'), side: true },
   { id: 'ai', icon: ICONS.terminal, label: () => tr('IA local'), short: () => tr('IA'), side: true },
 ];
@@ -77,9 +79,11 @@ export class Dashboard implements UiComponent {
   private readonly top: HTMLElement;
   private readonly ai: AiPage;
   private readonly gh: GithubData;
+  private readonly mcp: McpPage;
   /** Cartões de aprovar/negar da Visão geral, um por agente (guardam o estado do botão entre os redesenhos). */
   private readonly perms = new Map<string, PermissionCard>();
   private readonly search: SearchPalette;
+  private readonly ptr: HTMLElement;
   private readonly meEl: HTMLElement;
   private people: { users: CloudUser[]; me: string } | null = null;
   private peopleErr = '';
@@ -96,12 +100,14 @@ export class Dashboard implements UiComponent {
     const tools = h('div', { class: 'dash-tools' }, this.pluginsBtn, this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
     this.top = h('header', { class: 'dash-top' });
     this.gh = new GithubData(() => ctx.invalidate());
+    this.mcp = new McpPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
     this.ai = new AiPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
     this.main = h('main', { class: 'dash-main' });
+    this.ptr = h('div', { class: 'dash-ptr', text: tr('Solte para atualizar') });
     this.tabs = h('nav', { class: 'dash-tabs', attrs: { 'aria-label': tr('Seções') } });
     this.el = h('div', { class: 'dash', hidden: true },
       h('aside', { class: 'dash-side' }, brand, this.nav, h('div', { class: 'dash-grow' }), tools, this.meEl),
-      h('div', { class: 'dash-body' }, this.top, this.main), this.tabs);
+      h('div', { class: 'dash-body' }, this.top, this.ptr, this.main), this.tabs);
     this.search = new SearchPalette(() => this.searchItems());
     this.el.append(this.search.el);
     addEventListener('keydown', (e) => {
@@ -135,8 +141,7 @@ export class Dashboard implements UiComponent {
   private pullToRefresh(): void {
     let startY = -1;
     let pulled = 0;
-    const hint = h('div', { class: 'dash-ptr', text: tr('Solte para atualizar') });
-    this.main.before(hint);
+    const hint = this.ptr;
     this.main.addEventListener('touchstart', (e) => {
       startY = this.main.scrollTop <= 0 ? e.touches[0]!.clientY : -1;
       pulled = 0;
@@ -206,6 +211,7 @@ export class Dashboard implements UiComponent {
     this.page = page;
     document.documentElement.classList.toggle('dash-on-chats', page === 'chats');
     this.ai.active(page === 'ai' && !this.el.hidden);
+    this.mcp.active(page === 'connectors');
     this.lastKey = '';
     if (page === 'people') void this.loadPeople();
     this.main.scrollTop = 0;
@@ -217,7 +223,7 @@ export class Dashboard implements UiComponent {
     const snap = this.ctx.store.snapshot;
     const minute = Math.floor(this.ctx.now() / 30_000);
     // Pessoas não depende do snapshot: redesenhar apagaria o que se digita no convite.
-    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}|${this.act.chatsOpen()}|${this.ai.key()}|${this.page === 'home' || this.page === 'github' ? this.gh.key() : ''}`;
+    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}|${this.act.chatsOpen()}|${this.ai.key()}|${this.page === 'connectors' ? this.mcp.key() : ''}|${this.page === 'home' || this.page === 'github' ? this.gh.key() : ''}`;
     if (key === this.lastKey) return;
     // Alguém digitando na página (convite, pergunta à IA): não redesenha por baixo dele.
     const focus = document.activeElement;
@@ -226,7 +232,7 @@ export class Dashboard implements UiComponent {
     this.pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
     this.renderNav();
     this.renderTop();
-    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas'), this.act.newSessionIn) : this.homePage();
+    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'connectors' ? this.mcp.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas'), this.act.newSessionIn) : this.homePage();
     // A animação de entrada só na troca de página (não a cada snapshot).
     if (this.page !== this.shown) page.classList.add('is-enter');
     this.shown = this.page;
@@ -305,6 +311,7 @@ export class Dashboard implements UiComponent {
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('people') } }, icon(ICONS.hand), h('span', { text: tr('Pessoas') })),
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('ai') } }, icon(ICONS.terminal), h('span', { text: tr('IA local') })),
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('github') } }, icon(ICONS.browser), h('span', { text: tr('GitHub') })),
+        h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('connectors') } }, icon(ICONS.plugin), h('span', { text: tr('Conectores') })),
         this.pluginsBtn.hidden ? null : h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.act.openPlugins() } }, icon(ICONS.plugin), h('span', { text: tr('Plugins') }))),
       this.usageAlert(now),
       waiting.length ? h('section', { class: 'dash-card dash-attn' }, h('h2', { text: tr('Precisam de você') }), h('div', { class: 'dash-list' }, ...waiting.map((a) => this.waitingRow(a, now)))) : null,

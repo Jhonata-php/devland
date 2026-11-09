@@ -12,6 +12,9 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Conectar conta passo a passo:** escolha o tipo (Claude Code, Codex ou GitHub), entre pelo link (colando o código, no Claude, ou confirmando o código no site) e pronto. Substitui a janela antiga de Contas em todos os botões.
+- **Conectores (MCP):** página nova no painel para adicionar e remover servidores MCP em todas as contas do Claude: sugeridos (Context7, Playwright, Sentry, Notion, Linear, Figma) com um toque, ou qualquer outro por endereço ou comando, com o estado de cada um.
+- **Revisão automática:** no Novo agente, escolha o projeto e a função Revisão sem escrever nada; o agente instala, roda build e testes, sobe o projeto, testa o fluxo principal e manda um relatório das falhas antes de corrigir.
 - **Busca (⌘K / Ctrl+K):** acha agente, projeto, página ou ação e vai direto; também pelo botão Buscar no topo.
 - **Alterações e PRs dos projetos:** na página GitHub, cada projeto mostra os arquivos alterados, o diff colorido, os PRs abertos com o estado do CI e o botão para enviar a branch e abrir o PR (nunca a partir da branch principal).
 - **Tokens por projeto:** gráfico de onde o plano foi gasto nos últimos 14 dias.
@@ -33,6 +36,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Telas mais largas** no painel (sem ficar espremido no meio) e janela de **Novo agente** redesenhada: projetos em grade, conta e função em botões, pedido maior.
 - **Conversa no painel:** texto do agente solto e legível, a sua mensagem em balão, ferramentas numa linha discreta e um campo de mensagem único e arredondado (o campo azul com borda dupla saiu). Mensagens vazias não deixam mais faixas em branco.
 - **Contas no painel:** aparecem só as contas conectadas de verdade (com e-mail, uso ou sessão aberta).
 - **Conversa retomada na pasta errada (Cloud):** ao reiniciar, o DevLand agora usa a pasta gravada no próprio histórico da conversa. Antes, uma lista salva com pastas trocadas fazia a mesma conversa voltar no projeto errado a cada atualização.

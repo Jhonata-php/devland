@@ -86,7 +86,15 @@ export function parseSpawn(raw: unknown): SpawnRequest | { error: string } {
   if (prompt.length > PROMPT_MAX || prompt.includes('\0')) return { error: tr('o pedido passa de {0} caracteres', [PROMPT_MAX]) };
   const account = typeof r.account === 'string' && r.account.length <= 120 && !r.account.includes('\0') ? r.account : undefined;
   const role = isRoleId(r.role) ? r.role : undefined;
-  return { folder, prompt, ...(account ? { account } : {}), ...(role ? { role } : {}) };
+  // Revisão sem pedido: o agente sabe o que fazer sozinho (rodar, testar o fluxo e relatar as falhas).
+  const text = !prompt.trim() && role === 'review' ? reviewPrompt() : prompt;
+  return { folder, prompt: text, ...(account ? { account } : {}), ...(role ? { role } : {}) };
+}
+
+/** O pedido padrão da função Revisão: só escolher o projeto e começar. */
+export function reviewPrompt(): string {
+  // ponytail: uma linha só, para o i18n:check achar o texto.
+  return tr('Faça uma revisão completa deste projeto, sem mudar nada antes de relatar:\n1. Leia o README e o package.json (ou equivalente) para entender como instalar, rodar e testar.\n2. Instale as dependências, rode o build, o typecheck/lint e os testes; anote cada falha com a mensagem.\n3. Suba o projeto (servidor de desenvolvimento ou o que existir) e teste o fluxo principal de ponta a ponta, como um usuário faria; se for site, abra a prévia do DevLand.\n4. Procure erros comuns: telas quebradas no celular, links mortos, erros no console, variáveis de ambiente faltando, segurança básica.\n5. No fim, mande um relatório curto: o que funciona, o que falhou (com como reproduzir) e as correções sugeridas em ordem de importância. Pergunte antes de corrigir.');
 }
 
 /** O link que o app do Claude entende (claude://code/new; `q` = pedido já escrito). */

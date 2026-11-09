@@ -19,6 +19,7 @@ import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
 import type { LocalAi } from '../ai/local';
+import { mcpCatalog, type McpStore } from '../accounts/mcp';
 import { createPr, githubUser, listProjects, projectDetail, pull, ACTIVITY_DAYS } from '../github/projects';
 import { addDays } from '../../shared/daystats';
 import type { DevRunner } from '../preview/devrun';
@@ -80,6 +81,8 @@ export interface ApiDeps {
   localAi?: LocalAi;
   /** Pastas dos projetos para a página GitHub (salas do escritório e, no Cloud, /workspace/*). */
   projectDirs?: () => string[];
+  /** Conectores MCP do Claude Code (accounts/mcp.ts): só admin ou o próprio computador. */
+  mcp?: McpStore;
   /** Executável do gh (conta do GitHub conectada), quando existe. */
   ghBin?: string;
   /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
@@ -600,6 +603,22 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           .then((body) => store.change(String((body as { id?: unknown }).id ?? ''), action))
           .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
       else methodNotAllowed(res, action ? 'POST' : 'GET');
+      return true;
+    }
+    if (path === '/api/mcp' || path.startsWith('/api/mcp/')) {
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const store = deps.mcp;
+      const one = /^\/api\/mcp\/([\w.-]+)$/.exec(path);
+      const answer = (p: Promise<unknown>) => p.then((r) => sendJson(res, 200, r ?? { ok: true }), (err: Error) => sendJson(res, 400, { error: err.message }));
+      if (!store) sendJson(res, 404, { error: tr('Claude Code não encontrado neste servidor.') });
+      else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/mcp' && isRead) answer(store.list().then((servers) => ({ servers, catalog: mcpCatalog() })));
+      else if (path === '/api/mcp' && method === 'POST') answer(readJson(req).then((b) => {
+        const x = b as { name?: unknown; transport?: unknown; target?: unknown };
+        return store.add(String(x.name ?? ''), String(x.transport ?? 'http'), String(x.target ?? ''));
+      }));
+      else if (one && method === 'DELETE') answer(store.remove(one[1]!));
+      else methodNotAllowed(res, 'GET');
       return true;
     }
     if (path === '/api/dash/activity' && isRead) {

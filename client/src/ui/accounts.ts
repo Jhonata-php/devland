@@ -39,7 +39,14 @@ a, .job .code, .repo .lock { color: #edece9 !important; }
 #err.ok, .card li.ok::before { color: #4ade80 !important; }
 `;
 
+/** Contas pelo passo a passo (ui/connect-wizard.ts), no lugar da página antiga numa janela. */
+let contasHandler: (() => void) | null = null;
+export function setContasHandler(fn: () => void): void {
+  contasHandler = fn;
+}
+
 export function openCloudPanel(root: HTMLElement, kind: CloudPanel): void {
+  if (kind === 'contas' && contasHandler) return contasHandler();
   const p = PANELS[kind];
   let dialog = dialogs.get(kind);
   if (!dialog) {

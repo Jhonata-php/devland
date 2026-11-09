@@ -15,9 +15,12 @@ const PLUGINS = ['habblaud', 'habblaud-mensagens', 'habblaud-permissoes'];
 const TIMEOUT_MS = 120_000;
 
 /** Roda o CLI do Claude Code na conta (CLAUDE_CONFIG_DIR), como o usuário dos agentes no Cloud. */
-export function runClaude(bin: string, args: string[], dir: string): Promise<{ ok: boolean; out: string; stdout: string }> {
+export function runClaude(bin: string, args: string[], dir: string, opts: { defaultDir?: boolean } = {}): Promise<{ ok: boolean; out: string; stdout: string }> {
+  // Conta padrão sem CLAUDE_CONFIG_DIR, como os agentes rodam (pty/manager.ts): o ~/.claude.json dela fica em HOME.
+  const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_CONFIG_DIR: dir };
+  if (opts.defaultDir) delete env.CLAUDE_CONFIG_DIR;
   return new Promise((done) => {
-    execFile(bin, args, { timeout: TIMEOUT_MS, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, ...runAsOptions({ ...process.env, CLAUDE_CONFIG_DIR: dir }, agentRunAs()) }, (err, stdout, stderr) =>
+    execFile(bin, args, { timeout: TIMEOUT_MS, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, ...runAsOptions(env, agentRunAs()) }, (err, stdout, stderr) =>
       done({ ok: !err, out: `${stdout ?? ''}${stderr ?? ''}`.trim(), stdout: stdout ?? '' }),
     );
   });

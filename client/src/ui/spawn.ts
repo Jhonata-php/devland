@@ -316,6 +316,8 @@ export class SpawnPanel {
         b.classList.toggle('is-on', this.role === id);
         b.addEventListener('click', () => {
           this.role = id;
+          // Revisão: o pedido é opcional (o servidor usa o roteiro de revisão completo).
+          this.prompt.placeholder = id === 'review' ? tr('Opcional: deixe vazio e o agente roda o projeto, testa o fluxo e relata as falhas') : tr('O que o agente deve fazer (opcional)');
           this.renderRoles();
         });
         return b;

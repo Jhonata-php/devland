@@ -2,6 +2,7 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
+import { McpStore } from './accounts/mcp';
 import { LocalAi } from './ai/local';
 import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
@@ -593,6 +594,7 @@ const api = createApiHandler({
   schedules,
   plugins: pluginStore,
   localAi,
+  mcp: claudeBin ? new McpStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir)) : undefined,
   ghBin: findExecutable('gh'),
   projectDirs: () => [...hub.current().rooms.map((r) => r.path), ...(cloud ? workspaceFolders(WORKSPACE).map((f) => f.path) : [])].filter((p) => p !== WORKSPACE),
   devRunner,

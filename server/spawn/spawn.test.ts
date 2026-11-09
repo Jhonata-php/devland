@@ -21,6 +21,9 @@ import { runnableClaudeBin } from '../claude-bin';
 describe('novo agente: pedido e link', () => {
   it('aceita só pasta absoluta e pedido do tamanho certo', () => {
     expect(parseSpawn({ folder: ' /Users/a/proj ', prompt: 'faça X  \n' })).toEqual({ folder: '/Users/a/proj', prompt: 'faça X' });
+    // Revisão sem pedido ganha o roteiro de revisão; com pedido, vale o pedido.
+    expect((parseSpawn({ folder: '/p', prompt: '', role: 'review' }) as { prompt: string }).prompt).toMatch(/revisão completa/);
+    expect((parseSpawn({ folder: '/p', prompt: 'só os testes', role: 'review' }) as { prompt: string }).prompt).toBe('só os testes');
     expect(parseSpawn({ folder: 'C:\\code\\proj' })).toEqual({ folder: 'C:\\code\\proj', prompt: '' });
     expect(parseSpawn({ folder: 'proj' })).toHaveProperty('error');
     expect(parseSpawn({ folder: '/a\0b' })).toHaveProperty('error');
