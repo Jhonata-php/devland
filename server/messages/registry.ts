@@ -24,6 +24,7 @@ import type { Activity, AgentInfo, InboxMessage, OutboxMessage } from '../../sha
 import { errMsg, log } from '../log';
 import type { CodexQueueResult, CodexQueueRunner } from './codex';
 import { tr } from '../../shared/i18n';
+import { withPreviewHint } from './preview-hint';
 
 /** Sessão que perguntou pela caixa de entrada há até este tempo: recebe mensagens (canMessage). */
 export const PRESENCE_MS = 10_000;
@@ -257,7 +258,10 @@ export class MessageRegistry {
    * (too-many). Corpo inválido: lança InvalidRequest.
    */
   send(raw: unknown): SendResult {
-    const { agentId, text } = parseSend(raw);
+    const parsed = parseSend(raw);
+    const agentId = parsed.agentId;
+    // Pedido para ver o site: vai junto como abrir a prévia no DevLand (messages/preview-hint.ts).
+    const text = withPreviewHint(parsed.text);
     const real = this.opts.office.get(agentId);
     const demo = real ? undefined : this.opts.demoAgent?.(agentId);
     const agent = real ?? demo;

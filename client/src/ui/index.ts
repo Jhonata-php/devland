@@ -16,6 +16,8 @@ import { DayLauncher } from './daystats-launcher';
 import { RoomRenamer } from './roomrename';
 import { h, iconButton } from './dom';
 import { ICONS } from './icons';
+import { openPlugins } from './plugins';
+import { enableDraggablePanels } from './drag';
 import { Drawer } from './drawer';
 import { FeedPanel } from './feed';
 import { HelpDialog } from './help';
@@ -304,12 +306,25 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   });
   const banner = new ConnectionBanner(ctx);
   const update = new UpdateBanner(store);
+  // PC: arrastar as janelas pelo cabeçalho para organizar a tela (ui/drag.ts).
+  if (typeof document !== 'undefined' && typeof matchMedia === 'function') enableDraggablePanels();
   const chats = new ChatsView(ctx);
+  // Aviso "fulano entregou": tocar abre a conversa com ele.
+  deliveries.onOpenChat = (id) => chats.openChat(id);
   // PC: botão Conversas no topo (no celular ele fica na barra de baixo). As conversas abrem ao lado, à direita.
   const chatsBtn = iconButton(ICONS.feed, tr('Conversas'), () => chats.toggle(), 'ui-btn-chats');
   chatsBtn.setAttribute('data-label', tr('Conversas'));
   topbar.panelGroup.prepend(chatsBtn);
-  const chatsBtnSync: UiComponent = { render: () => chatsBtn.classList.toggle('is-on', chats.isOpen) };
+  // PC: loja de plugins no topo, para quem administra (no celular fica em Ajustes).
+  const pluginsBtn = iconButton(ICONS.plugin, tr('Plugins do Claude Code'), () => openPlugins(ctx.root), 'ui-btn-plugins');
+  pluginsBtn.setAttribute('data-label', tr('Plugins'));
+  topbar.panelGroup.prepend(pluginsBtn);
+  const chatsBtnSync: UiComponent = {
+    render: () => {
+      chatsBtn.classList.toggle('is-on', chats.isOpen);
+      pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
+    },
+  };
   const bottomNav = new BottomNav(ctx, () => topbar.toggleSpawn(), chats);
   const tip = new HoverTip(ctx);
   const splash = new Splash(ctx);

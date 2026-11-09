@@ -12483,3 +12483,16 @@ body::before {
     height: calc(100vh - var(--top-h) - 16px);
   }
 }
+
+/* Prévia: rodar o projeto (escolha da pasta e botões). */
+.ui-preview__runbar { gap: 6px; }
+.ui-preview__project { flex: 1; min-width: 0; }
+.ui-preview__run, .ui-preview__stop { flex: none; }
+@media (max-width: 600px) { .ui-topbar .ui-btn-plugins { display: none !important; } }
+
+/* Janelas arrastáveis (PC): o cabeçalho mostra que dá para pegar; durante o arrasto não seleciona texto. */
+@media (min-width: 641px) and (pointer: fine) {
+  .ui-popover__head, .ui-accounts__head, .ui-dialog__head { cursor: grab; }
+  body.is-dragging-panel, body.is-dragging-panel * { cursor: grabbing !important; user-select: none !important; }
+  body.is-dragging-panel iframe { pointer-events: none; }
+}

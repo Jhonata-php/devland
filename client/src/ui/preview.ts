@@ -32,6 +32,10 @@ export class PreviewPanel implements UiComponent {
   readonly el: HTMLElement;
   private readonly input: HTMLInputElement;
   private readonly ports: HTMLElement;
+  // Rodar o projeto: o DevLand sobe o npm run dev da pasta escolhida e abre a prévia na porta que ele anunciar.
+  private readonly projectSel: HTMLSelectElement;
+  private readonly runBtn: HTMLButtonElement;
+  private readonly stopBtn: HTMLButtonElement;
   private readonly frame: HTMLIFrameElement;
   private readonly stage: HTMLElement;
   private readonly note: HTMLElement;
@@ -56,6 +60,9 @@ export class PreviewPanel implements UiComponent {
     });
     this.input.addEventListener('keyup', (e) => e.stopPropagation());
     this.ports = h('div', { class: 'ui-preview__ports' });
+    this.projectSel = h('select', { class: 'ui-rename__input ui-preview__project', attrs: { 'aria-label': tr('Projeto') } });
+    this.runBtn = h('button', { class: 'ui-btn ui-perm__btn--allow ui-preview__run', type: 'button', text: tr('Rodar o projeto'), attrs: { title: tr('Sobe o servidor de desenvolvimento (npm run dev) da pasta e abre a prévia') }, on: { click: () => void this.runProject() } });
+    this.stopBtn = h('button', { class: 'ui-btn ui-preview__stop', type: 'button', text: tr('Parar'), hidden: true, on: { click: () => void this.stopProject() } });
     this.liveBtn = h('button', { class: 'ui-btn ui-preview__tool is-on', type: 'button', text: tr('ao vivo'), attrs: { 'aria-pressed': 'true', title: tr('Recarrega quando um agente altera um arquivo') }, on: { click: () => this.setLive(!this.live) } });
     this.phoneBtn = h('button', { class: 'ui-btn ui-preview__tool', type: 'button', text: tr('celular'), attrs: { 'aria-pressed': 'false', title: tr('Mostra o site numa tela de celular') }, on: { click: () => this.setPhone(!this.stage.classList.contains('is-phone')) } });
     const reload = iconButton('↻', tr('Recarregar'), () => this.reload(), 'ui-icon-btn--sm');
@@ -68,6 +75,7 @@ export class PreviewPanel implements UiComponent {
       { class: 'ui-popover ui-preview', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Prévia ao vivo'), id: 'ui-preview', popover: 'manual' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Prévia ao vivo') }), close),
       h('div', { class: 'ui-preview__bar' }, reload, this.input, this.liveBtn, this.phoneBtn),
+      h('div', { class: 'ui-preview__bar ui-preview__runbar' }, this.projectSel, this.runBtn, this.stopBtn),
       this.ports,
       this.stage,
     );
@@ -79,7 +87,10 @@ export class PreviewPanel implements UiComponent {
       const open = this.isOpen;
       this.button.setAttribute('aria-expanded', String(open));
       this.button.classList.toggle('is-on', open);
-      if (open) void this.refreshPorts();
+      if (open) {
+        void this.refreshPorts();
+        this.fillProjects();
+      }
     });
     try {
       const saved = Number(localStorage.getItem(PORT_KEY));
@@ -163,6 +174,42 @@ export class PreviewPanel implements UiComponent {
   /** ponytail: volta à página inicial (o iframe é de outra origem, não dá para ler o caminho atual). */
   private reload(): void {
     if (this.src) this.frame.src = this.src;
+  }
+
+  /** Projetos = pastas das salas (a raiz /workspace não é projeto); o da sala do agente selecionado vem primeiro. */
+  private fillProjects(): void {
+    const snap = this.ctx.store.snapshot;
+    const rooms = (snap?.rooms ?? []).filter((r) => /^\//.test(r.path ?? '') && r.path.replace(/\/+$/, '') !== '/workspace');
+    const keep = this.projectSel.value;
+    const cur = this.ctx.selection();
+    const sel = cur?.type === 'agent' ? snap?.agents.find((a) => a.id === cur.id)?.roomId : cur?.type === 'room' ? cur.id : undefined;
+    this.projectSel.replaceChildren(...rooms.map((r) => h('option', { attrs: { value: r.path }, text: r.name || r.path })));
+    const pick = rooms.find((r) => r.path === keep) ?? rooms.find((r) => r.id === sel);
+    if (pick) this.projectSel.value = pick.path;
+    this.runBtn.disabled = !rooms.length;
+  }
+
+  private async runProject(): Promise<void> {
+    const folder = this.projectSel.value;
+    if (!folder) return;
+    this.runBtn.disabled = true;
+    this.say(tr('Subindo o servidor do projeto (npm run dev)…'));
+    try {
+      const r = await post<{ port: number; script: string; reused: boolean }>('/api/preview/run', { folder });
+      this.input.value = String(r.port);
+      setHidden(this.stopBtn, false);
+      await this.go(r.port);
+    } catch (err) {
+      this.say((err as Error).message);
+    } finally {
+      this.runBtn.disabled = false;
+    }
+  }
+
+  private async stopProject(): Promise<void> {
+    await post('/api/preview/stop', { folder: this.projectSel.value }).catch(() => undefined);
+    setHidden(this.stopBtn, true);
+    this.say(tr('Servidor do projeto parado.'));
   }
 
   private async refreshPorts(): Promise<void> {

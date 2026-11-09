@@ -10,8 +10,15 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+## [1.0.4] - 2026-11-09
+
 ### Adicionado
 
+- **Janelas arrastáveis (PC):** segure o cabeçalho de uma janela (Novo agente, Prévia, Entregas, Histórico, Ajustes, Contas, Plugins) e arraste para organizar a tela; dois cliques no cabeçalho a devolvem ao lugar.
+- **Reforço da prévia:** mensagem mandada pelo DevLand pedindo para ver o site ("abre o preview", "mostra como ficou") leva junto como abrir a prévia no DevLand, então até uma sessão aberta antes da skill faz o certo.
+- **Rodar o projeto pela prévia:** a janela da prévia ao vivo tem a pasta do projeto e "Rodar o projeto": o DevLand sobe o `npm run dev` (ou start/serve/preview) em segundo plano, acha a porta pela saída e abre a prévia; "Parar" encerra o servidor e os processos filhos.
+- **Plugins no topo (PC):** botão próprio para a loja de plugins do Claude Code, para quem administra.
+- **Aviso de entrega leva à conversa:** tocar em "fulano entregou" abre a conversa com o agente (sessão já encerrada abre a entrega).
 - **O agente abre a prévia:** peça "abre o preview" e o agente sobe o servidor e abre a prévia ao vivo no DevLand, já na porta certa (skill `devland-preview` no plugin do DevLand e rota `POST /api/preview/open`, só pelo próprio computador). No Cloud o plugin se atualiza sozinho ao iniciar.
 - **PC: Conversas e prévia lado a lado:** botão Conversas no topo (antes só existia na barra de baixo do celular); com a conversa aberta, a prévia ao vivo fica à esquerda dela, alta, e não fecha mais ao clicar na conversa (Esc ou o X fecham).
 - **Terminal e conversas sem mensagens (Cloud):** o serviço de segundo plano do Claude Code grava a conversa na pasta da conta com que foi iniciado, e uma sessão da Conta B ficava procurada em `.claude-2` enquanto estava em `.claude`. O servidor agora procura a mesma sessão nas pastas das outras contas.
@@ -806,7 +813,8 @@ Primeira versão publicada.
   Subagentes chegam, trabalham e entregam ao principal. Mostra as duas contas, com o uso de 5 horas e semanal de
   cada uma (tap de statusline), além de feed de atividade, avisos e modo demonstração. Roda no Node ou no Docker local.
 
-[Não lançado]: https://github.com/marmottajr/habblaud/compare/v1.0.3...HEAD
+[Não lançado]: https://github.com/Jhonata-php/devland/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/Jhonata-php/devland/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/marmottajr/habblaud/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/marmottajr/habblaud/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/marmottajr/habblaud/compare/v1.0.0...v1.0.1

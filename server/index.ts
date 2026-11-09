@@ -63,6 +63,7 @@ import { usageAlerts } from './accounts/usage-alert';
 import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { PluginStore } from './plugins/store';
 import { locateTranscript } from './sources/transcript-locate';
+import { DevRunner } from './preview/devrun';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -544,6 +545,11 @@ const ticker = setInterval(() => {
 }, 250);
 
 const preview = createPreview({ blockedPorts: () => [config.port, config.remote?.port ?? 0] });
+// Rodar o projeto para a prévia: só pastas das salas do escritório (ou dentro de /workspace no Cloud).
+const devRunner = new DevRunner({
+  allowed: (folder) => (cloud && (folder === WORKSPACE || folder.startsWith(`${WORKSPACE}/`)) && folder !== WORKSPACE) || hub.current().rooms.some((r) => r.path === folder),
+});
+process.once('exit', () => devRunner.stopAll());
 
 const api = createApiHandler({
   preview,
@@ -571,6 +577,7 @@ const api = createApiHandler({
   spawn,
   schedules,
   plugins: pluginStore,
+  devRunner,
   onPreviewOpen: (port) => office.noticeSystem('preview', 'info', tr('🌐 Abrindo a prévia do site na porta {0}.', [port]), { previewPort: port }),
   attachments,
   dictation,

@@ -18,6 +18,7 @@ import { tr } from '../../shared/i18n';
 import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
+import type { DevRunner } from '../preview/devrun';
 import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
 import type { SpawnFolder } from '../spawn/folders';
@@ -74,6 +75,8 @@ export interface ApiDeps {
   plugins?: PluginStore;
   /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
   onPreviewOpen?: (port: number) => void;
+  /** Rodar o projeto para a prévia (preview/devrun.ts). */
+  devRunner?: DevRunner;
   /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
   preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
@@ -516,6 +519,29 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       else if (!trusted(req) || (!deps.inDocker && !isLoopbackAddress(req.socket.remoteAddress))) {
         sendJson(res, 403, { error: denied(req, tr('eventos do Codex só são aceitos pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
       } else handleCodexEvent(req, res, { live: deps.codexLive, entries: () => accounts.entriesOf('codex') }).catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/preview/run' || path === '/api/preview/stop' || path === '/api/preview/runs') {
+      // Rodar o projeto (npm run dev) para a prévia: roda código do projeto, a mesma trava do terminal.
+      const runner = deps.devRunner;
+      if (!runner || !deps.preview) sendJson(res, 403, { error: tr('prévia ao vivo desligada') });
+      else if (!trusted(req, 'terminal')) sendJson(res, 403, { error: denied(req, tr('a prévia só abre pelo próprio computador (http://localhost)')) });
+      else if (path === '/api/preview/runs') {
+        if (!isRead) methodNotAllowed(res, 'GET');
+        else sendJson(res, 200, { runs: runner.list() });
+      } else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else
+        readJson(req)
+          .then(async (body) => {
+            const folder = String((body as { folder?: unknown } | null)?.folder ?? '');
+            if (path === '/api/preview/stop') return sendJson(res, 200, { ok: runner.stop(folder) });
+            try {
+              sendJson(res, 200, await runner.start(folder));
+            } catch (err) {
+              sendJson(res, 400, { error: err instanceof Error ? err.message : String(err) });
+            }
+          })
+          .catch((err) => fail(res, err));
       return true;
     }
     if (path === '/api/preview' || path === '/api/preview/ports' || path === '/api/preview/open') {
