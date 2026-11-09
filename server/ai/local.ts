@@ -3,7 +3,7 @@
 // dele em 127.0.0.1 (nunca exposta). Linux e macOS; o pacote vem do GitHub do Ollama.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { chownSync, existsSync, mkdirSync, readFileSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
-import { cpus, freemem, loadavg, totalmem } from 'node:os';
+import { cpus, freemem, loadavg, setPriority, totalmem } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { createGunzip, createZstdDecompress } from 'node:zlib';
@@ -114,15 +114,73 @@ export class LocalAi {
     if (!bin || this.server) return;
     mkdirSync(join(this.dir, 'models'), { recursive: true });
     const child = spawn(bin, ['serve'], {
-      // 32 mil tokens de contexto: o Claude Code (agente com a IA local) manda um prompt de sistema grande.
-      env: { ...process.env, OLLAMA_HOST: this.host, OLLAMA_MODELS: join(this.dir, 'models'), OLLAMA_KEEP_ALIVE: '10m', OLLAMA_CONTEXT_LENGTH: '32768' },
+      // Limites para não derrubar o servidor: um modelo carregado por vez, um pedido por vez, cache de contexto em 8 bits.
+      // Contexto de 32 mil tokens (o Claude Code manda um prompt de sistema grande) só com memória sobrando; senão 16 mil.
+      env: {
+        ...process.env,
+        OLLAMA_HOST: this.host,
+        OLLAMA_MODELS: join(this.dir, 'models'),
+        OLLAMA_KEEP_ALIVE: '5m',
+        OLLAMA_MAX_LOADED_MODELS: '1',
+        OLLAMA_NUM_PARALLEL: '1',
+        OLLAMA_MAX_QUEUE: '8',
+        OLLAMA_FLASH_ATTENTION: '1',
+        OLLAMA_KV_CACHE_TYPE: 'q8_0',
+        OLLAMA_CONTEXT_LENGTH: totalmem() >= 24e9 ? '32768' : '16384',
+      },
       stdio: 'ignore',
     });
     child.on('exit', () => {
       if (this.server === child) this.server = null;
     });
     this.server = child;
+    // Prioridade baixa: com a CPU cheia, o painel e os agentes continuam respondendo.
+    try {
+      if (child.pid) setPriority(child.pid, 10);
+    } catch { /* sem permissão: segue com a prioridade normal */ }
+    this.watch();
     for (let i = 0; i < 20 && !(await this.running()); i++) await new Promise((r) => setTimeout(r, 300));
+  }
+
+  /** Memória que o DevLand guarda para si: o resto pode ir para a IA local. */
+  private reserve(): number {
+    return Math.max(1.5e9, totalmem() * 0.12);
+  }
+
+  private guardTimer: ReturnType<typeof setInterval> | null = null;
+  /** Último aviso da proteção de memória (mostrado na página). */
+  guardNote = '';
+
+  /**
+   * Proteção de memória: a cada 5 s, se a memória livre cair abaixo da reserva com um modelo carregado, tira o modelo
+   * da memória na hora (o próximo pedido carrega de novo). Assim a IA local nunca derruba o painel.
+   */
+  private watch(): void {
+    if (this.guardTimer) return;
+    this.guardTimer = setInterval(() => {
+      if (availableMem() >= this.reserve()) return;
+      void this.api<{ models: { name: string }[] }>('/api/ps').then(async (r) => {
+        for (const m of r.models) {
+          await fetch(`http://${this.host}/api/generate`, { method: 'POST', body: JSON.stringify({ model: m.name, keep_alive: 0 }), signal: AbortSignal.timeout(5000) }).catch(() => undefined);
+          this.guardNote = tr('A memória do servidor acabou e o modelo {0} foi tirado da memória para proteger o painel. Use um modelo menor.', [m.name]);
+        }
+      }, () => undefined);
+    }, 5000);
+    this.guardTimer.unref();
+  }
+
+  /** Recusa carregar um modelo que não cabe na memória livre (deixando a reserva do DevLand). */
+  private async ensureFits(model: string): Promise<void> {
+    const [tags, ps] = await Promise.all([
+      this.api<{ models: { name: string; size: number }[] }>('/api/tags').then((r) => r.models, () => []),
+      this.api<{ models: { name: string; size: number }[] }>('/api/ps').then((r) => r.models, () => []),
+    ]);
+    if (ps.some((m) => m.name === model)) return;
+    const size = tags.find((m) => m.name === model)?.size ?? 0;
+    // O modelo, o cache de contexto (~1,5 GB) e a reserva do painel; o que já está carregado sai para dar lugar.
+    const free = availableMem() + ps.reduce((n, m) => n + m.size, 0);
+    const need = size * 1.1 + 1.5e9 + this.reserve();
+    if (size && need > free) throw new Error(tr('Memória insuficiente para {0}: precisa de cerca de {1} GB livres e há {2} GB. Feche agentes ou use um modelo menor.', [model, (need / 1e9).toFixed(1), (free / 1e9).toFixed(1)]));
   }
 
   stop(): void {
@@ -154,6 +212,7 @@ export class LocalAi {
       agentModel: this.agentModel(models.map((m) => m.name)),
       recommended: recommend(total / 1e9),
       job: this.job,
+      guard: this.guardNote,
     };
   }
 
@@ -165,8 +224,8 @@ export class LocalAi {
   install(): void {
     this.busy();
     const pkg = packageName(process.platform, process.arch);
-    if (!pkg) throw new Error(tr('Sem pacote do Ollama para este sistema.'));
-    const job: Job = { kind: 'install', status: tr('Baixando o Ollama…'), percent: 0, done: false };
+    if (!pkg) throw new Error(tr('Este sistema ainda não tem a IA local.'));
+    const job: Job = { kind: 'install', status: tr('Baixando o motor de IA…'), percent: 0, done: false };
     this.job = job;
     const abort = (this.abort = new AbortController());
     void (async () => {
@@ -181,7 +240,7 @@ export class LocalAi {
         body.on('data', (c: Buffer) => {
           got += c.length;
           if (size) job.percent = Math.round((got / size) * 100);
-          job.status = size ? tr('Baixando o Ollama: {0} de {1}', [mb(got), mb(size)]) : tr('Baixando o Ollama: {0}', [mb(got)]);
+          job.status = size ? tr('Baixando o motor de IA: {0} de {1}', [mb(got), mb(size)]) : tr('Baixando o motor de IA: {0}', [mb(got)]);
         });
         const tar = spawn('tar', ['-x', '-C', this.dir], { stdio: ['pipe', 'ignore', 'pipe'] });
         abort.signal.addEventListener('abort', () => tar.kill());
@@ -196,7 +255,7 @@ export class LocalAi {
         if (code !== 0) throw new Error(err.trim() || tr('Não deu para extrair o pacote.'));
         job.status = tr('Iniciando…');
         await this.start();
-        if (!(await this.running())) throw new Error(tr('O Ollama foi instalado mas não iniciou.'));
+        if (!(await this.running())) throw new Error(tr('O motor de IA foi instalado mas não iniciou.'));
         job.status = tr('Instalado');
       } catch (e) {
         job.error = abort.signal.aborted ? tr('Cancelado.') : e instanceof Error ? e.message : String(e);
@@ -218,7 +277,7 @@ export class LocalAi {
       try {
         await this.start();
         const res = await fetch(`http://${this.host}/api/pull`, { method: 'POST', body: JSON.stringify({ model, stream: true }), signal: abort.signal });
-        if (!res.ok || !res.body) throw new Error(tr('O Ollama recusou o download ({0}).', [res.status]));
+        if (!res.ok || !res.body) throw new Error(tr('O download do modelo foi recusado ({0}).', [res.status]));
         let buf = '';
         for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
           buf += Buffer.from(chunk).toString();
@@ -272,6 +331,7 @@ export class LocalAi {
     const models = await this.api<{ models: { name: string }[] }>('/api/tags').then((r) => r.models.map((m) => m.name), () => []);
     const model = this.agentModel(models);
     if (!model) return null;
+    await this.ensureFits(model);
     const dir = join(home, LOCAL_ACCOUNT_DIR);
     if (!existsSync(join(dir, '.claude.json'))) {
       mkdirSync(dir, { recursive: true });
@@ -303,7 +363,7 @@ export class LocalAi {
   /** Para o Ollama e apaga a pasta dele (programa e modelos). Só o instalado pelo DevLand. */
   async uninstall(): Promise<void> {
     this.busy();
-    if (!this.own()) throw new Error(tr('Este Ollama foi instalado fora do DevLand; desinstale pelo sistema.'));
+    if (!this.own()) throw new Error(tr('Este motor de IA foi instalado fora do DevLand; remova pelo sistema.'));
     this.stop();
     for (let i = 0; i < 10 && (await this.running()); i++) await new Promise((r) => setTimeout(r, 300));
     rmSync(this.dir, { recursive: true, force: true });
@@ -313,6 +373,7 @@ export class LocalAi {
   /** Conversa com o modelo (o assistente local): manda o histórico, devolve a resposta e a velocidade. */
   async chat(model: string, messages: { role: string; content: string }[]): Promise<{ text: string; tokensPerS: number; seconds: number }> {
     await this.start();
+    await this.ensureFits(model);
     const msgs = messages.filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-20).map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
     if (!msgs.length) throw new Error(tr('Escreva uma mensagem.'));
     const system = { role: 'system', content: tr('Você é um assistente de programação que roda no servidor do DevLand. Responda em português do Brasil, direto e com exemplos de código quando ajudar.') };

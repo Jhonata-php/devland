@@ -102,6 +102,7 @@ export class Dashboard implements UiComponent {
     this.gh = new GithubData(() => ctx.invalidate());
     this.mcp = new McpPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
     this.ai = new AiPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
+    this.ai.onNewAgent = () => this.act.newAgent();
     this.main = h('main', { class: 'dash-main' });
     this.ptr = h('div', { class: 'dash-ptr', text: tr('Solte para atualizar') });
     this.tabs = h('nav', { class: 'dash-tabs', attrs: { 'aria-label': tr('Seções') } });

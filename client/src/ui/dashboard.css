@@ -865,3 +865,45 @@ html.theme-light .ui-root .ui-perm .ui-term__dl { color: #b91c1c !important; bac
 html.theme-light .ui-root .ui-perm [class*='__add'], html.theme-light .ui-root .ui-perm .ui-term__al { color: #15803d !important; background: rgba(22, 163, 74, 0.08) !important; }
 html.theme-light .ui-root .ui-perm .ui-perm__check { color: #1d1c1a !important; }
 html.theme-light .ui-toast__answer { background: #1d1c1a !important; color: #fff !important; border-color: #1d1c1a !important; }
+
+/* ---------- IA local, versão simples ---------- */
+.dash-ai-hero { display: grid; justify-items: center; gap: 10px; padding: 44px 24px; text-align: center; }
+.dash-ai-hero h2 { margin: 6px 0 0; font-size: 20px; justify-content: center; }
+.dash-ai-hero p { max-width: 520px; margin: 0; }
+.dash-ai-hero__bar { width: min(420px, 100%); }
+.dash-ai-av--big { width: 56px; height: 56px; border-radius: 16px; }
+.dash-ai-av--big::before, .dash-ai-av--big::after { top: 20px; width: 7px; height: 10px; }
+.dash-ai-av--big::before { left: 17px; } .dash-ai-av--big::after { right: 17px; }
+.dash-ai-meters { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+.dash-ai-state { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--d-line); border-radius: 12px; background: var(--d-card); font-weight: 600; font-size: 13px; }
+.dash-ai-state i { width: 8px; height: 8px; border-radius: 50%; background: var(--d-mut); }
+.dash-ai-state.is-on i { background: var(--d-acc); box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15); }
+.dash-ai-meter { flex: 1; min-width: 150px; display: grid; gap: 2px; padding: 10px 14px; border: 1px solid var(--d-line); border-radius: 12px; background: var(--d-card); }
+.dash-ai-meter span { color: var(--d-mut); font-size: 12px; }
+.dash-ai-meter b { font-size: 15px; font-weight: 600; }
+.dash-ai-meter i { display: block; height: 4px; margin-top: 4px; border-radius: 99px; background: var(--d-line); overflow: hidden; }
+.dash-ai-meter u { display: block; height: 100%; background: var(--d-acc); }
+.dash-ai-meter.is-warn u { background: var(--d-warn); }
+.dash-ai-agents { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; border-color: rgba(20, 184, 166, 0.35); }
+.dash-ai-agents__txt { flex: 1; min-width: 260px; }
+.dash-ai-agents__txt h2 { margin: 0 0 4px; }
+.dash-ai-agents__txt p { margin: 0; }
+.dash-ai-pick { display: grid; gap: 4px; font-size: 12px; color: var(--d-mut); }
+.dash-ai-pick select { height: 38px; min-width: 200px; padding: 0 12px; border: 1px solid var(--d-line2); border-radius: 10px; background: var(--d-bg); color: var(--d-txt); font: 14px var(--d-font); }
+.dash-model.is-agent { border-color: rgba(122, 162, 255, 0.45); }
+.dash-model.is-rec { border-color: rgba(74, 222, 128, 0.4); }
+.dash .dash-btn--ghost-bad { background: transparent; color: var(--d-bad); border-color: rgba(248, 113, 113, 0.3); }
+.dash .dash-btn--ghost-bad:hover { background: rgba(248, 113, 113, 0.08); }
+.dash-model__foot { gap: 8px; }
+.dash-ai-more { margin-top: 14px; }
+.dash-ai-adv { color: var(--d-mut); font-size: 13px; }
+.dash-ai-adv summary { cursor: pointer; padding: 6px 0; }
+.dash-ai-adv p { margin: 6px 0 10px; }
+html.theme-light .dash-ai-pick select { background: #fff; }
+.dash-top__title { overflow: hidden; }
+.dash-top__title b { overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 901px) and (max-width: 1240px) {
+  .dash-top__act .dash-btn:not(.dash-btn--primary) .dash-hide-sm, .dash-top__act .dash-find kbd { display: none !important; }
+  .dash-top__act .dash-btn:not(.dash-btn--primary) { width: 38px; padding: 0; }
+  .dash-live { display: none; }
+}

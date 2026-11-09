@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Proteção de memória da IA local:** um modelo carregado por vez, um pedido por vez, cache de contexto menor e prioridade baixa para o motor; antes de carregar, o DevLand confere se o modelo cabe deixando uma reserva para o painel, e se a memória acabar ele tira o modelo da memória na hora. A IA local não derruba mais o painel.
 - **Tema claro:** em Configurações › Aparência › Cores, escolha Escuro, Claro ou Automático (segue o sistema). Vale para o painel, as conversas, as janelas e o contorno do escritório; o mapa continua igual.
 - **IA local como conta de agentes:** no Novo agente aparece a conta "IA local · modelo". O agente é o Claude Code de verdade (escritório, conversas, permissões), falando com o Ollama do servidor; na página IA local você escolhe o modelo ("Usar nos agentes"). O Ollama sobe com 32 mil tokens de contexto.
 - **Modelos melhores na IA local:** Qwen3 Coder 30B, GPT-OSS 20B, Devstral 24B, Qwen3 14B/8B/4B e Qwen2.5 Coder, com a marca "para agentes" nos que usam ferramentas e a recomendação pelo que cabe na memória.
@@ -39,6 +40,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Página IA local mais simples:** ativar com um botão, o modelo dos agentes num seletor, seus modelos em cartões com botões, e para baixar primeiro os que cabem no servidor (os maiores ficam em "Ver também"). Sem termos técnicos (motor, endereço, porta).
 - **Telas mais largas** no painel (sem ficar espremido no meio) e janela de **Novo agente** redesenhada: projetos em grade, conta e função em botões, pedido maior.
 - **Conversa no painel:** texto do agente solto e legível, a sua mensagem em balão, ferramentas numa linha discreta e um campo de mensagem único e arredondado (o campo azul com borda dupla saiu). Mensagens vazias não deixam mais faixas em branco.
 - **Contas no painel:** aparecem só as contas conectadas de verdade (com e-mail, uso ou sessão aberta).

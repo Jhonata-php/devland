@@ -12,6 +12,7 @@ interface AiStatus {
   loaded: { name: string; size: number }[];
   catalog: CatalogModel[];
   agentModel: string | null;
+  guard?: string;
   recommended: string;
   job: { kind: 'install' | 'pull'; model?: string; status: string; percent?: number; error?: string; done: boolean } | null;
 }
@@ -151,89 +152,121 @@ export class AiPage {
     });
   }
 
+  /** Abre o Novo agente (definido pelo painel). */
+  onNewAgent?: () => void;
+  /** Mostra também os modelos grandes demais para este servidor. */
+  private showAll = false;
+
   page(): HTMLElement {
-    const head = this.header(tr('IA local'), tr('Modelos de IA rodando no seu servidor, sem conta e sem custo por uso. Leves, só com CPU.'));
+    const head = this.header(tr('IA local'), tr('Modelos de IA no seu próprio servidor: sem conta, sem custo por uso e sem enviar nada para fora.'));
     if (!(access().admin || (access().local && !access().remote))) {
-      return h('div', { class: 'dash-page' }, head, h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Só para admins') }), h('p', { text: tr('Peça a um admin para instalar a IA local.') })));
+      return h('div', { class: 'dash-page' }, head, h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Só para admins') }), h('p', { text: tr('Peça a um admin para ativar a IA local.') })));
     }
     const st = this.st;
     if (!st) return h('div', { class: 'dash-page' }, head, h('section', { class: 'dash-card dash-empty' }, h('p', { text: this.err || tr('Lendo o servidor…') })));
     const s = st.system;
-    const ramUsed = s.ramTotal - s.ramFree;
-    const meter = (label: string, used: number, total: number, text: string) => {
-      const pct = total ? Math.min(100, Math.round((used / total) * 100)) : 0;
-      return h('div', { class: `dash-stat dash-meter${pct >= 85 ? ' is-warn' : ''}` }, h('span', { text: label }), h('b', { text }),
-        h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${pct}%` })), h('small', { text: `${pct}%` }));
-    };
-    const job = st.job;
-    const jobEl = job && (!job.done || job.error) ? h('section', { class: `dash-card dash-job${job.error ? ' is-bad' : ''}` },
-      h('div', { class: 'dash-card__head' }, h('h2', { text: job.kind === 'install' ? tr('Instalando o Ollama') : tr('Baixando {0}', [job.model ?? '']) }),
-        job.done ? h('small', { class: 'dash-muted', text: tr('falhou') }) : h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Cancelar'), on: { click: () => this.act(() => this.post('/api/ai/cancel')) } })),
-      job.error ? h('p', { class: 'dash-bad', text: job.error }) : h('div', { class: 'dash-bar' }, h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${job.percent ?? 0}%` })), h('small', { text: job.status }))) : null;
-    const working = !!job && !job.done;
-
-    const uninstall = st.ollama.own ? h('button', { class: 'dash-btn', type: 'button', attrs: { disabled: working }, text: tr('Desinstalar'), on: { click: () => confirm(tr('Desinstalar o Ollama e apagar todos os modelos baixados?')) && this.act(() => this.post('/api/ai/uninstall')) } }) : null;
-    const engine = st.ollama.running
-      ? h('div', { class: 'dash-engine is-on' }, h('span', { class: 'dash-engine__dot' }), h('div', {}, h('b', { text: tr('Ollama {0} rodando', [st.ollama.version ?? '']) }), h('small', { text: tr('Só dentro do servidor (127.0.0.1:11434). Os modelos ficam na pasta de dados do DevLand.') })), uninstall)
-      : h('div', { class: 'dash-engine' }, h('span', { class: 'dash-engine__dot' }), h('div', {},
-          h('b', { text: st.ollama.installed ? tr('Ollama instalado, parado') : tr('Ollama ainda não está instalado') }),
-          h('small', { text: st.ollama.package ? tr('O motor que roda os modelos. Baixa do GitHub do Ollama ({0}) e fica na pasta de dados: sobrevive às atualizações.', [st.ollama.package.includes('linux') ? '~1,5 GB' : '~185 MB']) : tr('Sem pacote pronto para este sistema.') })),
-          st.ollama.package && !st.ollama.installed ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', attrs: { disabled: working }, text: tr('Instalar o Ollama'), on: { click: () => this.act(() => this.post('/api/ai/install')) } }) : uninstall);
-
-    const have = new Set(st.models.map((m) => m.name));
     const ramGb = s.ramTotal / 1e9;
-    const catalog = h('div', { class: 'dash-models' }, ...st.catalog.map((m) => {
-      const installed = have.has(m.id) || have.has(`${m.id}:latest`);
-      const fits = m.ramGb <= ramGb * 0.8;
-      return h('div', { class: `dash-model${installed ? ' is-in' : ''}${fits ? '' : ' is-heavy'}` },
-        h('div', { class: 'dash-model__top' }, h('b', { text: m.name }), m.id === st.recommended ? h('span', { class: 'dash-badge is-admin', text: tr('Recomendado') }) : null, m.agent ? h('span', { class: 'dash-badge is-blue', text: tr('para agentes') }) : null, m.code ? h('span', { class: 'dash-badge', text: tr('código') }) : null),
-        h('p', { text: m.use }),
-        h('div', { class: 'dash-model__foot' },
-          h('small', { class: fits ? 'dash-muted' : 'dash-bad', text: `${m.sizeGb.toLocaleString()} GB · ${tr('{0} GB de RAM', [m.ramGb])}${fits ? '' : ` · ${tr('pesado para este servidor')}`}` }),
-          installed ? h('span', { class: 'dash-status is-working', text: tr('Instalado') })
-            : h('button', { class: 'dash-btn', type: 'button', attrs: { disabled: working || !st.ollama.installed }, text: tr('Baixar'), on: { click: () => this.act(() => this.post('/api/ai/pull', { model: m.id })) } })));
-    }));
+    const job = st.job;
+    const working = !!job && !job.done;
+    const nameOf = (id: string) => st.catalog.find((c) => c.id === id || `${c.id}:latest` === id)?.name ?? id;
+    const have = new Set(st.models.map((m) => m.name));
+    const isIn = (id: string) => have.has(id) || have.has(`${id}:latest`);
 
+    // 1) Ainda sem o motor: um cartão só, com o botão de ativar.
+    if (!st.ollama.installed || (job?.kind === 'install' && (!job.done || job.error))) {
+      const busy = job?.kind === 'install' && !job.done;
+      return h('div', { class: 'dash-page' }, head,
+        h('section', { class: 'dash-card dash-ai-hero' },
+          h('span', { class: 'dash-ai-av dash-ai-av--big', attrs: { 'aria-hidden': 'true' } }),
+          h('h2', { text: busy ? tr('Ativando a IA local…') : tr('Ative a IA local') }),
+          h('p', { class: 'dash-muted', text: tr('Instala o motor de IA no servidor (cerca de {0}, uma vez só). Depois você escolhe os modelos e cria agentes que rodam aqui, sem gastar o plano.', [st.ollama.package?.includes('linux') ? '1,5 GB' : '200 MB']) }),
+          busy ? h('div', { class: 'dash-bar dash-ai-hero__bar' }, h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${job!.percent ?? 0}%` })), h('small', { text: `${job!.percent ?? 0}%` })) : null,
+          job?.kind === 'install' && job.error ? h('p', { class: 'dash-bad', text: job.error }) : null,
+          busy ? h('button', { class: 'dash-btn', type: 'button', text: tr('Cancelar'), on: { click: () => this.act(() => this.post('/api/ai/cancel')) } })
+            : st.ollama.package ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Ativar IA local'), on: { click: () => this.act(() => this.post('/api/ai/install')) } })
+            : h('p', { class: 'dash-bad', text: tr('Este sistema ainda não tem a IA local.') })));
+    }
+
+    // 2) Resumo do servidor, discreto.
+    const pct = (a: number, b: number) => (b ? Math.min(100, Math.round((a / b) * 100)) : 0);
+    const chip = (label: string, value: string, p: number) => h('div', { class: `dash-ai-meter${p >= 85 ? ' is-warn' : ''}` }, h('span', { text: label }), h('b', { text: value }), h('i', {}, h('u', { style: `width:${p}%` })));
+    const meters = h('section', { class: 'dash-ai-meters' },
+      h('div', { class: `dash-ai-state${st.ollama.running ? ' is-on' : ''}` }, h('i'), h('span', { text: st.ollama.running ? tr('IA local ligada') : tr('IA local parada') })),
+      chip(tr('Memória'), `${gb(s.ramTotal - s.ramFree)} / ${gb(s.ramTotal)}`, pct(s.ramTotal - s.ramFree, s.ramTotal)),
+      chip(tr('CPU'), tr('{0} núcleos', [s.cpus]), pct(s.load, s.cpus)),
+      s.disk ? chip(tr('Disco livre'), gb(s.disk.free), pct(s.disk.total - s.disk.free, s.disk.total)) : null,
+      chip(tr('Em uso agora'), st.loaded.length ? gb(st.loaded.reduce((n, m) => n + m.size, 0)) : tr('nada'), 0));
+
+    // 3) Agentes: qual modelo eles usam e o atalho para criar um.
+    const agentCard = st.models.length ? h('section', { class: 'dash-card dash-ai-agents' },
+      h('div', { class: 'dash-ai-agents__txt' },
+        h('h2', { text: tr('Agentes com IA local') }),
+        h('p', { class: 'dash-muted', text: tr('No Novo agente, escolha a conta "IA local". O agente trabalha como os outros (conversa, permissões, escritório), usando o modelo abaixo.') })),
+      h('label', { class: 'dash-ai-pick' }, h('span', { text: tr('Modelo dos agentes') }),
+        h('select', { on: { change: (e) => this.act(() => this.post('/api/ai/agent-model', { model: (e.target as HTMLSelectElement).value })) } },
+          ...st.models.map((m) => h('option', { attrs: { value: m.name, selected: m.name === st.agentModel }, text: nameOf(m.name) })))),
+      this.onNewAgent ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('+ Novo agente'), on: { click: () => this.onNewAgent?.() } }) : null) : null;
+
+    // 4) Seus modelos, em cartões com botões de verdade.
     const loadedSet = new Set(st.loaded.map((m) => m.name));
     const speeds = [...this.speed.values()].filter((v): v is number => typeof v === 'number');
     const fastest = speeds.length > 1 ? Math.max(...speeds) : -1;
-    const speedText = (name: string) => {
+    const speedOf = (name: string) => {
       const v = this.speed.get(name);
-      return v === undefined ? '' : v === 'run' ? ` · ${tr('medindo…')}` : v === 'err' ? ` · ${tr('não respondeu')}` : ` · ${tr('{0} tokens/s', [v])}`;
+      return v === undefined ? '' : v === 'run' ? tr('medindo…') : v === 'err' ? tr('não respondeu') : tr('{0} tokens/s', [v]);
     };
-    const mine = st.models.length ? h('div', { class: 'dash-list' }, ...st.models.map((m) => h('div', { class: 'dash-agent dash-agent--static' },
-      h('span', { class: 'dash-agent__main' }, h('span', { class: 'dash-agent__top' }, h('b', { text: m.name }), loadedSet.has(m.name) ? h('span', { class: 'dash-status is-working', text: tr('Na memória') }) : null, this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null,
-        st.agentModel === m.name ? h('span', { class: 'dash-badge is-blue', text: tr('Agentes usam este') }) : null), h('span', { class: 'dash-agent__act', text: gb(m.size) + speedText(m.name) })),
-      st.agentModel === m.name ? null : h('button', { class: 'dash-link', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
-      h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [m.name])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } }))))
-      : h('p', { class: 'dash-muted', text: tr('Nenhum modelo baixado ainda. Comece pelo recomendado.') });
+    const mine = h('div', { class: 'dash-models' }, ...st.models.map((m) => h('div', { class: `dash-model is-in${st.agentModel === m.name ? ' is-agent' : ''}` },
+      h('div', { class: 'dash-model__top' }, h('b', { text: nameOf(m.name) }),
+        st.agentModel === m.name ? h('span', { class: 'dash-badge is-blue', text: tr('Agentes usam este') }) : null,
+        this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null),
+      h('p', { text: [gb(m.size), loadedSet.has(m.name) ? tr('carregado') : '', speedOf(m.name)].filter(Boolean).join(' · ') }),
+      h('div', { class: 'dash-model__foot' },
+        st.agentModel === m.name ? h('span') : h('button', { class: 'dash-btn', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
+        h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [nameOf(m.name)])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } })))));
 
-    // Assistente: só com modelo baixado; a lista de modelos se ajusta sem refazer a conversa.
+    // 5) Baixar modelos: os que cabem primeiro; os grandes demais só em "Ver todos".
+    const pulling = job?.kind === 'pull' ? job : null;
+    const fit = (m: CatalogModel) => m.ramGb <= ramGb * 0.8;
+    const list = st.catalog.filter((m) => !isIn(m.id) && (this.showAll || fit(m)));
+    const hidden = st.catalog.filter((m) => !isIn(m.id) && !fit(m)).length;
+    const store = h('div', { class: 'dash-models' }, ...list.map((m) => {
+      const mineNow = pulling?.model === m.id && !pulling.done;
+      return h('div', { class: `dash-model${fit(m) ? '' : ' is-heavy'}${m.id === st.recommended ? ' is-rec' : ''}` },
+        h('div', { class: 'dash-model__top' }, h('b', { text: m.name }),
+          m.id === st.recommended ? h('span', { class: 'dash-badge is-admin', text: tr('Recomendado') }) : null,
+          m.agent ? h('span', { class: 'dash-badge is-blue', text: tr('para agentes') }) : null),
+        h('p', { text: m.use }),
+        mineNow ? h('div', { class: 'dash-bar' }, h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${pulling!.percent ?? 0}%` })), h('small', { text: tr('Baixando… {0}%', [pulling!.percent ?? 0]) })) : null,
+        pulling?.model === m.id && pulling.error ? h('p', { class: 'dash-bad', text: pulling.error }) : null,
+        h('div', { class: 'dash-model__foot' },
+          h('small', { class: fit(m) ? 'dash-muted' : 'dash-bad', text: fit(m) ? tr('{0} GB · precisa de {1} GB de memória', [m.sizeGb.toLocaleString(), m.ramGb]) : tr('Precisa de {0} GB de memória', [m.ramGb]) }),
+          mineNow ? h('button', { class: 'dash-btn', type: 'button', text: tr('Cancelar'), on: { click: () => this.act(() => this.post('/api/ai/cancel')) } })
+            : h('button', { class: `dash-btn${m.id === st.recommended ? ' dash-btn--primary' : ''}`, type: 'button', attrs: { disabled: working }, text: tr('Baixar'), on: { click: () => this.act(() => this.post('/api/ai/pull', { model: m.id })) } })));
+    }));
+
+    // Assistente: conversa rápida com um modelo baixado.
     if (!this.chat.model || !have.has(this.chat.model)) this.chat.model = st.models[0]?.name ?? '';
     const names = st.models.map((m) => m.name).join('|');
     if (this.chatModel.dataset.names !== names) {
       this.chatModel.dataset.names = names;
-      this.chatModel.replaceChildren(...st.models.map((m) => h('option', { attrs: { value: m.name }, text: m.name })));
+      this.chatModel.replaceChildren(...st.models.map((m) => h('option', { attrs: { value: m.name }, text: nameOf(m.name) })));
     }
     this.chatModel.value = this.chat.model;
+
     return h('div', { class: 'dash-page' }, head,
       this.err ? h('p', { class: 'dash-bad', text: this.err }) : null,
-      h('section', { class: 'dash-stats' },
-        meter(tr('Memória'), ramUsed, s.ramTotal, `${gb(ramUsed)} / ${gb(s.ramTotal)}`),
-        meter(tr('CPU'), s.load, s.cpus, tr('{0} núcleos', [s.cpus])),
-        s.disk ? meter(tr('Disco'), s.disk.total - s.disk.free, s.disk.total, tr('{0} livres', [gb(s.disk.free)])) : null,
-        h('div', { class: 'dash-stat' }, h('span', { text: tr('Na memória agora') }), h('b', { text: st.loaded.length ? gb(st.loaded.reduce((n, m) => n + m.size, 0)) : '0' }), h('small', { text: st.loaded.map((m) => m.name).join(', ') || tr('nenhum modelo carregado') }))),
-      h('section', { class: 'dash-card' }, engine),
-      jobEl,
-      st.agentModel ? h('section', { class: 'dash-card dash-ai-agentcard' },
-        h('span', { class: 'dash-ai-av', attrs: { 'aria-hidden': 'true' } }),
-        h('div', {}, h('b', { text: tr('Conta "IA local" para agentes') }),
-          h('small', { text: tr('No Novo agente, escolha a conta "IA local · {0}": o agente é o Claude Code de verdade (escritório, conversas, permissões), só que rodando com o modelo do seu servidor. Modelos maiores fazem tarefas melhores; os de 1–3B servem para coisas simples.', [st.agentModel]) }))) : null,
+      meters,
+      st.guard ? h('section', { class: 'dash-alert' }, h('b', { text: tr('Proteção de memória') }), h('span', { text: st.guard })) : null,
+      agentCard,
+      st.models.length ? h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Seus modelos') }),
+        h('button', { class: 'dash-btn', type: 'button', text: tr('Medir velocidade'), attrs: { disabled: [...this.speed.values()].includes('run') }, on: { click: () => void this.bench(st.models.map((m) => m.name)) } })), mine) : null,
+      h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: st.models.length ? tr('Baixar mais modelos') : tr('Escolha um modelo para começar') }),
+        h('small', { class: 'dash-muted', text: tr('Seu servidor: {0} de memória, {1} núcleos', [gb(s.ramTotal), s.cpus]) })),
+        store,
+        hidden ? h('button', { class: 'dash-link dash-ai-more', type: 'button', text: this.showAll ? tr('Mostrar só os que cabem neste servidor') : tr('Ver também os {0} modelos maiores (precisam de servidor com mais memória)', [hidden]), on: { click: () => { this.showAll = !this.showAll; this.invalidate(); } } }) : null),
       st.models.length ? this.chatEl : null,
-      h('div', { class: 'dash-cols' },
-        h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Seus modelos') }),
-          st.models.length ? h('button', { class: 'dash-link', type: 'button', text: tr('Medir velocidade'), attrs: { disabled: [...this.speed.values()].includes('run') }, on: { click: () => void this.bench(st.models.map((m) => m.name)) } }) : null), mine),
-        h('section', { class: 'dash-card' }, h('h2', { text: tr('Como usar') }), h('p', { class: 'dash-muted', text: tr('Instale o Ollama, baixe um modelo e converse com ele no assistente acima. Os agentes e outros programas do servidor usam pelo endereço http://127.0.0.1:11434.') }))),
-      h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Modelos leves') }), h('small', { class: 'dash-muted', text: tr('Recomendado para {0} de RAM', [gb(s.ramTotal)]) })), catalog));
+      st.ollama.own ? h('details', { class: 'dash-ai-adv' }, h('summary', { text: tr('Mais opções') }),
+        h('p', { class: 'dash-muted', text: tr('Desativar apaga o motor e todos os modelos baixados, liberando o espaço no disco.') }),
+        h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', attrs: { disabled: working }, text: tr('Desativar a IA local'), on: { click: () => confirm(tr('Desativar a IA local e apagar todos os modelos baixados?')) && this.act(() => this.post('/api/ai/uninstall')) } })) : null);
   }
 }

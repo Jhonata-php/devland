@@ -339,8 +339,13 @@ export class SpawnService {
       this.dropFiles(e);
     }
     // Conta "IA local": o Claude Code numa pasta própria, falando com o Ollama do servidor.
-    const local = e.req.account === 'ollama' ? await this.opts.localAgent?.() : undefined;
-    if (e.req.account === 'ollama' && !local) return this.resolve(e, { ok: false, error: tr('IA local sem modelo: instale o Ollama e baixe um modelo na página IA local.') });
+    let local: { dir: string; model: string; env: Record<string, string> } | null | undefined;
+    try {
+      local = e.req.account === 'ollama' ? await this.opts.localAgent?.() : undefined;
+    } catch (err) {
+      return this.resolve(e, { ok: false, error: (err as Error).message.slice(0, ERROR_MAX) });
+    }
+    if (e.req.account === 'ollama' && !local) return this.resolve(e, { ok: false, error: tr('IA local sem modelo: ative a IA local e baixe um modelo na página IA local.') });
     const configDir = local ? local.dir : this.opts.accountDir?.(e.req.account);
     const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}), ...(local ? { extraEnv: local.env, model: local.model } : {}) };
     this.resolve(e, await launch(req, opener, this.opts.cli));
