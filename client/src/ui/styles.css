@@ -12394,3 +12394,9 @@ body::before {
   .ui-root.ui-root { --top-h: calc(48px + env(safe-area-inset-top, 0px)); }
   .ui-topbar.ui-topbar { padding-top: env(safe-area-inset-top, 0px); }
 }
+
+/* Menus flutuantes no celular (Novo agente, Entregas, Histórico…): o JS os ancora num botão do topo que no celular está
+   escondido (top 8px), e com a barra de status por cima do app eles subiam para trás dela. Começam logo abaixo do topo. */
+@media (max-width: 600px) {
+  .ui-popover { top: calc(var(--top-h) + var(--gap)) !important; }
+}

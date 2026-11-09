@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Celular: menus abrem abaixo do topo:** Novo agente, Entregas, Histórico e a prévia começavam atrás da barra de status no app da tela de início; agora começam logo abaixo do topo.
 - **iPhone (app da tela de início): barra de baixo no fim da tela:** o layout segue o do wsat (topo com a área segura, camadas fixas em tela cheia, documento com altura de tela, sem travas de rolagem nem ajustes pela área visível). Antes, com o corpo da página vazio, o iOS deixava a área do app 62 pt mais curta que a tela: topo cortado atrás da barra de status e uma faixa morta embaixo da barra de baixo. Barra de status translúcida: quem já adicionou o ícone precisa removê-lo e adicionar de novo.
 - **Sem o popup "Você está na lista de espera"** (nem os outros avisos de lançamento do Habblaud World) por cima do escritório.
 - **iPhone: o app segue a área visível da tela:** nas telas de toque as camadas do app (mapa, barras e painéis) acompanham o `visualViewport` (posição e altura reais da janela), em vez de ficarem presas a uma janela que o iOS desloca. Em Configurações › Sobre há o botão "Diagnóstico da tela", que mostra os números (janela, área visível, rolagem, áreas seguras, versão do iOS) para mandar em print se o app ainda sair do lugar.
