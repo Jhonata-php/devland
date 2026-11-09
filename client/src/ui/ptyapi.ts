@@ -32,6 +32,11 @@ export function createPty(cwd: string, account?: string): Promise<PtyInfo | unde
   return postPty<PtyInfo>('/api/pty', { cwd, account, ...SIZE });
 }
 
+/** Digita no terminal interativo (como se a pessoa teclasse). */
+export function sendPtyInput(id: string, data: string): Promise<unknown> {
+  return postPty(`/api/pty/${encodeURIComponent(id)}/input`, { data });
+}
+
 /** Encerra a sessão noutro terminal e continua a mesma conversa aqui. */
 export function takeoverAgent(agentId: string): Promise<PtyInfo | undefined> {
   return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, SIZE);

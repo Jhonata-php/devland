@@ -3900,7 +3900,6 @@ export const FR: Readonly<Record<string, string>> = {
   "Tarefas e projetos do Linear": "Tâches et projets Linear",
   "Tente de novo.": "Réessayez.",
   "Volte aqui: a conexão termina sozinha.": "Revenez ici : la connexion se termine toute seule.",
-  "\"Precisa entrar\": abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.": "« Connexion requise » : ouvrez une discussion avec un agent et demandez-lui de lancer /mcp, ou connectez-vous depuis le terminal Claude Code ; la connexion reste enregistrée dans le compte.",
   "{0} conectado": "{0} connecté",
 
   // IA local como conta de agentes e catálogo novo
@@ -4019,4 +4018,16 @@ export const FR: Readonly<Record<string, string>> = {
   "{0} instalado. Sessões novas já vêm com ele.": "{0} installé. Les nouvelles sessions l'ont déjà.",
   "{0} removido. Sessões novas já vêm sem ele.": "{0} retiré. Les nouvelles sessions ne l'ont plus.",
   "Cole o comando, o JSON, o endereço ou o nome (ex.: notion)": "Collez la commande, le JSON, l'adresse ou le nom (ex. : notion)",
+  "Abre o Claude Code já no menu de conectores": "Ouvre Claude Code directement sur le menu des connecteurs",
+  "Confere a conexão agora": "Vérifie la connexion maintenant",
+  "Renomear": "Renommer",
+  "Nome do conector": "Nom du connecteur",
+  "Só o nome aqui na tela; os agentes continuam usando \"{0}\".": "Seulement le nom sur cet écran ; les agents continuent d'utiliser « {0} ».",
+  "Falta entrar na conta do serviço. Clique em Entrar para abrir o terminal já no menu de conectores.": "Il faut encore se connecter au service. Cliquez sur Se connecter pour ouvrir le terminal sur le menu des connecteurs.",
+  "Falta entrar na conta do serviço: abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.": "Il faut encore se connecter au service : ouvrez une conversation avec un agent et demandez-lui de lancer /mcp, ou connectez-vous depuis le terminal de Claude Code ; la connexion est enregistrée sur le compte.",
+  "Terminal aberto. No menu, escolha {0}, depois \"Authenticate\", abra o link e autorize. Esta tela confere sozinha.": "Terminal ouvert. Dans le menu, choisissez {0}, puis « Authenticate », ouvrez le lien et autorisez. Cet écran vérifie tout seul.",
+  "Não conectou: {0}": "Connexion impossible : {0}",
+  "Conectados: {0} de {1}": "Connectés : {0} sur {1}",
+  "Precisam entrar: {0}": "À connecter : {0}",
+  "Use até {0} caracteres.": "Utilisez jusqu'à {0} caractères.",
 };

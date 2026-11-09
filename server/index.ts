@@ -608,7 +608,7 @@ const api = createApiHandler({
   schedules,
   plugins: pluginStore,
   localAi,
-  mcp: claudeBin ? new McpStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir)) : undefined,
+  mcp: claudeBin ? new McpStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir), join(config.dataDir, 'mcp-names.json')) : undefined,
   ghBin: findExecutable('gh'),
   projectDirs: () => [...hub.current().rooms.map((r) => r.path), ...(cloud ? workspaceFolders(WORKSPACE).map((f) => f.path) : [])].filter((p) => p !== WORKSPACE),
   devRunner,

@@ -34,6 +34,8 @@ export interface DashActions {
   openDeliveries(): void;
   /** Sessão nova do Claude Code na pasta (terminal interativo); ausente quando o terminal interativo está desligado. */
   newSessionIn?(path: string): void;
+  /** Abre o Claude Code na pasta já no menu de conectores (/mcp), para entrar num conector; ausente sem terminal interativo. */
+  loginConnector?(path: string): void;
   /** Janelas do Cloud: conectar contas ou permissões detalhadas das pessoas. */
   openCloud(kind: 'contas' | 'usuarios'): void;
 }
@@ -104,7 +106,7 @@ export class Dashboard implements UiComponent {
     this.top = h('header', { class: 'dash-top' });
     this.gh = new GithubData(() => ctx.invalidate());
     this.plugins = new PluginsPage(() => ctx.invalidate(), (t, sub, ...r) => this.header(t, sub, ...r));
-    this.mcp = new McpPage(() => ctx.invalidate(), (t, sub, ...r) => this.header(t, sub, ...r));
+    this.mcp = new McpPage(() => ctx.invalidate(), (t, sub, ...r) => this.header(t, sub, ...r), () => this.act.loginConnector?.bind(this.act));
     this.ai = new AiPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
     this.ai.onNewAgent = () => this.act.newAgent();
     this.main = h('main', { class: 'dash-main' });

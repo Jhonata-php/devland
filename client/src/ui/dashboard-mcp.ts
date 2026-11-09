@@ -5,7 +5,7 @@ import { tr } from '../../../shared/i18n';
 import { h } from './dom';
 import { parseConnector, type ParsedConnector } from './mcp-parse';
 
-interface Server { name: string; target: string; status: 'ok' | 'fail' | 'auth' | 'unknown'; detail: string }
+interface Server { name: string; target: string; transport: 'http' | 'sse' | 'stdio'; alias?: string; status: 'ok' | 'fail' | 'auth' | 'unknown'; detail: string }
 interface CatalogItem { name: string; title: string; desc: string; transport: string; target: string }
 
 export class McpPage {
@@ -17,15 +17,48 @@ export class McpPage {
   /** Conversa para adicionar: o que a pessoa colou e o que o DevLand entendeu. */
   private talk: { me: string; found: ParsedConnector[]; added: Set<string>; errors: Map<string, string> }[] = [];
   private draft = '';
+  /** Pasta onde o Claude Code abre para entrar num conector (vem do servidor). */
+  private loginDir = '';
+  /** Conector sendo renomeado. */
+  private editing = '';
+  /** Conector em que a pessoa clicou em Entrar: a página confere sozinha até conectar. */
+  private waiting = '';
+  private timer: ReturnType<typeof setInterval> | undefined;
 
-  constructor(private invalidate: () => void, private header: (title: string, sub: string, ...right: (HTMLElement | null)[]) => HTMLElement) {}
+  constructor(
+    private invalidate: () => void,
+    private header: (title: string, sub: string, ...right: (HTMLElement | null)[]) => HTMLElement,
+    /** Abre o terminal já no /mcp (ausente sem terminal interativo: cai na dica de rodar /mcp à mão). */
+    private canLogin: () => ((path: string) => void) | undefined = () => undefined,
+  ) {}
 
   key(): string {
-    return `${this.err}|${this.busy}|${this.servers?.map((s) => s.name + s.status).join(',') ?? '-'}|${this.talk.length}|${this.talk.map((t) => t.added.size + t.errors.size).join(',')}|${this.open}`;
+    return `${this.err}|${this.busy}|${this.servers?.map((s) => s.name + s.status + (s.alias ?? '')).join(',') ?? '-'}|${this.talk.length}|${this.talk.map((t) => t.added.size + t.errors.size).join(',')}|${this.open}|${this.editing}|${this.waiting}`;
+  }
+
+  /** Confere de 8 em 8 s (por até 3 min) se o login que a pessoa foi fazer no terminal já valeu. */
+  private watch(name: string): void {
+    this.waiting = name;
+    clearInterval(this.timer);
+    const until = Date.now() + 3 * 60_000;
+    this.timer = setInterval(() => {
+      if (Date.now() > until || !this.waiting) return this.stopWatch();
+      void this.load().then(() => {
+        if (this.servers?.find((s) => s.name === this.waiting)?.status === 'ok') this.stopWatch();
+      });
+    }, 8000);
+  }
+
+  private stopWatch(): void {
+    clearInterval(this.timer);
+    this.timer = undefined;
+    this.waiting = '';
+    this.invalidate();
   }
 
   active(on: boolean): void {
     if (on && !this.loaded) void this.load();
+    if (!on && this.timer) this.stopWatch();
   }
 
   private async call(method: string, url: string, body?: unknown): Promise<unknown> {
@@ -38,9 +71,10 @@ export class McpPage {
   private async load(): Promise<void> {
     this.loaded = true;
     try {
-      const j = (await this.call('GET', '/api/mcp')) as { servers: Server[]; catalog: CatalogItem[] };
+      const j = (await this.call('GET', '/api/mcp')) as { servers: Server[]; catalog: CatalogItem[]; loginDir?: string };
       this.servers = j.servers;
       this.catalog = j.catalog;
+      this.loginDir = j.loginDir ?? '';
       this.err = '';
     } catch (e) {
       this.err = (e as Error).message;
@@ -87,21 +121,63 @@ export class McpPage {
     const have = new Map(this.servers.map((s) => [s.name, s]));
     const pill = (s: Server) => h('span', { class: `dash-status ${s.status === 'ok' ? 'is-working' : s.status === 'auth' ? 'is-waiting' : s.status === 'fail' ? 'is-bad' : ''}`, text: s.status === 'ok' ? tr('Conectado') : s.status === 'auth' ? tr('Precisa entrar') : s.status === 'fail' ? tr('Falhou') : s.detail || '—' });
     const remove = (name: string) => h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o conector {0} de todas as contas?', [name])) && this.act(name, () => this.call('DELETE', `/api/mcp/${encodeURIComponent(name)}`)) } });
-    const titleOf = (name: string) => this.catalog.find((c) => c.name === name)?.title ?? name;
+    const titleOf = (sv: Server) => sv.alias ?? this.catalog.find((c) => c.name === sv.name)?.title ?? sv.name;
+    const where = (sv: Server) => (sv.transport === 'stdio' ? `${tr('comando')} · ${sv.target}` : `${sv.transport.toUpperCase()} · ${sv.target.replace(/^https?:\/\//, '')}`);
+    const login = this.canLogin();
 
-    // Os que você já tem, em cartões.
+    /** Título que vira campo de texto: o nome só vale na tela, os agentes seguem usando o nome técnico. */
+    const renamer = (sv: Server) => {
+      const input = h('input', { class: 'dash-mcp-rename', type: 'text', attrs: { maxlength: 40, 'aria-label': tr('Nome do conector'), placeholder: sv.name } }) as HTMLInputElement;
+      input.value = sv.alias ?? '';
+      // O painel não redesenha por baixo de um campo com foco (dashboard.ts): solta o foco antes de fechar o editor.
+      const stop = () => { input.blur(); this.editing = ''; this.invalidate(); };
+      const save = () => {
+        input.blur();
+        this.editing = '';
+        this.act(sv.name, () => this.call('PATCH', `/api/mcp/${encodeURIComponent(sv.name)}`, { alias: input.value }));
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) save();
+        else if (e.key === 'Escape') stop();
+      });
+      requestAnimationFrame(() => input.focus());
+      return h('div', { class: 'dash-mcp-edit' }, input,
+        h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Salvar'), on: { click: save } }),
+        h('button', { class: 'dash-btn', type: 'button', text: tr('Cancelar'), on: { click: stop } }));
+    };
+
+    const card = (sv: Server) => {
+      const enter = sv.status === 'auth' && login
+        ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Entrar'), title: tr('Abre o Claude Code já no menu de conectores'), on: { click: () => { this.watch(sv.name); login(this.loginDir || '/'); } } })
+        : null;
+      const test = h('button', { class: 'dash-btn', type: 'button', text: tr('Testar'), title: tr('Confere a conexão agora'), attrs: { disabled: !!this.busy }, on: { click: () => this.act(sv.name, async () => undefined) } });
+      const hint = sv.status === 'auth'
+        ? this.waiting === sv.name
+          ? tr('Terminal aberto. No menu, escolha {0}, depois "Authenticate", abra o link e autorize. Esta tela confere sozinha.', [sv.name])
+          : login ? tr('Falta entrar na conta do serviço. Clique em Entrar para abrir o terminal já no menu de conectores.') : tr('Falta entrar na conta do serviço: abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.')
+        : sv.status === 'fail' ? tr('Não conectou: {0}', [sv.detail]) : '';
+      return h('div', { class: `dash-model dash-mcp-card${sv.status === 'ok' ? ' is-in' : ''}` },
+        h('div', { class: 'dash-model__top' }, this.editing === sv.name ? renamer(sv) : h('b', { text: titleOf(sv) }), pill(sv)),
+        h('p', { class: 'dash-mcp-target', title: sv.target, text: `${sv.name !== titleOf(sv) ? `${sv.name} · ` : ''}${where(sv)}` }),
+        hint ? h('p', { class: `dash-mcp-hint${sv.status === 'fail' ? ' is-bad' : ''}`, text: hint }) : null,
+        h('div', { class: 'dash-model__foot' }, enter, test, h('span', { class: 'dash-grow' }),
+          this.editing === sv.name ? null : h('button', { class: 'dash-btn', type: 'button', text: tr('Renomear'), title: tr('Só o nome aqui na tela; os agentes continuam usando "{0}".', [sv.name]), on: { click: () => { this.editing = sv.name; this.invalidate(); } } }),
+          remove(sv.name)));
+    };
+
+    const ok = this.servers.filter((s) => s.status === 'ok').length;
+    const needs = this.servers.filter((s) => s.status === 'auth').length;
+    // Os que precisam de você primeiro, depois os com erro, depois os conectados.
+    const rank = (s: Server) => (s.status === 'auth' ? 0 : s.status === 'fail' ? 1 : s.status === 'unknown' ? 2 : 3);
     const mine = this.servers.length
-      ? h('div', { class: 'dash-models' }, ...this.servers.map((sv) => h('div', { class: `dash-model${sv.status === 'ok' ? ' is-in' : ''}` },
-          h('div', { class: 'dash-model__top' }, h('b', { text: titleOf(sv.name) }), pill(sv)),
-          h('p', { class: 'dash-mcp-target', text: sv.target }),
-          h('div', { class: 'dash-model__foot' }, h('span', { class: 'dash-grow' }), remove(sv.name)))))
+      ? h('div', {}, h('p', { class: 'dash-muted dash-mcp-sum', text: [tr('Conectados: {0} de {1}', [ok, this.servers.length]), needs ? tr('Precisam entrar: {0}', [needs]) : ''].filter(Boolean).join(' · ') }),
+          h('div', { class: 'dash-models' }, ...[...this.servers].sort((a, b) => rank(a) - rank(b)).map(card)))
       : h('div', { class: 'dash-empty' }, h('h2', { text: tr('Nenhum conector ainda') }), h('p', { text: tr('Conectores dão aos agentes ferramentas novas: documentação atualizada, um navegador para testar o site, os erros de produção, as suas tarefas.') }),
           h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('+ Adicionar conector'), on: { click: () => { this.open = true; this.invalidate(); } } }));
 
     return h('div', { class: 'dash-page' }, head,
       this.err ? h('p', { class: 'dash-bad', text: this.err }) : null,
-      h('section', { class: 'dash-card' }, mine,
-        this.servers.some((sv) => sv.status === 'auth') ? h('p', { class: 'dash-muted dash-note', text: tr('"Precisa entrar": abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.') }) : null),
+      h('section', { class: 'dash-card' }, mine),
       this.open ? this.modal(have, pill) : null);
   }
 

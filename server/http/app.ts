@@ -619,12 +619,13 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       const answer = (p: Promise<unknown>) => p.then((r) => sendJson(res, 200, r ?? { ok: true }), (err: Error) => sendJson(res, 400, { error: err.message }));
       if (!store) sendJson(res, 404, { error: tr('Claude Code não encontrado neste servidor.') });
       else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
-      else if (path === '/api/mcp' && isRead) answer(store.list().then((servers) => ({ servers, catalog: mcpCatalog() })));
+      else if (path === '/api/mcp' && isRead) answer(store.list().then((servers) => ({ servers, catalog: mcpCatalog(), loginDir: store.loginDir() })));
       else if (path === '/api/mcp' && method === 'POST') answer(readJson(req).then((b) => {
         const x = b as { name?: unknown; transport?: unknown; target?: unknown };
         return store.add(String(x.name ?? ''), String(x.transport ?? 'http'), String(x.target ?? ''));
       }));
       else if (one && method === 'DELETE') answer(store.remove(one[1]!));
+      else if (one && method === 'PATCH') answer(readJson(req).then((b) => store.rename(one[1]!, String((b as { alias?: unknown }).alias ?? ''))));
       else methodNotAllowed(res, 'GET');
       return true;
     }

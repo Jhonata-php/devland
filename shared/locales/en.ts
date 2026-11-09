@@ -3883,7 +3883,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Tarefas e projetos do Linear": "Linear tasks and projects",
   "Tente de novo.": "Try again.",
   "Volte aqui: a conexão termina sozinha.": "Come back here: the connection finishes on its own.",
-  "\"Precisa entrar\": abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.": "\"Needs sign-in\": open a chat with an agent and ask it to run /mcp, or sign in from the Claude Code terminal; the login is saved in the account.",
   "{0} conectado": "{0} connected",
 
   // IA local como conta de agentes e catálogo novo
@@ -4002,4 +4001,16 @@ export const EN: Readonly<Record<string, string>> = {
   "{0} instalado. Sessões novas já vêm com ele.": "{0} installed. New sessions come with it.",
   "{0} removido. Sessões novas já vêm sem ele.": "{0} removed. New sessions come without it.",
   "Cole o comando, o JSON, o endereço ou o nome (ex.: notion)": "Paste the command, the JSON, the address or the name (e.g. notion)",
+  "Abre o Claude Code já no menu de conectores": "Opens Claude Code already on the connectors menu",
+  "Confere a conexão agora": "Checks the connection now",
+  "Renomear": "Rename",
+  "Nome do conector": "Connector name",
+  "Só o nome aqui na tela; os agentes continuam usando \"{0}\".": "Only the name on this screen; agents keep using \"{0}\".",
+  "Falta entrar na conta do serviço. Clique em Entrar para abrir o terminal já no menu de conectores.": "You still need to sign in to the service. Click Sign in to open the terminal on the connectors menu.",
+  "Falta entrar na conta do serviço: abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.": "You still need to sign in to the service: open a chat with an agent and ask it to run /mcp, or sign in from the Claude Code terminal; the login is saved on the account.",
+  "Terminal aberto. No menu, escolha {0}, depois \"Authenticate\", abra o link e autorize. Esta tela confere sozinha.": "Terminal open. In the menu, pick {0}, then \"Authenticate\", open the link and authorize. This screen checks by itself.",
+  "Não conectou: {0}": "Didn't connect: {0}",
+  "Conectados: {0} de {1}": "Connected: {0} of {1}",
+  "Precisam entrar: {0}": "Need sign-in: {0}",
+  "Use até {0} caracteres.": "Use up to {0} characters.",
 };

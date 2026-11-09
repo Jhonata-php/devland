@@ -986,3 +986,13 @@ html .ui-root .dash .dash-plug-add input { max-width: none; }
 .dash-plug-hint { margin: -4px 0 10px; font-size: 13px; }
 .dash-ok { margin: 0; color: var(--d-acc); }
 html.theme-light .dash-plug-tab em { background: rgba(0, 0, 0, 0.06); }
+
+/* Conectores: cartão com Entrar, Testar e Renomear. */
+.dash-mcp-sum { margin: 0 0 12px; font-size: 13px; }
+.dash-mcp-card .dash-mcp-target { word-break: break-all; font-size: 12.5px; }
+.dash-mcp-hint { margin: 0; font-size: 13px; color: var(--d-mut); }
+.dash-mcp-hint.is-bad { color: #ff8a80; }
+.dash-mcp-edit { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; align-items: center; }
+.dash-mcp-rename { flex: 1; min-width: 120px; height: 30px; padding: 0 10px; font: inherit; color: inherit; background: var(--d-card); border: 1px solid var(--d-line); border-radius: 8px; }
+.dash-mcp-rename:focus { outline: none; border-color: #f4c95d; }
+.dash-mcp-card .dash-model__foot { flex-wrap: wrap; }

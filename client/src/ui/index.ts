@@ -356,6 +356,9 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     get newSessionIn() {
       return router.interactiveEnabled ? (path: string) => void router.newSession(path) : undefined;
     },
+    get loginConnector() {
+      return pty.enabled ? (path: string) => void pty.newSession(path, undefined, '/mcp\r') : undefined;
+    },
   });
   // Conectar conta passo a passo (Cloud): substitui a página antiga de Contas em todos os botões.
   const wizard = new ConnectWizard(() => invalidate());

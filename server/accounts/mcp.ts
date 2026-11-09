@@ -2,15 +2,20 @@
 // (valem em qualquer projeto). Pelo próprio CLI (`claude mcp list|add|remove`), como os plugins. Só admin (Cloud) ou o
 // próprio computador mexe.
 import { tr } from '../../shared/i18n';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { dirname } from 'node:path';
 import { isDefaultDir } from './detect';
 import { runClaude } from './plugins';
 import { agentRunAs } from '../spawn/runas';
 
 export interface McpServer {
   name: string;
-  /** Endereço (http/sse) ou comando (stdio). */
+  /** Endereço (http/sse) ou comando (stdio), sem o "(HTTP)" que o claude acrescenta. */
   target: string;
+  transport: 'http' | 'sse' | 'stdio';
+  /** Nome que a pessoa deu na tela (só de exibição; os agentes seguem usando `name`). */
+  alias?: string;
   status: 'ok' | 'fail' | 'auth' | 'unknown';
   detail: string;
 }
@@ -34,14 +39,57 @@ export function parseMcpList(out: string): McpServer[] {
     const m = /^([\w.-]+): (.+?) - (.+)$/.exec(line.trim());
     if (!m) continue;
     const detail = m[3]!.trim();
+    const kind = /^(.*?) \((HTTP|SSE)\)$/.exec(m[2]!.trim());
     const status = /connected/i.test(detail) && !/fail|not/i.test(detail) ? 'ok' : /auth/i.test(detail) ? 'auth' : /fail|error/i.test(detail) ? 'fail' : 'unknown';
-    list.push({ name: m[1]!, target: m[2]!.trim(), status, detail: detail.replace(/^[✔✓✗✘!⚠]\s*/u, '') });
+    list.push({ name: m[1]!, target: kind ? kind[1]!.trim() : m[2]!.trim(), transport: kind ? (kind[2] === 'SSE' ? 'sse' : 'http') : 'stdio', status, detail: detail.replace(/^[✔✓✗✘!⚠]\s*/u, '') });
   }
   return list;
 }
 
+export const ALIAS_MAX = 40;
+
 export class McpStore {
-  constructor(private bin: string, private dirs: () => string[]) {}
+  private aliases: Record<string, string> = {};
+
+  /** `namesFile`: onde os nomes de exibição ficam (ausente = só em memória). */
+  constructor(private bin: string, private dirs: () => string[], private namesFile?: string) {
+    try {
+      const raw = JSON.parse(readFileSync(namesFile ?? '', 'utf8')) as unknown;
+      if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw)) if (typeof v === 'string') this.aliases[k] = v;
+    } catch {
+      // sem arquivo: nenhum nome ainda
+    }
+  }
+
+  private saveAliases(): void {
+    if (!this.namesFile) return;
+    try {
+      mkdirSync(dirname(this.namesFile), { recursive: true });
+      const tmp = `${this.namesFile}.tmp`;
+      writeFileSync(tmp, JSON.stringify(this.aliases, null, 2));
+      renameSync(tmp, this.namesFile);
+    } catch {
+      // segue só em memória até o próximo reinício
+    }
+  }
+
+  /**
+   * Nome de exibição do conector. Só aparece na tela: renomear de verdade (`claude mcp remove` + `add`) apagaria o login
+   * e os cabeçalhos do conector, e os agentes usam o nome técnico nas ferramentas (mcp__<nome>__...).
+   */
+  rename(name: string, alias: string): void {
+    if (!MCP_NAME.test(name)) throw new Error(tr('Nome inválido: use letras, números, ponto, traço ou sublinhado.'));
+    const clean = alias.replace(/\s+/g, ' ').trim();
+    if (clean.length > ALIAS_MAX) throw new Error(tr('Use até {0} caracteres.', [ALIAS_MAX]));
+    if (clean) this.aliases[name] = clean;
+    else delete this.aliases[name];
+    this.saveAliases();
+  }
+
+  /** Pasta onde abrir o Claude Code para entrar num conector (o escopo do usuário vale em qualquer pasta). */
+  loginDir(): string {
+    return existsSync('/workspace') ? '/workspace' : (agentRunAs()?.home ?? homedir());
+  }
 
   /** Os conectores do escopo do usuário ficam no .claude.json; o da conta padrão fica em HOME (sem CLAUDE_CONFIG_DIR). */
   private run(args: string[], dir: string) {
@@ -53,7 +101,7 @@ export class McpStore {
     const dir = this.dirs()[0];
     if (!dir) return [];
     const r = await this.run(['mcp', 'list'], dir);
-    return parseMcpList(r.out);
+    return parseMcpList(r.out).map((s) => (this.aliases[s.name] ? { ...s, alias: this.aliases[s.name] } : s));
   }
 
   async add(name: string, transport: string, target: string): Promise<void> {
@@ -80,5 +128,9 @@ export class McpStore {
   async remove(name: string): Promise<void> {
     if (!MCP_NAME.test(name)) throw new Error(tr('Nome inválido: use letras, números, ponto, traço ou sublinhado.'));
     for (const dir of this.dirs()) await this.run(['mcp', 'remove', '--scope', 'user', name], dir);
+    if (this.aliases[name]) {
+      delete this.aliases[name];
+      this.saveAliases();
+    }
   }
 }

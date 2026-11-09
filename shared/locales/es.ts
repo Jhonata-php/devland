@@ -3884,7 +3884,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Tarefas e projetos do Linear": "Tareas y proyectos de Linear",
   "Tente de novo.": "Inténtalo de nuevo.",
   "Volte aqui: a conexão termina sozinha.": "Vuelve aquí: la conexión termina sola.",
-  "\"Precisa entrar\": abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.": "\"Requiere iniciar sesión\": abre una conversación con un agente y pídele que ejecute /mcp, o inicia sesión desde la terminal de Claude Code; el inicio queda guardado en la cuenta.",
   "{0} conectado": "{0} conectado",
 
   // IA local como conta de agentes e catálogo novo
@@ -4003,4 +4002,16 @@ export const ES: Readonly<Record<string, string>> = {
   "{0} instalado. Sessões novas já vêm com ele.": "{0} instalado. Las sesiones nuevas ya vienen con él.",
   "{0} removido. Sessões novas já vêm sem ele.": "{0} eliminado. Las sesiones nuevas vienen sin él.",
   "Cole o comando, o JSON, o endereço ou o nome (ex.: notion)": "Pega el comando, el JSON, la dirección o el nombre (ej.: notion)",
+  "Abre o Claude Code já no menu de conectores": "Abre Claude Code ya en el menú de conectores",
+  "Confere a conexão agora": "Comprueba la conexión ahora",
+  "Renomear": "Renombrar",
+  "Nome do conector": "Nombre del conector",
+  "Só o nome aqui na tela; os agentes continuam usando \"{0}\".": "Solo el nombre en esta pantalla; los agentes siguen usando \"{0}\".",
+  "Falta entrar na conta do serviço. Clique em Entrar para abrir o terminal já no menu de conectores.": "Falta entrar en la cuenta del servicio. Haz clic en Entrar para abrir la terminal en el menú de conectores.",
+  "Falta entrar na conta do serviço: abra uma conversa com um agente e peça para rodar /mcp, ou entre pelo terminal do Claude Code; o login fica salvo na conta.": "Falta entrar en la cuenta del servicio: abre una conversación con un agente y pídele que ejecute /mcp, o entra desde la terminal de Claude Code; el login queda guardado en la cuenta.",
+  "Terminal aberto. No menu, escolha {0}, depois \"Authenticate\", abra o link e autorize. Esta tela confere sozinha.": "Terminal abierta. En el menú, elige {0}, luego \"Authenticate\", abre el enlace y autoriza. Esta pantalla lo comprueba sola.",
+  "Não conectou: {0}": "No conectó: {0}",
+  "Conectados: {0} de {1}": "Conectados: {0} de {1}",
+  "Precisam entrar: {0}": "Necesitan entrar: {0}",
+  "Use até {0} caracteres.": "Usa hasta {0} caracteres.",
 };

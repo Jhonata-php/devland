@@ -11,7 +11,7 @@ import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setHidden, setText } from './dom';
 import { ICONS } from './icons';
 import { maximizeButton, Movable } from './movable';
-import { closePty, createPty, stopAgent, takeoverAgent } from './ptyapi';
+import { closePty, createPty, sendPtyInput, stopAgent, takeoverAgent } from './ptyapi';
 import type { PtyPane } from './ptypane';
 import { TermActions } from './termactions';
 import { TermTabs } from './termtabs';
@@ -146,9 +146,13 @@ export class PtyPanel implements UiComponent, PtyControl {
     if (p) this.show(p, true);
   }
 
-  async newSession(cwd: string, account?: string): Promise<void> {
+  /** `firstInput`: texto digitado assim que o Claude Code abre (ex.: "/mcp\r" para cair no menu de conectores). */
+  async newSession(cwd: string, account?: string, firstInput?: string): Promise<void> {
     const p = await createPty(cwd, account);
-    if (p) this.show(p, true);
+    if (!p) return;
+    this.show(p, true);
+    // O Claude Code leva um instante para ler o teclado; o que chega antes fica na fila do terminal.
+    if (firstInput) setTimeout(() => void sendPtyInput(p.id, firstInput).catch(() => undefined), 3000);
   }
 
   async stop(agentId: string): Promise<void> {
