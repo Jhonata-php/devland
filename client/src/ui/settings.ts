@@ -102,6 +102,12 @@ export class SettingsPopover implements UiComponent {
   private profileRow: HTMLElement;
   private profileText: HTMLElement;
   private emailBtn: HTMLButtonElement;
+  // Verificação em duas etapas (Cloud): linha com o estado e o painel de ativação (segredo, link e código).
+  private totpRow!: HTMLElement;
+  private totpHint!: HTMLElement;
+  private totpBtn!: HTMLButtonElement;
+  private totpPanel!: HTMLElement;
+  private totpOn = false;
   private accountsRow: HTMLElement;
   private meLoaded = false;
   private about: AboutGroup;
@@ -205,6 +211,18 @@ export class SettingsPopover implements UiComponent {
           (this.profileText = h('span', { class: 'ui-set__hint', text: '…' })),
         ),
         (this.emailBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Definir e-mail de entrada'), hidden: true, on: { click: () => void this.setEmail() } })),
+      )),
+      (this.totpRow = h(
+        'div',
+        { class: 'ui-set ui-set--totp', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Verificação em duas etapas') }),
+          (this.totpHint = h('span', { class: 'ui-set__hint', text: tr('Pede um código do app autenticador depois da senha.') })),
+          (this.totpPanel = h('div', { class: 'ui-totp', hidden: true })),
+        ),
+        (this.totpBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Ativar'), on: { click: () => void this.toggleTotp() } })),
       )),
       (this.accountsRow = h(
         'div',
@@ -345,6 +363,7 @@ export class SettingsPopover implements UiComponent {
     setHidden(this.remoteGroup, !access().remote);
     setHidden(this.usersRow, !access().admin);
     setHidden(this.profileRow, !access().cloud);
+    setHidden(this.totpRow, !access().cloud);
     setHidden(this.accountsRow, !access().cloud);
     if (access().cloud && !this.meLoaded) void this.loadMe();
     this.about.render();
@@ -367,12 +386,79 @@ export class SettingsPopover implements UiComponent {
     try {
       const res = await fetch('/api/cloud/me', { credentials: 'same-origin' });
       if (!res.ok) throw new Error();
-      const me = (await res.json()) as { name?: string; email?: string | null; role?: string };
+      const me = (await res.json()) as { name?: string; email?: string | null; role?: string; totp?: boolean };
+      this.syncTotp(!!me.totp);
       setText(this.profileText, `${me.name ?? ''} · ${me.role === 'admin' ? tr('Admin') : tr('Usuário')}${me.email ? ` · ${me.email}` : ''}`);
       setHidden(this.emailBtn, !!me.email);
     } catch {
       this.meLoaded = false;
       setText(this.profileText, tr('Não deu para ler o perfil.'));
+    }
+  }
+
+  private syncTotp(on: boolean): void {
+    this.totpOn = on;
+    setText(this.totpHint, on ? tr('Ligada: o login pede o código do app autenticador.') : tr('Pede um código do app autenticador depois da senha.'));
+    setText(this.totpBtn, on ? tr('Desativar') : tr('Ativar'));
+    setHidden(this.totpBtn, false);
+  }
+
+  private async cloudPost<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+    if (!res.ok) throw new Error(data.error ?? tr('Não deu certo.'));
+    return data;
+  }
+
+  /** Ativar: segredo novo, link para o app de senhas e confirmação com um código; desativar pede um código. */
+  private async toggleTotp(): Promise<void> {
+    if (this.totpOn) {
+      const code = window.prompt(tr('Código do app autenticador (ou um código de reserva) para desativar:'))?.trim();
+      if (!code) return;
+      try {
+        await this.cloudPost('/api/cloud/totp/disable', { code });
+        this.syncTotp(false);
+      } catch (err) {
+        setText(this.totpHint, (err as Error).message);
+      }
+      return;
+    }
+    try {
+      const { secret, uri } = await this.cloudPost<{ secret: string; uri: string }>('/api/cloud/totp/start', {});
+      const input = h('input', { class: 'ui-rename__input', type: 'text', attrs: { inputmode: 'numeric', autocomplete: 'one-time-code', placeholder: '123456', maxlength: '6', 'aria-label': tr('Código de verificação') } });
+      const msg = h('p', { class: 'ui-set__hint' });
+      const confirm = h('button', {
+        class: 'ui-btn',
+        type: 'button',
+        text: tr('Confirmar'),
+        on: {
+          click: async () => {
+            try {
+              const { backupCodes } = await this.cloudPost<{ backupCodes: string[] }>('/api/cloud/totp/enable', { code: input.value });
+              this.syncTotp(true);
+              this.totpPanel.replaceChildren(
+                h('p', { class: 'ui-set__hint', text: tr('Ligada. Guarde estes códigos de reserva (cada um vale uma vez, se você perder o celular):') }),
+                h('pre', { class: 'ui-totp__codes', text: backupCodes.join('\n') }),
+              );
+            } catch (err) {
+              setText(msg, (err as Error).message);
+            }
+          },
+        },
+      });
+      this.totpPanel.replaceChildren(
+        h('p', { class: 'ui-set__hint', text: tr('1. Adicione no app autenticador (no iPhone, o link abre o app Senhas) ou digite a chave:') }),
+        h('a', { class: 'ui-totp__link', attrs: { href: uri }, text: tr('Adicionar ao app autenticador') }),
+        h('code', { class: 'ui-totp__secret', text: secret.replace(/(.{4})/g, '$1 ').trim() }),
+        h('p', { class: 'ui-set__hint', text: tr('2. Digite o código de 6 dígitos que o app mostra:') }),
+        h('div', { class: 'ui-totp__row' }, input, confirm),
+        msg,
+      );
+      setHidden(this.totpPanel, false);
+      // Durante a ativação o botão some (o "Confirmar" do painel é que conclui).
+      setHidden(this.totpBtn, true);
+    } catch (err) {
+      setText(this.totpHint, (err as Error).message);
     }
   }
 

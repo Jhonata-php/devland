@@ -552,6 +552,8 @@ export function createCloud(deps: CloudDeps): Cloud {
       return (await store.verify(name, password))?.id;
     },
     needsSetup: () => store.isEmpty(),
+    needsCode: (id) => store.needsSecondFactor(id),
+    checkCode: (id, code) => store.checkSecondFactor(id, code),
     forgotEnabled: () => !!deps.mailer,
     publicRoute(req, res, url) {
       const path = url.pathname;
@@ -749,12 +751,37 @@ export function createCloud(deps: CloudDeps): Cloud {
     }
     if (path === '/api/cloud/me') {
       req.resume();
-      sendJson(res, 200, { id: me.id, name: me.name, email: me.email ?? null, role: me.role, allow: [...allowedOf(me)] });
+      sendJson(res, 200, { id: me.id, name: me.name, email: me.email ?? null, role: me.role, allow: [...allowedOf(me)], totp: !!me.totpEnabled });
       return true;
     }
     if (path === '/api/cloud/email' && method === 'POST') {
       json(req)
         .then((body) => sendJson(res, 200, { ok: true, email: store.setEmail(me.id, str(body.email)).email }))
+        .catch((err) => fail(res, err));
+      return true;
+    }
+    // Verificação em duas etapas da própria conta: começar (segredo novo), confirmar com um código e desligar.
+    if (path === '/api/cloud/totp/start' && method === 'POST') {
+      req.resume();
+      try {
+        sendJson(res, 200, store.startTotp(me.id));
+      } catch (err) {
+        fail(res, err);
+      }
+      return true;
+    }
+    if (path === '/api/cloud/totp/enable' && method === 'POST') {
+      json(req)
+        .then((body) => sendJson(res, 200, { ok: true, backupCodes: store.enableTotp(me.id, str(body.code)) }))
+        .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/cloud/totp/disable' && method === 'POST') {
+      json(req)
+        .then((body) => {
+          store.disableTotp(me.id, str(body.code));
+          sendJson(res, 200, { ok: true });
+        })
         .catch((err) => fail(res, err));
       return true;
     }

@@ -453,6 +453,8 @@ export function loginPage(opts: { caDownload: boolean; intro?: string; forgot?: 
   <label class="l" for="p">${esc(tr('Senha'))}</label>
   <div class="field">${ICON.lock}<input id="p" name="password" type="password" autocomplete="current-password" required>
     <button id="eye" class="eye" type="button" aria-label="${esc(tr('Mostrar a senha'))}" aria-pressed="false">${ICON.eye}</button></div>
+  <div id="cw" hidden><label class="l" for="c">${esc(tr('Código de verificação'))}</label>
+  <div class="field">${ICON.lock}<input id="c" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" maxlength="9"></div></div>
   <button id="b" class="btn" type="submit"><span class="spin" aria-hidden="true"></span><span id="bt">${esc(tr('Entrar'))}</span></button>
 </form>
 ${opts.forgot ? `<p class="help"><a href="/esqueci">${esc(tr('Esqueci a senha'))}</a></p>` : ''}
@@ -473,9 +475,10 @@ ${ca}`;
       b.disabled = true; b.classList.add('busy'); err.className = 'alert err';
       try {
         var r = await fetch('/api/remote/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value }) });
+          credentials: 'same-origin', body: JSON.stringify({ user: f.username.value, password: f.password.value, code: f.code.value }) });
         if (r.ok) { location.replace('/'); return; }
         var body = await r.json().catch(function () { return {}; });
+        if (body.needCode) { var cw = document.getElementById('cw'); var first = cw.hidden; cw.hidden = false; f.code.focus(); if (first && !f.code.value) { err.className = 'alert err'; b.disabled = false; b.classList.remove('busy'); return; } }
         fail(body.error || ${js(tr('Não deu para entrar.'))});
       } catch (x) { fail(${js(tr('Sem conexão com o DevLand.'))}); }
       b.disabled = false; b.classList.remove('busy');
@@ -507,6 +510,9 @@ export interface CloudGate {
   login(name: string, password: string): Promise<string | undefined>;
   /** Ainda sem nenhum usuário: a entrada é a tela de criar o admin. */
   needsSetup(): boolean;
+  /** Verificação em duas etapas: o usuário precisa do código do app (ou de reserva) depois da senha. */
+  needsCode?(id: string): boolean;
+  checkCode?(id: string, code: string): boolean;
   /** O "esqueci a senha" por e-mail está ligado (SMTP configurado). */
   forgotEnabled?(): boolean;
   /** Rotas sem login (criar admin, aceitar convite); true quando já respondeu. */
@@ -575,7 +581,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
         .then(async (raw) => {
           if (!throttle.begin()) return tooMany();
           begun = true;
-          let body: { user?: unknown; password?: unknown } = {};
+          let body: { user?: unknown; password?: unknown; code?: unknown } = {};
           try {
             body = JSON.parse(raw) as typeof body;
           } catch {
@@ -586,7 +592,13 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
           let who: string | undefined;
           if (cloud) {
             who = await cloud.login(user, password);
-            if (who === undefined) return sendJson(res, 401, { error: tr('Usuário ou senha incorretos.') });
+            if (who === undefined) return sendJson(res, 401, { error: tr('E-mail ou senha incorretos.') });
+            // Duas etapas: com a senha certa, pede o código; código errado conta como tentativa errada no freio.
+            if (cloud.needsCode?.(who)) {
+              const code = typeof body.code === 'string' ? body.code.trim() : '';
+              if (!code) return sendJson(res, 401, { error: tr('Digite o código do app autenticador.'), needCode: true });
+              if (!cloud.checkCode?.(who, code)) return sendJson(res, 401, { error: tr('Código inválido.'), needCode: true });
+            }
           } else {
             // O scrypt roda sempre (sem atalho que denuncie se foi o usuário ou a senha que errou).
             const okPassword = !!deps.config?.passwordHash && (await verify(password, deps.config.passwordHash));

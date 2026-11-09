@@ -3,6 +3,7 @@
 // Senha só como hash scrypt (remote/password.ts). Convite: token aleatório entregue uma vez ao admin; o arquivo guarda
 // só o SHA-256 dele. `epoch` entra na chave das sessões do usuário (http/remote.ts): somar 1 derruba todas.
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { newBackupCodes, newSecret, otpauthUri, verifyTotp } from './totp';
 import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { RemoteFeature } from '../http/remote';
@@ -29,6 +30,13 @@ export interface User {
   allow: RemoteFeature[];
   epoch: number;
   createdAt: number;
+  /** Verificação em duas etapas (cloud/totp.ts): segredo em base32, ligado só depois de confirmado com um código. */
+  totpSecret?: string;
+  totpEnabled?: boolean;
+  /** Segredo gerado e ainda não confirmado (ativação em andamento). */
+  totpPending?: string;
+  /** SHA-256 dos códigos de reserva ainda não usados. */
+  backupHashes?: string[];
 }
 
 export interface Invite {
@@ -141,6 +149,58 @@ export class UserStore {
   }
 
   /** Define (ou troca) o e-mail de entrada de um usuário. */
+  /** Começa a ativar a verificação em duas etapas: segredo novo, ainda desligado até confirmar com um código. */
+  startTotp(id: string): { secret: string; uri: string } {
+    const user = this.get(id);
+    if (!user) throw new UserError(tr('Usuário não encontrado.'));
+    const secret = newSecret();
+    user.totpPending = secret;
+    this.save();
+    return { secret, uri: otpauthUri(secret, user.email ?? user.name) };
+  }
+
+  /** Confirma a ativação com um código do app; devolve os códigos de reserva (mostrados uma vez só). */
+  enableTotp(id: string, code: string): string[] {
+    const user = this.get(id);
+    if (!user?.totpPending) throw new UserError(tr('Comece a ativação de novo.'));
+    if (!verifyTotp(user.totpPending, code)) throw new UserError(tr('Código inválido: confira o horário do celular e tente o código novo.'));
+    const backup = newBackupCodes();
+    user.totpSecret = user.totpPending;
+    user.totpEnabled = true;
+    delete user.totpPending;
+    user.backupHashes = backup.map((c) => sha256(c));
+    this.save();
+    return backup;
+  }
+
+  /** Desliga a verificação em duas etapas (pede um código válido, do app ou de reserva). */
+  disableTotp(id: string, code: string): void {
+    const user = this.get(id);
+    if (!user?.totpEnabled) return;
+    if (!this.checkSecondFactor(id, code)) throw new UserError(tr('Código inválido.'));
+    delete user.totpSecret;
+    delete user.totpEnabled;
+    delete user.backupHashes;
+    this.save();
+  }
+
+  needsSecondFactor(id: string): boolean {
+    return !!this.get(id)?.totpEnabled;
+  }
+
+  /** Código do app (TOTP) ou um código de reserva, que deixa de valer ao ser usado. */
+  checkSecondFactor(id: string, code: string): boolean {
+    const user = this.get(id);
+    if (!user?.totpEnabled || !user.totpSecret) return false;
+    if (verifyTotp(user.totpSecret, code)) return true;
+    const h = sha256(code.trim().toLowerCase());
+    const i = user.backupHashes?.indexOf(h) ?? -1;
+    if (i < 0) return false;
+    user.backupHashes!.splice(i, 1);
+    this.save();
+    return true;
+  }
+
   setEmail(id: string, email: string): User {
     const user = this.get(id);
     if (!user) throw new UserError(tr('Usuário não encontrado.'));

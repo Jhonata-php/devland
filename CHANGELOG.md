@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Verificação em duas etapas (Cloud):** em Configurações, "Ativar" mostra a chave e um link que abre o app autenticador (no iPhone, o app Senhas); depois de confirmar com um código, o login pede o código de 6 dígitos após a senha. Vêm 8 códigos de reserva de uso único, para quem perder o celular. Desativar pede um código.
 - **Agentes agendados:** no Novo agente, "Repetir em dias e horário" agenda o pedido (ex.: revisar os PRs de segunda a sexta às 9h, no seu fuso); o agente abre sozinho na hora, pelo mesmo caminho do Novo agente. Os agendados aparecem embaixo, com Pausar e Apagar.
 - **Ditado pelo servidor no Cloud:** com `OPENAI_API_KEY` definida, o áudio gravado no celular é transcrito pela API da OpenAI (Whisper), no lugar do reconhecimento de voz do iPhone, que trava no app da tela de início. O log de início diz qual motor de ditado está ligado.
 - **Responder pela notificação:** no Android e no computador, a notificação de pedido de permissão traz Permitir e Negar, que respondem ali mesmo; no iPhone (que não mostra botões), tocar abre o DevLand já no agente. No Cloud, com um celular inscrito nas notificações, o pedido espera a resposta mesmo com o app fechado.
