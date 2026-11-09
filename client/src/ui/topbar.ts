@@ -53,6 +53,10 @@ export class TopBar implements UiComponent {
   readonly worldBtn: HTMLButtonElement;
   private readonly spawnBtn: HTMLButtonElement;
   /** Abre/fecha o painel de Novo agente (a barra inferior do celular usa). */
+  /** Novo agente disponível agora (o botão aparece). */
+  get canSpawn(): boolean {
+    return !this.spawnBtn.hidden;
+  }
   toggleSpawn(): void {
     this.spawnPanel.toggle(this.spawnBtn);
   }

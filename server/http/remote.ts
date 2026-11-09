@@ -513,8 +513,6 @@ export interface CloudGate {
   /** Verificação em duas etapas: o usuário precisa do código do app (ou de reserva) depois da senha. */
   needsCode?(id: string): boolean;
   checkCode?(id: string, code: string): boolean;
-  /** O "esqueci a senha" por e-mail está ligado (SMTP configurado). */
-  forgotEnabled?(): boolean;
   /** Rotas sem login (criar admin, aceitar convite); true quando já respondeu. */
   publicRoute(req: IncomingMessage, res: ServerResponse, url: URL): boolean;
 }
@@ -654,7 +652,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
       if (go) {
         res.writeHead(302, { Location: go, 'Cache-Control': 'no-store' });
         res.end();
-      } else sendHtml(res, loginPage({ caDownload: caAvailable(), forgot: !!cloud?.forgotEnabled?.(), intro: cloud ? tr('Entre com o seu e-mail e a senha do DevLand.') : undefined }));
+      } else sendHtml(res, loginPage({ caDownload: caAvailable(), forgot: !!cloud, intro: cloud ? tr('Entre com o seu e-mail e a senha do DevLand.') : undefined }));
       return true;
     }
 

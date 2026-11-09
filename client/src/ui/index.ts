@@ -8,6 +8,7 @@ import '@fontsource/pixelify-sans/500.css';
 import '@fontsource/pixelify-sans/600.css';
 import '@fontsource/pixelify-sans/700.css';
 import './styles.css';
+import './dashboard.css';
 
 import type { OfficeStore } from '../net/store';
 import type { Selection, WorldApi } from '../world/api';
@@ -43,6 +44,7 @@ import { UpdateToaster } from './version';
 import { TopBar } from './topbar';
 import { BottomNav } from './bottomnav';
 import { ChatsView } from './chats';
+import { Dashboard } from './dashboard';
 import { UpdateBanner } from './update';
 import { WorldChip } from './world/world-chip';
 import { WorldDialog } from './world/world-dialog';
@@ -327,13 +329,40 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     },
   };
   const bottomNav = new BottomNav(ctx, () => topbar.toggleSpawn(), chats);
+  // Modo Painel (sem o mapa): o mesmo DevLand como plataforma de gestão. prefs.view lembra a escolha.
+  const dashboard = new Dashboard(ctx, {
+    openChat: (id) => chats.openChat(id),
+    openChats: () => chats.toggle(),
+    newAgent: () => topbar.toggleSpawn(),
+    canSpawn: () => topbar.canSpawn,
+    openOffice: () => setView('office'),
+    openSettings: () => ctx.toggleSettings(),
+    openPlugins: () => openPlugins(ctx.root),
+    openCloud: (kind) => openCloudPanel(ctx.root, kind),
+  });
+  const setView = (view: 'office' | 'panel') => {
+    if (view !== prefs.view) ctx.updatePrefs({ view });
+    const panel = view === 'panel';
+    document.documentElement.classList.toggle('is-panel', panel);
+    world.setSuspended?.(panel);
+    dashboard.show(panel);
+    if (panel) {
+      if (scene?.inCity) scene.close();
+      ctx.select(null);
+    }
+    invalidate();
+  };
+  ctx.setView = setView;
+  const panelBtn = iconButton(ICONS.overview, tr('Modo painel: o DevLand sem o mapa'), () => setView('panel'), 'ui-btn-panel');
+  panelBtn.setAttribute('data-label', tr('Painel'));
+  topbar.panelGroup.prepend(panelBtn);
   const tip = new HoverTip(ctx);
   const splash = new Splash(ctx);
   timelapse = new TimelapsePlayer(ctx);
   const scrim = h('div', { class: 'ui-scrim', attrs: { 'aria-hidden': 'true' }, on: { click: () => ctx.togglePanel('sidebar', false) } });
 
   root.classList.add('ui-root');
-  root.append(timelapse.vignette, topbar.el, chats.el, bottomNav.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, worldDialog.el, history.el, deliveries.el, previewPanel.el, help.el, renamer.el, live, splash.el);
+  root.append(dashboard.el, timelapse.vignette, topbar.el, chats.el, bottomNav.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, worldDialog.el, history.el, deliveries.el, previewPanel.el, help.el, renamer.el, live, splash.el);
   area = new FreeArea(world, { root, topbar: topbar.el, sidebar: sidebar.el, drawer: drawer.el, feed: feed.el }, () => ({
     sidebar: panels.sidebar,
     feed: panels.feed,
@@ -355,7 +384,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     setTimeout(() => settings.toggle(topbar.settingsBtn), 0);
   }
 
-  const components: UiComponent[] = [topbar, bottomNav, chats, chatsBtnSync, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, worldChip];
+  const components: UiComponent[] = [dashboard, topbar, bottomNav, chats, chatsBtnSync, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, worldChip];
   if (scene) components.push(scene);
   root.append(worldSocial.el);
   components.push(worldSocial);
@@ -541,5 +570,6 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   // ---------------------------------------------------------------- início
   world.setOptions(worldOptionsFrom(prefs));
   applyLayout();
+  if (prefs.view === 'panel') setView('panel');
   renderAll();
 }

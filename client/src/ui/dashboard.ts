@@ -1,0 +1,352 @@
+// Modo Painel: o DevLand sem o mapa. Uma plataforma limpa (inspirada no Conductor) com visão geral, agentes, contas e
+// pessoas. Usa os mesmos dados (snapshot) e as mesmas janelas do modo Escritório: conversa, Novo agente, Configurações,
+// Plugins e conectar contas. A troca fica em prefs.view (ui/index.ts liga e desliga).
+import { access } from '../net/access';
+import type { AccountInfo, AgentInfo } from '../../../shared/types';
+import { tr } from '../../../shared/i18n';
+import { BRAND } from '../../../shared/brand';
+import type { UiComponent, UiContext } from './context';
+import { h } from './dom';
+import { ICONS } from './icons';
+import { createAvatar } from './avatar';
+import { clampPercent, formatResetAt, formatTokens, prettyModel, relativeTime, usageLevel } from './format';
+import { activityFallback, isPresent, statusLabel } from './model';
+
+export type DashPage = 'home' | 'agents' | 'accounts' | 'people';
+
+export interface DashActions {
+  openChat(agentId: string): void;
+  openChats(): void;
+  newAgent(): void;
+  canSpawn(): boolean;
+  openOffice(): void;
+  openSettings(): void;
+  openPlugins(): void;
+  /** Janelas do Cloud: conectar contas ou permissões detalhadas das pessoas. */
+  openCloud(kind: 'contas' | 'usuarios'): void;
+}
+
+interface CloudUser { id: string; name: string; email?: string; role: 'admin' | 'user'; createdAt: number; totpEnabled?: boolean }
+
+const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => string }[] = [
+  { id: 'home', icon: ICONS.overview, label: () => tr('Visão geral'), short: () => tr('Início') },
+  { id: 'agents', icon: ICONS.newAgent, label: () => tr('Agentes') },
+  { id: 'accounts', icon: ICONS.lock, label: () => tr('Contas') },
+  { id: 'people', icon: ICONS.hand, label: () => tr('Pessoas') },
+];
+
+const LOGO = {
+  claude: '<svg viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round">' +
+    [0, 30, 60, 90, 120, 150].map((d) => `<line x1="12" y1="3.5" x2="12" y2="20.5" transform="rotate(${d} 12 12)"/>`).join('') + '</g></svg>',
+  codex: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7l5 5-5 5M12 18h7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+
+/** Ícone em pixel (svg) dentro de um <i>. */
+function icon(svg: string): HTMLElement {
+  const i = h('i', { attrs: { 'aria-hidden': 'true' } });
+  i.innerHTML = svg;
+  return i;
+}
+
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('') || '?';
+
+export class Dashboard implements UiComponent {
+  readonly el: HTMLElement;
+  private page: DashPage = 'home';
+  private readonly main: HTMLElement;
+  private readonly nav: HTMLElement;
+  private readonly tabs: HTMLElement;
+  private lastKey = '';
+  private shown: DashPage | null = null;
+  private readonly pluginsBtn: HTMLButtonElement;
+  private people: { users: CloudUser[]; me: string } | null = null;
+  private peopleErr = '';
+  private me: { name: string; email: string | null; role: string } | null = null;
+
+  constructor(private ctx: UiContext, private act: DashActions) {
+    const brand = h('div', { class: 'dash-brand' },
+      h('img', { attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: '', width: 30, height: 30 } }),
+      h('span', { text: BRAND }));
+    this.nav = h('nav', { class: 'dash-nav', attrs: { 'aria-label': tr('Seções') } });
+    const office = h('button', { class: 'dash-office', type: 'button', on: { click: () => act.openOffice() } },
+      h('span', { class: 'dash-office__art', attrs: { 'aria-hidden': 'true' } }),
+      h('span', { class: 'dash-office__txt' }, h('b', { text: tr('Escritório') }), h('small', { text: tr('Ver os agentes no mapa em pixel art') })));
+    this.pluginsBtn = this.toolBtn(ICONS.plugin, tr('Plugins'), () => act.openPlugins());
+    const tools = h('div', { class: 'dash-tools' },
+      this.toolBtn(ICONS.feed, tr('Conversas'), () => act.openChats()),
+      this.pluginsBtn,
+      this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
+    this.main = h('main', { class: 'dash-main' });
+    this.tabs = h('nav', { class: 'dash-tabs', attrs: { 'aria-label': tr('Seções') } });
+    this.el = h('div', { class: 'dash', hidden: true },
+      h('aside', { class: 'dash-side' }, brand, this.nav, h('div', { class: 'dash-grow' }), tools, office),
+      this.main, this.tabs);
+  }
+
+  private toolBtn(svg: string, label: string, fn: () => void, cls = ''): HTMLButtonElement {
+    return h('button', { class: `dash-tool ${cls}`.trim(), type: 'button', on: { click: fn } }, icon(svg), h('span', { text: label }));
+  }
+
+  show(on: boolean): void {
+    this.el.hidden = !on;
+    this.lastKey = '';
+    this.shown = null;
+    if (on && access().cloud && !this.me) void this.loadMe();
+  }
+
+  go(page: DashPage): void {
+    this.page = page;
+    this.lastKey = '';
+    if (page === 'people') void this.loadPeople();
+    this.main.scrollTop = 0;
+    this.ctx.invalidate();
+  }
+
+  render(): void {
+    if (this.el.hidden) return;
+    const snap = this.ctx.store.snapshot;
+    const minute = Math.floor(this.ctx.now() / 30_000);
+    // Pessoas não depende do snapshot: redesenhar apagaria o que se digita no convite.
+    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}`;
+    if (key === this.lastKey) return;
+    this.lastKey = key;
+    this.pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
+    this.renderNav();
+    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.homePage();
+    // A animação de entrada só na troca de página (não a cada snapshot).
+    if (this.page !== this.shown) page.classList.add('is-enter');
+    this.shown = this.page;
+    this.main.replaceChildren(page);
+  }
+
+  private renderNav(): void {
+    const waiting = this.agents().filter((a) => a.status === 'waiting').length;
+    const make = (cls: string) => PAGES.map((p) => {
+      return h('button', { class: `${cls}${p.id === this.page ? ' is-on' : ''}`, type: 'button', attrs: { 'aria-current': p.id === this.page ? 'page' : undefined }, on: { click: () => this.go(p.id) } },
+        icon(p.icon), h('span', { text: cls === 'dash-tab' && p.short ? p.short() : p.label() }), p.id === 'agents' && waiting ? h('em', { text: String(waiting) }) : null);
+    });
+    const user = this.me ? h('div', { class: 'dash-me' }, h('span', { class: 'dash-av', text: initials(this.me.name) }), h('span', { class: 'dash-me__txt' }, h('b', { text: this.me.name }), h('small', { text: this.me.email ?? (this.me.role === 'admin' ? tr('Admin') : tr('Usuário')) })),
+      h('button', { class: 'dash-link', type: 'button', text: tr('Sair'), on: { click: () => void this.logout() } })) : null;
+    this.nav.replaceChildren(...make('dash-nav__item'), user ?? '');
+    const office = h('button', { class: 'dash-tab', type: 'button', on: { click: () => this.act.openOffice() } }, icon(ICONS.office), h('span', { text: tr('Escritório') }));
+    this.tabs.replaceChildren(...make('dash-tab'), office);
+  }
+
+  private agents(): AgentInfo[] {
+    return (this.ctx.store.snapshot?.agents ?? []).filter((a) => a.kind === 'main' && isPresent(a));
+  }
+
+  private header(title: string, sub: string, ...right: (HTMLElement | null)[]): HTMLElement {
+    const mtools = h('div', { class: 'dash-mtools' },
+      h('img', { attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
+      h('span', { class: 'dash-grow' }),
+      this.toolBtn(ICONS.feed, tr('Conversas'), () => this.act.openChats()),
+      this.toolBtn(ICONS.settings, tr('Configurações'), () => this.act.openSettings()));
+    return h('header', { class: 'dash-head' }, mtools, h('div', {}, h('h1', { text: title }), h('p', { text: sub })), h('div', { class: 'dash-head__act' }, ...right));
+  }
+
+  private newBtn(): HTMLElement | null {
+    if (!this.act.canSpawn()) return null;
+    return h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('+ Novo agente'), on: { click: () => this.act.newAgent() } });
+  }
+
+  // ------------------------------------------------------------------ páginas
+  private homePage(): HTMLElement {
+    const snap = this.ctx.store.snapshot;
+    const agents = this.agents();
+    const now = this.ctx.now();
+    const working = agents.filter((a) => a.status === 'working' || a.status === 'shell').length;
+    const waiting = agents.filter((a) => a.status === 'waiting');
+    const tokens = agents.reduce((n, a) => n + a.stats.tokensIn + a.stats.tokensOut, 0);
+    const lines = agents.reduce((n, a) => n + (a.stats.linesAdded ?? 0), 0);
+    const hour = new Date().getHours();
+    const hello = hour < 12 ? tr('Bom dia') : hour < 18 ? tr('Boa tarde') : tr('Boa noite');
+    const name = this.me?.name ? `, ${this.me.name.split(' ')[0]}` : '';
+    const stat = (label: string, value: string, hint: string, tone = '') => h('div', { class: `dash-stat ${tone}` }, h('span', { text: label }), h('b', { text: value }), h('small', { text: hint }));
+    const accounts = snap?.accounts ?? [];
+    return h('div', { class: 'dash-page' },
+      this.header(`${hello}${name}`, tr('Tudo o que os seus agentes estão fazendo agora.'), this.newBtn()),
+      h('section', { class: 'dash-stats' },
+        stat(tr('Trabalhando'), String(working), agents.length === 1 ? tr('1 agente aberto') : tr('{0} agentes abertos', [agents.length]), working ? 'is-live' : ''),
+        stat(tr('Precisam de você'), String(waiting.length), waiting.length ? tr('Responda para eles seguirem') : tr('Nada pendente'), waiting.length ? 'is-warn' : ''),
+        stat(tr('Tokens das sessões'), formatTokens(tokens), tr('entrada + saída')),
+        stat(tr('Linhas escritas'), lines.toLocaleString(), tr('nas sessões abertas'))),
+      waiting.length ? h('section', { class: 'dash-card dash-attn' }, h('h2', { text: tr('Precisam de você') }), h('div', { class: 'dash-list' }, ...waiting.map((a) => this.agentRow(a, now)))) : null,
+      h('div', { class: 'dash-cols' },
+        h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Agentes') }), h('button', { class: 'dash-link', type: 'button', text: tr('Ver todos'), on: { click: () => this.go('agents') } })),
+          agents.length ? h('div', { class: 'dash-list' }, ...agents.slice().sort((a, b) => b.lastEventAt - a.lastEventAt).slice(0, 6).map((a) => this.agentRow(a, now))) : this.emptyAgents()),
+        h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Uso das contas') }), h('button', { class: 'dash-link', type: 'button', text: tr('Gerenciar'), on: { click: () => this.go('accounts') } })),
+          accounts.length ? h('div', { class: 'dash-usage-list' }, ...accounts.map((a) => this.usageMini(a, now))) : h('p', { class: 'dash-muted', text: tr('Nenhuma conta encontrada ainda.') }))));
+  }
+
+  private agentsPage(): HTMLElement {
+    const snap = this.ctx.store.snapshot;
+    const now = this.ctx.now();
+    const agents = this.agents();
+    const groups = (snap?.rooms ?? []).map((r) => ({ room: r, list: agents.filter((a) => a.roomId === r.id) })).filter((g) => g.list.length);
+    return h('div', { class: 'dash-page' },
+      this.header(tr('Agentes'), agents.length === 1 ? tr('1 sessão aberta, agrupada por projeto.') : tr('{0} sessões abertas, agrupadas por projeto.', [agents.length]),
+        h('button', { class: 'dash-btn', type: 'button', text: tr('Conversas'), on: { click: () => this.act.openChats() } }), this.newBtn()),
+      groups.length ? h('div', { class: 'dash-groups' }, ...groups.map((g) => h('section', { class: 'dash-card' },
+        h('div', { class: 'dash-card__head' }, h('h2', {}, h('span', { class: 'dash-folder', text: '▸' }), g.room.name), h('small', { class: 'dash-muted', text: g.room.path })),
+        h('div', { class: 'dash-list' }, ...g.list.map((a) => this.agentRow(a, now, true)))))) : h('section', { class: 'dash-card' }, this.emptyAgents()));
+  }
+
+  private accountsPage(): HTMLElement {
+    const snap = this.ctx.store.snapshot;
+    const now = this.ctx.now();
+    const accounts = snap?.accounts ?? [];
+    const agents = this.agents();
+    const connect = access().cloud ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('+ Conectar conta'), on: { click: () => this.act.openCloud('contas') } }) : null;
+    return h('div', { class: 'dash-page' },
+      this.header(tr('Contas'), tr('Claude e Codex conectados neste DevLand e quanto já usaram do plano.'), connect),
+      accounts.length ? h('div', { class: 'dash-grid' }, ...accounts.map((a) => this.accountCard(a, agents.filter((x) => x.account === a.id).length, now)))
+        : h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Nenhuma conta ainda') }), h('p', { text: tr('Entre no Claude Code ou no Codex neste computador, ou conecte uma conta pela web.') }), connect));
+  }
+
+  private peoplePage(): HTMLElement {
+    if (!access().cloud) {
+      return h('div', { class: 'dash-page' }, this.header(tr('Pessoas'), tr('Quem pode entrar neste DevLand.')),
+        h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Só você por aqui') }), h('p', { text: tr('Convites, papéis e permissões existem na instalação com login (DevLand Cloud). Nesta máquina, quem abre a página pelo computador é o dono.') })));
+    }
+    if (!access().admin) {
+      return h('div', { class: 'dash-page' }, this.header(tr('Pessoas'), tr('Quem pode entrar neste DevLand.')),
+        h('section', { class: 'dash-card dash-empty' }, h('h2', { text: tr('Só para admins') }), h('p', { text: tr('Peça a um admin para convidar ou mudar permissões.') })));
+    }
+    const users = this.people?.users ?? [];
+    const form = h('form', { class: 'dash-invite', on: { submit: (e) => { e.preventDefault(); void this.invite(form); } } },
+      h('input', { attrs: { name: 'email', type: 'email', required: true, placeholder: tr('e-mail da pessoa'), autocomplete: 'off' } }),
+      h('input', { attrs: { name: 'name', type: 'text', placeholder: tr('nome (opcional)'), autocomplete: 'off' } }),
+      h('select', { attrs: { name: 'role', 'aria-label': tr('Papel') } }, h('option', { attrs: { value: 'user' }, text: tr('Usuário') }), h('option', { attrs: { value: 'admin' }, text: tr('Admin') })),
+      h('button', { class: 'dash-btn dash-btn--primary', type: 'submit', text: tr('Enviar convite') }),
+      h('p', { class: `dash-form-msg${this.peopleErr.startsWith('✓') ? ' is-ok' : ''}`, text: this.peopleErr.replace(/^✓ /, '') }));
+    return h('div', { class: 'dash-page' },
+      this.header(tr('Pessoas'), users.length === 1 ? tr('Só você por enquanto. Convide por e-mail e escolha o papel.') : tr('{0} pessoas com acesso. Convide por e-mail e escolha o papel.', [users.length]),
+        h('button', { class: 'dash-btn', type: 'button', text: tr('Permissões detalhadas'), on: { click: () => this.act.openCloud('usuarios') } })),
+      h('section', { class: 'dash-card' }, h('h2', { text: tr('Convidar') }), form),
+      h('section', { class: 'dash-card dash-table' },
+        h('div', { class: 'dash-tr dash-tr--head' }, h('span', { text: tr('Pessoa') }), h('span', { text: tr('Papel') }), h('span', { text: tr('Segurança') }), h('span', { text: tr('Desde') }), h('span')),
+        ...users.map((u) => {
+          const self = u.id === this.people?.me;
+          return h('div', { class: 'dash-tr' },
+            h('span', { class: 'dash-person' }, h('span', { class: 'dash-av', text: initials(u.name) }), h('span', {}, h('b', { text: u.name + (self ? ` ${tr('(você)')}` : '') }), h('small', { text: u.email ?? '—' }))),
+            h('span', {}, h('span', { class: `dash-badge${u.role === 'admin' ? ' is-admin' : ''}`, text: u.role === 'admin' ? tr('Admin') : tr('Usuário') })),
+            h('span', { class: 'dash-muted', text: u.totpEnabled ? tr('2 etapas ligada') : tr('Só senha') }),
+            h('span', { class: 'dash-muted', text: new Date(u.createdAt).toLocaleDateString() }),
+            h('span', { class: 'dash-row-act' }, self ? null : h('button', { class: 'dash-link dash-link--bad', type: 'button', text: tr('Remover'), on: { click: () => void this.remove(u) } })));
+        })));
+  }
+
+  // ------------------------------------------------------------------ peças
+  private agentRow(a: AgentInfo, now: number, full = false): HTMLElement {
+    const acc = this.ctx.account(a.account);
+    const st = a.status === 'shell' ? 'working' : a.status;
+    return h('button', { class: 'dash-agent', type: 'button', on: { click: () => this.act.openChat(a.id) } },
+      createAvatar(a, 'sm'),
+      h('span', { class: 'dash-agent__main' },
+        h('span', { class: 'dash-agent__top' }, h('b', { text: a.name }), h('span', { class: `dash-status is-${st}`, text: statusLabel(a.status) })),
+        h('span', { class: 'dash-agent__act', text: a.title || a.activity?.text || activityFallback(a) })),
+      full ? h('span', { class: 'dash-agent__meta' },
+        a.gitBranch ? h('code', { text: a.gitBranch }) : null,
+        a.model ? h('span', { text: prettyModel(a.model) }) : null) : null,
+      h('span', { class: 'dash-agent__side' },
+        acc ? h('span', { class: 'dash-dot', style: `background:${acc.color}`, title: acc.name }) : null,
+        h('small', { text: relativeTime(a.lastEventAt, now) })));
+  }
+
+  private emptyAgents(): HTMLElement {
+    return h('div', { class: 'dash-empty' }, h('h2', { text: tr('Nenhum agente aberto') }), h('p', { text: tr('Abra o Claude Code ou o Codex em qualquer pasta, ou comece um agente por aqui.') }), this.newBtn());
+  }
+
+  private logo(a: AccountInfo, big = false): HTMLElement {
+    const p = a.provider ?? 'claude';
+    const el = icon(LOGO[p]);
+    el.className = `dash-logo is-${p}${big ? ' is-big' : ''}`;
+    return el;
+  }
+
+  private bar(label: string, win: { utilization: number; resetsAt?: number } | undefined, now: number): HTMLElement | null {
+    if (!win) return null;
+    const pct = clampPercent(win.utilization);
+    return h('div', { class: `dash-bar is-${usageLevel(pct)}` },
+      h('div', { class: 'dash-bar__top' }, h('span', { text: label }), h('b', { text: `${Math.round(pct)}%` })),
+      h('div', { class: 'dash-bar__track' }, h('i', { style: `width:${pct}%` })),
+      win.resetsAt ? h('small', { text: tr('renova {0}', [formatResetAt(win.resetsAt, now)]) }) : null);
+  }
+
+  private usageMini(a: AccountInfo, now: number): HTMLElement {
+    const u = a.usage;
+    return h('div', { class: 'dash-usage' }, this.logo(a),
+      h('div', { class: 'dash-usage__main' }, h('b', { text: a.name }),
+        u?.noQuota ? h('small', { class: 'dash-bad', text: tr('Sem cota agora') }) : u ? this.bar(tr('5 horas'), u.fiveHour, now) ?? h('small', { class: 'dash-muted', text: '—' }) : h('small', { class: 'dash-muted', text: tr('Uso ainda desconhecido') })));
+  }
+
+  private accountCard(a: AccountInfo, open: number, now: number): HTMLElement {
+    const u = a.usage;
+    return h('section', { class: 'dash-card dash-account' },
+      h('div', { class: 'dash-account__head' }, this.logo(a, true),
+        h('div', { class: 'dash-account__who' }, h('b', { text: a.name }), h('small', { text: a.email ?? a.organization ?? a.configDir })),
+        a.plan ? h('span', { class: 'dash-badge', text: a.plan }) : null),
+      u?.noQuota ? h('p', { class: 'dash-bad', text: tr('Sem cota nem créditos para usar agora.') }) : null,
+      u ? h('div', { class: 'dash-bars' }, this.bar(tr('Sessão de 5 horas'), u.fiveHour, now), this.bar(tr('Semana'), u.sevenDay, now), this.bar(tr('Semana · Opus'), u.sevenDayOpus, now))
+        : h('p', { class: 'dash-muted', text: tr('O uso aparece quando a conta abre uma sessão com o plugin do DevLand.') }),
+      h('div', { class: 'dash-account__foot' },
+        h('span', { text: open === 1 ? tr('1 sessão aberta') : tr('{0} sessões abertas', [open]) }),
+        h('span', { class: 'dash-muted', text: a.usageStatus === 'stale' ? tr('números antigos') : a.usageStatus === 'ok' ? tr('ao vivo') : tr('sem números') })));
+  }
+
+  // ------------------------------------------------------------------ Cloud
+  private async loadMe(): Promise<void> {
+    try {
+      const r = await fetch('/api/cloud/me', { credentials: 'same-origin' });
+      if (r.ok) this.me = await r.json();
+    } catch { /* fora do Cloud */ }
+    this.lastKey = '';
+    this.ctx.invalidate();
+  }
+
+  private async loadPeople(): Promise<void> {
+    if (!access().cloud || !access().admin) return;
+    try {
+      const r = await fetch('/api/cloud/users', { credentials: 'same-origin' });
+      if (r.ok) this.people = await r.json();
+    } catch { /* tenta de novo ao voltar à página */ }
+    this.lastKey = '';
+    this.ctx.invalidate();
+  }
+
+  private async call(method: string, url: string, body?: unknown): Promise<void> {
+    const r = await fetch(url, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    if (!r.ok) throw new Error(((await r.json().catch(() => ({}))) as { error?: string }).error || tr('Não deu certo.'));
+  }
+
+  private async invite(form: HTMLFormElement): Promise<void> {
+    const f = new FormData(form);
+    const btn = form.querySelector('button')!;
+    btn.disabled = true;
+    try {
+      await this.call('POST', '/api/cloud/invites', { email: f.get('email'), name: f.get('name'), role: f.get('role'), allow: ['permissions'] });
+      this.peopleErr = `✓ ${tr('Convite enviado para {0}.', [String(f.get('email'))])}`;
+    } catch (err) {
+      this.peopleErr = (err as Error).message;
+    }
+    btn.disabled = false;
+    void this.loadPeople();
+  }
+
+  private async remove(u: CloudUser): Promise<void> {
+    if (!confirm(tr('Remover {0}? As sessões dele caem na hora.', [u.name]))) return;
+    try {
+      await this.call('DELETE', `/api/cloud/users/${u.id}`);
+      this.peopleErr = '';
+    } catch (err) {
+      this.peopleErr = (err as Error).message;
+    }
+    void this.loadPeople();
+  }
+
+  private async logout(): Promise<void> {
+    await fetch('/api/remote/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
+    location.replace('/login');
+  }
+}

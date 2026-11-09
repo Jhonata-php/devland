@@ -10,6 +10,11 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Modo Painel:** o DevLand sem o mapa, com cara de plataforma. Tem visão geral (quem está trabalhando, quem precisa de você, tokens e linhas), agentes agrupados por projeto, contas com logo e barras de uso do plano, e pessoas (convidar por e-mail, papel, remover). Tocar num agente abre a conversa ao lado. A troca fica no botão Painel da barra do topo, em Configurações › Aparência › Tela e no cartão Escritório do painel; a escolha fica salva. No celular as seções viram abas embaixo.
+- **Telas de entrada novas:** login, esqueci a senha, senha nova, convite e criar o admin no visual do painel, com uma prévia do DevLand ao lado no computador. O link "Esqueci a senha" aparece sempre no Cloud; sem e-mail configurado, a página explica que quem administra redefine a senha.
+
 ## [1.0.4] - 2026-11-09
 
 ### Adicionado

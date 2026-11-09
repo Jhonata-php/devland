@@ -8,7 +8,7 @@ import { randomBytes } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getLocale, tr } from '../../shared/i18n';
 import type { ConnectProvider, ConnectService } from '../cloud/connect';
-import { authPage, BRAND, ICON } from './auth-shell';
+import { authPage, BRAND, ICON, messagePage } from './auth-shell';
 import { gitPushAllowed, setGitPush } from '../accounts/git-permissions';
 import { FEATURES, UserError, allowedOf, cleanAllow, type Role, type UserStore } from '../cloud/users';
 import {
@@ -187,13 +187,13 @@ ${script}
 }
 
 /** Formulário simples que manda JSON e, se der certo, vai para "/". */
-function formPage(opts: { title: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string; value?: string; readonly?: boolean }[]; endpoint: string; submit: string; extra?: Record<string, string>; done?: string; foot?: string }): string {
+function formPage(opts: { title: string; heading: string; intro: string; fields: { id: string; label: string; type?: string; auto?: string; value?: string; readonly?: boolean }[]; endpoint: string; submit: string; extra?: Record<string, string>; done?: string; foot?: string }): string {
   const icon = (f: { id: string; type?: string }) => (f.type === 'password' ? ICON.lock : ICON.user);
   const fields = opts.fields
     .map((f) => `<label class="l" for="${f.id}">${esc(f.label)}</label>
   <div class="field">${icon(f)}<input id="${f.id}" name="${f.id}" type="${f.type ?? 'text'}" autocomplete="${f.auto ?? 'off'}" autocapitalize="none" autocorrect="off" spellcheck="false"${f.value ? ` value="${esc(f.value)}"` : ''}${f.readonly ? ' readonly' : ''} required></div>`)
     .join('\n  ');
-  const card = `<h1>${BRAND}</h1>
+  const card = `<h1>${esc(opts.heading)}</h1>
 <p class="sub">${esc(opts.intro)}</p>
 <form id="f" novalidate>
   <div id="err" class="alert err" role="alert"></div>
@@ -222,7 +222,7 @@ function formPage(opts: { title: string; intro: string; fields: { id: string; la
     b.disabled = false; b.classList.remove('busy');
   });
 })();`;
-  return authPage({ title: opts.title, card, script, barTitle: 'setup — bash' });
+  return authPage({ title: opts.title, card, script });
 }
 
 function featureLabels(): Record<RemoteFeature, string> {
@@ -557,7 +557,6 @@ export function createCloud(deps: CloudDeps): Cloud {
     needsSetup: () => store.isEmpty(),
     needsCode: (id) => store.needsSecondFactor(id),
     checkCode: (id, code) => store.checkSecondFactor(id, code),
-    forgotEnabled: () => !!deps.mailer,
     publicRoute(req, res, url) {
       const path = url.pathname;
       const method = req.method ?? 'GET';
@@ -569,6 +568,7 @@ export function createCloud(deps: CloudDeps): Cloud {
             res,
             formPage({
               title: tr('DevLand · criar admin'),
+              heading: tr('Crie a conta de admin'),
               intro: tr('Primeiro acesso: crie a conta de admin. O código de instalação aparece no Velix, em Credenciais do app, e no log do container.'),
               fields: [
                 { id: 'code', label: tr('Código de instalação') },
@@ -610,12 +610,13 @@ export function createCloud(deps: CloudDeps): Cloud {
       if (path === '/esqueci') {
         req.resume();
         if (!deps.mailer) {
-          sendHtml(res, shell(tr('DevLand · esqueci a senha'), `<form><h1>DevLand</h1><p>${esc(tr('O envio de e-mail não está configurado nesta instalação. Peça a quem administra o DevLand para redefinir a sua senha.'))}</p><a href="/login">${esc(tr('Voltar ao login'))}</a></form>`, ''));
+          sendHtml(res, messagePage(tr('DevLand · esqueci a senha'), tr('Esqueceu a senha?'), tr('O envio de e-mail não está configurado nesta instalação. Peça a quem administra o DevLand para redefinir a sua senha.'), { href: '/login', label: tr('Voltar ao login') }));
         } else
           sendHtml(
             res,
             formPage({
               title: tr('DevLand · esqueci a senha'),
+              heading: tr('Esqueceu a senha?'),
               intro: tr('Digite o e-mail da sua conta. Se ele existir, enviamos um link para escolher uma senha nova (vale por 30 minutos).'),
               fields: [{ id: 'login', label: tr('E-mail'), type: 'email', auto: 'email' }],
               endpoint: '/api/cloud/forgot',
@@ -659,12 +660,13 @@ export function createCloud(deps: CloudDeps): Cloud {
       if (reset) {
         req.resume();
         if (!store.resetValid(reset[1])) {
-          sendHtml(res, shell(tr('DevLand · redefinir a senha'), `<form><h1>DevLand</h1><p>${esc(tr('Link inválido, vencido ou já usado. Peça um novo.'))}</p><a href="/esqueci">${esc(tr('Pedir um link novo'))}</a></form>`, ''));
+          sendHtml(res, messagePage(tr('DevLand · redefinir a senha'), tr('Link vencido'), tr('Link inválido, vencido ou já usado. Peça um novo.'), { href: '/esqueci', label: tr('Pedir um link novo') }));
         } else
           sendHtml(
             res,
             formPage({
               title: tr('DevLand · senha nova'),
+              heading: tr('Escolha uma senha nova'),
               intro: tr('Escolha a sua senha nova.'),
               fields: [
                 { id: 'password', label: tr('Senha (mínimo de 10 caracteres)'), type: 'password', auto: 'new-password' },
@@ -694,12 +696,13 @@ export function createCloud(deps: CloudDeps): Cloud {
       if (invite) {
         req.resume();
         if (!store.inviteValid(invite[1])) {
-          sendHtml(res, shell(tr('DevLand · convite'), `<form><h1>DevLand</h1><p>${esc(tr('Convite inválido, vencido ou já usado. Peça um novo a quem administra o DevLand.'))}</p><a href="/login">${esc(tr('Ir para o login'))}</a></form>`, ''));
+          sendHtml(res, messagePage(tr('DevLand · convite'), tr('Convite vencido'), tr('Convite inválido, vencido ou já usado. Peça um novo a quem administra o DevLand.'), { href: '/login', label: tr('Ir para o login') }));
         } else
           sendHtml(
             res,
             formPage({
               title: tr('DevLand · convite'),
+              heading: tr('Você foi convidado'),
               intro: tr('Você foi convidado para o DevLand. Escolha seu usuário e senha.'),
               fields: [
                 { id: 'name', label: tr('Nome'), auto: 'name', value: store.inviteName(invite[1]) },

@@ -116,10 +116,10 @@ describe('DevLand Cloud', () => {
     expect((await bad.call('/api/cloud/invites', { body: { role: 'user', allow: [], email: 'y@exemplo.com' }, cookie: adm3 })).status).toBe(502);
   });
 
-  it('sem SMTP o /login não mostra o link e o /esqueci explica', async () => {
+  it('sem SMTP o /login mostra o link e o /esqueci explica', async () => {
     const { call } = await setup();
     await call('/api/cloud/setup', { body: { code: 'AAAA-BBBB-CCCC', name: 'ana', email: 'ana@exemplo.com', password: 'senha-bem-longa' } });
-    expect((await call('/login')).text).not.toContain('/esqueci');
+    expect((await call('/login')).text).toContain('/esqueci');
     expect((await call('/esqueci')).text).toContain('não está configurado');
     expect((await call('/api/cloud/forgot', { body: { login: 'ana@exemplo.com' } })).status).toBe(404);
   });
