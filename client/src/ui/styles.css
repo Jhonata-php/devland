@@ -12472,3 +12472,14 @@ body::before {
 .ui-plugins__text span { color: var(--ui-text); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ui-plugins__item .ui-btn { flex: none; min-height: 36px; }
 @media (min-width: 641px) { .ui-plugins { height: min(80vh, 760px); } }
+
+/* PC: Conversas no topo (o celular já tem na barra de baixo). */
+@media (max-width: 600px) { .ui-topbar .ui-btn-chats { display: none !important; } }
+/* PC com a conversa aberta: a prévia ao vivo fica à esquerda dela, alta, para ver o site enquanto conversa. */
+@media (min-width: 601px) {
+  .ui-root:has(.ui-chats:not([hidden])) .ui-preview {
+    right: calc(min(420px, 100vw) + 8px);
+    width: min(900px, calc(100vw - min(420px, 100vw) - 24px));
+    height: calc(100vh - var(--top-h) - 16px);
+  }
+}

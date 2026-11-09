@@ -14,7 +14,8 @@ import type { Selection, WorldApi } from '../world/api';
 import type { PanelName, TerminalRouter, UiComponent, UiContext } from './context';
 import { DayLauncher } from './daystats-launcher';
 import { RoomRenamer } from './roomrename';
-import { h } from './dom';
+import { h, iconButton } from './dom';
+import { ICONS } from './icons';
 import { Drawer } from './drawer';
 import { FeedPanel } from './feed';
 import { HelpDialog } from './help';
@@ -300,6 +301,11 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const banner = new ConnectionBanner(ctx);
   const update = new UpdateBanner(store);
   const chats = new ChatsView(ctx);
+  // PC: botão Conversas no topo (no celular ele fica na barra de baixo). As conversas abrem ao lado, à direita.
+  const chatsBtn = iconButton(ICONS.feed, tr('Conversas'), () => chats.toggle(), 'ui-btn-chats');
+  chatsBtn.setAttribute('data-label', tr('Conversas'));
+  topbar.panelGroup.prepend(chatsBtn);
+  const chatsBtnSync: UiComponent = { render: () => chatsBtn.classList.toggle('is-on', chats.isOpen) };
   const bottomNav = new BottomNav(ctx, () => topbar.toggleSpawn(), chats);
   const tip = new HoverTip(ctx);
   const splash = new Splash(ctx);
@@ -329,7 +335,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     setTimeout(() => settings.toggle(topbar.settingsBtn), 0);
   }
 
-  const components: UiComponent[] = [topbar, bottomNav, chats, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, worldChip];
+  const components: UiComponent[] = [topbar, bottomNav, chats, chatsBtnSync, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, worldChip];
   if (scene) components.push(scene);
   root.append(worldSocial.el);
   components.push(worldSocial);

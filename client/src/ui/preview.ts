@@ -65,12 +65,16 @@ export class PreviewPanel implements UiComponent {
     const close = iconButton(ICONS.close, tr('Fechar'), () => this.hide(), 'ui-icon-btn--sm');
     this.el = h(
       'div',
-      { class: 'ui-popover ui-preview', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Prévia ao vivo'), id: 'ui-preview', popover: 'auto' } },
+      { class: 'ui-popover ui-preview', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Prévia ao vivo'), id: 'ui-preview', popover: 'manual' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Prévia ao vivo') }), close),
       h('div', { class: 'ui-preview__bar' }, reload, this.input, this.liveBtn, this.phoneBtn),
       this.ports,
       this.stage,
     );
+    // Fica aberta enquanto você conversa (popover manual: clicar na conversa não a fecha); Esc dentro dela fecha.
+    this.el.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.hide();
+    });
     this.el.addEventListener('toggle', () => {
       const open = this.isOpen;
       this.button.setAttribute('aria-expanded', String(open));
