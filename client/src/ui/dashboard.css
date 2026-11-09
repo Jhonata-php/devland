@@ -1008,3 +1008,30 @@ html.theme-light .dash-plug-tab em { background: rgba(0, 0, 0, 0.06); }
 .dash-model__foot small { overflow: visible; text-overflow: clip; white-space: normal; }
 .dash-ai-agents { align-items: flex-end; }
 .dash-ai-agents__txt { align-self: center; }
+
+/* Conversa no painel: largura total (sem a coluna estreita no meio), cabeçalho neutro e a barra de ferramentas. */
+@media (min-width: 901px) {
+  html.is-panel.dash-on-chats .ui-chats :is(.ui-chats__msgs, .ui-chats__composer, .ui-chats__note, .ui-chats__perm) { padding-left: clamp(20px, 4vw, 72px); padding-right: clamp(20px, 4vw, 72px); }
+}
+html.is-panel.dash-on-chats .ui-chats { border-top: 0; }
+html.is-panel.dash-on-chats .ui-chats__head { background: #111110; }
+html.is-panel.dash-on-chats .ui-chats__bubble--me { background: #2a2a27; color: #f1efea; }
+html.theme-light.is-panel.dash-on-chats .ui-chats__bubble--me { background: #ecebe6; color: #1d1c1a; }
+
+.ui-ctools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.ui-ctool__wrap { position: relative; }
+.ui-ctool { height: 32px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+.ui-ctool__menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 190px; max-width: min(360px, 90vw); display: grid; gap: 4px; padding: 8px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; background: #1b1b19; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5); }
+.ui-ctool__menu[hidden] { display: none; }
+.ui-ctool__push { width: 320px; gap: 8px; padding: 12px; }
+.ui-ctool__item { text-align: left; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: 14px var(--font-ui); cursor: pointer; }
+.ui-ctool__item:hover { background: rgba(255, 255, 255, 0.08); }
+.ui-ctool__note { margin: 0; font-size: 12.5px; color: #8f8c86; line-height: 1.4; }
+.ui-ctool__note.is-bad { color: #ff8a80; }
+.ui-ctool__note a, .ui-ctool__row a { color: #8fb3ff; }
+.ui-ctool__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ui-ctool__files { margin: 0; padding-left: 18px; font: 12px ui-monospace, Menlo, monospace; color: #b9b7b2; }
+.ui-ctool__msg { height: 34px; padding: 0 10px; font: 13px var(--font-ui); color: inherit; background: #111110; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; }
+html.theme-light .ui-ctool__menu { background: #fff; border-color: rgba(0, 0, 0, 0.12); }
+html.theme-light .ui-ctool__msg { background: #fff; }
+@media (max-width: 900px) { .ui-ctools { gap: 4px; } .ui-ctool { padding: 0 8px; } }

@@ -133,6 +133,32 @@ export async function projectDetail(dir: string, ghBin: string | undefined, run:
   return { files, diff: text.slice(0, DIFF_MAX), truncated: text.length > DIFF_MAX, prs: list };
 }
 
+/** `git push` pode levar mais que os 8 s dos outros comandos. */
+const slowRun: Run = (file, args, cwd) =>
+  new Promise((ok) => {
+    execFile(file, args, { cwd, timeout: 90_000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024, ...runAsOptions(process.env) }, (err, stdout) => ok(err ? null : stdout));
+  });
+
+/**
+ * Envia a branch atual ao GitHub (`git push -u origin HEAD`). Com alterações sem commit e uma mensagem, faz o commit
+ * antes (`git add -A`, respeitando o .gitignore). Devolve a branch e quantos arquivos entraram no commit.
+ */
+export async function pushBranch(dir: string, message: string | undefined, run: Run = slowRun): Promise<{ branch: string; committed: number }> {
+  const branch = (await run('git', ['rev-parse', '--abbrev-ref', 'HEAD'], dir))?.trim();
+  if (!branch || branch === 'HEAD') throw new Error('detached');
+  let committed = 0;
+  const msg = (message ?? '').trim().slice(0, 300);
+  if (msg) {
+    const dirty = ((await run('git', ['status', '--porcelain'], dir)) ?? '').split('\n').filter((l) => l.trim()).length;
+    if (dirty) {
+      if ((await run('git', ['add', '-A'], dir)) === null || (await run('git', ['commit', '-m', msg], dir)) === null) throw new Error('commit');
+      committed = dirty;
+    }
+  }
+  if ((await run('git', ['push', '-u', 'origin', 'HEAD'], dir)) === null) throw new Error('push');
+  return { branch, committed };
+}
+
 /** Envia a branch atual e abre o PR com o título e a descrição dos commits. Nunca na branch principal. */
 export async function createPr(dir: string, ghBin: string | undefined, run: Run = defaultRun): Promise<string> {
   if (!ghBin) throw new Error('gh');

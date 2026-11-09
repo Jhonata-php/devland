@@ -141,8 +141,8 @@ export class PtyPanel implements UiComponent, PtyControl {
     this.ctx.invalidate();
   }
 
-  async takeover(agentId: string): Promise<void> {
-    const p = await takeoverAgent(agentId);
+  async takeover(agentId: string, model?: string): Promise<void> {
+    const p = await takeoverAgent(agentId, model);
     if (p) this.show(p, true);
   }
 

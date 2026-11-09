@@ -84,7 +84,7 @@ export function createPtyRoutes(
         await ptys.stop(id);
         return noContent(res);
       }
-      return sendJson(res, 201, await ptys.takeover(id, { cols: body?.cols, rows: body?.rows }));
+      return sendJson(res, 201, await ptys.takeover(id, { cols: body?.cols, rows: body?.rows, model: body?.model }));
     }
     const [rawId, act] = path.slice('/api/pty'.length).split('/').filter(Boolean);
     if (!rawId) {

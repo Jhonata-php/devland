@@ -322,7 +322,11 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const update = new UpdateBanner(store);
   // PC: arrastar as janelas pelo cabeçalho para organizar a tela (ui/drag.ts).
   if (typeof document !== 'undefined' && typeof matchMedia === 'function') enableDraggablePanels();
-  const chats = new ChatsView(ctx);
+  const chats = new ChatsView(ctx, {
+    openPreview: () => previewPanel.toggle(),
+    ptyOf: (id) => pty.ptyOf(id),
+    takeover: (id, model) => pty.takeover(id, model),
+  });
   // Aviso "fulano entregou": tocar abre a conversa com ele.
   // (no modo Painel, na página Conversas dele)
   deliveries.onOpenChat = (id) => (prefs.view === 'panel' ? dashboard.openChat(id) : chats.openChat(id));

@@ -24,12 +24,28 @@ RUN mkdir /pkg && cp -r dist package.json deps.hash scripts .claude-plugin mod /
 FROM scratch AS dist-pkg
 COPY --from=assemble /pkg/ /
 
+# Ditado por voz (gravar áudio no navegador e virar texto, sem mandar a voz para nenhum serviço): whisper.cpp compilado aqui
+# (sem -march=native, para rodar em qualquer CPU) e o modelo multilíngue "base" (142 MB), conferido pelo SHA-1 que o README
+# da mesma versão do whisper.cpp publica. Sem isso, o microfone só aparece em navegadores com reconhecimento de voz próprio.
+FROM debian:bookworm-slim AS whisper
+ARG WHISPER_CPP_VERSION=v1.9.5
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git cmake g++ make ca-certificates curl \
+  && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch "${WHISPER_CPP_VERSION}" https://github.com/ggml-org/whisper.cpp /src \
+  && cmake -S /src -B /src/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DWHISPER_BUILD_TESTS=OFF \
+  && cmake --build /src/build -j"$(nproc)" --config Release --target whisper-cli \
+  && mkdir -p /out && cp /src/build/bin/whisper-cli /out/whisper-cli \
+  && curl -fsSL -o /out/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin \
+  && want="$(grep -E '^\| base +\|' /src/models/README.md | grep -oE '[0-9a-f]{40}')" \
+  && test -n "$want" && echo "$want  /out/ggml-base.bin" | sha1sum -c -
+
 FROM node:24-bookworm-slim AS runtime
 
 # Ferramentas de uma máquina de desenvolvimento comum. Os agentes instalam o resto do projeto em /workspace e em ~.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client ripgrep jq less procps \
-     python3 python3-pip python3-venv make g++ unzip tini gh \
+     python3 python3-pip python3-venv make g++ unzip tini gh ffmpeg libgomp1 \
   && rm -rf /var/lib/apt/lists/*
 
 # Os CLIs dos agentes. ponytail: versões sem fixar; fixe com --build-arg quando precisar repetir um build.
@@ -51,6 +67,8 @@ COPY scripts/statusline-tap.mjs ./scripts/statusline-tap.mjs
 COPY .claude-plugin ./.claude-plugin
 COPY mod ./mod
 COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
+COPY --from=whisper /out/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=whisper /out/ggml-base.bin /usr/local/share/whisper/ggml-base.bin
 
 # HABBLAUD_CLOUD_VERSION: a tag desta imagem (o workflow passa cloud-v0.3.5); o servidor compara com as tags mais novas no
 # GHCR e o admin atualiza por "Atualizar agora" (pede ao Velix; precisa de HABBLAUD_VELIX_URL, _TOKEN e _PROJECT).
@@ -74,6 +92,7 @@ ENV NODE_ENV=production \
     HABBLAUD_CODEX_DIRS=/home/dev/.codex \
     HABBLAUD_USAGE_DIR=/home/dev/.habblaud/usage \
     HABBLAUD_CLOUD_VERSION=${CLOUD_VERSION} \
+    HABBLAUD_WHISPER_MODEL=/usr/local/share/whisper/ggml-base.bin \
     DISABLE_AUTOUPDATER=1
 
 EXPOSE 4748

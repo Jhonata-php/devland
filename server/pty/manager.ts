@@ -263,7 +263,7 @@ export class PtyManager {
    * conversa aqui (`claude --resume <sessão>`, na pasta e na conta originais). O que pode impedir a sessão nova
    * (pasta, conta, limite) é conferido antes de encerrar a de lá; pedidos repetidos esperam o primeiro.
    */
-  takeover(agentId: string, size: { cols?: unknown; rows?: unknown } = {}, prompt?: string): Promise<PtyInfo> {
+  takeover(agentId: string, size: { cols?: unknown; rows?: unknown; model?: unknown } = {}, prompt?: string): Promise<PtyInfo> {
     const pending = this.takeovers.get(agentId);
     if (pending) return pending;
     const run = this.doTakeover(agentId, size, prompt).finally(() => this.takeovers.delete(agentId));
@@ -292,7 +292,7 @@ export class PtyManager {
     return this.takeover(agentId, {}, text);
   }
 
-  private async doTakeover(agentId: string, size: { cols?: unknown; rows?: unknown }, prompt?: string): Promise<PtyInfo> {
+  private async doTakeover(agentId: string, size: { cols?: unknown; rows?: unknown; model?: unknown }, prompt?: string): Promise<PtyInfo> {
     // Um tique: o pedido já está em this.takeovers (conta no limite abaixo como "esta" tomada).
     await Promise.resolve();
     if (!this.opts.spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
@@ -302,7 +302,7 @@ export class PtyManager {
     if (!SESSION_ID.test(agent.sessionId)) throw new PtyError(409, tr('sessão sem id válido para retomar'));
     if (!agent.cwd) throw new PtyError(409, tr('não sei a pasta desta sessão'));
     // As outras tomadas em andamento já têm uma vaga prometida.
-    const plan = this.plan({ cwd: agent.cwd, account: agent.account, cols: size.cols, rows: size.rows }, this.takeovers.size - 1);
+    const plan = this.plan({ cwd: agent.cwd, account: agent.account, cols: size.cols, rows: size.rows, model: size.model }, this.takeovers.size - 1);
     const ext = await this.external(agentId);
     try {
       await this.killPid(ext.pid, ext.proc);

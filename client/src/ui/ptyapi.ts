@@ -38,8 +38,8 @@ export function sendPtyInput(id: string, data: string): Promise<unknown> {
 }
 
 /** Encerra a sessão noutro terminal e continua a mesma conversa aqui. */
-export function takeoverAgent(agentId: string): Promise<PtyInfo | undefined> {
-  return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, SIZE);
+export function takeoverAgent(agentId: string, model?: string): Promise<PtyInfo | undefined> {
+  return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, { ...SIZE, ...(model ? { model } : {}) });
 }
 
 /** Encerra o agente (aqui ou noutro terminal). */

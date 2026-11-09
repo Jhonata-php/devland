@@ -9,6 +9,7 @@ import { tr } from '../../../shared/i18n';
 import type { UiComponent, UiContext } from './context';
 import { PermissionCard } from './permission';
 import { MessageComposer } from './composer';
+import { ChatTools, type ChatToolsHooks } from './chat-tools';
 import { createAvatar } from './avatar';
 import { h, setHidden, setText } from './dom';
 import { relativeTime } from './format';
@@ -83,8 +84,10 @@ export class ChatsView implements UiComponent {
   private stick = true;
   private lastListKey = '';
   private readonly perm: PermissionCard;
+  private readonly tools: ChatTools;
 
-  constructor(private ctx: UiContext) {
+  constructor(private ctx: UiContext, hooks: Omit<ChatToolsHooks, 'announce'>) {
+    this.tools = new ChatTools({ ...hooks, announce: (t) => ctx.announce(t) });
     this.listBody = h('div', { class: 'ui-chats__list' });
     this.listEl = h(
       'div',
@@ -111,6 +114,7 @@ export class ChatsView implements UiComponent {
         { class: 'ui-chats__head' },
         h('button', { class: 'ui-icon-btn ui-icon-btn--sm', type: 'button', text: '←', attrs: { 'aria-label': tr('Voltar às conversas') }, on: { click: () => this.showList() } }),
         h('div', { class: 'ui-chats__who' }, this.title, this.sub),
+        this.tools.el,
         h('button', { class: 'ui-icon-btn ui-icon-btn--sm', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: () => this.close() } }),
       ),
       this.msgs,
@@ -265,6 +269,7 @@ export class ChatsView implements UiComponent {
       setText(this.title, a?.name ?? '…');
       const fr = a && roleOf(a, snap?.rooms);
       setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}${fr ? ` · ${ROLES[fr].icon} ${roleLabel(fr)}` : ''}` : tr('saiu do escritório'));
+      this.tools.update(a, a ? snap?.rooms.find((r) => r.id === a.roomId)?.path : undefined);
       this.composer.render(a, a?.id ?? this.current);
       // ctx.agent junta ao agente o pedido de permissão em aberto (o snapshot puro não o traz).
       this.perm.render(a ? (this.ctx.agent(a.id) ?? a) : undefined);
