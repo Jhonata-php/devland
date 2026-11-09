@@ -3638,4 +3638,5 @@ export const EN: Readonly<Record<string, string>> = {
   "O modo automático do Claude Code não deixa subir direto na main, mesmo a pedido. Ligado, os agentes podem dar git push, git merge e gh pr merge (inclusive na main).": "Claude Code's auto mode won't push straight to main, even when asked. When on, agents can run git push, git merge and gh pr merge (including on main).",
   "Encerrei {0} terminal(is) da rodada anterior para retomar cada conversa uma vez só.": "Closed {0} terminal(s) from the previous run so each conversation resumes once.",
   "Escolha o projeto e comece um agente": "Pick the project and start an agent",
+  "Apaguei {0} registro(s) de sessão da rodada anterior (evita agentes duplicados).": "Removed {0} session record(s) from the previous run (avoids duplicate agents).",
 };

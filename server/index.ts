@@ -64,6 +64,7 @@ import { dueSchedules, ScheduleStore } from './schedule/schedules';
 import { PluginStore } from './plugins/store';
 import { locateTranscript } from './sources/transcript-locate';
 import { killOrphanResumes } from './pty/orphans';
+import { clearStaleSessions } from './accounts/stale-sessions';
 import { DevRunner } from './preview/devrun';
 import { withPreviewHint } from './messages/preview-hint';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
@@ -168,6 +169,12 @@ const world = config.world.enabled
       social: worldSocial,
     })
   : undefined;
+// Cloud: o container acabou de subir, nenhum Claude da rodada anterior está vivo; os registros de sessão velhos (PIDs
+// reaproveitados) faziam o mesmo agente aparecer 2, 3 vezes. Sai antes de alguém ler a pasta (accounts/stale-sessions.ts).
+if (config.remote?.cloud) {
+  const n = clearStaleSessions(config.claudeDirs, Date.now() - 2_000);
+  if (n) log.info(tr('Apaguei {0} registro(s) de sessão da rodada anterior (evita agentes duplicados).', [n]));
+}
 const accounts = new AccountsService({
   dirs: config.claudeDirs,
   home: config.home,

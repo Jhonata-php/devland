@@ -14,6 +14,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Causa real dos agentes duplicados:** a cada subida o container recomeça os PIDs, e os registros de sessão da rodada anterior (`sessions/<pid>.json`) passavam a apontar para processos novos com o mesmo número. No Cloud, o servidor apaga esses registros velhos antes de ler as sessões.
 - **Agentes duplicados no Cloud:** a atualização nativa reinicia só o servidor, e os `claude --resume` que ele tinha aberto continuavam vivos; ao subir, ele retomava as mesmas conversas por cima e o mesmo agente aparecia 2 ou 3 vezes. Agora encerra esses terminais órfãos e retoma cada conversa uma vez só, e não retoma por cima de uma sessão que segue viva em outro lugar (ex.: segundo plano).
 - **Sem a sala "workspace":** o botão do escritório vazio abre o Novo agente (para escolher o projeto) em vez de um terminal na raiz `/workspace`, e conversa aberta na raiz não volta sozinha a cada reinício.
 - **Mensagem para sessão sem o plugin:** em vez de "Esta conversa começou antes do plugin", a caixa fica liberada e o envio retoma a sessão num terminal do DevLand com o texto como pedido (`claude --resume <sessão> -- <texto>`); se ela já está num terminal daqui, o texto é colado e enviado.
