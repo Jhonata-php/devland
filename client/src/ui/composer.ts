@@ -25,7 +25,7 @@ import {
 } from './composer-model';
 import type { UiContext } from './context';
 import { DictationButton, dictationAvailable, insertDictation } from './dictation';
-import { h, setAttr, setHidden, setText, setTitle } from './dom';
+import { h, pastedFiles, setAttr, setHidden, setText, setTitle } from './dom';
 import { access } from '../net/access';
 import { ICONS } from './icons';
 import { uploadAttachment } from './spawn';
@@ -130,6 +130,16 @@ export class MessageComposer {
     this.dictate.el.classList.add('ui-msg__mic');
     setHidden(this.dictate.el, true);
     this.fileInput = h('input', { type: 'file', hidden: true, attrs: { multiple: true, accept: 'image/*,application/pdf,text/*,audio/*,video/*,.zip,.json,.csv,.md', 'aria-hidden': 'true', tabindex: '-1' } });
+    // Colar uma imagem na mensagem (só onde há anexos: o Cloud) vira anexo, como pelo botão de clipe.
+    this.box.addEventListener('paste', (e) => {
+      if (this.attachBtn.hidden) return;
+      const pasted = pastedFiles(e);
+      if (!pasted.length) return;
+      if (!e.clipboardData?.getData('text')) e.preventDefault();
+      this.files.set(this.agentId, [...(this.files.get(this.agentId) ?? []), ...pasted].slice(0, 8));
+      this.renderFiles();
+      this.syncButton();
+    });
     this.fileInput.addEventListener('change', () => {
       const cur = this.files.get(this.agentId) ?? [];
       this.files.set(this.agentId, [...cur, ...(this.fileInput.files ?? [])].slice(0, 8));

@@ -10,7 +10,7 @@ import { isDemoId } from '../../../shared/timeline';
 import type { AccountInfo, OfficeSnapshot } from '../../../shared/types';
 import type { UiContext } from './context';
 import { DictationButton, dictationAvailable, insertDictation } from './dictation';
-import { h, iconButton, setHidden, setStyleVar, setText } from './dom';
+import { h, iconButton, pastedFiles, setHidden, setStyleVar, setText } from './dom';
 import { ICONS } from './icons';
 import { createAccountChip, updateAccountChip } from './widgets';
 
@@ -184,6 +184,13 @@ export class SpawnPanel {
       attrs: { id: 'ui-spawn-prompt', rows: 5, maxlength: SPAWN_PROMPT_MAX, placeholder: tr('O que o agente deve fazer (opcional)') },
     });
     this.fileInput = h('input', { type: 'file', hidden: true, attrs: { multiple: true, 'aria-hidden': 'true', tabindex: '-1' } });
+    // Colar uma imagem no pedido (print, foto copiada) vira anexo, como pelo botão Anexar.
+    this.prompt.addEventListener('paste', (e) => {
+      const files = pastedFiles(e);
+      if (!files.length) return;
+      if (!e.clipboardData?.getData('text')) e.preventDefault();
+      this.addFiles(files);
+    });
     this.fileInput.addEventListener('change', () => {
       this.addFiles([...(this.fileInput.files ?? [])]);
       this.fileInput.value = '';

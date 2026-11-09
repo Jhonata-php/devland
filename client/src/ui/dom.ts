@@ -227,3 +227,18 @@ export async function copyText(text: string): Promise<boolean> {
     return ok;
   }
 }
+
+/**
+ * Arquivos colados (imagem do print, foto copiada): viram anexo. Imagem sem nome ganha um nome com a hora, para não
+ * colidir com outra colada antes. Sem arquivo no que foi colado, devolve [] e a colagem de texto segue normal.
+ */
+export function pastedFiles(e: ClipboardEvent): File[] {
+  const items = [...(e.clipboardData?.items ?? [])].filter((i) => i.kind === 'file');
+  const files = items.map((i) => i.getAsFile()).filter((f): f is File => !!f);
+  return files.map((f, n) => {
+    if (f.name && f.name !== 'image.png') return f;
+    const ext = (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+    return new File([f], `colado-${stamp}${n ? `-${n}` : ''}.${ext}`, { type: f.type });
+  });
+}

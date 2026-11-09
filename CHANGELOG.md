@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Colar imagem:** colar um print ou uma foto no Pedido do Novo agente, ou na caixa de mensagem de um agente (Cloud), vira anexo, como pelo botão Anexar.
 - **Novo agente (Cloud):** a raiz `/workspace` não aparece mais como projeto na lista de pastas (ela só guarda os projetos clonados).
 - **Loja de plugins do Claude Code:** em Configurações › Plugins do Claude Code (admin ou o próprio computador), busca no catálogo dos marketplaces configurados e instala ou remove com um toque, em todas as contas do Claude. Só instala o que está no catálogo, e a janela avisa que plugin roda código no servidor.
 - **Verificação em duas etapas (Cloud):** em Configurações, "Ativar" mostra a chave e um link que abre o app autenticador (no iPhone, o app Senhas); depois de confirmar com um código, o login pede o código de 6 dígitos após a senha. Vêm 8 códigos de reserva de uso único, para quem perder o celular. Desativar pede um código.
