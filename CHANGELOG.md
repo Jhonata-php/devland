@@ -21,6 +21,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Conversa retomada na pasta errada (Cloud):** ao reiniciar, o DevLand agora usa a pasta gravada no próprio histórico da conversa. Antes, uma lista salva com pastas trocadas fazia a mesma conversa voltar no projeto errado a cada atualização.
 - **Conversas com o menu recolhido:** a lista não fica mais deslocada com uma faixa vazia à esquerda; as conversas aparecem em cartões. A janela de Plugins também ganhou o visual do painel.
 - **Janelas do modo Painel:** Configurações, Contas, Usuários, Novo agente e as outras janelas abrem no centro, mais largas, com o fundo escurecido e botões neutros (os botões verdes e os campos do tema hacker saíram dessas janelas no painel).
 - O botão principal do painel (ex.: "+ Conectar conta") aparecia branco, sem o texto.

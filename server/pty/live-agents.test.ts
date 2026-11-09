@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { dedupeLive, loadLiveAgents, MAX_RESUME, RESUME_GRACE_MS, saveLiveAgents, withResuming } from './live-agents';
+import { dedupeLive, loadLiveAgents, MAX_RESUME, RESUME_GRACE_MS, saveLiveAgents, transcriptCwd, withResuming } from './live-agents';
 
 describe('agentes ativos guardados para retomar depois da reimplantação', () => {
   it('grava e lê, ignorando entradas inválidas e limitando a quantidade', () => {
@@ -36,5 +36,15 @@ describe('withResuming', () => {
   });
   it('depois do prazo vale só o que está vivo', () => {
     expect(withResuming([a], [a, b], RESUME_GRACE_MS).map((x) => x.sessionId)).toEqual(['aaaaaaaa']);
+  });
+});
+
+describe('transcriptCwd', () => {
+  it('lê a pasta gravada no histórico e volta do worktree para a raiz do projeto', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cwd-'));
+    const f = join(dir, 's.jsonl');
+    writeFileSync(f, '{"type":"summary"}\n{"type":"user","cwd":"/workspace/wsat/.claude/worktrees/x","sessionId":"s"}\n');
+    expect(transcriptCwd(f)).toBe('/workspace/wsat');
+    expect(transcriptCwd(join(dir, 'nada.jsonl'))).toBeUndefined();
   });
 });

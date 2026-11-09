@@ -50,7 +50,7 @@ import { createBuildReader, readBuildInfo } from './build';
 import { ensureDevLandPlugins } from './accounts/plugins';
 import { PushService } from './push/service';
 import { pickAccountByLoad } from './pty/pick-account';
-import { dedupeLive, loadLiveAgents, saveLiveAgents, withResuming, type LiveAgent } from './pty/live-agents';
+import { dedupeLive, loadLiveAgents, saveLiveAgents, transcriptCwd, withResuming, type LiveAgent } from './pty/live-agents';
 import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
 import { stageVersion } from './updates/self-update';
@@ -826,10 +826,13 @@ if (cloud && agentUser && ptys) {
       return false;
     }
   };
+  const transcriptOf = (sessionId: string) => locateTranscript(join(config.claudeDirs[0] ?? '', 'projects', '-', `${sessionId}.jsonl`), config.claudeDirs);
   void pluginsReady.then(() =>
     setTimeout(() => {
       const present = new Set(liveNow().map((a) => a.sessionId));
-      for (const a of wasLive) {
+      for (const saved of wasLive) {
+        // A pasta do histórico manda: a lista salva já veio trocada uma vez e repetia o erro a cada reinício.
+        const a = { ...saved, cwd: transcriptCwd(transcriptOf(saved.sessionId)) ?? saved.cwd };
         // Órfão encerrado acima: volta aqui, uma vez. Fora isso, quem já está no escritório ou foi gravado há pouco
         // (viva em outro lugar, ex.: o serviço de segundo plano do Claude) não é retomada por cima.
         if (a.cwd === WORKSPACE) continue;

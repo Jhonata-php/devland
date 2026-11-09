@@ -2,7 +2,7 @@
 // (e saem do escritório). Para não perder o trabalho de vista, o servidor guarda quem estava ativo (conta, sessão e pasta) e,
 // ao subir, retoma cada conversa com `claude --resume` (pty/manager.ts: resume). Quem foi encerrado de propósito não volta:
 // o arquivo reflete só o que estava vivo na última foto, tirada a cada poucos segundos e congelada ao encerrar o servidor.
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, readFileSync, readSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 export interface LiveAgent {
@@ -63,5 +63,25 @@ export function loadLiveAgents(file: string): LiveAgent[] {
       .slice(0, MAX_RESUME);
   } catch {
     return [];
+  }
+}
+
+/**
+ * Pasta verdadeira da conversa, lida do próprio histórico (o Claude Code grava "cwd" em cada linha). A lista salva pode vir
+ * trocada (PIDs reaproveitados misturaram duas conversas uma vez), e retomar na pasta errada se repetia a cada reinício.
+ */
+export function transcriptCwd(path: string | undefined): string | undefined {
+  if (!path) return undefined;
+  let fd: number | undefined;
+  try {
+    fd = openSync(path, 'r');
+    const buf = Buffer.alloc(64 * 1024);
+    const n = readSync(fd, buf, 0, buf.length, 0);
+    const m = /"cwd":"((?:[^"\\]|\\.)*)"/.exec(buf.subarray(0, n).toString('utf8'));
+    return m ? projectRoot(JSON.parse(`"${m[1]}"`) as string) : undefined;
+  } catch {
+    return undefined;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
   }
 }
