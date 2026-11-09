@@ -476,7 +476,7 @@ if (schedules && spawn) {
     const now = Date.now();
     for (const s of dueSchedules(schedules.all(), now)) {
       schedules.markRun(s.id, now);
-      const r = spawn.submit({ folder: s.folder, prompt: s.prompt, account: s.account, role: s.role });
+      const r = spawn.submit({ folder: s.folder, prompt: s.prompt, account: s.account, role: s.role, model: s.model });
       if ('error' in r) log.warn(tr('Agendamento em {0} não abriu: {1}', [s.folder, r.reason]));
       else log.info(tr('Agendamento: agente novo em {0} ({1}).', [s.folder, s.time]));
     }

@@ -25,6 +25,10 @@ describe('novo agente: pedido e link', () => {
     expect((parseSpawn({ folder: '/p', prompt: '', role: 'review' }) as { prompt: string }).prompt).toMatch(/revisão completa/);
     expect((parseSpawn({ folder: '/p', prompt: 'só os testes', role: 'review' }) as { prompt: string }).prompt).toBe('só os testes');
     expect(parseSpawn({ folder: 'C:\\code\\proj' })).toEqual({ folder: 'C:\\code\\proj', prompt: '' });
+    // Modelo do Claude: só os apelidos conhecidos; a IA local usa o modelo dela, então ignora o pedido.
+    expect(parseSpawn({ folder: '/p', model: 'sonnet' })).toEqual({ folder: '/p', prompt: '', model: 'sonnet' });
+    expect(parseSpawn({ folder: '/p', model: 'gpt-4' })).toEqual({ folder: '/p', prompt: '' });
+    expect(parseSpawn({ folder: '/p', account: 'ollama', model: 'opus' })).toEqual({ folder: '/p', prompt: '', account: 'ollama' });
     expect(parseSpawn({ folder: 'proj' })).toHaveProperty('error');
     expect(parseSpawn({ folder: '/a\0b' })).toHaveProperty('error');
     expect(parseSpawn({ folder: '/a', prompt: 'x'.repeat(8_001) })).toHaveProperty('error');

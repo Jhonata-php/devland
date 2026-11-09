@@ -17,6 +17,7 @@ import { chownSync, existsSync, readFileSync, readdirSync, renameSync, statSync,
 import { isAbsolute, join } from 'node:path';
 import { tr } from '../../shared/i18n';
 import { agentRunAs, runAsOptions } from './runas';
+import { isModelId } from '../../shared/models';
 import { isRoleId, type RoleId } from '../../shared/roles';
 import { attachmentsRoot, promptWithAttachments, writeAttachments, type Attachment, type AttachmentStore } from './attachments';
 
@@ -89,9 +90,11 @@ export function parseSpawn(raw: unknown): SpawnRequest | { error: string } {
   if (prompt.length > PROMPT_MAX || prompt.includes('\0')) return { error: tr('o pedido passa de {0} caracteres', [PROMPT_MAX]) };
   const account = typeof r.account === 'string' && r.account.length <= 120 && !r.account.includes('\0') ? r.account : undefined;
   const role = isRoleId(r.role) ? r.role : undefined;
+  // Modelo da conta do Claude (sonnet, opus...); a IA local usa o modelo dela, definido pelo servidor.
+  const model = isModelId(r.model) && account !== 'ollama' ? r.model : undefined;
   // Revisão sem pedido: o agente sabe o que fazer sozinho (rodar, testar o fluxo e relatar as falhas).
   const text = !prompt.trim() && role === 'review' ? reviewPrompt() : prompt;
-  return { folder, prompt: text, ...(account ? { account } : {}), ...(role ? { role } : {}) };
+  return { folder, prompt: text, ...(account ? { account } : {}), ...(role ? { role } : {}), ...(model ? { model } : {}) };
 }
 
 /** O pedido padrão da função Revisão: só escolher o projeto e começar. */
@@ -305,7 +308,7 @@ export class SpawnService {
       e.at = this.now();
       const files = e.files.map((f) => ({ name: f.name, type: f.type, data: f.data.toString('base64') }));
       this.dropFiles(e);
-      out.push({ id: e.info.id, folder: e.req.folder, prompt: e.req.prompt, files, ...(e.req.role ? { role: e.req.role } : {}) });
+      out.push({ id: e.info.id, folder: e.req.folder, prompt: e.req.prompt, files, ...(e.req.role ? { role: e.req.role } : {}), ...(e.req.model ? { model: e.req.model } : {}) });
     }
     return out;
   }
@@ -347,7 +350,7 @@ export class SpawnService {
     }
     if (e.req.account === 'ollama' && !local) return this.resolve(e, { ok: false, error: tr('IA local sem modelo: ative a IA local e baixe um modelo na página IA local.') });
     const configDir = local ? local.dir : this.opts.accountDir?.(e.req.account);
-    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}), ...(local ? { extraEnv: local.env, model: local.model } : {}) };
+    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}), ...(local ? { extraEnv: local.env, model: local.model } : e.req.model ? { model: e.req.model } : {}) };
     this.resolve(e, await launch(req, opener, this.opts.cli));
   }
 

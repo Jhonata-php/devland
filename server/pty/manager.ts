@@ -9,6 +9,7 @@
 //
 // Segurança: quem controla um terminal destes executa comandos na máquina. O recurso é opt-in (HABBLAUD_PTY=1),
 // as rotas só aceitam conexões do próprio computador (ver http/pty.ts) e ele fica desligado no Docker.
+import { isModelId, type ModelId } from '../../shared/models';
 import { runAsOptions } from '../spawn/runas';
 import { chmodSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -172,6 +173,8 @@ interface SpawnPlan {
   account: PtyAccount;
   cols: number;
   rows: number;
+  /** Apelido do modelo (`claude --model`); ausente = o padrão da conta. */
+  model?: ModelId;
 }
 
 export class PtyError extends Error {
@@ -225,7 +228,7 @@ export class PtyManager {
   }
 
   /** Abre uma sessão nova do Claude Code na pasta (`cwd` absoluto), na conta pedida (ou na padrão). */
-  create(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown }): PtyInfo {
+  create(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown; model?: unknown }): PtyInfo {
     return this.spawn(this.plan(p, this.takeovers.size));
   }
 
@@ -400,7 +403,7 @@ export class PtyManager {
   }
 
   /** Valida o pedido de uma sessão nova (`reserved`: vagas já prometidas a tomadas em andamento). */
-  private plan(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown }, reserved = 0): SpawnPlan {
+  private plan(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown; model?: unknown }, reserved = 0): SpawnPlan {
     if (!this.opts.spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
     // Antes de tudo (o "assumir" encerra a sessão de lá depois daqui): um claude que não roda abriria um terminal que
     // sai na hora.
@@ -420,13 +423,13 @@ export class PtyManager {
     if (!account) throw new PtyError(400, tr('conta desconhecida'));
     const running = [...this.ptys.values()].filter((t) => t.info.exitedAt === undefined).length;
     if (running + Math.max(0, reserved) >= MAX_PTYS) throw new PtyError(429, tr('limite de {0} terminais abertos', [MAX_PTYS]));
-    return { cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30) };
+    return { cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30), ...(isModelId(p.model) ? { model: p.model } : {}) };
   }
 
   private spawn(plan: SpawnPlan, p: { resume?: string; from?: string; prompt?: string } = {}): PtyInfo {
     const spawn = this.opts.spawn;
     if (!spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
-    const { cwd, account, cols, rows } = plan;
+    const { cwd, account, cols, rows, model } = plan;
     const env: NodeJS.ProcessEnv = { ...(this.opts.env ?? process.env), TERM: 'xterm-256color', COLORTERM: 'truecolor' };
     for (const k of INHERITED_SESSION_VARS) delete env[k];
     if (account.isDefault) delete env.CLAUDE_CONFIG_DIR;
@@ -434,7 +437,7 @@ export class PtyManager {
 
     let proc: PtyProcess;
     try {
-      const args = p.resume ? ['--resume', p.resume] : [];
+      const args = [...(p.resume ? ['--resume', p.resume] : []), ...(model ? ['--model', model] : [])];
       // Primeiro pedido já na abertura (mensagem para sessão sem o plugin); `--` para um texto que comece com "-".
       if (p.prompt) args.push('--', p.prompt);
       proc = spawn(this.opts.claudeBin, args, { cwd, cols, rows, env });

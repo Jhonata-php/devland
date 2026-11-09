@@ -280,6 +280,16 @@ describe('PtyManager: tela para quem conecta', () => {
   });
 });
 
+describe('modelo do Claude no terminal', () => {
+  it('passa --model só com um apelido conhecido', () => {
+    const s = setup();
+    s.manager.create({ cwd: tmpdir(), model: 'opus' });
+    s.manager.create({ cwd: tmpdir(), model: 'qualquer-coisa' });
+    s.manager.create({ cwd: tmpdir() });
+    expect(s.spawned.map((x) => x.args)).toEqual([['--model', 'opus'], [], []]);
+  });
+});
+
 describe('ptyRequestProblem', () => {
   const req = (h: Record<string, string>, addr = '127.0.0.1') => ({ socket: { remoteAddress: addr }, headers: h }) as unknown as IncomingMessage;
 

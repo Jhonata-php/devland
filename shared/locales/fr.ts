@@ -4030,4 +4030,10 @@ export const FR: Readonly<Record<string, string>> = {
   "Conectados: {0} de {1}": "Connectés : {0} sur {1}",
   "Precisam entrar: {0}": "À connecter : {0}",
   "Use até {0} caracteres.": "Utilisez jusqu'à {0} caractères.",
+  "Padrão da conta": "Par défaut du compte",
+  "o que a conta usa normalmente": "ce que le compte utilise normalement",
+  "o mais recente": "le plus récent",
+  "o mais forte para tarefas difíceis": "le plus fort pour les tâches difficiles",
+  "equilíbrio entre qualidade e velocidade": "équilibre entre qualité et vitesse",
+  "o mais rápido e barato": "le plus rapide et le moins cher",
 };

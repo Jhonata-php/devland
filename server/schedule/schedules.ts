@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { tr } from '../../shared/i18n';
+import { isModelId } from '../../shared/models';
 
 export interface Schedule {
   id: string;
@@ -13,6 +14,8 @@ export interface Schedule {
   prompt: string;
   account?: string;
   role?: string;
+  /** Apelido do modelo do Claude (shared/models.ts); ausente = o padrão da conta. */
+  model?: string;
   /** "HH:MM" no fuso `tz`. */
   time: string;
   /** Dias da semana (0 = domingo … 6 = sábado). */
@@ -72,6 +75,8 @@ export function parseSchedule(raw: unknown, now: number): Schedule {
   const role = str(b.role, 32);
   if (account && account !== 'auto') s.account = account;
   if (role && role !== 'auto') s.role = role;
+  const model = str(b.model, 16);
+  if (isModelId(model)) s.model = model;
   return s;
 }
 

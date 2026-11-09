@@ -3,6 +3,7 @@
 // (GET /api/spawn/folders: histórico de sessões + salas), para escolher com um toque; "Outra pasta" aceita um caminho
 // digitado. O pedido pode levar anexos (POST /api/spawn/attachments, um por arquivo, antes do pedido) e ser ditado
 // (ui/dictation.ts, Whisper local no Mac). Pasta que o Claude Code não conhece cai no app (Enter lá).
+import { MODEL_IDS, type ModelId } from '../../../shared/models';
 import { ROLE_IDS, ROLES, type RoleId } from '../../../shared/roles';
 import { roleLabel } from './roles';
 import { tr } from '../../../shared/i18n';
@@ -171,6 +172,10 @@ export class SpawnPanel {
   private readonly engineRow: HTMLElement;
   /** Função do agente ('' = sem função: o Habblaud deduz pelos arquivos e pelo projeto). */
   private role: RoleId | '' = '';
+  /** Modelo do Claude (vazio = o padrão da conta); some com a IA local, que usa o modelo dela. */
+  private model: ModelId | '' = '';
+  private readonly modelLabel: HTMLElement;
+  private readonly modelRow: HTMLElement;
   private readonly roleRow: HTMLElement;
   private readonly accountRow: HTMLElement;
   private readonly accountLabel: HTMLElement;
@@ -219,6 +224,9 @@ export class SpawnPanel {
     this.accountRow = h('div', { class: 'ui-spawn__accounts', role: 'radiogroup', attrs: { 'aria-label': tr('Conta') } });
     this.roleRow = h('div', { class: 'ui-spawn__accounts ui-spawn__roles', role: 'radiogroup', attrs: { 'aria-label': tr('Função') } });
     this.renderRoles();
+    this.modelLabel = h('p', { class: 'ui-spawn__label', text: tr('Modelo') });
+    this.modelRow = h('div', { class: 'ui-spawn__accounts ui-spawn__models', role: 'radiogroup', attrs: { 'aria-label': tr('Modelo') } });
+    this.renderModels();
     this.fileList = h('ul', { class: 'ui-spawn__files', attrs: { 'aria-label': tr('Anexos') } });
     this.submitBtn = h('button', { class: 'ui-btn ui-perm__btn ui-perm__btn--allow ui-spawn__go', type: 'button', on: { click: () => void this.submit() } }, tr('Começar'));
     this.status = h('p', { class: 'ui-rename__hint ui-spawn__status', attrs: { role: 'status', 'aria-live': 'polite' } });
@@ -260,6 +268,8 @@ export class SpawnPanel {
         this.stepEl(2, h('p', { class: 'ui-spawn__label', attrs: { id: 'ui-spawn-folders-label' }, text: tr('Em qual projeto?') }), this.folderList, this.otherBtn, this.folder),
         this.stepEl(3, h('p', { class: 'ui-spawn__label', text: tr('Função') }),
         this.roleRow,
+        this.modelLabel,
+        this.modelRow,
         h('label', { class: 'ui-spawn__label', attrs: { for: 'ui-spawn-prompt' }, text: tr('Pedido') }),
         this.prompt,
         h('div', { class: 'ui-spawn__tools' }, this.dictate.el, attachBtn, this.fileInput),
@@ -337,6 +347,31 @@ export class SpawnPanel {
     );
   }
 
+  /** "Padrão da conta" + um apelido por família (Fable, Opus, Sonnet, Haiku); só vale para contas do Claude. */
+  private renderModels(): void {
+    const names: Record<ModelId, [string, string]> = {
+      fable: ['Fable', tr('o mais recente')],
+      opus: ['Opus', tr('o mais forte para tarefas difíceis')],
+      sonnet: ['Sonnet', tr('equilíbrio entre qualidade e velocidade')],
+      haiku: ['Haiku', tr('o mais rápido e barato')],
+    };
+    const opts: Array<[ModelId | '', string, string]> = [['', tr('Padrão da conta'), tr('o que a conta usa normalmente')], ...MODEL_IDS.map((id): [ModelId, string, string] => [id, names[id][0], names[id][1]])];
+    this.modelRow.replaceChildren(
+      ...opts.map(([id, name, tip]) => {
+        const b = h('button', { class: 'ui-btn ui-spawn__acc', type: 'button', role: 'radio', title: tip, attrs: { 'aria-checked': String(this.model === id) }, text: name });
+        b.classList.toggle('is-on', this.model === id);
+        b.addEventListener('click', () => {
+          this.model = id;
+          this.renderModels();
+        });
+        return b;
+      }),
+    );
+    const local = this.account === 'ollama';
+    setHidden(this.modelLabel, local);
+    setHidden(this.modelRow, local);
+  }
+
   private stepEl(n: number, ...kids: HTMLElement[]): HTMLElement {
     const el = h('div', { class: 'ui-spawn__step', attrs: { 'data-step': n } }, ...kids);
     this.steps[n - 1] = el;
@@ -389,6 +424,7 @@ export class SpawnPanel {
     const list = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => a.provider !== 'codex' && !a.configDir.endsWith('.claude-ollama'));
     if (this.account === 'ollama' && !this.localModel) this.account = '';
     this.renderEngines();
+    this.renderModels();
     // Contas do Claude: só com mais de uma e com "Conta do Claude" escolhida.
     const many = list.length > 1 && this.account !== 'ollama';
     setHidden(this.accountLabel, !many);
@@ -580,7 +616,7 @@ export class SpawnPanel {
       await api('/api/schedules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder, prompt: this.prompt.value, time: this.timeInput.value, days: [...this.days], tz: Intl.DateTimeFormat().resolvedOptions().timeZone, ...(this.account ? { account: this.account } : {}), ...(this.role ? { role: this.role } : {}) }),
+        body: JSON.stringify({ folder, prompt: this.prompt.value, time: this.timeInput.value, days: [...this.days], tz: Intl.DateTimeFormat().resolvedOptions().timeZone, ...(this.account ? { account: this.account } : {}), ...(this.role ? { role: this.role } : {}), ...(this.model && this.account !== 'ollama' ? { model: this.model } : {}) }),
       });
       this.say(tr('Agendado: o agente abre sozinho às {0}.', [this.timeInput.value]));
       this.prompt.value = '';
@@ -618,7 +654,7 @@ export class SpawnPanel {
       let info = await api<SpawnInfo>('/api/spawn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder, prompt: this.prompt.value, ...(this.account ? { account: this.account } : {}), ...(this.role ? { role: this.role } : {}), ...(ids.length ? { attachments: ids } : {}) }),
+        body: JSON.stringify({ folder, prompt: this.prompt.value, ...(this.account ? { account: this.account } : {}), ...(this.role ? { role: this.role } : {}), ...(this.model && this.account !== 'ollama' ? { model: this.model } : {}), ...(ids.length ? { attachments: ids } : {}) }),
       });
       const end = Date.now() + WAIT_MS;
       while ((info.status === 'queued' || info.status === 'sent') && Date.now() < end) {
