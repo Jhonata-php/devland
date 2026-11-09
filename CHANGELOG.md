@@ -14,6 +14,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Aprovar dentro da conversa:** quando o agente pede permissão (ou faz uma pergunta), o cartão com Aprovar, Recusar e as regras de "sempre permitir" aparece na própria conversa, acima da caixa de mensagem.
 - **Janelas arrastáveis (PC):** segure o cabeçalho de uma janela (Novo agente, Prévia, Entregas, Histórico, Ajustes, Contas, Plugins) e arraste para organizar a tela; dois cliques no cabeçalho a devolvem ao lugar.
 - **Reforço da prévia:** mensagem mandada pelo DevLand pedindo para ver o site ("abre o preview", "mostra como ficou") leva junto como abrir a prévia no DevLand, então até uma sessão aberta antes da skill faz o certo.
 - **Rodar o projeto pela prévia:** a janela da prévia ao vivo tem a pasta do projeto e "Rodar o projeto": o DevLand sobe o `npm run dev` (ou start/serve/preview) em segundo plano, acha a porta pela saída e abre a prévia; "Parar" encerra o servidor e os processos filhos.

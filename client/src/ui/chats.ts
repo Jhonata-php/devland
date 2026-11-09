@@ -7,6 +7,7 @@ import { funcChip, roleLabel, roleOf } from './roles';
 import type { AgentInfo, TerminalEntry } from '../../../shared/types';
 import { tr } from '../../../shared/i18n';
 import type { UiComponent, UiContext } from './context';
+import { PermissionCard } from './permission';
 import { MessageComposer } from './composer';
 import { createAvatar } from './avatar';
 import { h, setHidden, setText } from './dom';
@@ -81,6 +82,7 @@ export class ChatsView implements UiComponent {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private stick = true;
   private lastListKey = '';
+  private readonly perm: PermissionCard;
 
   constructor(private ctx: UiContext) {
     this.listBody = h('div', { class: 'ui-chats__list' });
@@ -98,6 +100,9 @@ export class ChatsView implements UiComponent {
     });
     this.note = h('p', { class: 'ui-chats__note', hidden: true });
     this.composer = new MessageComposer(ctx, 'terminal');
+    // Pedido de permissão (ou pergunta) do agente: aprovar ou negar sem sair da conversa.
+    this.perm = new PermissionCard(ctx);
+    this.perm.el.classList.add('ui-chats__perm');
     this.threadEl = h(
       'div',
       { class: 'ui-chats__screen ui-chats__screen--thread', hidden: true },
@@ -110,6 +115,7 @@ export class ChatsView implements UiComponent {
       ),
       this.msgs,
       this.note,
+      this.perm.el,
       h('div', { class: 'ui-chats__composer' }, this.composer.el),
     );
     this.el = h('section', { class: 'ui-chats', hidden: true, attrs: { 'aria-label': tr('Conversas') } }, this.listEl, this.threadEl);
@@ -258,6 +264,8 @@ export class ChatsView implements UiComponent {
       const fr = a && roleOf(a, snap?.rooms);
       setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}${fr ? ` · ${ROLES[fr].icon} ${roleLabel(fr)}` : ''}` : tr('saiu do escritório'));
       this.composer.render(a, a?.id ?? this.current);
+      // ctx.agent junta ao agente o pedido de permissão em aberto (o snapshot puro não o traz).
+      this.perm.render(a ? (this.ctx.agent(a.id) ?? a) : undefined);
       return;
     }
     const now = this.ctx.now();

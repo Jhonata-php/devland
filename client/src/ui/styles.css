@@ -12496,3 +12496,7 @@ body::before {
   body.is-dragging-panel, body.is-dragging-panel * { cursor: grabbing !important; user-select: none !important; }
   body.is-dragging-panel iframe { pointer-events: none; }
 }
+
+/* Conversa: o pedido de permissão fica acima da caixa de mensagem, sem tomar a tela toda. */
+.ui-chats__perm { flex: none; margin: 8px 10px 0; max-height: 45vh; overflow: auto; }
+.ui-chats__perm[hidden] { display: none; }
