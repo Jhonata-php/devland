@@ -17,6 +17,7 @@ import type { TerminalStreams } from './terminal';
 import { tr } from '../../shared/i18n';
 import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
+import type { PluginStore } from '../plugins/store';
 import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
 import type { SpawnFolder } from '../spawn/folders';
@@ -69,6 +70,8 @@ export interface ApiDeps {
   spawn?: SpawnService;
   /** Agentes agendados (schedule/schedules.ts): mesma trava do Novo agente. */
   schedules?: ScheduleStore;
+  /** Loja de plugins do Claude Code (plugins/store.ts): só admin (Cloud) ou o próprio computador. */
+  plugins?: PluginStore;
   /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
   preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
@@ -531,6 +534,23 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
             sendJson(res, 200, { url });
           })
           .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/plugins' || path.startsWith('/api/plugins/')) {
+      // Plugin roda código no servidor: só quem administra (Cloud) ou o próprio computador.
+      const store = deps.plugins;
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const action = path === '/api/plugins/install' ? 'install' : path === '/api/plugins/uninstall' ? 'uninstall' : null;
+      if (!store) sendJson(res, 404, { error: tr('loja de plugins indisponível (Claude Code não encontrado)') });
+      else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/plugins' && isRead) {
+        const q = new URL(req.url ?? '/', 'http://x').searchParams.get('q') ?? '';
+        store.list(q.slice(0, 100)).then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 502, { error: err.message }));
+      } else if (action && method === 'POST')
+        readJson(req)
+          .then((body) => store.change(String((body as { id?: unknown }).id ?? ''), action))
+          .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
+      else methodNotAllowed(res, action ? 'POST' : 'GET');
       return true;
     }
     if (path === '/api/schedules' || path.startsWith('/api/schedules/')) {

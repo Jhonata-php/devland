@@ -12461,3 +12461,14 @@ body::before {
 .ui-totp__row input { width: 120px; letter-spacing: 0.2em; }
 .ui-totp__codes { margin: 0; padding: 8px; border: 1px solid var(--ui-line-strong); border-radius: 6px; font-family: var(--font-mono, ui-monospace, monospace); user-select: all; }
 .ui-set--totp { flex-wrap: wrap; }
+
+/* Loja de plugins (janela no estilo de Contas). */
+.ui-plugins__body { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; overflow: auto; min-height: 0; flex: 1; }
+.ui-plugins__list { display: flex; flex-direction: column; gap: 8px; }
+.ui-plugins__item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--ui-line-strong); border-radius: 8px; }
+.ui-plugins__item.is-on { border-color: var(--ui-accent, #39ff88); }
+.ui-plugins__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ui-plugins__text small { color: var(--ui-muted); font-size: 11px; }
+.ui-plugins__text span { color: var(--ui-text); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ui-plugins__item .ui-btn { flex: none; min-height: 36px; }
+@media (min-width: 641px) { .ui-plugins { height: min(80vh, 760px); } }

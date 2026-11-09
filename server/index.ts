@@ -61,6 +61,7 @@ import { runnableClaudeBin } from './claude-bin';
 import { fetchOAuthUsage } from './accounts/oauth-usage';
 import { usageAlerts } from './accounts/usage-alert';
 import { dueSchedules, ScheduleStore } from './schedule/schedules';
+import { PluginStore } from './plugins/store';
 import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
 import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
 import { WORKSPACE } from './cloud/connect';
@@ -433,6 +434,8 @@ late.messages = messages;
 // do Docker, com node-pty e o executável do claude no PATH.
 const claudeBinSetting = process.env.HABBLAUD_CLAUDE_BIN?.trim();
 const claudeBin = claudeBinFrom();
+// Loja de plugins (Configurações): instala nas contas do Claude Code pelo CLI; rotas só para admin ou o próprio computador.
+const pluginStore = claudeBin ? new PluginStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir)) : undefined;
 // Agentes agendados: a cada 30 s, abre pelo Novo agente os agendamentos cuja hora chegou (no fuso de quem agendou).
 const schedules = spawn ? new ScheduleStore(join(config.dataDir, 'schedules.json')) : undefined;
 if (schedules && spawn) {
@@ -566,6 +569,7 @@ const api = createApiHandler({
   pty: ptys ? createPtyRoutes(ptys, cloud ? (req) => isRemoteRequest(req) && remoteAllows(req, 'terminal') : undefined) : undefined,
   spawn,
   schedules,
+  plugins: pluginStore,
   attachments,
   dictation,
   deliveries,

@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Loja de plugins do Claude Code:** em Configurações › Plugins do Claude Code (admin ou o próprio computador), busca no catálogo dos marketplaces configurados e instala ou remove com um toque, em todas as contas do Claude. Só instala o que está no catálogo, e a janela avisa que plugin roda código no servidor.
 - **Verificação em duas etapas (Cloud):** em Configurações, "Ativar" mostra a chave e um link que abre o app autenticador (no iPhone, o app Senhas); depois de confirmar com um código, o login pede o código de 6 dígitos após a senha. Vêm 8 códigos de reserva de uso único, para quem perder o celular. Desativar pede um código.
 - **Agentes agendados:** no Novo agente, "Repetir em dias e horário" agenda o pedido (ex.: revisar os PRs de segunda a sexta às 9h, no seu fuso); o agente abre sozinho na hora, pelo mesmo caminho do Novo agente. Os agendados aparecem embaixo, com Pausar e Apagar.
 - **Ditado pelo servidor no Cloud:** com `OPENAI_API_KEY` definida, o áudio gravado no celular é transcrito pela API da OpenAI (Whisper), no lugar do reconhecimento de voz do iPhone, que trava no app da tela de início. O log de início diz qual motor de ditado está ligado.

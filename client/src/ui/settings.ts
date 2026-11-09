@@ -1,6 +1,7 @@
 // Configurações (popover): opções do escritório, avisos, modo demonstração e Sobre (versão). O Habblaud World tem a
 // janela própria (ui/world/world-dialog.ts); daqui só sai a dica do tema em Aparência, que também vai para o prédio.
 import { access, remoteLogout } from '../net/access';
+import { openPlugins } from './plugins';
 import { openAccounts, openCloudPanel } from './accounts';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText } from './dom';
@@ -97,6 +98,7 @@ export class SettingsPopover implements UiComponent {
   private remoteGroup: HTMLElement;
   private logoutBtn: HTMLButtonElement;
   private usersRow: HTMLElement;
+  private pluginsRow!: HTMLElement;
   private testHint: HTMLElement;
   /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
   private profileRow: HTMLElement;
@@ -238,6 +240,20 @@ export class SettingsPopover implements UiComponent {
           openAccounts(this.ctx.root);
         } } }),
       )),
+      (this.pluginsRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Plugins do Claude Code') }),
+          h('span', { class: 'ui-set__hint', text: tr('Busque, instale e remova plugins dos marketplaces configurados, em todas as contas.') }),
+        ),
+        h('button', { class: 'ui-btn', type: 'button', text: tr('Abrir'), on: { click: () => {
+          this.hide();
+          openPlugins(this.ctx.root);
+        } } }),
+      )),
       (this.usersRow = h(
         'div',
         { class: 'ui-set', hidden: true },
@@ -362,6 +378,7 @@ export class SettingsPopover implements UiComponent {
     setHidden(this.demoGroup, this.ctx.store.mock || access().remote);
     setHidden(this.remoteGroup, !access().remote);
     setHidden(this.usersRow, !access().admin);
+    setHidden(this.pluginsRow, !(access().admin || (access().local && !access().remote)));
     setHidden(this.profileRow, !access().cloud);
     setHidden(this.totpRow, !access().cloud);
     setHidden(this.accountsRow, !access().cloud);
