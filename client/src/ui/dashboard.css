@@ -907,3 +907,28 @@ html.theme-light .dash-ai-pick select { background: #fff; }
   .dash-top__act .dash-btn:not(.dash-btn--primary) { width: 38px; padding: 0; }
   .dash-live { display: none; }
 }
+
+/* ---------- Novo agente em passos ---------- */
+html .ui-root .ui-spawn__stepper { display: flex; gap: 8px; margin: 0 24px 6px; padding: 0; list-style: none; }
+html .ui-root .ui-spawn__stepper li { flex: 1; display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 2px solid var(--ui-line); color: var(--ui-muted); font: 12.5px var(--font-ui); }
+html .ui-root .ui-spawn__stepper li i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ui-bg-hover); font: 700 11px/1 var(--font-ui); font-style: normal; }
+html .ui-root .ui-spawn__stepper li.is-on { border-top-color: var(--ui-text); color: var(--ui-text); }
+html .ui-root .ui-spawn__stepper li.is-on i { background: var(--ui-text); color: var(--ui-bg-solid); }
+html .ui-root .ui-spawn__stepper li.is-done { border-top-color: var(--ui-accent); }
+html .ui-root .ui-spawn__stepper li.is-done i { background: var(--ui-accent-soft); color: var(--ui-accent); }
+html .ui-root .ui-spawn__step { display: grid; gap: 8px; min-height: 220px; align-content: start; }
+html .ui-root .ui-spawn__step[hidden] { display: none; }
+html .ui-root .ui-spawn__engines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+html .ui-root .ui-spawn__engine { display: grid; gap: 6px; padding: 18px; border: 1px solid var(--ui-line-strong); border-radius: 14px; background: var(--ui-bg-soft); color: var(--ui-text); text-align: left; font: inherit; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+html .ui-root .ui-spawn__engine b { font: 650 16px var(--font-ui); }
+html .ui-root .ui-spawn__engine small { color: var(--ui-muted); font: 13px/1.45 var(--font-ui); }
+html .ui-root .ui-spawn__engine:hover:not(:disabled) { border-color: var(--ui-text); }
+html .ui-root .ui-spawn__engine.is-on { border-color: var(--ui-text); background: var(--ui-bg-hover); box-shadow: 0 0 0 3px var(--ui-accent-soft); }
+html .ui-root .ui-spawn__engine:disabled { opacity: 0.5; cursor: default; }
+html .ui-root .ui-spawn__nav { display: flex; justify-content: space-between; gap: 10px; padding: 0 24px 22px; }
+html .ui-root .ui-spawn__nav .ui-btn { height: 42px; padding: 0 20px; border-radius: 11px; font-size: 14px; }
+html .ui-root .ui-spawn__next { margin-left: auto; }
+html .ui-root .ui-spawn__next:disabled { opacity: 0.4; }
+@media (max-width: 600px) { html .ui-root .ui-spawn__engines { grid-template-columns: minmax(0, 1fr); } }
+html .ui-root .ui-spawn__go { background: #edece9; color: #111110; border-color: #edece9; font-weight: 650; }
+html .ui-root .ui-spawn__go:hover { background: #fff; color: #111110; }

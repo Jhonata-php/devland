@@ -3902,7 +3902,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Código de alta qualidade para servidor médio": "Código de alta calidad para servidor mediano",
   "Código: bom para completar, explicar e corrigir": "Código: bueno para completar, explicar y corregir",
   "Feito para agentes de código (Mistral): edita vários arquivos com segurança": "Hecho para agentes de código (Mistral): edita varios archivos con seguridad",
-  "IA local · {0}": "IA local · {0}",
   "Modelo aberto da OpenAI: raciocínio forte e uso de ferramentas": "Modelo abierto de OpenAI: razonamiento fuerte y uso de herramientas",
   "Muito bom em código e ferramentas, multilíngue": "Muy bueno en código y herramientas, multilingüe",
   "O melhor equilíbrio para agentes em servidor de 8 a 16 GB": "El mejor equilibrio para agentes en servidor de 8 a 16 GB",
@@ -3955,4 +3954,15 @@ export const ES: Readonly<Record<string, string>> = {
   "carregado": "cargado",
   "nada": "nada",
   "{0} GB · precisa de {1} GB de memória": "{0} GB · necesita {1} GB de memoria",
+
+  // Novo agente em passos
+  "Ative a IA local e baixe um modelo na página IA local.": "Activa la IA local y descarga un modelo en la página IA local.",
+  "Claude Code com a sua assinatura: o mais capaz para qualquer tarefa.": "Claude Code con tu suscripción: el más capaz para cualquier tarea.",
+  "Conta do Claude": "Cuenta de Claude",
+  "Em qual projeto?": "¿En qué proyecto?",
+  "Próximo passo": "Siguiente paso",
+  "Quem trabalha": "Quién trabaja",
+  "Quem vai fazer o trabalho?": "¿Quién hará el trabajo?",
+  "Roda no seu servidor com {0}: sem gastar o plano, mais lento.": "Corre en tu servidor con {0}: sin gastar el plan, más lento.",
+  "Voltar": "Volver",
 };

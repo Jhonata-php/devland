@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Novo agente em passos:** 1) quem vai trabalhar (conta do Claude, com a escolha da conta, ou a IA local do servidor); 2) o projeto; 3) a função e o pedido. Voltar e Próximo passo entre eles.
 - **Proteção de memória da IA local:** um modelo carregado por vez, um pedido por vez, cache de contexto menor e prioridade baixa para o motor; antes de carregar, o DevLand confere se o modelo cabe deixando uma reserva para o painel, e se a memória acabar ele tira o modelo da memória na hora. A IA local não derruba mais o painel.
 - **Tema claro:** em Configurações › Aparência › Cores, escolha Escuro, Claro ou Automático (segue o sistema). Vale para o painel, as conversas, as janelas e o contorno do escritório; o mapa continua igual.
 - **IA local como conta de agentes:** no Novo agente aparece a conta "IA local · modelo". O agente é o Claude Code de verdade (escritório, conversas, permissões), falando com o Ollama do servidor; na página IA local você escolhe o modelo ("Usar nos agentes"). O Ollama sobe com 32 mil tokens de contexto.

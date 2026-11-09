@@ -162,6 +162,13 @@ export class SpawnPanel {
   private selected = '';
   /** Conta escolhida ('' = Automática: o servidor usa a de mais folga). */
   private account = '';
+  /** Passo do assistente: 1 quem trabalha (conta ou IA local), 2 projeto, 3 função e pedido. */
+  private step = 1;
+  private readonly steps: HTMLElement[] = [];
+  private readonly stepper: HTMLElement;
+  private readonly backBtn: HTMLButtonElement;
+  private readonly nextBtn: HTMLButtonElement;
+  private readonly engineRow: HTMLElement;
   /** Função do agente ('' = sem função: o Habblaud deduz pelos arquivos e pelo projeto). */
   private role: RoleId | '' = '';
   private readonly roleRow: HTMLElement;
@@ -236,21 +243,22 @@ export class SpawnPanel {
       this.selected = this.folder.value.trim();
       this.renderFolders();
     });
+    this.engineRow = h('div', { class: 'ui-spawn__engines', role: 'radiogroup', attrs: { 'aria-label': tr('Quem vai fazer o trabalho?') } });
+    this.stepper = h('ol', { class: 'ui-spawn__stepper' }, ...[tr('Quem trabalha'), tr('Projeto'), tr('Pedido')].map((t, i) => h('li', { attrs: { 'data-step': i + 1 } }, h('i', { text: String(i + 1) }), h('span', { text: t }))));
+    this.backBtn = h('button', { class: 'ui-btn ui-spawn__back', type: 'button', text: tr('Voltar'), on: { click: () => this.showStep(this.step - 1) } });
+    this.nextBtn = h('button', { class: 'ui-btn ui-btn--accent ui-spawn__next', type: 'button', text: tr('Próximo passo'), on: { click: () => this.showStep(this.step + 1) } });
     const close = iconButton(ICONS.close, tr('Fechar'), () => this.hide(), 'ui-icon-btn--sm');
     this.el = h(
       'div',
       { class: 'ui-popover ui-spawn', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Novo agente'), id: 'ui-spawn', popover: 'auto' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Novo agente') }), close),
+      this.stepper,
       h(
         'div',
         { class: 'ui-set-group ui-spawn__body' },
-        h('p', { class: 'ui-spawn__label', attrs: { id: 'ui-spawn-folders-label' }, text: tr('Projeto') }),
-        this.folderList,
-        this.otherBtn,
-        this.folder,
-        this.accountLabel,
-        this.accountRow,
-        h('p', { class: 'ui-spawn__label', text: tr('Função') }),
+        this.stepEl(1, h('p', { class: 'ui-spawn__label', text: tr('Quem vai fazer o trabalho?') }), this.engineRow, this.accountLabel, this.accountRow),
+        this.stepEl(2, h('p', { class: 'ui-spawn__label', attrs: { id: 'ui-spawn-folders-label' }, text: tr('Em qual projeto?') }), this.folderList, this.otherBtn, this.folder),
+        this.stepEl(3, h('p', { class: 'ui-spawn__label', text: tr('Função') }),
         this.roleRow,
         h('label', { class: 'ui-spawn__label', attrs: { for: 'ui-spawn-prompt' }, text: tr('Pedido') }),
         this.prompt,
@@ -261,9 +269,11 @@ export class SpawnPanel {
         this.repeatBox,
         this.submitBtn,
         this.status,
-        this.schedList,
+        this.schedList),
       ),
+      h('div', { class: 'ui-spawn__nav' }, this.backBtn, this.nextBtn),
     );
+    this.showStep(1);
     this.el.addEventListener('toggle', () => {
       this.anchor?.setAttribute('aria-expanded', String(this.isOpen));
       if (!this.isOpen) this.dictate.cancel();
@@ -283,6 +293,7 @@ export class SpawnPanel {
     if (this.isOpen) return this.hide();
     // Primeiro com o que o escritório já sabe; a lista do servidor (histórico) chega logo depois.
     if (!this.folders.length) this.setFolders(spawnFolders(this.ctx.store.snapshot).map((path) => ({ path, name: path.split(/[\\/]/).pop() || path, lastAt: 0 })));
+    this.showStep(1);
     this.renderAccounts();
     void this.loadFolders();
     void this.loadLocalModel();
@@ -326,6 +337,41 @@ export class SpawnPanel {
     );
   }
 
+  private stepEl(n: number, ...kids: HTMLElement[]): HTMLElement {
+    const el = h('div', { class: 'ui-spawn__step', attrs: { 'data-step': n } }, ...kids);
+    this.steps[n - 1] = el;
+    return el;
+  }
+
+  /** Mostra o passo `n` (1 a 3); o Próximo só anda com o passo atual completo. */
+  private showStep(n: number): void {
+    if (!this.steps.length) return;
+    this.step = Math.max(1, Math.min(3, n));
+    this.steps.forEach((el, i) => setHidden(el, i + 1 !== this.step));
+    for (const li of this.stepper.children) {
+      const k = Number((li as HTMLElement).dataset.step);
+      li.classList.toggle('is-on', k === this.step);
+      li.classList.toggle('is-done', k < this.step);
+    }
+    setHidden(this.backBtn, this.step === 1);
+    setHidden(this.nextBtn, this.step === 3);
+    this.nextBtn.disabled = this.step === 2 && !this.selected;
+    if (this.step === 3 && !matchMedia('(pointer: coarse)').matches) this.prompt.focus();
+  }
+
+  /** Passo 1: conta do Claude ou IA local, em dois cartões. */
+  private renderEngines(): void {
+    const local = this.account === 'ollama';
+    const card = (on: boolean, title: string, sub: string, pick: () => void, disabled = false) => {
+      const b = h('button', { class: `ui-spawn__engine${on ? ' is-on' : ''}`, type: 'button', role: 'radio', attrs: { 'aria-checked': String(on), disabled }, on: { click: pick } }, h('b', { text: title }), h('small', { text: sub }));
+      return b;
+    };
+    this.engineRow.replaceChildren(
+      card(!local, tr('Conta do Claude'), tr('Claude Code com a sua assinatura: o mais capaz para qualquer tarefa.'), () => { this.account = ''; this.renderAccounts(); }),
+      card(local, tr('IA local'), this.localModel ? tr('Roda no seu servidor com {0}: sem gastar o plano, mais lento.', [this.localModel]) : tr('Ative a IA local e baixe um modelo na página IA local.'), () => { this.account = 'ollama'; this.renderAccounts(); }, !this.localModel),
+    );
+  }
+
   /** Modelo da conta "IA local" (do /api/ai, só admin); null = sem Ollama ou sem modelo baixado. */
   private localModel: string | null = null;
 
@@ -341,16 +387,18 @@ export class SpawnPanel {
 
   private renderAccounts(): void {
     const list = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => a.provider !== 'codex' && !a.configDir.endsWith('.claude-ollama'));
-    const many = list.length > 1 || !!this.localModel;
+    if (this.account === 'ollama' && !this.localModel) this.account = '';
+    this.renderEngines();
+    // Contas do Claude: só com mais de uma e com "Conta do Claude" escolhida.
+    const many = list.length > 1 && this.account !== 'ollama';
     setHidden(this.accountLabel, !many);
     setHidden(this.accountRow, !many);
     if (!many) {
-      this.account = '';
+      if (this.account !== 'ollama') this.account = '';
       return;
     }
-    if (this.account && this.account !== 'ollama' && !list.some((a) => a.id === this.account)) this.account = '';
-    const opts: [string, string, AccountInfo | undefined][] = [['', tr('Automática'), undefined], ...list.map((a): [string, string, AccountInfo] => [a.id, a.name, a]),
-      ...(this.localModel ? [['ollama', tr('IA local · {0}', [this.localModel]), undefined] as [string, string, undefined]] : [])];
+    if (this.account && !list.some((a) => a.id === this.account)) this.account = '';
+    const opts: [string, string, AccountInfo | undefined][] = [['', tr('Automática'), undefined], ...list.map((a): [string, string, AccountInfo] => [a.id, a.name, a])];
     this.accountRow.replaceChildren(
       ...opts.map(([id, name, a]) => {
         const chip = createAccountChip('sm');
@@ -408,6 +456,7 @@ export class SpawnPanel {
     );
     if (!this.folders.length) this.showOther(true);
     else if (!known && this.selected && !this.typing) this.showOther(true, this.selected);
+    if (this.step === 2) this.nextBtn.disabled = !this.selected;
   }
 
   private pick(path: string): void {
