@@ -3981,4 +3981,6 @@ export const FR: Readonly<Record<string, string>> = {
   "Quem vai fazer o trabalho?": "Qui va faire le travail ?",
   "Roda no seu servidor com {0}: sem gastar o plano, mais lento.": "Tourne sur votre serveur avec {0} : sans consommer le forfait, plus lent.",
   "Voltar": "Retour",
+  // IA local: testar um modelo
+  "Testar": "Tester",
 };

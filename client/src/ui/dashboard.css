@@ -932,3 +932,13 @@ html .ui-root .ui-spawn__next:disabled { opacity: 0.4; }
 @media (max-width: 600px) { html .ui-root .ui-spawn__engines { grid-template-columns: minmax(0, 1fr); } }
 html .ui-root .ui-spawn__go { background: #edece9; color: #111110; border-color: #edece9; font-weight: 650; }
 html .ui-root .ui-spawn__go:hover { background: #fff; color: #111110; }
+/* Testar um modelo: a conversa abre numa janela por cima. */
+.dash-ai-modal { position: fixed; inset: 0; z-index: 72; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px); }
+.dash-ai-modal[hidden] { display: none; }
+.dash-ai-modal .dash-ai-chat { width: min(760px, 100%); max-height: 88vh; box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.8); }
+.dash-ai-modal .dash-ai-log { max-height: 60vh; }
+.dash-ai-x { width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--d-mut); font-size: 15px; }
+.dash-ai-x:hover { background: rgba(255, 255, 255, 0.07); color: var(--d-txt); }
+html.theme-light .dash-ai-modal { background: rgba(0, 0, 0, 0.25); }
+.dash-model__foot .dash-grow { flex: 1; }
+@media (max-width: 600px) { .dash-ai-modal { place-items: end center; padding: 0; } .dash-ai-modal .dash-ai-chat { border-radius: 18px 18px 0 0; max-height: 92vh; } }

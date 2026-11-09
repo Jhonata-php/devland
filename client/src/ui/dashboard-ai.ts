@@ -31,6 +31,8 @@ export class AiPage {
   private readonly chatInput: HTMLTextAreaElement;
   private readonly chatSend: HTMLButtonElement;
   private readonly chatModel: HTMLSelectElement;
+  /** Janela de teste: a conversa com um modelo, aberta pelo botão Testar de cada modelo. */
+  private readonly modal: HTMLElement;
   /** Tokens por segundo medidos em cada modelo (botão Medir velocidade). */
   private speed = new Map<string, number | 'run' | 'err'>();
 
@@ -57,10 +59,28 @@ export class AiPage {
       h('div', { class: 'dash-ai-chat__head' },
         h('span', { class: 'dash-ai-av', attrs: { 'aria-hidden': 'true' } }),
         h('div', {}, h('b', { text: tr('Assistente local') }), h('small', { text: tr('Roda no seu servidor, sem conta e sem enviar nada para fora.') })),
-        this.chatModel, clear),
+        this.chatModel, clear, h('button', { class: 'dash-ai-x', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: () => this.closeTest() } })),
       this.chatLog,
       h('div', { class: 'dash-ai-compose' }, this.chatInput, this.chatSend));
+    this.modal = h('div', { class: 'dash-ai-modal', hidden: true, on: { click: (e) => e.target === this.modal && this.closeTest() } }, this.chatEl);
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.modal.hidden) this.closeTest();
+    });
     this.drawChat();
+  }
+
+  /** Abre a conversa de teste com o modelo. */
+  private openTest(model: string): void {
+    if (this.chat.model !== model) this.chat.msgs = [];
+    this.chat.model = model;
+    this.chatModel.value = model;
+    this.modal.hidden = false;
+    this.drawChat();
+    requestAnimationFrame(() => this.chatInput.focus());
+  }
+
+  private closeTest(): void {
+    this.modal.hidden = true;
   }
 
   private drawChat(): void {
@@ -221,7 +241,8 @@ export class AiPage {
         this.speed.get(m.name) === fastest ? h('span', { class: 'dash-badge is-admin', text: tr('Mais rápido') }) : null),
       h('p', { text: [gb(m.size), loadedSet.has(m.name) ? tr('carregado') : '', speedOf(m.name)].filter(Boolean).join(' · ') }),
       h('div', { class: 'dash-model__foot' },
-        st.agentModel === m.name ? h('span') : h('button', { class: 'dash-btn', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
+        h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Testar'), on: { click: () => this.openTest(m.name) } }),
+        st.agentModel === m.name ? h('span', { class: 'dash-grow' }) : h('button', { class: 'dash-btn', type: 'button', text: tr('Usar nos agentes'), on: { click: () => this.act(() => this.post('/api/ai/agent-model', { model: m.name })) } }),
         h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Remover'), on: { click: () => confirm(tr('Remover o modelo {0}?', [nameOf(m.name)])) && this.act(() => this.post(`/api/ai/models/${encodeURIComponent(m.name)}`, undefined, 'DELETE')) } })))));
 
     // 5) Baixar modelos: os que cabem primeiro; os grandes demais só em "Ver todos".
@@ -264,7 +285,7 @@ export class AiPage {
         h('small', { class: 'dash-muted', text: tr('Seu servidor: {0} de memória, {1} núcleos', [gb(s.ramTotal), s.cpus]) })),
         store,
         hidden ? h('button', { class: 'dash-link dash-ai-more', type: 'button', text: this.showAll ? tr('Mostrar só os que cabem neste servidor') : tr('Ver também os {0} modelos maiores (precisam de servidor com mais memória)', [hidden]), on: { click: () => { this.showAll = !this.showAll; this.invalidate(); } } }) : null),
-      st.models.length ? this.chatEl : null,
+      this.modal,
       st.ollama.own ? h('details', { class: 'dash-ai-adv' }, h('summary', { text: tr('Mais opções') }),
         h('p', { class: 'dash-muted', text: tr('Desativar apaga o motor e todos os modelos baixados, liberando o espaço no disco.') }),
         h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', attrs: { disabled: working }, text: tr('Desativar a IA local'), on: { click: () => confirm(tr('Desativar a IA local e apagar todos os modelos baixados?')) && this.act(() => this.post('/api/ai/uninstall')) } })) : null);

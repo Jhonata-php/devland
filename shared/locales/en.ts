@@ -3964,4 +3964,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Quem vai fazer o trabalho?": "Who will do the work?",
   "Roda no seu servidor com {0}: sem gastar o plano, mais lento.": "Runs on your server with {0}: doesn't use your plan, slower.",
   "Voltar": "Back",
+  // IA local: testar um modelo
+  "Testar": "Test",
 };
