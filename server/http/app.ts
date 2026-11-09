@@ -19,6 +19,8 @@ import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
 import type { LocalAi } from '../ai/local';
+import { githubUser, listProjects, pull, ACTIVITY_DAYS } from '../github/projects';
+import { addDays } from '../../shared/daystats';
 import type { DevRunner } from '../preview/devrun';
 import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
@@ -76,6 +78,10 @@ export interface ApiDeps {
   plugins?: PluginStore;
   /** IA local (ai/local.ts): instalar o Ollama, baixar modelos, consumo. Só admin (Cloud) ou o próprio computador. */
   localAi?: LocalAi;
+  /** Pastas dos projetos para a página GitHub (salas do escritório e, no Cloud, /workspace/*). */
+  projectDirs?: () => string[];
+  /** Executável do gh (conta do GitHub conectada), quando existe. */
+  ghBin?: string;
   /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
   onPreviewOpen?: (port: number) => void;
   /** Rodar o projeto para a prévia (preview/devrun.ts). */
@@ -594,6 +600,43 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           .then((body) => store.change(String((body as { id?: unknown }).id ?? ''), action))
           .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
       else methodNotAllowed(res, action ? 'POST' : 'GET');
+      return true;
+    }
+    if (path === '/api/dash/activity' && isRead) {
+      // Gráficos da Visão geral e página GitHub: tokens e tempo por dia (Meu dia), projetos git e a conta do GitHub.
+      const tz = new URL(req.url ?? '/', 'http://x').searchParams.get('tz') || deps.stats?.tz || 'UTC';
+      const days: { day: string; tokens: number; workMs: number; sessions: number }[] = [];
+      try {
+        const today = deps.stats?.today(tz);
+        if (deps.stats && today) {
+          for (let i = ACTIVITY_DAYS - 1; i >= 0; i--) {
+            const day = addDays(today, -i);
+            const r = deps.stats.day(day, tz, 'real');
+            const t = r?.stats.totals;
+            days.push({ day, tokens: t ? t.counts.tokensIn + t.counts.tokensOut : 0, workMs: t ? (t.ms.working ?? 0) + (t.ms.shell ?? 0) : 0, sessions: t?.sessions ?? 0 });
+          }
+        }
+      } catch {
+        // fuso inválido ou sem estatísticas: os gráficos de uso ficam vazios
+      }
+      Promise.all([listProjects(deps.projectDirs?.() ?? []), githubUser(deps.ghBin)])
+        .then(([projects, github]) => sendJson(res, 200, { days, projects, github, ghAvailable: !!deps.ghBin }))
+        .catch((err: Error) => sendJson(res, 500, { error: err.message }));
+      return true;
+    }
+    if (path === '/api/dash/pull' && method === 'POST') {
+      // git pull --ff-only num projeto da lista: só quem administra (Cloud) ou o próprio computador.
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else
+        readJson(req)
+          .then(async (b) => {
+            const dir = String((b as { path?: unknown }).path ?? '');
+            if (!(deps.projectDirs?.() ?? []).includes(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            const ok = await pull(dir);
+            sendJson(res, ok ? 200 : 409, ok ? { ok: true } : { error: tr('Não deu para atualizar: há alterações locais ou a branch divergiu do GitHub.') });
+          })
+          .catch((err) => fail(res, err));
       return true;
     }
     if (path === '/api/ai' || path.startsWith('/api/ai/')) {

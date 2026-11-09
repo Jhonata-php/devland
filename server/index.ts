@@ -593,6 +593,8 @@ const api = createApiHandler({
   schedules,
   plugins: pluginStore,
   localAi,
+  ghBin: findExecutable('gh'),
+  projectDirs: () => [...hub.current().rooms.map((r) => r.path), ...(cloud ? workspaceFolders(WORKSPACE).map((f) => f.path) : [])].filter((p) => p !== WORKSPACE),
   devRunner,
   resumeWithMessage: ptys ? (id, text) => ptys.sendMessage(id, withPreviewHint(text)) : undefined,
   onPreviewOpen: (port) => office.noticeSystem('preview', 'info', tr('🌐 Abrindo a prévia do site na porta {0}.', [port]), { previewPort: port }),

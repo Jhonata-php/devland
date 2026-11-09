@@ -12,8 +12,9 @@ import { createAvatar } from './avatar';
 import { clampPercent, formatResetAt, formatTokens, prettyModel, relativeTime, usageLevel } from './format';
 import { activityFallback, isPresent, statusLabel } from './model';
 import { AiPage } from './dashboard-ai';
+import { GithubData } from './dashboard-github';
 
-export type DashPage = 'home' | 'agents' | 'chats' | 'accounts' | 'people' | 'ai';
+export type DashPage = 'home' | 'agents' | 'chats' | 'github' | 'accounts' | 'people' | 'ai';
 
 export interface DashActions {
   openChat(agentId: string): void;
@@ -35,6 +36,7 @@ const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => st
   { id: 'home', icon: ICONS.overview, label: () => tr('Visão geral'), short: () => tr('Início') },
   { id: 'agents', icon: ICONS.newAgent, label: () => tr('Agentes') },
   { id: 'chats', icon: ICONS.feed, label: () => tr('Conversas') },
+  { id: 'github', icon: ICONS.browser, label: () => tr('GitHub'), side: true },
   { id: 'accounts', icon: ICONS.lock, label: () => tr('Contas') },
   { id: 'people', icon: ICONS.hand, label: () => tr('Pessoas'), side: true },
   { id: 'ai', icon: ICONS.terminal, label: () => tr('IA local'), short: () => tr('IA'), side: true },
@@ -68,6 +70,7 @@ export class Dashboard implements UiComponent {
   private readonly pluginsBtn: HTMLButtonElement;
   private readonly top: HTMLElement;
   private readonly ai: AiPage;
+  private readonly gh: GithubData;
   private readonly meEl: HTMLElement;
   private people: { users: CloudUser[]; me: string } | null = null;
   private peopleErr = '';
@@ -83,6 +86,7 @@ export class Dashboard implements UiComponent {
     this.meEl = h('div', { class: 'dash-me', hidden: true });
     const tools = h('div', { class: 'dash-tools' }, this.pluginsBtn, this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
     this.top = h('header', { class: 'dash-top' });
+    this.gh = new GithubData(() => ctx.invalidate());
     this.ai = new AiPage(() => ctx.invalidate(), (t, sub) => this.header(t, sub));
     this.main = h('main', { class: 'dash-main' });
     this.tabs = h('nav', { class: 'dash-tabs', attrs: { 'aria-label': tr('Seções') } });
@@ -129,6 +133,8 @@ export class Dashboard implements UiComponent {
     this.shown = null;
     if (!on && this.page === 'chats') this.go('home');
     this.ai.active(on && this.page === 'ai');
+    // Gráficos da Visão geral e página GitHub: lê ao abrir o painel e a cada minuto.
+    this.gh.active(on);
     if (on && access().cloud && !this.me) void this.loadMe();
   }
 
@@ -148,7 +154,7 @@ export class Dashboard implements UiComponent {
     const snap = this.ctx.store.snapshot;
     const minute = Math.floor(this.ctx.now() / 30_000);
     // Pessoas não depende do snapshot: redesenhar apagaria o que se digita no convite.
-    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}|${this.act.chatsOpen()}|${this.ai.key()}`;
+    const key = `${this.page}|${this.page === 'people' ? 0 : snap?.rev ?? -1}|${minute}|${access().admin}|${access().cloud}|${this.people ? this.people.users.length : -1}|${this.peopleErr}|${this.me?.name}|${this.act.chatsOpen()}|${this.ai.key()}|${this.page === 'home' || this.page === 'github' ? this.gh.key() : ''}`;
     if (key === this.lastKey) return;
     // Alguém digitando na página (convite, pergunta à IA): não redesenha por baixo dele.
     const focus = document.activeElement;
@@ -157,7 +163,7 @@ export class Dashboard implements UiComponent {
     this.pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
     this.renderNav();
     this.renderTop();
-    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.homePage();
+    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas')) : this.homePage();
     // A animação de entrada só na troca de página (não a cada snapshot).
     if (this.page !== this.shown) page.classList.add('is-enter');
     this.shown = this.page;
@@ -231,9 +237,11 @@ export class Dashboard implements UiComponent {
         stat(tr('Precisam de você'), String(waiting.length), waiting.length ? tr('Responda para eles seguirem') : tr('Nada pendente'), waiting.length ? 'is-warn' : ''),
         stat(tr('Tokens das sessões'), formatTokens(tokens), tr('entrada + saída')),
         stat(tr('Linhas escritas'), lines.toLocaleString(), tr('nas sessões abertas'))),
+      this.gh.charts(),
       h('section', { class: 'dash-more' },
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('people') } }, icon(ICONS.hand), h('span', { text: tr('Pessoas') })),
         h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('ai') } }, icon(ICONS.terminal), h('span', { text: tr('IA local') })),
+        h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.go('github') } }, icon(ICONS.browser), h('span', { text: tr('GitHub') })),
         this.pluginsBtn.hidden ? null : h('button', { class: 'dash-btn', type: 'button', on: { click: () => this.act.openPlugins() } }, icon(ICONS.plugin), h('span', { text: tr('Plugins') }))),
       waiting.length ? h('section', { class: 'dash-card dash-attn' }, h('h2', { text: tr('Precisam de você') }), h('div', { class: 'dash-list' }, ...waiting.map((a) => this.agentRow(a, now)))) : null,
       h('div', { class: 'dash-cols' },
@@ -341,7 +349,7 @@ export class Dashboard implements UiComponent {
     const u = a.usage;
     return h('div', { class: 'dash-usage' }, this.logo(a),
       h('div', { class: 'dash-usage__main' }, h('b', { text: a.name }),
-        u?.noQuota ? h('small', { class: 'dash-bad', text: tr('Sem cota agora') }) : u ? this.bar(tr('5 horas'), u.fiveHour, now) ?? h('small', { class: 'dash-muted', text: '—' }) : h('small', { class: 'dash-muted', text: tr('Uso ainda desconhecido') })));
+        u?.noQuota ? h('small', { class: 'dash-bad', text: tr('Sem cota agora') }) : u ? h('div', { class: 'dash-bars dash-bars--2' }, this.bar(tr('5 horas'), u.fiveHour, now), this.bar(tr('Semana'), u.sevenDay, now)) : h('small', { class: 'dash-muted', text: tr('Uso ainda desconhecido') })));
   }
 
   private accountCard(a: AccountInfo, open: number, now: number): HTMLElement {

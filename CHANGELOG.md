@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **GitHub no painel:** página com a conta do GitHub conectada (foto e login), os projetos git (branch, arquivos alterados, commits a enviar, últimos 14 dias de commits e o link do repositório), puxar do GitHub (só avança, nunca faz merge) e, no Cloud, clonar os seus repositórios.
+- **Gráficos na Visão geral:** tokens usados por dia e commits por dia nos últimos 14 dias, com o valor de cada dia ao passar o mouse. O uso das contas mostra também o limite semanal.
 - **Assistente local:** na IA local, com um modelo baixado, dá para conversar com ele como se fosse um agente (histórico, velocidade em tokens por segundo, nova conversa). Também dá para **desinstalar** o Ollama e **cancelar** um download; a instalação mostra os MB baixados.
 - **IA local (modo Painel):** instala o Ollama no servidor com um clique (na pasta de dados, sem root, sobrevive às atualizações), lista modelos leves que rodam só com CPU e recomenda o que cabe na memória, baixa e remove modelos, mostra memória, CPU, disco e o que está carregado, e tem um teste rápido com a velocidade em tokens por segundo. Só para admin ou pelo próprio computador.
 - **Conversas dentro do painel:** a página Conversas mostra a lista e a conversa no lugar do conteúdo; tocar num agente ou no aviso de entrega abre ali, sem ir ao escritório.

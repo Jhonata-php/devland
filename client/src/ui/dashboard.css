@@ -351,7 +351,7 @@ html.is-panel.dash-on-chats .ui-chats .ui-chats__head .ui-icon-btn:last-child { 
 
 .dash-more { display: none; }
 @media (max-width: 900px) {
-  .dash-more { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .dash-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .dash-more .dash-btn { height: 64px; flex-direction: column; gap: 4px; font-size: 12.5px; }
 }
 @media (min-width: 901px) {
@@ -491,3 +491,52 @@ html.is-panel .ui-chats__head .ui-chats__sub { font: 12.5px var(--font-ui); colo
 .dash-ai-send { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #edece9; color: #111110; font-size: 17px; font-weight: 700; }
 .dash-ai-send:disabled { opacity: 0.3; }
 @media (max-width: 900px) { .dash-ai-chat__head { flex-wrap: wrap; } .dash-ai-model { max-width: none; flex: 1; } .dash-ai-log { max-height: 60vh; padding: 16px; } }
+.dash-bars--2 { grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 480px) { .dash-bars--2 { grid-template-columns: 1fr; gap: 8px; } }
+
+/* ---------- gráficos (paleta validada no fundo escuro: azul e água) ---------- */
+.dash { --d-s1: #3987e5; --d-s3: #199e70; }
+.dash-cols--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dash-chartcard { display: flex; flex-direction: column; gap: 2px; }
+.dash-chartcard .dash-card__head { margin-bottom: 0; }
+.dash-chartcard__total { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.dash-chart { position: relative; margin-top: 8px; }
+.dash-chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.dash-chart__grid { stroke: rgba(255, 255, 255, 0.06); stroke-dasharray: 2 4; }
+.dash-chart__base { stroke: rgba(255, 255, 255, 0.14); }
+.dash-chart__x { fill: #6f6c67; font: 10.5px var(--d-font); }
+.dash-chart__val { fill: #c9c7c2; font: 600 11px var(--d-font); }
+.dash-chart__col { cursor: default; }
+.dash-chart__col.is-hover .dash-chart__bar { filter: brightness(1.25); }
+.dash-chart__col.is-hover .dash-chart__x { fill: #edece9; }
+.dash-chart__tip { position: absolute; top: -6px; transform: translate(-50%, -100%); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: #262624; color: #c9c7c2; font-size: 12px; white-space: nowrap; pointer-events: none; box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.7); }
+.dash-chart__tip b { color: #edece9; }
+
+/* ---------- GitHub ---------- */
+.dash-gh-account { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.dash-gh-avatar { flex: none; width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--d-line2); background: #262624; }
+.dash-gh-who { flex: 1; min-width: 200px; display: grid; gap: 2px; }
+.dash-gh-who b { font-size: 15px; font-weight: 600; }
+.dash-gh-who small { color: var(--d-mut); }
+.dash-repo-list { display: flex; flex-direction: column; margin: 0 -8px; }
+.dash-repo { display: flex; align-items: center; gap: 16px; padding: 12px 8px; border-top: 1px solid var(--d-line); }
+.dash-repo:first-child { border-top: 0; }
+.dash-repo__main { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.dash-repo__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dash-repo__top b { font-weight: 600; }
+.dash-repo__top code { padding: 1px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); font: 12px ui-monospace, 'SF Mono', Menlo, monospace; color: #c9c7c2; }
+.dash-repo__main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--d-mut); font-size: 12.5px; }
+.dash-repo__act { display: flex; gap: 6px; }
+.dash-repo__act .dash-btn { height: 30px; padding: 0 11px; font-size: 12.5px; text-decoration: none; }
+a.dash-btn { text-decoration: none; }
+.dash-spark { flex: none; display: flex; align-items: flex-end; gap: 2px; width: 98px; height: 26px; }
+.dash-spark i { flex: 1; border-radius: 2px 2px 0 0; background: rgba(255, 255, 255, 0.08); }
+.dash-spark i.is-on { background: var(--d-s3); }
+.dash-badge.is-warn { color: var(--d-warn); border-color: rgba(245, 184, 74, 0.4); }
+.dash-badge.is-blue { color: #8fb3ff; border-color: rgba(122, 162, 255, 0.4); }
+@media (max-width: 900px) {
+  .dash-cols--even { grid-template-columns: minmax(0, 1fr); }
+  .dash-repo { flex-wrap: wrap; gap: 10px; }
+  .dash-repo__main { flex-basis: 100%; }
+  .dash-spark { width: 84px; }
+}
