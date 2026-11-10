@@ -94,7 +94,7 @@ export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout
   const rug = (lx: number, ly: number, w: number, h: number, color: string, seed: number) => b.rug(fx(lx, w), ly, w, h, color, seed);
 
   // ---- piso: porcelanato claro (o banheiro é que usa azulejo); leve tom do tema dá identidade
-  b.floor('marble', 0, 0, 16, 12, room.seed);
+  b.floor('concrete', 0, 0, 16, 12, room.seed);
   area.floorTint = theme.carpet;
   // tapete na cor do tema sob a ilha (identidade da sala)
   rug(1.5, 3.25, 7, 5.5, theme.carpet, room.seed);

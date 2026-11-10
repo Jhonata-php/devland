@@ -186,6 +186,7 @@ export class Renderer {
     ctx.imageSmoothingEnabled = false;
     ctx.translate(-this.baseX, -this.baseY);
     paintShell(this.art, ctx, this.exterior.floors, []);
+    drawSkyline(ctx, this.baseX, this.baseY, c.width, -2 * TILE);
     // faixas da rua
     if (this.exterior.streetH > 0) {
       const ly = this.exterior.streetY + Math.round(this.exterior.streetH / 2) - 1;
@@ -1228,4 +1229,62 @@ export class Renderer {
   }
 
 
+}
+
+/**
+ * Skyline da cidade à noite (Estúdio tech): prédios escuros em camadas, do topo do mapa até `bottomY` (px de mundo, logo
+ * acima do prédio), com janelas acesas em amarelo/ciano e luzes de antena. Determinístico (mesma cidade a cada carga).
+ */
+function drawSkyline(ctx: CanvasRenderingContext2D, x0: number, y0: number, width: number, bottomY: number): void {
+  let seed = 0x5eed;
+  const rnd = () => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296);
+  const height = bottomY - y0;
+  if (height <= 0) return;
+  // céu: faixas do mais escuro (alto) para um azul-noite perto do horizonte
+  const bands = ['#070910', '#0a0d16', '#0d111c', '#111726', '#151c2f'];
+  for (let i = 0; i < bands.length; i++) {
+    ctx.fillStyle = bands[i]!;
+    ctx.fillRect(x0, y0 + Math.floor((height * i) / bands.length), width, Math.ceil(height / bands.length) + 1);
+  }
+  // estrelas
+  ctx.fillStyle = 'rgba(220,230,255,0.55)';
+  for (let i = 0; i < width / 18; i++) ctx.fillRect(x0 + Math.floor(rnd() * width), y0 + Math.floor(rnd() * height * 0.5), 1, 1);
+  // duas camadas de prédios: a de trás mais alta e apagada, a da frente mais baixa e com mais janelas acesas
+  const layers = [
+    { body: '#141a28', lit: 0.12, min: 0.45, max: 0.9, wmin: 22, wmax: 48 },
+    { body: '#1a2133', lit: 0.28, min: 0.25, max: 0.6, wmin: 18, wmax: 40 },
+  ];
+  for (const L of layers) {
+    let x = x0 - Math.floor(rnd() * 20);
+    while (x < x0 + width) {
+      const w = Math.floor(L.wmin + rnd() * (L.wmax - L.wmin));
+      const h = Math.floor(height * (L.min + rnd() * (L.max - L.min)));
+      const top = bottomY - h;
+      ctx.fillStyle = L.body;
+      ctx.fillRect(x, top, w, h);
+      // aresta de cima um pouco mais clara
+      ctx.fillStyle = 'rgba(120,140,190,0.18)';
+      ctx.fillRect(x, top, w, 1);
+      // janelas 2x3 em grade
+      for (let wy = top + 4; wy < bottomY - 4; wy += 6) {
+        for (let wx = x + 3; wx < x + w - 3; wx += 5) {
+          if (rnd() < L.lit) {
+            ctx.fillStyle = rnd() < 0.75 ? 'rgba(255,212,107,0.85)' : 'rgba(110,215,255,0.85)';
+            ctx.fillRect(wx, wy, 2, 3);
+          }
+        }
+      }
+      // antena com luz vermelha em alguns prédios altos
+      if (h > height * 0.6 && rnd() < 0.5) {
+        ctx.fillStyle = '#2a3348';
+        ctx.fillRect(x + Math.floor(w / 2), top - 8, 1, 8);
+        ctx.fillStyle = '#ff4f5e';
+        ctx.fillRect(x + Math.floor(w / 2) - 1, top - 9, 3, 2);
+      }
+      x += w + Math.floor(rnd() * 6);
+    }
+  }
+  // horizonte: linha fina de luz da rua
+  ctx.fillStyle = 'rgba(95,184,255,0.35)';
+  ctx.fillRect(x0, bottomY - 1, width, 1);
 }
