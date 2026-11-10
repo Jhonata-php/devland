@@ -23,7 +23,7 @@ export interface ChatToolsHooks {
 
 interface ProjectView {
   files: { status: string; path: string }[];
-  prs: { number: number; title: string; branch: string; url: string }[];
+  prs: { number: number; title: string; branch: string; url: string; checks?: 'ok' | 'fail' | 'pending' | 'none' }[];
   info: { branch: string; dirty: number; ahead: number | null; url?: string } | null;
 }
 
@@ -174,24 +174,37 @@ export class ChatTools {
         say(tr('PR aberto: {0}', [r.url]), false, r.url);
       }),
     );
-    const parts: (Node | null)[] = [
-      h('div', { class: 'ui-ctool__row' }, h('b', { text: info?.branch ?? tr('sem branch') }), info?.url ? h('a', { attrs: { href: info.url, target: '_blank', rel: 'noopener noreferrer' }, text: tr('Abrir no GitHub') }) : null),
-      h('p', { class: 'ui-ctool__note', text: [dirty ? tr('{0} arquivo(s) com alterações', [dirty]) : tr('sem alterações novas'), info?.ahead ? tr('{0} commit(s) para enviar', [info.ahead]) : ''].filter(Boolean).join(' · ') }),
-      dirty ? h('ul', { class: 'ui-ctool__files' }, ...[...p.files.slice(0, 6).map((f) => `${f.status} ${f.path}`), ...(p.files.length > 6 ? [tr('e mais {0}…', [p.files.length - 6])] : [])].map((text) => h('li', { text }))) : null,
-      dirty ? msg : null,
-      h('div', { class: 'ui-ctool__row' }, push, pr),
-      ...p.prs.slice(0, 4).map((x) => {
-        const merge = h('button', { class: 'ui-btn', type: 'button', text: tr('Mesclar'), title: tr('Mescla este PR na branch principal (merge commit)') }) as HTMLButtonElement;
-        merge.addEventListener('click', () => {
-          if (!confirm(tr('Mesclar o PR #{0} ({1}) na branch principal?', [x.number, x.title]))) return;
-          void run(merge, async () => {
-            await call('POST', '/api/dash/merge', { path: this.project, number: x.number });
-            merge.remove();
-            say(tr('PR #{0} mesclado.', [x.number]));
-          });
+    const kind = (st: string) => (st === '??' || st === 'A' ? ['novo', tr('novo')] : st === 'D' ? ['del', tr('removido')] : ['mod', tr('alterado')]) as [string, string];
+    const checkDot: Record<string, [string, string]> = { ok: ['ok', tr('CI ok')], fail: ['fail', tr('CI falhou')], pending: ['pending', tr('CI rodando')], none: ['none', ''] };
+    const section = (title: string, ...kids: (Node | null)[]) => h('div', { class: 'ui-ctool__sec' }, h('h4', { class: 'ui-ctool__h', text: title }), ...kids.filter((n): n is Node => !!n));
+    const prCard = (x: ProjectView['prs'][number]) => {
+      const merge = h('button', { class: 'ui-btn ui-btn--sm', type: 'button', text: tr('Mesclar'), title: tr('Mescla este PR na branch principal (merge commit)') }) as HTMLButtonElement;
+      merge.addEventListener('click', () => {
+        if (!confirm(tr('Mesclar o PR #{0} ({1}) na branch principal?', [x.number, x.title]))) return;
+        void run(merge, async () => {
+          await call('POST', '/api/dash/merge', { path: this.project, number: x.number });
+          card.classList.add('is-done');
+          merge.remove();
+          say(tr('PR #{0} mesclado.', [x.number]));
         });
-        return h('div', { class: 'ui-ctool__row' }, h('a', { attrs: { href: x.url, target: '_blank', rel: 'noopener noreferrer' }, text: `#${x.number} ${x.title}` }), merge);
-      }),
+      });
+      const [cls, label] = checkDot[x.checks ?? 'none'] ?? checkDot.none!;
+      const card = h('div', { class: 'ui-ctool__pr' }, h('div', { class: 'ui-ctool__prtext' }, h('a', { attrs: { href: x.url, target: '_blank', rel: 'noopener noreferrer' }, text: `#${x.number} ${x.title}` }), h('small', { text: [x.branch, label].filter(Boolean).join(' · ') })), h('i', { class: `ui-ctool__dot is-${cls}`, attrs: { 'aria-hidden': 'true' } }), merge);
+      return card;
+    };
+    const stats = [dirty ? tr('{0} arquivo(s) com alterações', [dirty]) : tr('sem alterações novas'), info?.ahead ? tr('{0} commit(s) para enviar', [info.ahead]) : ''].filter(Boolean).join(' · ');
+    const parts: (Node | null)[] = [
+      h('div', { class: 'ui-ctool__row' }, h('span', { class: 'ui-ctool__branch', text: `⎇ ${info?.branch ?? tr('sem branch')}` }), info?.url ? h('a', { attrs: { href: info.url, target: '_blank', rel: 'noopener noreferrer' }, text: tr('Abrir no GitHub') }) : null),
+      h('p', { class: 'ui-ctool__note', text: stats }),
+      dirty
+        ? section(
+            tr('Alterações'),
+            h('ul', { class: 'ui-ctool__files' }, ...[...p.files.slice(0, 8).map((f) => { const [c, t] = kind(f.status); return h('li', {}, h('b', { class: `ui-ctool__tag is-${c}`, text: t }), h('span', { text: f.path })); }), ...(p.files.length > 8 ? [h('li', { class: 'ui-ctool__more', text: tr('e mais {0}…', [p.files.length - 8])})] : [])]),
+            msg,
+          )
+        : null,
+      h('div', { class: 'ui-ctool__row ui-ctool__actions' }, push, pr),
+      p.prs.length ? section(tr('Pull requests abertos'), ...p.prs.slice(0, 4).map(prCard)) : null,
       out,
     ];
     this.pushBox.replaceChildren(...parts.filter((n): n is Node => !!n));

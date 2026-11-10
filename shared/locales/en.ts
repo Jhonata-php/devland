@@ -4054,4 +4054,10 @@ export const EN: Readonly<Record<string, string>> = {
   "Mesclar": "Merge",
   "O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.": "GitHub would not merge the PR (conflict, checks still running or missing permission). Open the PR on GitHub to see why.",
   "PR #{0} mesclado.": "PR #{0} merged.",
+  "Alterações": "Changes",
+  "CI ok": "CI passing",
+  "Pull requests abertos": "Open pull requests",
+  "alterado": "modified",
+  "novo": "new",
+  "removido": "removed",
 };

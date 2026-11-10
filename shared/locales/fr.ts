@@ -4071,4 +4071,10 @@ export const FR: Readonly<Record<string, string>> = {
   "Mesclar": "Fusionner",
   "O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.": "GitHub n'a pas permis de fusionner la PR (conflit, vérifications en cours ou permission manquante). Ouvrez la PR sur GitHub pour voir pourquoi.",
   "PR #{0} mesclado.": "PR #{0} fusionnée.",
+  "Alterações": "Modifications",
+  "CI ok": "CI réussie",
+  "Pull requests abertos": "Pull requests ouvertes",
+  "alterado": "modifié",
+  "novo": "nouveau",
+  "removido": "supprimé",
 };
