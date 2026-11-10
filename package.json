@@ -44,7 +44,8 @@
     "codex:bridge": "tsx scripts/codex-bridge.ts",
     "remote:setup": "tsx scripts/remote-setup.ts",
     "remote:mdns": "tsx scripts/remote-mdns.ts",
-    "release": "tsx scripts/release.ts"
+    "release": "tsx scripts/release.ts",
+    "release:local": "tsx scripts/release-local.ts"
   },
   "devDependencies": {
     "@fontsource/pixelify-sans": "^5.3.0",
