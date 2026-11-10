@@ -24,6 +24,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Menu lateral e celular:** o Mapa aparece nas abas de baixo do celular (as cinco abas cabem numa linha só) e o Plugins não aparece mais duas vezes no menu lateral.
 - **Conectores: entrar com o link direto, sem terminal confuso.** Ao clicar em **Entrar** num conector, o cartão mostra o botão **Abrir link de autorização** assim que o Claude Code imprime o link, e um campo para colar o endereço da página de retorno (a que abre com erro em `localhost`: é esperado, porque o login volta para a porta do container, não para o seu computador). Ao colar e clicar em **Concluir**, o DevLand entrega o endereço ao Claude Code e confere a conexão sozinho.
 - **Prévia ao lado da conversa, que o agente abre sozinho, e sem a tela falsa do Velix:** ao pedir "abre o preview", o DevLand instala as dependências do projeto se faltarem, sobe o servidor e abre a prévia ao lado (antes pedia para você rodar `npm install`). no modo Painel a prévia agora abre ao lado da conversa (a conversa encolhe) em vez de cobrir a tela. E quando o servidor do projeto não está rodando, a prévia mostra "nada respondeu na porta…" em vez da página "Recuperando os serviços" do Velix (que aparecia porque a resposta era um 502).
 - **Conversa mais legível quando o agente trabalha:** as chamadas de ferramenta seguidas viram uma única linha ("⚙ 7 ações · …") que abre para a lista, as mensagens novas entram suavemente e aparece "Trabalhando…" enquanto o agente roda.

@@ -344,7 +344,7 @@ html.is-panel.dash-on-chats .ui-chats .ui-chats__head .ui-icon-btn:last-child { 
   .dash-top__logo { image-rendering: pixelated; }
   .dash-top .dash-btn { width: 40px; padding: 0; }
   .dash-page { padding-top: 18px; }
-  .dash-tabs { grid-template-columns: repeat(4, 1fr); }
+  .dash-tabs { grid-template-columns: repeat(5, 1fr); }
   html.is-panel.dash-on-chats .ui-chats { left: 0; top: 0; bottom: calc(58px + env(safe-area-inset-bottom)); padding-top: env(safe-area-inset-top); z-index: 31; }
   html.is-panel.dash-on-chats .ui-chats .ui-chats__head .ui-icon-btn:last-child { visibility: visible; }
 }

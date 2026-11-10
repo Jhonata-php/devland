@@ -43,7 +43,7 @@ interface CloudUser { id: string; name: string; email?: string; role: 'admin' | 
 
 const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => string; side?: boolean }[] = [
   { id: 'home', icon: ICONS.overview, label: () => tr('Visão geral'), short: () => tr('Início') },
-  { id: 'map', icon: ICONS.office, label: () => tr('Mapa'), side: true },
+  { id: 'map', icon: ICONS.office, label: () => tr('Mapa') },
   { id: 'agents', icon: ICONS.newAgent, label: () => tr('Agentes') },
   { id: 'chats', icon: ICONS.feed, label: () => tr('Conversas') },
   { id: 'github', icon: ICONS.browser, label: () => tr('GitHub'), side: true },
@@ -102,7 +102,7 @@ export class Dashboard implements UiComponent {
     this.nav = h('nav', { class: 'dash-nav', attrs: { 'aria-label': tr('Seções') } });
     this.pluginsBtn = this.toolBtn(ICONS.plugin, tr('Plugins'), () => this.go('plugins'));
     this.meEl = h('div', { class: 'dash-me', hidden: true });
-    const tools = h('div', { class: 'dash-tools' }, this.pluginsBtn, this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
+    const tools = h('div', { class: 'dash-tools' }, this.toolBtn(ICONS.settings, tr('Configurações'), () => act.openSettings()));
     this.top = h('header', { class: 'dash-top' });
     this.gh = new GithubData(() => ctx.invalidate());
     this.plugins = new PluginsPage(() => ctx.invalidate(), (t, sub, ...r) => this.header(t, sub, ...r));
