@@ -102,17 +102,20 @@ export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout
   rug(DOOR_X - 0.25, north ? 9.5 : 2, DOOR_W + 0.5, 1.25, shade(theme.carpet2, -0.1), room.seed + 1);
 
   // ---- paredes
+  // Open-space: o lado que dá para a faixa central e as laterais são divisórias de vidro (filete na cor da sala);
+  // só a parede de fora do prédio é sólida.
+  const glass: WallStyle = { base: '#9fc7dc', trim: theme.accent, pattern: 'glass' };
   if (north) {
     b.face(0.5, 15, wall);
-    b.south(0.5, 15, 11, wall, [door]);
+    b.south(0.5, 15, 11, glass, [door]);
   } else {
-    b.face(0.5, 15, wall, [door]);
+    b.face(0.5, 15, glass, [door]);
     b.south(0.5, 15, 11, { ...wall, exterior: true });
     // batente na passagem da porta (a face da parede norte mostra o vão)
     b.wall('door_frame', DOOR_X + DOOR_W / 2, undefined, { order: 0.05 });
   }
-  b.cap(0, 0, 0.5, 12, wall);
-  b.cap(15.5, 0, 0.5, 12, wall);
+  b.cap(0, 0, 0.5, 12, glass);
+  b.cap(15.5, 0, 0.5, 12, glass);
 
   // ---- caminhabilidade
   b.walk(1, 2, 14, 9);
