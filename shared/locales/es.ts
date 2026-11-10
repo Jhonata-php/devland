@@ -3638,7 +3638,6 @@ export const ES: Readonly<Record<string, string>> = {
   // client/src/ui/dashboard.ts e telas de entrada (modo Painel)
   "Visão geral": "Resumen",
   "Seções": "Secciones",
-  "Ver os agentes no mapa em pixel art": "Ver los agentes en el mapa pixel art",
   "+ Novo agente": "+ Nuevo agente",
   "Bom dia": "Buenos días",
   "Boa tarde": "Buenas tardes",
@@ -3833,7 +3832,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Solte para atualizar": "Suelta para actualizar",
   "Tokens por projeto": "Tokens por proyecto",
   "Ver o diff": "Ver el diff",
-  "mapa em pixel art": "mapa en pixel art",
   "medindo…": "midiendo…",
   "não respondeu": "no respondió",
   "onde o plano foi gasto · últimos {0} dias": "dónde se gastó el plan · últimos {0} días",
@@ -4068,4 +4066,6 @@ export const ES: Readonly<Record<string, string>> = {
   "conflito ou checagens pendentes": "conflicto o comprobaciones pendientes",
   "Abrir agente em {0}": "Abrir un agente en {0}",
   "Essa conversa é do projeto {0}, mas este agente só enxerga {1}.": "Este trabajo es del proyecto {0}, pero este agente solo ve {1}.",
+  "Mapa": "Mapa",
+  "os agentes em pixel art": "los agentes en pixel art",
 };

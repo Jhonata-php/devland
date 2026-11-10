@@ -1059,8 +1059,8 @@ html.theme-light .ui-chats__tools > summary { background: rgba(0, 0, 0, 0.045); 
 
 /* Prévia ao lado da conversa (modo Painel, tela larga): a conversa encolhe e a prévia ocupa a metade direita, sem cobrir nada. */
 @media (min-width: 900px) {
-  html.is-panel.dash-on-chats .ui-root .ui-popover.ui-preview:popover-open { left: auto !important; right: 0 !important; top: var(--d-top-h, 60px) !important; bottom: 0 !important; transform: none !important; width: min(50vw, 860px); height: auto; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -18px 0 40px -24px rgba(0, 0, 0, 0.7); }
-  html.is-panel.dash-on-chats .ui-root .ui-popover.ui-preview::backdrop { background: transparent; backdrop-filter: none; }
+  html.is-panel:is(.dash-on-chats, .dash-on-map) .ui-root .ui-popover.ui-preview:popover-open { left: auto !important; right: 0 !important; top: var(--d-top-h, 60px) !important; bottom: 0 !important; transform: none !important; width: min(50vw, 860px); height: auto; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -18px 0 40px -24px rgba(0, 0, 0, 0.7); }
+  html.is-panel:is(.dash-on-chats, .dash-on-map) .ui-root .ui-popover.ui-preview::backdrop { background: transparent; backdrop-filter: none; }
   html.is-panel.dash-on-chats.preview-docked .ui-chats { right: min(50vw, 860px); }
 }
 
@@ -1094,3 +1094,28 @@ html.theme-light .ui-ctool__pr { border-color: rgba(0, 0, 0, 0.1); background: r
 
 .ui-chats__handoff { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px auto 0; width: min(100% - 32px, 1200px); padding: 8px 12px; border: 1px solid rgba(240, 190, 90, 0.3); border-radius: 12px; background: rgba(240, 190, 90, 0.08); color: #e8d9b5; font-size: 13px; }
 .ui-chats__handoff[hidden] { display: none; }
+
+/* ---------- página Mapa: o escritório em pixel art atrás do menu lateral, sem os menus do modo escritório ---------- */
+.is-panel.dash-on-map #world { visibility: visible; }
+.ui-root .dash.is-map, #ui > .dash.is-map { background: transparent; pointer-events: none; }
+.dash.is-map :is(.dash-side, .dash-top, .dash-tabs) { pointer-events: auto; }
+.dash.is-map .dash-top { background: rgba(17, 17, 16, 0.92); }
+.dash.is-map :is(.dash-body, .dash-main, .dash-map) { pointer-events: none; background: transparent; }
+html.is-panel.dash-on-map .ui-root > .ui-drawer { display: flex !important; z-index: 35; top: calc(var(--d-top-h, 60px) + 8px); }
+
+/* Prévia no Painel: visual neutro, igual ao resto (o verde de terminal ficou no modo antigo). */
+html.is-panel .ui-root .ui-popover.ui-preview { border-color: rgba(255, 255, 255, 0.1); background: #151514; }
+html.is-panel .ui-preview .ui-popover__head { padding: 12px 14px 8px; }
+html.is-panel .ui-preview .ui-popover__head h2 { font: 600 15px var(--font-ui, sans-serif); }
+html.is-panel .ui-preview__bar { padding: 6px 14px; border-bottom: 0; }
+html.is-panel .ui-preview__url { height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.12); background: #0f0f0e; color: #edece9; font: 13px ui-monospace, 'SF Mono', Menlo, monospace; }
+html.is-panel .ui-preview__url:focus { outline: none; border-color: rgba(255, 255, 255, 0.28); }
+html.is-panel .ui-preview__tool, html.is-panel .ui-preview__run, html.is-panel .ui-preview__stop, html.is-panel .ui-preview__port { height: 34px; padding: 0 12px; border-radius: 9px; font-size: 13px; white-space: nowrap; }
+html.is-panel .ui-preview__tool.is-on, html.is-panel .ui-preview__port.is-on { border-color: rgba(255, 255, 255, 0.35); color: #fff; background: rgba(255, 255, 255, 0.1); }
+html.is-panel .ui-preview__ports { padding: 2px 14px 4px; }
+html.is-panel .ui-preview__project { height: 34px; border-radius: 9px; }
+html.is-panel .ui-preview__stage { margin: 6px 14px 14px; border-radius: 12px; border-color: rgba(255, 255, 255, 0.1); background: #0c0c0b; }
+html.is-panel .ui-preview__note { color: #8f8c86; font-size: 13px; }
+html.theme-light.is-panel .ui-root .ui-popover.ui-preview { background: #fff; border-color: rgba(0, 0, 0, 0.12); }
+html.theme-light.is-panel .ui-preview__url { background: #f4f3f0; color: #1d1c1a; border-color: rgba(0, 0, 0, 0.14); }
+html.theme-light.is-panel .ui-preview__stage { background: #f4f3f0; border-color: rgba(0, 0, 0, 0.12); }

@@ -88,9 +88,13 @@ describe('timelapse: relógio dos painéis', () => {
       { t: 'k', at: from, v: 1, every: 300_000, rooms: [], agents: [], accounts: [] },
       { t: 'end', at: from + 600_000 },
     ];
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ recording: true, days: [{ day: '2026-10-07', from, to: from + 600_000 }] })))
-      .mockResolvedValueOnce(new Response(records.map((r) => JSON.stringify(r)).join('\n'))));
+    // O Painel (sempre ligado) também busca dados do GitHub ao abrir: responde por endereço, não por ordem.
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const u = String(url);
+      if (u.includes('/api/timeline/20')) return new Response(records.map((r) => JSON.stringify(r)).join('\n'));
+      if (u.includes('/api/timeline/days')) return new Response(JSON.stringify({ recording: true, days: [{ day: '2026-10-07', from, to: from + 600_000 }] }));
+      return new Response('{}', { status: 404 });
+    }));
     let playback: WorldPlayback | null = null;
     const world = {
       getSelection: () => null,

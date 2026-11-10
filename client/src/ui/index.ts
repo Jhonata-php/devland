@@ -353,7 +353,6 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     chatsOpen: () => chats.isOpen,
     newAgent: () => topbar.toggleSpawn(),
     canSpawn: () => topbar.canSpawn,
-    openOffice: () => setView('office'),
     openSettings: () => ctx.toggleSettings(),
     openPlugins: () => openPlugins(ctx.root),
     openCloud: (kind) => openCloudPanel(ctx.root, kind),
@@ -369,15 +368,17 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const wizard = new ConnectWizard(() => invalidate());
   root.append(wizard.el);
   setContasHandler(() => wizard.open());
-  const setView = (view: 'office' | 'panel') => {
+  // O escritório virou a página Mapa do Painel: só existe o modo Painel.
+  const setView = (_view: 'office' | 'panel') => {
+    const view = 'panel';
     if (view !== prefs.view) ctx.updatePrefs({ view });
-    const panel = view === 'panel';
+    const panel = true;
     document.documentElement.classList.toggle('is-panel', panel);
     world.setSuspended?.(panel);
     dashboard.show(panel);
     if (panel) {
       if (scene?.inCity) scene.close();
-      ctx.select(null);
+      if (selection !== null) ctx.select(null);
     }
     invalidate();
   };
@@ -399,6 +400,20 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     narrow: ctx.isNarrow(),
   }));
   drawer.onLayoutChange = () => applyLayout();
+  // Página Mapa do Painel: o mundo aparece atrás do menu lateral e da barra do topo; a área livre é o que sobra.
+  area.fixed = () => {
+    if (!document.documentElement.classList.contains('dash-on-map')) return null;
+    const ins = dashboard.mapInsets();
+    if (selection !== null && !drawer.floating) {
+      const r = drawer.el.getBoundingClientRect();
+      if (r.width > 0 && !ctx.isNarrow()) ins.right = Math.max(0, Math.round(innerWidth - r.left));
+    }
+    return ins;
+  };
+  dashboard.onMap = (on) => {
+    world.setSuspended?.(!on);
+    area?.sync();
+  };
 
   // /?painel=contas|usuarios (o /contas e o /admin antigos redirecionam para cá): abre a janela do Cloud já na chegada.
   const painel = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('painel') : null;
@@ -599,6 +614,6 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   // ---------------------------------------------------------------- início
   world.setOptions(worldOptionsFrom(prefs));
   applyLayout();
-  if (prefs.view === 'panel') setView('panel');
+  setView('panel');
   renderAll();
 }

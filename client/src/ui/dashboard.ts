@@ -18,7 +18,7 @@ import { PluginsPage } from './dashboard-plugins';
 import { PermissionCard } from './permission';
 import { SearchPalette, type SearchItem } from './dashboard-search';
 
-export type DashPage = 'home' | 'agents' | 'chats' | 'github' | 'accounts' | 'connectors' | 'plugins' | 'people' | 'ai';
+export type DashPage = 'home' | 'map' | 'agents' | 'chats' | 'github' | 'accounts' | 'connectors' | 'plugins' | 'people' | 'ai';
 
 export interface DashActions {
   openChat(agentId: string): void;
@@ -27,7 +27,6 @@ export interface DashActions {
   chatsOpen(): boolean;
   newAgent(): void;
   canSpawn(): boolean;
-  openOffice(): void;
   openSettings(): void;
   openPlugins(): void;
   /** Entregas: o que os agentes terminaram (a mesma janela do escritório). */
@@ -44,6 +43,7 @@ interface CloudUser { id: string; name: string; email?: string; role: 'admin' | 
 
 const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => string; side?: boolean }[] = [
   { id: 'home', icon: ICONS.overview, label: () => tr('Visão geral'), short: () => tr('Início') },
+  { id: 'map', icon: ICONS.office, label: () => tr('Mapa'), side: true },
   { id: 'agents', icon: ICONS.newAgent, label: () => tr('Agentes') },
   { id: 'chats', icon: ICONS.feed, label: () => tr('Conversas') },
   { id: 'github', icon: ICONS.browser, label: () => tr('GitHub'), side: true },
@@ -138,7 +138,7 @@ export class Dashboard implements UiComponent {
     const actions: SearchItem[] = [
       ...(this.act.canSpawn() ? [{ group: tr('Ações'), label: tr('Novo agente'), run: () => this.act.newAgent() }] : []),
       { group: tr('Ações'), label: tr('Entregas'), run: () => this.act.openDeliveries() },
-      { group: tr('Ações'), label: tr('Escritório'), hint: tr('mapa em pixel art'), run: () => this.act.openOffice() },
+      { group: tr('Ações'), label: tr('Mapa'), hint: tr('os agentes em pixel art'), run: () => this.go('map') },
       { group: tr('Ações'), label: tr('Configurações'), run: () => this.act.openSettings() },
     ];
     return [...agents, ...projects, ...pages, ...actions];
@@ -189,13 +189,12 @@ export class Dashboard implements UiComponent {
     const chats = h('button', { class: `dash-btn${this.page === 'chats' ? ' is-on' : ''}`, type: 'button', on: { click: () => this.go('chats') } }, icon(ICONS.feed), h('span', { class: 'dash-hide-sm', text: tr('Conversas') }), waiting ? h('em', { class: 'dash-count', text: String(waiting) }) : null);
     const find = h('button', { class: 'dash-btn dash-find', type: 'button', title: tr('Buscar (⌘K)'), attrs: { 'aria-label': tr('Buscar') }, on: { click: () => this.search.open() } }, icon(ICONS.search), h('span', { class: 'dash-hide-sm', text: tr('Buscar') }), h('kbd', { class: 'dash-hide-sm', text: '⌘K' }));
     const deliveries = h('button', { class: 'dash-btn', type: 'button', title: tr('Entregas: o que os agentes terminaram'), on: { click: () => this.act.openDeliveries() } }, icon(ICONS.delivery), h('span', { class: 'dash-hide-sm', text: tr('Entregas') }));
-    const office = h('button', { class: 'dash-btn', type: 'button', title: tr('Ver os agentes no mapa em pixel art'), on: { click: () => this.act.openOffice() } }, icon(ICONS.office), h('span', { class: 'dash-hide-sm', text: tr('Escritório') }));
-    const settings = h('button', { class: 'dash-btn dash-only-sm', type: 'button', attrs: { 'aria-label': tr('Configurações') }, on: { click: () => this.act.openSettings() } }, icon(ICONS.settings));
+        const settings = h('button', { class: 'dash-btn dash-only-sm', type: 'button', attrs: { 'aria-label': tr('Configurações') }, on: { click: () => this.act.openSettings() } }, icon(ICONS.settings));
     this.top.replaceChildren(
       h('img', { class: 'dash-only-sm dash-top__logo', attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
       h('div', { class: 'dash-top__title' }, h('b', { text: page.label() }),
         h('span', { class: 'dash-live dash-hide-sm' }, h('i', { class: working ? 'is-on' : '' }), h('span', { text: working ? tr('{0} trabalhando', [working]) : tr('Ninguém trabalhando agora') }))),
-      h('div', { class: 'dash-top__act' }, find, chats, deliveries, office, settings, this.newBtn(true)));
+      h('div', { class: 'dash-top__act' }, find, chats, deliveries, settings, this.newBtn(true)));
   }
 
   private toolBtn(svg: string, label: string, fn: () => void, cls = ''): HTMLButtonElement {
@@ -213,10 +212,26 @@ export class Dashboard implements UiComponent {
     if (on && access().cloud && !this.me) void this.loadMe();
   }
 
+  /** O mapa em pixel art vira uma página: avisa para ligar/desligar o mundo e medir a área livre. */
+  onMap?: (on: boolean) => void;
+
+  /** Área do mapa (a página Mapa deixa o mundo aparecer atrás do painel): o que sobra fora do menu e da barra do topo. */
+  mapInsets(): { top: number; right: number; bottom: number; left: number } {
+    const side = this.el.querySelector('.dash-side')?.getBoundingClientRect();
+    const top = this.top.getBoundingClientRect();
+    const tabs = this.tabs.getBoundingClientRect();
+    const narrow = !side || side.width === 0 || getComputedStyle(this.tabs).display !== 'none';
+    const pv = document.documentElement.classList.contains('preview-docked') ? document.querySelector('.ui-preview')?.getBoundingClientRect() : undefined;
+    return { top: Math.round(top.bottom), left: narrow ? 0 : Math.round(side!.right), right: pv && pv.width > 0 && !narrow ? Math.round(innerWidth - pv.left) : 0, bottom: narrow ? Math.round(innerHeight - tabs.top) : 0 };
+  }
+
   go(page: DashPage): void {
     if (page !== this.page && (page === 'chats' || this.page === 'chats')) this.act.showChats(page === 'chats');
     this.page = page;
     document.documentElement.classList.toggle('dash-on-chats', page === 'chats');
+    document.documentElement.classList.toggle('dash-on-map', page === 'map');
+    this.el.classList.toggle('is-map', page === 'map');
+    this.onMap?.(page === 'map');
     this.ai.active(page === 'ai' && !this.el.hidden);
     this.mcp.active(page === 'connectors');
     this.plugins.active(page === 'plugins');
@@ -240,7 +255,7 @@ export class Dashboard implements UiComponent {
     this.pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
     this.renderNav();
     this.renderTop();
-    const page = this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'connectors' ? this.mcp.page() : this.page === 'plugins' ? this.plugins.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas'), this.act.newSessionIn) : this.homePage();
+    const page = this.page === 'map' ? h('div', { class: 'dash-map' }) : this.page === 'agents' ? this.agentsPage() : this.page === 'accounts' ? this.accountsPage() : this.page === 'people' ? this.peoplePage() : this.page === 'chats' ? this.chatsPage() : this.page === 'ai' ? this.ai.page() : this.page === 'connectors' ? this.mcp.page() : this.page === 'plugins' ? this.plugins.page() : this.page === 'github' ? this.gh.page((t, sub, ...r) => this.header(t, sub, ...r), () => this.act.openCloud('contas'), this.act.newSessionIn) : this.homePage();
     // A animação de entrada só na troca de página (não a cada snapshot).
     if (this.page !== this.shown) page.classList.add('is-enter');
     this.shown = this.page;

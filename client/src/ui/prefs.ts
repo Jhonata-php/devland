@@ -44,7 +44,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   feedOpen: true,
   hiddenAccounts: [],
   worldVisitNotify: true,
-  view: 'office',
+  view: 'panel',
   uiTheme: 'dark',
 };
 

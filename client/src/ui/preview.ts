@@ -88,6 +88,7 @@ export class PreviewPanel implements UiComponent {
       this.button.setAttribute('aria-expanded', String(open));
       this.button.classList.toggle('is-on', open);
       document.documentElement.classList.toggle('preview-docked', open); // no modo Painel, a prévia fica ao lado da conversa
+      requestAnimationFrame(() => window.dispatchEvent(new Event('resize'))); // a página Mapa reenquadra o prédio
       if (open) {
         void this.refreshPorts();
         this.fillProjects();

@@ -114,6 +114,8 @@ export class FreeArea {
   private raf = 0;
   private down: { x: number; y: number; id: number } | null = null;
   private lastTap = { t: 0, x: 0, y: 0 };
+  /** Margens fixas (página Mapa do Painel): no lugar das medidas dos painéis do modo escritório, que ficam escondidos. */
+  fixed: (() => ViewInsets | null) | null = null;
 
   constructor(
     private world: WorldApi,
@@ -179,7 +181,7 @@ export class FreeArea {
     }
     const f = this.flags();
     const g = this.measure();
-    const insets = computeInsets(g, { ...f, drawer: f.drawer && !this.guarding });
+    const insets = this.fixed?.() ?? computeInsets(g, { ...f, drawer: f.drawer && !this.guarding });
     this.placeToasts(insets, g);
     if (sameInsets(this.applied, insets)) return;
     this.applied = insets;

@@ -181,6 +181,7 @@ export class SettingsPopover implements UiComponent {
       ctx.setView?.(v);
     });
     this.view.row.append(h('span', { class: 'ui-set__hint', text: tr('Painel: o DevLand sem o mapa, com agentes, contas e pessoas em listas.') }));
+    this.view.row.hidden = true; // o escritório virou a página Mapa do Painel: não há mais dois modos
     this.uiTheme = segmented<UiPrefs['uiTheme']>(tr('Cores'), [['dark', tr('Escuro')], ['light', tr('Claro')], ['auto', tr('Automático')]], (v) => ctx.updatePrefs({ uiTheme: v }));
     this.uiTheme.row.append(h('span', { class: 'ui-set__hint', text: tr('Automático: segue o tema do sistema (claro de dia, escuro à noite, se ele trocar sozinho).') }));
     this.soundGroup = new SoundSettingsGroup(ctx, sound);

@@ -3637,7 +3637,6 @@ export const EN: Readonly<Record<string, string>> = {
   // client/src/ui/dashboard.ts e telas de entrada (modo Painel)
   "Visão geral": "Overview",
   "Seções": "Sections",
-  "Ver os agentes no mapa em pixel art": "See the agents on the pixel-art map",
   "+ Novo agente": "+ New agent",
   "Bom dia": "Good morning",
   "Boa tarde": "Good afternoon",
@@ -3832,7 +3831,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Solte para atualizar": "Release to refresh",
   "Tokens por projeto": "Tokens per project",
   "Ver o diff": "See the diff",
-  "mapa em pixel art": "pixel-art map",
   "medindo…": "measuring…",
   "não respondeu": "didn't respond",
   "onde o plano foi gasto · últimos {0} dias": "where the plan was spent · last {0} days",
@@ -4067,4 +4065,6 @@ export const EN: Readonly<Record<string, string>> = {
   "conflito ou checagens pendentes": "conflict or pending checks",
   "Abrir agente em {0}": "Open an agent in {0}",
   "Essa conversa é do projeto {0}, mas este agente só enxerga {1}.": "This work belongs to project {0}, but this agent can only see {1}.",
+  "Mapa": "Map",
+  "os agentes em pixel art": "the agents in pixel art",
 };
