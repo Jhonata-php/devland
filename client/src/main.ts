@@ -2,6 +2,7 @@
 // (client/src/app.ts), porque vários módulos chamam tr() ao carregar. Se o dicionário não carregar, fica em português.
 import { getLocale, registerDictionary, type Locale } from '../../shared/i18n';
 
+
 const LOADERS: Partial<Record<Locale, () => Promise<Readonly<Record<string, string>>>>> = {
   en: () => import('../../shared/locales/en').then((m) => m.EN),
   es: () => import('../../shared/locales/es').then((m) => m.ES),

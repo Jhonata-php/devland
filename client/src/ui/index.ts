@@ -8,18 +8,23 @@ import '@fontsource/pixelify-sans/500.css';
 import '@fontsource/pixelify-sans/600.css';
 import '@fontsource/pixelify-sans/700.css';
 import './styles.css';
+import './dashboard.css';
 
 import type { OfficeStore } from '../net/store';
 import type { Selection, WorldApi } from '../world/api';
 import type { PanelName, TerminalRouter, UiComponent, UiContext } from './context';
 import { DayLauncher } from './daystats-launcher';
 import { RoomRenamer } from './roomrename';
-import { h } from './dom';
+import { h, iconButton } from './dom';
+import { ICONS } from './icons';
+import { openPlugins } from './plugins';
+import { enableDraggablePanels } from './drag';
 import { Drawer } from './drawer';
 import { FeedPanel } from './feed';
 import { HelpDialog } from './help';
 import { HistoryPopover } from './history';
 import { Deliveries } from './deliveries';
+import { PreviewPanel } from './preview';
 import { HoverTip } from './hovertip';
 import { hasRunningShells } from './model';
 import { hasCodexPermission } from './provider';
@@ -28,6 +33,8 @@ import { ConnectionBanner, EmptyState, Splash } from './overlays';
 import { focusPermission, nextPermissionAgent } from './permission';
 import { loadPrefs, safeLocalStorage, savePrefs, worldOptionsFrom, type UiPrefs } from './prefs';
 import { SettingsPopover } from './settings';
+import { openCloudPanel, setContasHandler } from './accounts';
+import { ConnectWizard } from './connect-wizard';
 import { Sidebar } from './sidebar';
 import { SoundControl } from './sound';
 import { TERMINAL_UNAVAILABLE_HINT, TerminalPanel } from './terminal';
@@ -36,8 +43,10 @@ import { TimelapsePlayer } from './timelapse';
 import { Toasts } from './toasts';
 import { UpdateToaster } from './version';
 import { TopBar } from './topbar';
+import { BottomNav } from './bottomnav';
+import { ChatsView } from './chats';
+import { Dashboard } from './dashboard';
 import { UpdateBanner } from './update';
-import { WorldPopups } from './world/world-popups';
 import { WorldChip } from './world/world-chip';
 import { WorldDialog } from './world/world-dialog';
 import { WorldSocialNotifier } from './world/away-summary';
@@ -61,7 +70,7 @@ function isTypingTarget(t: EventTarget | null): boolean {
 
 export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi, city?: CitySceneHost): void {
   const storage = safeLocalStorage();
-  let prefs: UiPrefs = loadPrefs(storage);
+  let prefs: UiPrefs = loadPrefs(storage, typeof matchMedia === 'function' && matchMedia('(max-width: 600px)').matches);
   let selection: Selection = world.getSelection();
   let skew = 0;
   const narrowMq = typeof matchMedia === 'function' ? matchMedia(NARROW_QUERY) : null;
@@ -86,6 +95,15 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   let scene: SceneSwitch | null = null;
   const inCity = () => !!scene?.inCity;
 
+  // Tema claro ou escuro da interface (o mapa do escritório não muda): classe no <html>, automático segue o sistema.
+  const lightMq = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
+  const applyTheme = () => {
+    const light = prefs.uiTheme === 'light' || (prefs.uiTheme === 'auto' && !!lightMq?.matches);
+    document.documentElement.classList.toggle('theme-light', light);
+    document.querySelector?.('meta[name="theme-color"]')?.setAttribute('content', light ? '#f7f6f3' : '#111110');
+  };
+  lightMq?.addEventListener?.('change', applyTheme);
+  applyTheme();
   const ctx: UiContext = {
     store,
     world,
@@ -95,6 +113,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     },
     updatePrefs(patch) {
       prefs = { ...prefs, ...patch };
+      applyTheme();
       savePrefs(storage, prefs);
       world.setOptions(worldOptionsFrom(prefs));
       invalidate();
@@ -194,7 +213,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     get interactiveEnabled() {
       return pty.enabled;
     },
-    newSession: (cwd, account) => pty.newSession(cwd, account),
+    newSession: (cwd, account) => pty.newSession(cwd, account).then(() => undefined),
     open(id, opener) {
       const readOnly = !!store.snapshot?.meta.terminal && !store.replaying;
       if (pty.ptyOf(id) || (pty.enabled && !readOnly && ctx.agent(id)?.kind === 'main')) pty.openAgent(id);
@@ -214,6 +233,13 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   // Entregas: o que os agentes terminaram (primeiro botão do grupo: é o que mais se usa pelo celular).
   const deliveries = new Deliveries(ctx, terminal);
   topbar.panelGroup.prepend(deliveries.button);
+  // Prévia ao vivo do site do projeto (proxy autenticado do servidor).
+  const previewPanel = new PreviewPanel(ctx);
+  // Agente pediu a prévia (skill do plugin do DevLand): abre aqui, já na porta.
+  store.on('notice', (n) => {
+    if (n.previewPort && (access().preview || store.mock)) previewPanel.openPort(n.previewPort);
+  });
+  topbar.panelGroup.prepend(previewPanel.button);
   // Links com ?agent= / ?delivery= (abrem o agente ou a entrega ao carregar).
   const openLink = (url: URL) => {
     const agent = url.searchParams.get('agent');
@@ -230,9 +256,16 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
         setTimeout(go, 300);
       });
     }
-    if (url.search && location.search === url.search) window.history.replaceState(null, '', location.pathname);
+    if (url.search && location.search === url.search) window.window.history.replaceState(null, '', location.pathname);
   };
   if (typeof location !== 'undefined') openLink(new URL(location.href));
+  // Notificação tocada com o app já aberto: o service worker pede para abrir o agente (sw.js).
+  if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', (e: MessageEvent) => {
+      const url = (e.data as { devlandOpen?: unknown } | null)?.devlandOpen;
+      if (typeof url === 'string' && url.startsWith('/')) openLink(new URL(url, location.origin));
+    });
+  }
   drawer = new Drawer(ctx, terminal, pty);
   const feed = new FeedPanel(ctx);
   const toasts = new Toasts(ctx);
@@ -242,7 +275,6 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const hw = worldSource(store);
   worldDialog = new WorldDialog(ctx, hw, topbar.worldBtn);
   settings = new SettingsPopover(ctx, notifier, sound, worldDialog);
-  const popups = new WorldPopups(ctx, hw, { openWorld: (screen) => worldDialog.show(screen, topbar.worldBtn), panelOpen: () => settings.isOpen || worldDialog.isOpen });
   // Chip "🏙️ no mundo" / "⏸ pausado" na barra do topo (conta aprovada; nunca pela porta do celular).
   const worldChip = new WorldChip(ctx, hw, () => worldDialog.show('home'), (n) => toasts.push(n));
   topbar.addStatus(worldChip.el);
@@ -279,16 +311,91 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const renamer = new RoomRenamer(ctx);
   ctx.renameRoom = (id, at) => renamer.open(id, at);
   world.onRoomContextMenu?.((id, at) => renamer.open(id, at));
-  const empty = new EmptyState(ctx);
+  const empty = new EmptyState(ctx, {
+    get enabled() {
+      return pty.enabled;
+    },
+    // Escritório vazio: escolher o projeto no Novo agente (o terminal fixo na raiz /workspace criava uma sala sem projeto).
+    open: async () => topbar.toggleSpawn(),
+  });
   const banner = new ConnectionBanner(ctx);
   const update = new UpdateBanner(store);
+  // PC: arrastar as janelas pelo cabeçalho para organizar a tela (ui/drag.ts).
+  if (typeof document !== 'undefined' && typeof matchMedia === 'function') enableDraggablePanels();
+  const chats = new ChatsView(ctx, {
+    openPreview: () => previewPanel.toggle(),
+    ptyOf: (id) => pty.ptyOf(id),
+    takeover: (id, model) => pty.takeover(id, model),
+    openIn: (path, text) => pty.newSession(path, undefined, text).then(() => undefined),
+  });
+  // Aviso "fulano entregou": tocar abre a conversa com ele.
+  // (no modo Painel, na página Conversas dele)
+  deliveries.onOpenChat = (id) => (prefs.view === 'panel' ? dashboard.openChat(id) : chats.openChat(id));
+  // PC: botão Conversas no topo (no celular ele fica na barra de baixo). As conversas abrem ao lado, à direita.
+  const chatsBtn = iconButton(ICONS.feed, tr('Conversas'), () => chats.toggle(), 'ui-btn-chats');
+  chatsBtn.setAttribute('data-label', tr('Conversas'));
+  topbar.panelGroup.prepend(chatsBtn);
+  // PC: loja de plugins no topo, para quem administra (no celular fica em Ajustes).
+  const pluginsBtn = iconButton(ICONS.plugin, tr('Plugins do Claude Code'), () => openPlugins(ctx.root), 'ui-btn-plugins');
+  pluginsBtn.setAttribute('data-label', tr('Plugins'));
+  topbar.panelGroup.prepend(pluginsBtn);
+  const chatsBtnSync: UiComponent = {
+    render: () => {
+      chatsBtn.classList.toggle('is-on', chats.isOpen);
+      pluginsBtn.hidden = !(access().admin || (access().local && !access().remote));
+    },
+  };
+  // Novo agente criado: abre a conversa dele (no modo Painel, na página Conversas), em vez de ficar só no terminal/escritório.
+  topbar.onSpawned = (id) => (prefs.view === 'panel' ? dashboard.openChat(id) : chats.openChat(id));
+  topbar.onSpawnNotice = (text, level) => toasts.push({ id: `spawn-${Date.now()}`, level, text, at: Date.now() });
+  const bottomNav = new BottomNav(ctx, () => topbar.toggleSpawn(), chats);
+  // Modo Painel (sem o mapa): o mesmo DevLand como plataforma de gestão. prefs.view lembra a escolha.
+  const dashboard = new Dashboard(ctx, {
+    openChat: (id) => chats.openChat(id),
+    showChats: (on) => (on ? chats.show() : chats.close()),
+    chatsOpen: () => chats.isOpen,
+    newAgent: () => topbar.toggleSpawn(),
+    canSpawn: () => topbar.canSpawn,
+    openSettings: () => ctx.toggleSettings(),
+    openPlugins: () => openPlugins(ctx.root),
+    openCloud: (kind) => openCloudPanel(ctx.root, kind),
+    openDeliveries: () => deliveries.button.click(),
+    get newSessionIn() {
+      return router.interactiveEnabled ? (path: string) => void router.newSession(path) : undefined;
+    },
+    get loginConnector() {
+      return pty.enabled ? (path: string) => pty.newSession(path, undefined, '/mcp\r') : undefined;
+    },
+  });
+  // Conectar conta passo a passo (Cloud): substitui a página antiga de Contas em todos os botões.
+  const wizard = new ConnectWizard(() => invalidate());
+  root.append(wizard.el);
+  setContasHandler(() => wizard.open());
+  // O escritório virou a página Mapa do Painel: só existe o modo Painel.
+  const setView = (_view: 'office' | 'panel') => {
+    const view = 'panel';
+    if (view !== prefs.view) ctx.updatePrefs({ view });
+    const panel = true;
+    document.documentElement.classList.toggle('is-panel', panel);
+    world.setSuspended?.(panel);
+    dashboard.show(panel);
+    if (panel) {
+      if (scene?.inCity) scene.close();
+      if (selection !== null) ctx.select(null);
+    }
+    invalidate();
+  };
+  ctx.setView = setView;
+  const panelBtn = iconButton(ICONS.overview, tr('Modo painel: o DevLand sem o mapa'), () => setView('panel'), 'ui-btn-panel');
+  panelBtn.setAttribute('data-label', tr('Painel'));
+  topbar.panelGroup.prepend(panelBtn);
   const tip = new HoverTip(ctx);
   const splash = new Splash(ctx);
   timelapse = new TimelapsePlayer(ctx);
   const scrim = h('div', { class: 'ui-scrim', attrs: { 'aria-hidden': 'true' }, on: { click: () => ctx.togglePanel('sidebar', false) } });
 
   root.classList.add('ui-root');
-  root.append(timelapse.vignette, topbar.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, popups.el, tip.el, settings.el, worldDialog.el, history.el, deliveries.el, help.el, renamer.el, live, splash.el);
+  root.append(dashboard.el, timelapse.vignette, topbar.el, chats.el, bottomNav.el, sidebar.el, scrim, feed.el, drawer.el, terminal.el, pty.el, timelapse.el, timelapse.badge, toasts.el, banner.el, update.el, empty.el, tip.el, settings.el, worldDialog.el, history.el, deliveries.el, previewPanel.el, help.el, renamer.el, live, splash.el);
   area = new FreeArea(world, { root, topbar: topbar.el, sidebar: sidebar.el, drawer: drawer.el, feed: feed.el }, () => ({
     sidebar: panels.sidebar,
     feed: panels.feed,
@@ -296,8 +403,35 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     narrow: ctx.isNarrow(),
   }));
   drawer.onLayoutChange = () => applyLayout();
+  // Página Mapa do Painel: o mundo aparece atrás do menu lateral e da barra do topo; a área livre é o que sobra.
+  area.fixed = () => {
+    if (!document.documentElement.classList.contains('dash-on-map')) return null;
+    const ins = dashboard.mapInsets();
+    if (selection !== null && !drawer.floating) {
+      const r = drawer.el.getBoundingClientRect();
+      if (r.width > 0 && !ctx.isNarrow()) ins.right = Math.max(0, Math.round(innerWidth - r.left));
+    }
+    return ins;
+  };
+  dashboard.onMap = (on) => {
+    world.setSuspended?.(!on);
+    area?.sync();
+  };
 
-  const components: UiComponent[] = [topbar, sidebar, drawer, terminal, pty, history, deliveries, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, popups, worldChip];
+  // /?painel=contas|usuarios (o /contas e o /admin antigos redirecionam para cá): abre a janela do Cloud já na chegada.
+  const painel = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('painel') : null;
+  if (painel === 'contas' || painel === 'usuarios') {
+    window.history.replaceState(null, '', location.pathname);
+    setTimeout(() => openCloudPanel(ctx.root, painel), 0);
+  }
+
+  // /?settings: abre as Configurações já na chegada.
+  if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('settings')) {
+    window.history.replaceState(null, '', location.pathname);
+    setTimeout(() => settings.toggle(topbar.settingsBtn), 0);
+  }
+
+  const components: UiComponent[] = [dashboard, topbar, bottomNav, chats, chatsBtnSync, sidebar, drawer, terminal, pty, history, deliveries, previewPanel, feed, toasts, settings, empty, banner, tip, notifier, splash, timelapse, sound, day, updateToaster, worldDialog, worldChip];
   if (scene) components.push(scene);
   root.append(worldSocial.el);
   components.push(worldSocial);
@@ -483,5 +617,8 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   // ---------------------------------------------------------------- início
   world.setOptions(worldOptionsFrom(prefs));
   applyLayout();
+  setView('panel');
+  // recarregou: volta à página do Painel em que estava (Mapa, Conversas...)
+  dashboard.restorePage();
   renderAll();
 }

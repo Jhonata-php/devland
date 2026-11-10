@@ -17,7 +17,7 @@ export async function postPty<T = unknown>(url: string, body: unknown): Promise<
   try {
     res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) });
   } catch {
-    throw new Error(tr('o Habblaud não respondeu'));
+    throw new Error(tr('o DevLand não respondeu'));
   }
   if (res.status === 204) return undefined;
   const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -32,9 +32,21 @@ export function createPty(cwd: string, account?: string): Promise<PtyInfo | unde
   return postPty<PtyInfo>('/api/pty', { cwd, account, ...SIZE });
 }
 
+/** Digita no terminal interativo (como se a pessoa teclasse). */
+export function sendPtyInput(id: string, data: string): Promise<unknown> {
+  return postPty(`/api/pty/${encodeURIComponent(id)}/input`, { data });
+}
+
+/** Texto que está na tela do terminal interativo (para achar o link de login do conector). */
+export async function ptyScreen(id: string): Promise<string> {
+  const res = await fetch(`/api/pty/${encodeURIComponent(id)}/screen`, { credentials: 'same-origin' });
+  if (!res.ok) return '';
+  return ((await res.json().catch(() => ({}))) as { text?: string }).text ?? '';
+}
+
 /** Encerra a sessão noutro terminal e continua a mesma conversa aqui. */
-export function takeoverAgent(agentId: string): Promise<PtyInfo | undefined> {
-  return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, SIZE);
+export function takeoverAgent(agentId: string, model?: string): Promise<PtyInfo | undefined> {
+  return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, { ...SIZE, ...(model ? { model } : {}) });
 }
 
 /** Encerra o agente (aqui ou noutro terminal). */

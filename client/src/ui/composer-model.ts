@@ -7,16 +7,18 @@ import type { AgentInfo, OutboxStatus, Provider } from '../../../shared/types';
 import { tr } from '../../../shared/i18n';
 
 /** Dica para quem tem o recurso ligado, mas a sessão do agente não está com o plugin conectado. */
+export const CLOUD_PLUGIN_HINT = tr('Esta conversa começou antes do plugin de mensagens. Abra uma nova (aba Novo) para responder por aqui.');
 export const PLUGIN_HINT = tr('Para mandar mensagens daqui: npm run mod:install (plugin habblaud-mensagens)');
 /** A mesma dica para um agente do Codex sem entregador (no modo Node o próprio servidor entrega). */
-export const CODEX_BRIDGE_HINT = tr('Para mandar mensagens ao Codex: com o Habblaud no Docker, deixe npm run codex:bridge rodando; no modo Node funciona sozinho');
+export const CODEX_BRIDGE_HINT = tr('Para mandar mensagens ao Codex: com o DevLand no Docker, deixe npm run codex:bridge rodando; no modo Node funciona sozinho');
 
 /**
  * - ready: dá para mandar (principal com o plugin conectado, recurso ligado, página local);
  * - hint: recurso ligado e principal presente, mas a sessão não está com o plugin (`text` diz como instalar);
  * - off: não dá (`text` diz por quê). A gaveta esconde a caixa; o terminal mostra o motivo no lugar dela.
  */
-export type ComposerMode = { kind: 'ready' } | { kind: 'hint'; text: string } | { kind: 'off'; text: string };
+/** `resume`: a sessão não tem o plugin de mensagens; o envio retoma a sessão num terminal daqui com o texto. */
+export type ComposerMode = { kind: 'ready'; resume?: true } | { kind: 'hint'; text: string } | { kind: 'off'; text: string };
 
 export interface ComposerEnv {
   /** Recurso ligado no servidor (OfficeSnapshot.meta.messages; no ?mock=1, sempre). */
@@ -25,6 +27,10 @@ export interface ComposerEnv {
   local: boolean;
   /** Timelapse: o escritório mostrado é o do momento reproduzido. */
   replaying: boolean;
+  /** Habblaud Cloud: o plugin é instalado sozinho; só sessões abertas antes dele não o têm. */
+  cloud?: boolean;
+  /** Terminal interativo liberado aqui: sessão do Claude sem o plugin recebe a mensagem retomando a sessão. */
+  resume?: boolean;
 }
 
 export function composerMode(agent: AgentInfo | undefined, env: ComposerEnv): ComposerMode {
@@ -33,8 +39,9 @@ export function composerMode(agent: AgentInfo | undefined, env: ComposerEnv): Co
   if (!agent || agent.status === 'offline' || agent.status === 'done') return { kind: 'off', text: tr('Sessão encerrada') };
   const codex = agent.provider === 'codex';
   if (!env.enabled) return { kind: 'off', text: codex ? tr('Para responder, use o Codex') : tr('Para responder, use o terminal do Claude Code') };
-  if (!env.local) return { kind: 'off', text: tr('Para mandar mensagens por aqui, abra o Habblaud por http://localhost (ou 127.0.0.1)') };
-  if (!agent.canMessage) return { kind: 'hint', text: codex ? CODEX_BRIDGE_HINT : PLUGIN_HINT };
+  if (!env.local) return { kind: 'off', text: tr('Para mandar mensagens por aqui, abra o DevLand por http://localhost (ou 127.0.0.1)') };
+  if (!agent.canMessage && !codex && env.resume && agent.kind === 'main') return { kind: 'ready', resume: true };
+  if (!agent.canMessage) return { kind: 'hint', text: codex ? CODEX_BRIDGE_HINT : env.cloud ? CLOUD_PLUGIN_HINT : PLUGIN_HINT };
   return { kind: 'ready' };
 }
 
@@ -117,10 +124,10 @@ export function pollDelay(elapsed: number): number {
   return 3_000;
 }
 
-export const LOST_ERROR = tr('o Habblaud não conhece mais esta mensagem (ele reiniciou?)');
+export const LOST_ERROR = tr('o DevLand não conhece mais esta mensagem (ele reiniciou?)');
 export const TIMEOUT_ERROR = tr('sem notícia da entrega: confira no terminal do Claude Code');
 export const CODEX_TIMEOUT_ERROR = tr('sem notícia da entrega: confira no Codex');
-export const OFFLINE_ERROR = tr('não foi possível falar com o Habblaud');
+export const OFFLINE_ERROR = tr('não foi possível falar com o DevLand');
 
 /** Prazo da consulta acabou sem notícia: onde conferir. */
 export function timeoutError(provider: Provider = 'claude'): string {

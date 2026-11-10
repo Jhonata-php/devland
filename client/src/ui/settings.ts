@@ -1,6 +1,8 @@
 // Configurações (popover): opções do escritório, avisos, modo demonstração e Sobre (versão). O Habblaud World tem a
 // janela própria (ui/world/world-dialog.ts); daqui só sai a dica do tema em Aparência, que também vai para o prédio.
 import { access, remoteLogout } from '../net/access';
+import { openPlugins } from './plugins';
+import { openAccounts, openCloudPanel } from './accounts';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText } from './dom';
 import { ICONS } from './icons';
@@ -89,12 +91,34 @@ export class SettingsPopover implements UiComponent {
   private liveliness: ReturnType<typeof segmented<UiPrefs['liveliness']>>;
   private daylight: ReturnType<typeof segmented<UiPrefs['daylight']>>;
   private theme: ReturnType<typeof segmented<UiPrefs['theme']>>;
+  private view: ReturnType<typeof segmented<UiPrefs['view']>>;
+  private uiTheme: ReturnType<typeof segmented<UiPrefs['uiTheme']>>;
   private language: ReturnType<typeof segmented<LanguageChoice>>;
   private soundGroup: SoundSettingsGroup;
   private demoGroup: HTMLElement;
   /** Só na página do celular (porta remota com login): sair deste aparelho. */
   private remoteGroup: HTMLElement;
   private logoutBtn: HTMLButtonElement;
+  private usersRow: HTMLElement;
+  private pluginsRow!: HTMLElement;
+  private gitRow!: HTMLElement;
+  private gitHint!: HTMLElement;
+  private gitBtn!: HTMLButtonElement;
+  private gitOn = false;
+  private gitLoaded = false;
+  private testHint: HTMLElement;
+  /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
+  private profileRow: HTMLElement;
+  private profileText: HTMLElement;
+  private emailBtn: HTMLButtonElement;
+  // Verificação em duas etapas (Cloud): linha com o estado e o painel de ativação (segredo, link e código).
+  private totpRow!: HTMLElement;
+  private totpHint!: HTMLElement;
+  private totpBtn!: HTMLButtonElement;
+  private totpPanel!: HTMLElement;
+  private totpOn = false;
+  private accountsRow: HTMLElement;
+  private meLoaded = false;
   private about: AboutGroup;
   private demoBusy = false;
   private anchor: HTMLElement | null = null;
@@ -151,6 +175,15 @@ export class SettingsPopover implements UiComponent {
       },
     );
     this.theme.row.append(h('span', { class: 'ui-set__hint', text: tr('Automático: Halloween em outubro e Natal de 1º de novembro a 26 de dezembro; no resto do ano, o visual original. Nenhum: sempre o original.') }));
+    // Modo da tela: o escritório em pixel art ou o painel (ui/dashboard.ts).
+    this.view = segmented<UiPrefs['view']>(tr('Tela'), [['office', tr('Escritório')], ['panel', tr('Painel')]], (v) => {
+      this.hide();
+      ctx.setView?.(v);
+    });
+    this.view.row.append(h('span', { class: 'ui-set__hint', text: tr('Painel: o DevLand sem o mapa, com agentes, contas e pessoas em listas.') }));
+    this.view.row.hidden = true; // o escritório virou a página Mapa do Painel: não há mais dois modos
+    this.uiTheme = segmented<UiPrefs['uiTheme']>(tr('Cores'), [['dark', tr('Escuro')], ['light', tr('Claro')], ['auto', tr('Automático')]], (v) => ctx.updatePrefs({ uiTheme: v }));
+    this.uiTheme.row.append(h('span', { class: 'ui-set__hint', text: tr('Automático: segue o tema do sistema (claro de dia, escuro à noite, se ele trocar sozinho).') }));
     this.soundGroup = new SoundSettingsGroup(ctx, sound);
 
     // Nomes dos idiomas sempre na própria língua, para quem não entende o idioma atual achar o seu.
@@ -160,7 +193,7 @@ export class SettingsPopover implements UiComponent {
       (v) => pickLanguage(v),
     );
     this.language.row.append(
-      h('span', { class: 'ui-set__hint', text: tr('Os textos das atividades vêm do servidor: seguem HABBLAUD_LANG ou o idioma do sistema onde o Habblaud roda (o inglês, só com HABBLAUD_LANG=en).') }),
+      h('span', { class: 'ui-set__hint', text: tr('Os textos das atividades vêm do servidor: seguem HABBLAUD_LANG ou o idioma do sistema onde o DevLand roda (o inglês, só com HABBLAUD_LANG=en).') }),
     );
 
     this.demoGroup = h(
@@ -182,10 +215,86 @@ export class SettingsPopover implements UiComponent {
           'div',
           { class: 'ui-set__text' },
           h('span', { class: 'ui-set__label', text: tr('Sair deste aparelho') }),
-          h('span', { class: 'ui-set__hint', text: tr('Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com usuário e senha.') }),
+          h('span', { class: 'ui-set__hint', text: tr('Encerra o login aqui (uma cópia do cookie também deixa de valer). Para voltar, entre com e-mail e senha.') }),
         ),
         this.logoutBtn,
       ),
+      (this.profileRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Perfil') }),
+          (this.profileText = h('span', { class: 'ui-set__hint', text: '…' })),
+        ),
+        (this.emailBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Definir e-mail de entrada'), hidden: true, on: { click: () => void this.setEmail() } })),
+      )),
+      (this.totpRow = h(
+        'div',
+        { class: 'ui-set ui-set--totp', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Verificação em duas etapas') }),
+          (this.totpHint = h('span', { class: 'ui-set__hint', text: tr('Pede um código do app autenticador depois da senha.') })),
+          (this.totpPanel = h('div', { class: 'ui-totp', hidden: true })),
+        ),
+        (this.totpBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Ativar'), on: { click: () => void this.toggleTotp() } })),
+      )),
+      (this.accountsRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Contas conectadas') }),
+          h('span', { class: 'ui-set__hint', text: tr('Claude Code, Codex e GitHub que os agentes usam, e os projetos clonados.') }),
+        ),
+        h('button', { class: 'ui-btn', type: 'button', text: tr('Abrir'), on: { click: () => {
+          this.hide();
+          openAccounts(this.ctx.root);
+        } } }),
+      )),
+      (this.gitRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Agentes podem fazer push e merge') }),
+          (this.gitHint = h('span', { class: 'ui-set__hint', text: tr('O modo automático do Claude Code não deixa subir direto na main, mesmo a pedido. Ligado, os agentes podem dar git push, git merge e gh pr merge (inclusive na main).') })),
+        ),
+        (this.gitBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Ligar'), on: { click: () => void this.toggleGit() } })),
+      )),
+      (this.pluginsRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Plugins do Claude Code') }),
+          h('span', { class: 'ui-set__hint', text: tr('Busque, instale e remova plugins dos marketplaces configurados, em todas as contas.') }),
+        ),
+        h('button', { class: 'ui-btn', type: 'button', text: tr('Abrir'), on: { click: () => {
+          this.hide();
+          openPlugins(this.ctx.root);
+        } } }),
+      )),
+      (this.usersRow = h(
+        'div',
+        { class: 'ui-set', hidden: true },
+        h(
+          'div',
+          { class: 'ui-set__text' },
+          h('span', { class: 'ui-set__label', text: tr('Usuários') }),
+          h('span', { class: 'ui-set__hint', text: tr('Convidar pessoas, mudar papéis e o que cada uma pode fazer no escritório.') }),
+        ),
+        h('button', { class: 'ui-btn', type: 'button', text: tr('Abrir'), on: { click: () => {
+          this.hide();
+          openCloudPanel(this.ctx.root, 'usuarios');
+        } } }),
+      )),
     );
 
     this.theme.row.append(world.themeNote);
@@ -196,7 +305,7 @@ export class SettingsPopover implements UiComponent {
       'div',
       { class: 'ui-popover ui-settings', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Configurações'), id: 'ui-settings', popover: 'auto' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Configurações') }), close),
-      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.theme.row),
+      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.view.row, this.uiTheme.row, this.theme.row),
       h(
         'div',
         { class: 'ui-set-group' },
@@ -210,7 +319,13 @@ export class SettingsPopover implements UiComponent {
         'div',
         { class: 'ui-set-group' },
         h('h3', { text: tr('Avisos') }),
-        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você e a aba está em segundo plano.'), () => void this.toggleNotifications()),
+        sw('browserNotifications', tr('Notificações do navegador'), tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o DevLand fechado (no iPhone, com ele na Tela de Início).'), () => void this.toggleNotifications()),
+        h(
+          'div',
+          { class: 'ui-set' },
+          h('div', { class: 'ui-set__text' }, h('span', { class: 'ui-set__label', text: tr('Testar notificação') }), (this.testHint = h('span', { class: 'ui-set__hint', text: tr('Manda um aviso de teste aos aparelhos com as notificações ligadas.') }))),
+          h('button', { class: 'ui-btn', type: 'button', text: tr('Enviar teste'), on: { click: () => void this.testNotify() } }),
+        ),
       ),
       this.soundGroup.el,
       h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Idioma') }), this.language.row),
@@ -285,32 +400,174 @@ export class SettingsPopover implements UiComponent {
     this.liveliness.set(p.liveliness);
     this.daylight.set(p.daylight);
     this.theme.set(p.theme);
+    this.view.set(p.view);
+    this.uiTheme.set(p.uiTheme);
     this.language.set(savedLanguage());
     this.soundGroup.render();
     setHidden(this.demoGroup, this.ctx.store.mock || access().remote);
     setHidden(this.remoteGroup, !access().remote);
+    setHidden(this.usersRow, !access().admin);
+    setHidden(this.pluginsRow, !(access().admin || (access().local && !access().remote)));
+    setHidden(this.gitRow, !access().admin);
+    if (access().admin && !this.gitLoaded) void this.loadGit();
+    setHidden(this.profileRow, !access().cloud);
+    setHidden(this.totpRow, !access().cloud);
+    setHidden(this.accountsRow, !access().cloud);
+    if (access().cloud && !this.meLoaded) void this.loadMe();
     this.about.render();
 
     const notif = this.switches.get('browserNotifications')!;
     const state = notificationState();
     const hint =
       state === 'unsupported'
-        ? tr('Este navegador não oferece notificações.')
+        ? tr('Este navegador não oferece notificações. No iPhone, adicione o DevLand à Tela de Início e abra por lá.')
         : state === 'denied'
           ? tr('Bloqueadas pelo navegador: libere nas permissões do site.')
-          : tr('Avisa quando alguém precisa de você e a aba está em segundo plano.');
+          : tr('Avisa quando alguém precisa de você ou termina o trabalho, mesmo com o DevLand fechado (no iPhone, com ele na Tela de Início).');
     setText(notif.hint, hint);
     notif.btn.disabled = state === 'unsupported';
+  }
+
+  /** Cloud: nome e papel de quem está logado (GET /api/cloud/me). */
+  private async loadMe(): Promise<void> {
+    this.meLoaded = true;
+    try {
+      const res = await fetch('/api/cloud/me', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error();
+      const me = (await res.json()) as { name?: string; email?: string | null; role?: string; totp?: boolean };
+      this.syncTotp(!!me.totp);
+      setText(this.profileText, `${me.name ?? ''} · ${me.role === 'admin' ? tr('Admin') : tr('Usuário')}${me.email ? ` · ${me.email}` : ''}`);
+      setHidden(this.emailBtn, !!me.email);
+    } catch {
+      this.meLoaded = false;
+      setText(this.profileText, tr('Não deu para ler o perfil.'));
+    }
+  }
+
+  private syncGit(on: boolean): void {
+    this.gitOn = on;
+    setText(this.gitBtn, on ? tr('Desligar') : tr('Ligar'));
+    this.gitRow.classList.toggle('is-on', on);
+  }
+
+  private async loadGit(): Promise<void> {
+    this.gitLoaded = true;
+    try {
+      const r = await fetch('/api/cloud/git-push', { credentials: 'same-origin' });
+      if (r.ok) this.syncGit(((await r.json()) as { allowed?: boolean }).allowed === true);
+    } catch {
+      this.gitLoaded = false;
+    }
+  }
+
+  private async toggleGit(): Promise<void> {
+    try {
+      const { allowed } = await this.cloudPost<{ allowed: boolean }>('/api/cloud/git-push', { allow: !this.gitOn });
+      this.syncGit(allowed);
+      setText(this.gitHint, allowed ? tr('Ligado: os agentes podem dar push e merge, inclusive na main. Vale para as sessões novas (as abertas, depois de retomadas).') : tr('Desligado: subir na main volta a pedir um PR.'));
+    } catch (err) {
+      setText(this.gitHint, (err as Error).message);
+    }
+  }
+
+  private syncTotp(on: boolean): void {
+    this.totpOn = on;
+    setText(this.totpHint, on ? tr('Ligada: o login pede o código do app autenticador.') : tr('Pede um código do app autenticador depois da senha.'));
+    setText(this.totpBtn, on ? tr('Desativar') : tr('Ativar'));
+    setHidden(this.totpBtn, false);
+  }
+
+  private async cloudPost<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+    if (!res.ok) throw new Error(data.error ?? tr('Não deu certo.'));
+    return data;
+  }
+
+  /** Ativar: segredo novo, link para o app de senhas e confirmação com um código; desativar pede um código. */
+  private async toggleTotp(): Promise<void> {
+    if (this.totpOn) {
+      const code = window.prompt(tr('Código do app autenticador (ou um código de reserva) para desativar:'))?.trim();
+      if (!code) return;
+      try {
+        await this.cloudPost('/api/cloud/totp/disable', { code });
+        this.syncTotp(false);
+      } catch (err) {
+        setText(this.totpHint, (err as Error).message);
+      }
+      return;
+    }
+    try {
+      const { secret, uri } = await this.cloudPost<{ secret: string; uri: string }>('/api/cloud/totp/start', {});
+      const input = h('input', { class: 'ui-rename__input', type: 'text', attrs: { inputmode: 'numeric', autocomplete: 'one-time-code', placeholder: '123456', maxlength: '6', 'aria-label': tr('Código de verificação') } });
+      const msg = h('p', { class: 'ui-set__hint' });
+      const confirm = h('button', {
+        class: 'ui-btn',
+        type: 'button',
+        text: tr('Confirmar'),
+        on: {
+          click: async () => {
+            try {
+              const { backupCodes } = await this.cloudPost<{ backupCodes: string[] }>('/api/cloud/totp/enable', { code: input.value });
+              this.syncTotp(true);
+              this.totpPanel.replaceChildren(
+                h('p', { class: 'ui-set__hint', text: tr('Ligada. Guarde estes códigos de reserva (cada um vale uma vez, se você perder o celular):') }),
+                h('pre', { class: 'ui-totp__codes', text: backupCodes.join('\n') }),
+              );
+            } catch (err) {
+              setText(msg, (err as Error).message);
+            }
+          },
+        },
+      });
+      this.totpPanel.replaceChildren(
+        h('p', { class: 'ui-set__hint', text: tr('1. Adicione no app autenticador (no iPhone, o link abre o app Senhas) ou digite a chave:') }),
+        h('a', { class: 'ui-totp__link', attrs: { href: uri }, text: tr('Adicionar ao app autenticador') }),
+        h('code', { class: 'ui-totp__secret', text: secret.replace(/(.{4})/g, '$1 ').trim() }),
+        h('p', { class: 'ui-set__hint', text: tr('2. Digite o código de 6 dígitos que o app mostra:') }),
+        h('div', { class: 'ui-totp__row' }, input, confirm),
+        msg,
+      );
+      setHidden(this.totpPanel, false);
+      // Durante a ativação o botão some (o "Confirmar" do painel é que conclui).
+      setHidden(this.totpBtn, true);
+    } catch (err) {
+      setText(this.totpHint, (err as Error).message);
+    }
+  }
+
+  /** Cloud: define o e-mail de entrada de quem ainda entra só pelo usuário. */
+  private async setEmail(): Promise<void> {
+    const email = window.prompt(tr('E-mail para entrar no DevLand:'))?.trim();
+    if (!email) return;
+    const res = await fetch('/api/cloud/email', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    if (res.ok) {
+      this.meLoaded = false;
+      void this.loadMe();
+    } else setText(this.profileText, ((await res.json().catch(() => ({}))) as { error?: string }).error ?? tr('Não deu certo.'));
+  }
+
+  private async testNotify(): Promise<void> {
+    setText(this.testHint, tr('Enviando…'));
+    const r = await this.notifier.testPush();
+    let text: string;
+    if (r.error) text = r.local ? tr('Aviso local mostrado, mas o servidor não respondeu ao teste de push.') : tr('Não deu para enviar o teste.');
+    else if (r.subscribed === 0) text = r.local ? tr('Aviso local mostrado. Este aparelho não está assinado no push do servidor: desligue e ligue "Notificações do navegador".') : tr('Nenhum aparelho assinado: ligue "Notificações do navegador" acima.');
+    else if (r.sent === 0) text = tr('O serviço de push recusou o envio (código {0}). O aviso local {1}.', [r.status ?? '?', r.local ? tr('apareceu') : tr('não apareceu')]);
+    else text = tr('Enviado. Se não chegou, confira a permissão de notificações do aparelho.');
+    setText(this.testHint, text);
   }
 
   private async toggleNotifications(): Promise<void> {
     if (this.ctx.prefs.browserNotifications) {
       this.ctx.updatePrefs({ browserNotifications: false });
+      void this.notifier.unsubscribePush();
       return;
     }
     const state = await this.notifier.enableBrowserNotifications();
     this.ctx.updatePrefs({ browserNotifications: state === 'granted' });
     if (state === 'denied') this.ctx.announce(tr('Notificações bloqueadas pelo navegador.'));
+    if (state === 'unsupported') this.ctx.announce(tr('Este navegador não deixa notificar. No iPhone, adicione o DevLand à Tela de Início e abra por lá.'));
   }
 
   private async toggleDemo(): Promise<void> {

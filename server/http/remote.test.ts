@@ -224,7 +224,7 @@ async function start(allow: RemoteFeature[] = ['permissions']): Promise<Harness>
       sendJson(res, 200, { ok: true });
     },
     renameRoom: () => 'sala',
-    remote: { is: isRemoteRequest, allows: (f) => allowSet.has(f) },
+    remote: { is: isRemoteRequest, allows: (_req, f) => allowSet.has(f) },
     world: (req, res, url) => {
       req.resume();
       worldCalls.push(`${req.method} ${url.pathname}`);
@@ -235,7 +235,7 @@ async function start(allow: RemoteFeature[] = ['permissions']): Promise<Harness>
   const gate = createRemoteGate({ config: CFG, sessions: new RemoteSessions(SECRET, CFG), secure: false });
   const page = (_req: http.IncomingMessage, res: http.ServerResponse) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end('<!doctype html><title>Habblaud</title>');
+    res.end('<!doctype html><title>DevLand</title>');
   };
   const local = http.createServer((req, res) => {
     if (guard(req, res)) return;
@@ -584,9 +584,10 @@ describe('GET /api/access (o que a página pode fazer)', () => {
       messages: false,
       terminal: false,
       spawn: false,
+      preview: false,
       world: false,
     });
-    expect(JSON.parse((await request(h.localBase, '/api/access')).body)).toEqual({ remote: false, local: true, permissions: true, messages: true, terminal: false, spawn: true, world: true });
+    expect(JSON.parse((await request(h.localBase, '/api/access')).body)).toEqual({ remote: false, local: true, permissions: true, messages: true, terminal: false, spawn: true, preview: false, world: true });
     expect(JSON.parse((await request(h.localBase, '/api/access', { headers: { Host: '192.168.1.5:4747' } })).body)).toMatchObject({
       local: false,
       permissions: false,
@@ -625,5 +626,20 @@ describe('cookie Secure e download da CA', () => {
     expect(ca.status).toBe(200);
     expect(ca.headers['content-type']).toBe('application/x-x509-ca-cert');
     expect((await request(base, '/login')).body).toContain('/remote/ca.crt');
+  });
+});
+
+describe('freio de login por cliente', () => {
+  it('quem erra trava só o próprio endereço; X-Forwarded-For vale pelo último item', async () => {
+    const { ClientThrottles, forwardedClient } = await import('./remote');
+    const req = (ip: string) => ({ headers: { 'x-forwarded-for': `1.1.1.1, ${ip}` } }) as never;
+    expect(forwardedClient(req('9.9.9.9'))).toBe('9.9.9.9');
+    const c = new ClientThrottles();
+    for (let i = 0; i < 6; i++) {
+      const t = c.for(req('9.9.9.9'));
+      if (t.begin()) t.end(false);
+    }
+    expect(c.for(req('9.9.9.9')).retryAfter()).toBeGreaterThan(0);
+    expect(c.for(req('8.8.8.8')).retryAfter()).toBe(0);
   });
 });

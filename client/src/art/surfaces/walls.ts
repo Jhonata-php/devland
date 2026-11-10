@@ -21,6 +21,8 @@ export const BASEBOARD_H = 3;
 
 /** Cor da tampa (topo da parede), levemente tingida pela cor da parede. */
 export function capColor(style: WallStyle): string {
+  // divisória de vidro: o "topo" é o perfil de alumínio, mais estreito e claro
+  if (style.pattern === 'glass') return '#4f6275';
   return mix(style.exterior ? '#4a4f5c' : '#3d4356', style.base, 0.1);
 }
 
@@ -139,6 +141,17 @@ export function wallFaceTile(style: WallStyle, variant: number, col: number): Pi
 /** Tile de 16x16 da parede sul (tampa + mureta). */
 export function southWallTile(style: WallStyle, col: number): PixelBuf {
   const b = new PixelBuf(TILE, TILE);
+  if (style.pattern === 'glass') {
+    // Divisória baixa de vidro (open-space): perfil em cima, vidro translúcido com reflexo, filete na cor da sala embaixo.
+    const frame = capColor(style);
+    b.rect(0, 0, TILE, 2, frame);
+    b.hline(0, TILE - 1, 0, shade(frame, 0.12));
+    b.rect(0, 2, TILE, TILE - 4, 'rgba(150,200,230,0.22)');
+    for (let i = 0; i < TILE - 4; i++) b.set((col * 5 + 9 - i) & 15, 2 + i, 'rgba(255,255,255,0.22)');
+    if (col % 4 === 3) b.vline(TILE - 1, 2, TILE - 3, frame);
+    b.rect(0, TILE - 2, TILE, 2, style.trim ?? frame);
+    return b;
+  }
   const cap = capColor(style);
   const capH = 6;
   b.rect(0, 0, TILE, capH, cap);

@@ -62,6 +62,27 @@ export function playVoice(ac: AudioContext, dest: AudioNode, kind: SoundKind, t:
       tone(ac, out, 'sine', 1318.5, t, 0.08 * g, 0.012, 1.1);
       tone(ac, out, 'sine', 1174.7, t + 0.14, 0.1 * g, 0.012, 1.1);
       return;
+    case 'alarm':
+      // alarme de terminal: dois bipes secos e agudos, o segundo mais alto (chama sem assustar)
+      tone(ac, out, 'square', 988, t, 0.05 * g, 0.004, 0.11);
+      tone(ac, out, 'square', 1319, t + 0.15, 0.055 * g, 0.004, 0.16);
+      tone(ac, out, 'square', 988, t + 0.34, 0.045 * g, 0.004, 0.11);
+      tone(ac, out, 'square', 1319, t + 0.49, 0.05 * g, 0.004, 0.2);
+      return;
+    case 'done':
+      // missão cumprida: arpejo ascendente em dó maior que termina numa nota longa
+      for (const [i, f] of [523.3, 659.3, 784, 1046.5].entries()) tone(ac, out, 'triangle', f, t + i * 0.075, 0.12 * g, 0.006, i === 3 ? 0.7 : 0.16);
+      return;
+    case 'warn':
+      // erro: dois tons graves descendo, em dente de serra abafada
+      tone(ac, out, 'sawtooth', 220, t, 0.05 * g, 0.006, 0.18, 196);
+      tone(ac, out, 'sawtooth', 165, t + 0.16, 0.055 * g, 0.006, 0.3, 130);
+      return;
+    case 'blip':
+      // mensagem/informação: pingo curto de duas notas, bem suave
+      tone(ac, out, 'sine', 1568, t, 0.07 * g, 0.003, 0.07);
+      tone(ac, out, 'sine', 2093, t + 0.07, 0.05 * g, 0.003, 0.1);
+      return;
     case 'pop':
       // "pop": varredura curta para baixo
       tone(ac, out, 'triangle', 740, t, 0.14 * g, 0.008, 0.15, 330);

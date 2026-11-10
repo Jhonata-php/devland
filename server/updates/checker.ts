@@ -8,7 +8,7 @@ import type { UpdateStatus } from '../../shared/types';
 import { errMsg, log } from '../log';
 import { tr } from '../../shared/i18n';
 
-export const CHECK_EVERY_MS = 6 * 3_600_000;
+export const CHECK_EVERY_MS = 30 * 60_000;
 export const RETRY_MS = 3_600_000;
 /** Primeira consulta depois de subir (não atrasa a inicialização). */
 const FIRST_DELAY_MS = 5_000;
@@ -65,7 +65,41 @@ interface Cached {
   publishedAt?: number;
 }
 
+/** Escolha do admin: atualizar sozinho, a qualquer hora ou só de madrugada (2h às 5h, no fuso de quem escolheu). */
+export interface AutoPrefs {
+  enabled: boolean;
+  window: 'any' | 'night';
+  /** Diferença do fuso em minutos, como `Date.getTimezoneOffset()` do navegador (UTC − local). */
+  tz: number;
+}
+
+export const AUTO_TICK_MS = 10 * 60_000;
+const AUTO_RETRY_MS = 60 * 60_000;
+const NIGHT = { from: 2 * 60, to: 5 * 60 };
+
+/** Estamos dentro da janela escolhida? (puro: testado) */
+export function inAutoWindow(p: AutoPrefs, nowMs: number): boolean {
+  if (p.window === 'any') return true;
+  const utcMin = Math.floor(nowMs / 60_000) % 1440;
+  const local = (((utcMin - p.tz) % 1440) + 1440) % 1440;
+  return local >= NIGHT.from && local < NIGHT.to;
+}
+
+/** Fonte própria da "versão mais recente" (Cloud: as tags da imagem), no lugar das releases do GitHub. */
+export type LatestSource = () => Promise<{ latest?: string; url?: string; publishedAt?: number }>;
+
+/** Depois de pedir a atualização, o aviso "atualizando" vale por este tempo (a imagem leva alguns minutos). */
+export const APPLY_WINDOW_MS = 15 * 60_000;
+
 export interface UpdateCheckerOptions {
+  /** Cloud: de onde vem a versão mais recente (padrão: releases do GitHub). */
+  source?: LatestSource;
+  /** Cloud: atualiza o próprio Habblaud (pede ao Velix); ausente = sem botão. */
+  apply?: () => Promise<{ ok: true } | { ok: false; error: string; needsImage?: true }>;
+  /** Cloud: a conexão com o Velix já foi configurada (a tela mostra o botão ou o formulário). */
+  canApply?: () => boolean;
+  /** Cloud: onde guardar a escolha de atualizar sozinho; null = só em memória (testes). */
+  autoFile?: string | null;
   /** Versão em uso (package.json). */
   current: string;
   /** "dono/nome"; ausente = verificação desligada. */
@@ -87,6 +121,11 @@ export class UpdateChecker {
   private inflight: Promise<UpdateStatus> | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private announced: string | undefined;
+  private applyingSince: number | undefined;
+  private needsImage = false;
+  private auto: AutoPrefs = { enabled: false, window: 'night', tz: 0 };
+  private lastAutoAttempt = -Infinity;
+  private autoTimer: ReturnType<typeof setInterval> | null = null;
   private readonly fetchFn: typeof fetch;
   private readonly now: () => number;
 
@@ -111,7 +150,78 @@ export class UpdateChecker {
       publishedAt: c?.publishedAt,
       available: !!c?.latest && compareVersions(c.latest, this.opts.current) > 0,
       error: this.error,
+      canApply: this.opts.apply ? (this.opts.canApply ? this.opts.canApply() : true) : undefined,
+      canConfigure: this.opts.apply ? true : undefined,
+      needsImage: this.needsImage || undefined,
+      auto: this.opts.apply ? { enabled: this.auto.enabled, window: this.auto.window } : undefined,
+      applyingSince: this.applyingSince && this.now() - this.applyingSince < APPLY_WINDOW_MS ? this.applyingSince : undefined,
     };
+  }
+
+  /** Lê a escolha de atualizar sozinho guardada em disco. */
+  loadAuto(): void {
+    if (!this.opts.autoFile || !this.opts.apply) return;
+    try {
+      const j = JSON.parse(readFileSync(this.opts.autoFile, 'utf8')) as Partial<AutoPrefs>;
+      this.auto = { enabled: j.enabled === true, window: j.window === 'any' ? 'any' : 'night', tz: Number.isFinite(j.tz) ? Math.max(-900, Math.min(900, Math.round(j.tz as number))) : 0 };
+    } catch {
+      // sem arquivo: continua desligado
+    }
+  }
+
+  /** Admin: liga/desliga a atualização automática e escolhe a janela. */
+  setAuto(raw: unknown): { ok: true } | { ok: false; error: string } {
+    const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+    const tz = typeof r.tz === 'number' && Number.isFinite(r.tz) ? Math.max(-900, Math.min(900, Math.round(r.tz))) : 0;
+    this.auto = { enabled: r.enabled === true, window: r.window === 'any' ? 'any' : 'night', tz };
+    if (this.opts.autoFile) {
+      try {
+        mkdirSync(dirname(this.opts.autoFile), { recursive: true });
+        writeFileSync(`${this.opts.autoFile}.tmp`, `${JSON.stringify(this.auto)}\n`);
+        renameSync(`${this.opts.autoFile}.tmp`, this.opts.autoFile);
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    }
+    this.opts.onChange?.();
+    return { ok: true };
+  }
+
+  /** Liga o relógio da atualização automática (a cada 10 min vê se há versão nova dentro da janela). */
+  startAuto(): void {
+    if (!this.opts.apply || this.autoTimer) return;
+    this.autoTimer = setInterval(() => void this.autoTick(), AUTO_TICK_MS);
+    this.autoTimer.unref?.();
+  }
+
+  /** Um passo da atualização automática (público para os testes). */
+  async autoTick(): Promise<void> {
+    if (!this.auto.enabled || !this.opts.apply || !(this.opts.canApply?.() ?? true)) return;
+    const now = this.now();
+    if (!inAutoWindow(this.auto, now) || now - this.lastAutoAttempt < AUTO_RETRY_MS) return;
+    // Com o automático ligado a lista de versões é relida a cada hora (não só a cada 6 h).
+    if (!this.cache || now - this.cache.checkedAt > 60 * 60_000) await this.check();
+    const s = this.status();
+    if (!s.available || s.applyingSince) return;
+    this.lastAutoAttempt = now;
+    const r = await this.apply();
+    if (r.ok) log.info(tr('Atualizando sozinho para a v{0}.', [s.latest]));
+    else log.warn(tr('A atualização automática não deu certo: {0}', [r.error]));
+  }
+
+  /** Cloud: pede a atualização (só com versão nova à vista). Devolve o motivo se não deu. */
+  async apply(): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!this.opts.apply) return { ok: false, error: tr('este servidor não atualiza por aqui') };
+    if (!this.status().canApply) return { ok: false, error: tr('falta configurar a conexão com o Velix') };
+    if (!this.status().available) return { ok: false, error: tr('não há versão nova para instalar') };
+    if (this.status().applyingSince) return { ok: true };
+    const r = await this.opts.apply();
+    this.needsImage = !r.ok && r.needsImage === true;
+    if (r.ok) {
+      this.applyingSince = this.now();
+      this.opts.onChange?.();
+    }
+    return r;
   }
 
   /** Lê o último resultado guardado (ignorado se for de outro repositório). */
@@ -127,7 +237,7 @@ export class UpdateChecker {
         checkedAt: j.checkedAt,
         etag: typeof j.etag === 'string' ? j.etag.slice(0, 200) : undefined,
         latest,
-        url: latest ? safeReleaseUrl(j.url, repo) : undefined,
+        url: latest && !this.opts.source ? safeReleaseUrl(j.url, repo) : undefined,
         publishedAt: latest && typeof j.publishedAt === 'number' ? j.publishedAt : undefined,
       };
     } catch (err) {
@@ -146,6 +256,8 @@ export class UpdateChecker {
   stop(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    if (this.autoTimer) clearInterval(this.autoTimer);
+    this.autoTimer = null;
   }
 
   /**
@@ -182,6 +294,13 @@ export class UpdateChecker {
 
   private async fetchLatest(): Promise<void> {
     const repo = this.opts.repo!;
+    if (this.opts.source) {
+      const r = await this.opts.source();
+      const v = r.latest ? parseVersion(r.latest) : null;
+      this.cache = { repo, checkedAt: this.now(), latest: v ? `${v.nums.join('.')}${v.pre ? `-${v.pre}` : ''}` : undefined, url: undefined, publishedAt: r.publishedAt };
+      this.save();
+      return;
+    }
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'User-Agent': `habblaud/${this.opts.current}`,
@@ -245,7 +364,7 @@ export class UpdateChecker {
     const s = this.status();
     if (!s.available || s.latest === this.announced) return;
     this.announced = s.latest;
-    log.info(tr('⬆️  Nova versão do Habblaud: v{0} (em uso: v{1}). Novidades: {2}', [s.latest, this.opts.current, s.url]));
+    log.info(tr('⬆️  Nova versão do DevLand: v{0} (em uso: v{1}). Novidades: {2}', [s.latest, this.opts.current, s.url]));
   }
 }
 

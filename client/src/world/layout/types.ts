@@ -97,7 +97,9 @@ export type SpotKind =
   | 'sink'
   | 'elevator'
   | 'talk'
-  | 'watch'; // ponto em pé da torcida (assistir a uma partida)
+  | 'watch' // ponto em pé da torcida (assistir a uma partida)
+  | 'boss' // cadeira do supervisor, atrás do balcão da recepção
+  | 'smoke'; // pausa para o cigarro junto ao vidro, nas pontas do corredor
 
 /**
  * Ponto de interesse. O personagem anda até o tile de aproximação (tx, ty), caminhável,

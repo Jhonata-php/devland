@@ -9,6 +9,7 @@
 // esteja com o thread aberto agora; outro retorno = falhou, e a 1ª linha do stderr diz por quê ("Error: ... no rollout
 // found for thread id ..."). Se o servidor compartilhado do Codex (daemon) não estiver no ar, o próprio comando o sobe.
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
+import { runAsOptions } from '../spawn/runas';
 import { execFile } from 'node:child_process';
 import { accessSync, constants, statSync } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
@@ -83,7 +84,7 @@ export function createCodexQueueRunner(bin: string, opts: { env?: NodeJS.Process
       if (!isAbsolute(job.codexHome)) return done({ ok: false, error: tr('pasta da conta do Codex inválida') });
       const env = { ...(opts.env ?? process.env), CODEX_HOME: job.codexHome };
       try {
-        execFile(bin, queueArgs(job.thread, job.text), { env, timeout: timeoutMs, maxBuffer: 256 * 1024, windowsHide: true, encoding: 'utf8' }, (err, _stdout, stderr) => {
+        execFile(bin, queueArgs(job.thread, job.text), { ...runAsOptions(env), timeout: timeoutMs, maxBuffer: 256 * 1024, windowsHide: true, encoding: 'utf8' }, (err, _stdout, stderr) => {
           if (!err) return done({ ok: true });
           const e = err as NodeJS.ErrnoException & { killed?: boolean };
           if (e.killed) return done({ ok: false, error: tr('o codex queue não respondeu em {0} s (a mensagem pode ter entrado na fila mesmo assim)', [Math.round(timeoutMs / 1_000)]) });

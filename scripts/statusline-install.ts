@@ -28,7 +28,7 @@ const TAP_NAME = 'statusline-tap.mjs';
 
 const USAGE = tr(`Uso: npm run usage:<install|uninstall|status> [-- opções]
 
-  install     envolve o statusline de cada conta com o tap do Habblaud (faz backup do settings.json)
+  install     envolve o statusline de cada conta com o tap do DevLand (faz backup do settings.json)
   uninstall   restaura o statusline original de cada conta
   status      mostra se o tap está instalado e quando chegou o último uso de cada conta
 
@@ -136,7 +136,7 @@ export function planInstall(settings: Settings, nodeCmd: string, tapPath: string
     if (!cur) return { action: 'skip', message: tr('o comando já menciona o tap, mas não no formato esperado; confira à mão') };
     const next = wrapCommand(nodeCmd, tapPath, cur.original);
     if (next === sl.command) return { action: 'none', message: tr('já instalado') };
-    return { action: 'install', settings: { ...settings, statusLine: { ...sl, command: next } }, message: tr('atualizado (novo caminho do Habblaud ou do node)') };
+    return { action: 'install', settings: { ...settings, statusLine: { ...sl, command: next } }, message: tr('atualizado (novo caminho do DevLand ou do node)') };
   }
   return {
     action: 'install',
@@ -154,7 +154,7 @@ export function planUninstall(settings: Settings): PlanAction {
   if (!cur.original) {
     const rest = { ...settings };
     delete rest.statusLine;
-    return { action: 'uninstall', settings: rest, message: tr('statusline criado pelo Habblaud removido') };
+    return { action: 'uninstall', settings: rest, message: tr('statusline criado pelo DevLand removido') };
   }
   return { action: 'uninstall', settings: { ...settings, statusLine: { ...sl, command: cur.original } }, message: `restaurado: ${cur.original}` };
 }
@@ -406,7 +406,7 @@ export function run(opts: RunOptions, ctx: RunContext): number {
   }
   if (opts.command === 'install' && changed) {
     out('');
-    out(tr('Pronto. Os números aparecem no Habblaud depois da próxima resposta de cada sessão. Sessões já'));
+    out(tr('Pronto. Os números aparecem no DevLand depois da próxima resposta de cada sessão. Sessões já'));
     out(tr('abertas costumam recarregar o settings.json sozinhas; se o uso não aparecer, reabra a sessão.'));
     out(tr('Uso capturado em {0}. Para desfazer: npm run usage:uninstall', [tildify(usageDirOf(env, home), home)]));
   }
@@ -423,7 +423,8 @@ async function main(): Promise<void> {
   process.exitCode = run(parsed, { env: process.env, home, now: new Date(), tapPath: TAP_SCRIPT, out: (l) => console.log(l) });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+// Só quando o próprio arquivo é o script rodado (importado pelo servidor, que empacota tudo num index.js, não roda).
+if (process.argv[1] && /statusline-install\.[cm]?[jt]s$/.test(process.argv[1]) && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((err: unknown) => {
     console.error(err instanceof FatalError ? tr('[usage] Erro: {0}', [err.message]) : tr('[usage] Erro inesperado: {0}', [String(err)]));
     process.exitCode = 1;

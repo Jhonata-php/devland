@@ -10,6 +10,7 @@
 // novo. Agentes do demo não têm transcript: a conversa fictícia sai de demoTerminalEntries a cada ~500 ms.
 // Sessões do histórico (GET /api/sessions/:conta/:sessionId/terminal, http/sessions.ts) usam o mesmo
 // leitor sobre o transcript já validado pela rota, com polling mais espaçado (~2 s).
+import { statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { demoTerminalEntries } from '../../shared/demo/terminal';
 import type { Activity, AgentInfo, TerminalEntry, TerminalInit } from '../../shared/types';
@@ -95,6 +96,9 @@ function parseInto(parser: TerminalParser, lines: readonly string[], out: Termin
  * Agente real (ou sessão do histórico): lê o transcript JSONL com um FileTail próprio. `transcriptPathOf`
  * informa a troca de transcript do principal (/clear); numa sessão do histórico ele nunca muda.
  */
+/** Teto da janela de leitura inicial quando o fim do arquivo não tem nenhuma mensagem. */
+const MAX_INIT_WINDOW = 64 * 1024 * 1024;
+
 class TranscriptSource implements ConversationSource {
   private tail: FileTail;
   /** Criado em load(), que sempre roda antes do primeiro poll(). */
@@ -109,9 +113,26 @@ class TranscriptSource implements ConversationSource {
     this.tail = new FileTail(path);
   }
 
+  /** Arquivo lido (diagnóstico: conversa que abre vazia). */
+  get path(): string {
+    return this.tail.path;
+  }
+
   load(): TerminalInit {
+    // O fim do arquivo pode ser só uma linha gigante (resultado de ferramenta) ou registros sem mensagem: a janela de
+    // leitura cresce (x4, até 64 MB) enquanto não achar nenhuma mensagem e ainda houver arquivo antes dela.
+    let bytes = this.o.initTailBytes;
+    for (let attempt = 0; ; attempt++) {
+      const r = this.loadWindow(bytes);
+      if (r.entries.length > 0 || r.init.truncated === false || bytes >= MAX_INIT_WINDOW || attempt >= 4) return r.init;
+      bytes = Math.min(bytes * 4, MAX_INIT_WINDOW);
+      this.tail = new FileTail(this.tail.path);
+    }
+  }
+
+  private loadWindow(bytes: number): { init: TerminalInit; entries: TerminalEntry[] } {
     this.parser = this.o.createParser();
-    const offset = this.tail.seekTail(this.o.initTailBytes);
+    const offset = this.tail.seekTail(bytes);
     const keep = this.o.initEntries;
     let entries: TerminalEntry[] = [];
     let dropped = false;
@@ -129,7 +150,7 @@ class TranscriptSource implements ConversationSource {
       entries = entries.slice(-keep);
       dropped = true;
     }
-    return { agentId: this.agentId, entries, truncated: offset > 0 || dropped };
+    return { init: { agentId: this.agentId, entries, truncated: offset > 0 || dropped }, entries };
   }
 
   poll(): PollResult {
@@ -231,7 +252,10 @@ export class TerminalStreams {
    */
   attach(req: IncomingMessage, res: ServerResponse, agentId: string): void {
     const source = this.sourceFor(agentId);
-    if (typeof source === 'string') return sendJson(res, 404, { error: source });
+    if (typeof source === 'string') {
+      log.warnOnce(`terminal-404:${agentId}:${source}`, tr('Terminal de {0}: {1}.', [agentId, source]));
+      return sendJson(res, 404, { error: source });
+    }
     this.serve(req, res, agentId, source);
   }
 
@@ -256,6 +280,16 @@ export class TerminalStreams {
     } catch (err) {
       log.warnOnce(`terminal-load:${id}:${errMsg(err)}`, tr('Terminal de {0}: não foi possível ler o transcript ({1}).', [id, errMsg(err)]));
       return sendJson(res, 500, { error: tr('não foi possível ler o transcript') });
+    }
+    // Conversa que abre vazia com o agente trabalhando: registra qual arquivo foi lido, para achar o transcript certo.
+    if (init.entries.length === 0 && source instanceof TranscriptSource) {
+      let size = -1;
+      try {
+        size = statSync(source.path).size;
+      } catch {
+        /* não existe */
+      }
+      log.warnOnce(`terminal-empty:${id}:${source.path}`, tr('Terminal de {0}: conversa vazia em {1} ({2} bytes).', [id, source.path, size]));
     }
     req.socket.setTimeout(0);
     req.socket.setNoDelay(true);

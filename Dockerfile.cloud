@@ -1,0 +1,105 @@
+# syntax=docker/dockerfile:1
+#
+# Habblaud Cloud: o container É a máquina de desenvolvimento. Os projetos ficam em /workspace, o Claude Code e o
+# Codex rodam aqui dentro (terminais e agentes abertos pelo navegador, com login) e o escritório mostra o que eles
+# fazem. Diferente do Dockerfile (que só observa as sessões do computador por montagens somente leitura).
+#
+# Usuários do Linux:
+#   root  roda o servidor do Habblaud (dono de /data: usuários, segredo das sessões);
+#   dev   roda os agentes (claude, codex, git...), sem acesso a /data (spawn/runas.ts).
+
+FROM node:24-bookworm AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+# Com as dependências opcionais: node-pty (compilado aqui, mesma glibc do runtime) e o terminal sem tela (@xterm/headless).
+RUN npm ci --no-audit --no-fund
+COPY . .
+RUN npm run build && sha256sum package-lock.json | cut -d' ' -f1 > deps.hash && npm prune --omit=dev
+
+# Pacote do código novo (dist + o que o servidor lê da raiz) para a atualização nativa: o workflow publica este estágio como
+# ghcr.io/jhonata-php/habblaud:dist-<tag>, e o servidor baixa, confere (deps.hash igual ao da imagem) e roda de /data/app.
+FROM builder AS assemble
+RUN mkdir /pkg && cp -r dist package.json deps.hash scripts .claude-plugin mod /pkg/
+
+FROM scratch AS dist-pkg
+COPY --from=assemble /pkg/ /
+
+# Ditado por voz (gravar áudio no navegador e virar texto, sem mandar a voz para nenhum serviço): whisper.cpp compilado aqui
+# (sem -march=native, para rodar em qualquer CPU) e o modelo multilíngue "base" (142 MB), conferido pelo SHA-1 que o README
+# da mesma versão do whisper.cpp publica. Sem isso, o microfone só aparece em navegadores com reconhecimento de voz próprio.
+FROM debian:bookworm-slim AS whisper
+ARG WHISPER_CPP_VERSION=v1.9.5
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git cmake g++ make ca-certificates curl \
+  && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch "${WHISPER_CPP_VERSION}" https://github.com/ggml-org/whisper.cpp /src \
+  && cmake -S /src -B /src/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DWHISPER_BUILD_TESTS=OFF \
+  && cmake --build /src/build -j"$(nproc)" --config Release --target whisper-cli \
+  && mkdir -p /out && cp /src/build/bin/whisper-cli /out/whisper-cli \
+  && curl -fsSL -o /out/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin \
+  && want="$(grep -E '^\| base +\|' /src/models/README.md | grep -oE '[0-9a-f]{40}')" \
+  && test -n "$want" && echo "$want  /out/ggml-base.bin" | sha1sum -c -
+
+FROM node:24-bookworm-slim AS runtime
+
+# Ferramentas de uma máquina de desenvolvimento comum. Os agentes instalam o resto do projeto em /workspace e em ~.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client ripgrep jq less procps \
+     python3 python3-pip python3-venv make g++ unzip tini gh ffmpeg libgomp1 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Os CLIs dos agentes. ponytail: versões sem fixar; fixe com --build-arg quando precisar repetir um build.
+ARG CLAUDE_CODE_VERSION=latest
+ARG CODEX_VERSION=latest
+RUN npm install -g --no-audit --no-fund "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" "@openai/codex@${CODEX_VERSION}" \
+  && npm cache clean --force
+
+RUN useradd --create-home --uid 1001 --user-group --shell /bin/bash dev \
+  && mkdir -p /workspace /data && chown dev:dev /workspace && chmod 700 /data
+
+WORKDIR /app
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/deps.hash ./deps.hash
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY scripts/statusline-tap.mjs ./scripts/statusline-tap.mjs
+# Marketplace dos plugins do Claude Code (mensagens e permissões pelo escritório): o servidor os instala por conta.
+COPY .claude-plugin ./.claude-plugin
+COPY mod ./mod
+COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
+COPY --from=whisper /out/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=whisper /out/ggml-base.bin /usr/local/share/whisper/ggml-base.bin
+
+# HABBLAUD_CLOUD_VERSION: a tag desta imagem (o workflow passa cloud-v0.3.5); o servidor compara com as tags mais novas no
+# GHCR e o admin atualiza por "Atualizar agora" (pede ao Velix; precisa de HABBLAUD_VELIX_URL, _TOKEN e _PROJECT).
+# A 4747 (sem login) só no loopback do container; a 4748 (com login) é a que o proxy alcança. HOME=/home/dev também
+# para o servidor: as contas do Claude são as pastas ~/.claude* do dev (as conectadas pela web incluídas).
+ARG CLOUD_VERSION=dev
+ENV NODE_ENV=production \
+    HABBLAUD_IN_DOCKER=0 \
+    HABBLAUD_CLOUD=1 \
+    HABBLAUD_HOST=127.0.0.1 \
+    HABBLAUD_PORT=4747 \
+    HABBLAUD_REMOTE_HOST=0.0.0.0 \
+    HABBLAUD_DATA_DIR=/data \
+    HABBLAUD_PTY=1 \
+    HABBLAUD_WORLD=0 \
+    HABBLAUD_AGENT_UID=1001 \
+    HABBLAUD_AGENT_GID=1001 \
+    HABBLAUD_AGENT_USER=dev \
+    HABBLAUD_AGENT_HOME=/home/dev \
+    HOME=/home/dev \
+    HABBLAUD_CODEX_DIRS=/home/dev/.codex \
+    HABBLAUD_USAGE_DIR=/home/dev/.habblaud/usage \
+    HABBLAUD_CLOUD_VERSION=${CLOUD_VERSION} \
+    HABBLAUD_WHISPER_MODEL=/usr/local/share/whisper/ggml-base.bin \
+    DISABLE_AUTOUPDATER=1
+
+EXPOSE 4748
+VOLUME ["/data", "/workspace", "/home/dev"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:4747/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+
+ENTRYPOINT ["tini", "--", "habblaud-cloud-entrypoint"]
+CMD ["node", "dist/server/index.js"]

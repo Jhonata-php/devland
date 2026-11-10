@@ -481,8 +481,15 @@ export class Deliveries implements UiComponent {
     this.toastTimer = setTimeout(() => setHidden(this.toast, true), TOAST_MS);
   }
 
+  /** Abre a conversa com o agente (ligado em ui/index.ts às Conversas). */
+  onOpenChat?: (agentId: string) => void;
+
   private onToast(): void {
     setHidden(this.toast, true);
-    if (this.current) this.openDelivery(this.current);
+    const d = this.current;
+    if (!d) return;
+    // Agente ainda no escritório: o aviso leva direto à conversa com ele; sessão já encerrada, à entrega.
+    if (d.agentId && this.onOpenChat && this.ctx.agent(d.agentId)) this.onOpenChat(d.agentId);
+    else this.openDelivery(d);
   }
 }

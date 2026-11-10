@@ -10,6 +10,7 @@ import type { Renderer } from './render/renderer';
 import { oldestShell } from './sim/shell';
 import type { Sim } from './sim/sim';
 import type { GatherKind } from './social/gathering';
+import type { IdleActivity } from './sim/behavior';
 
 /** Um shell para os cenários de depuração: campos de ShellJob opcionais + idade relativa. */
 export interface ShellJobInput extends Partial<ShellJob> {
@@ -58,7 +59,9 @@ export interface WorldDebug {
   /** Avança todos os comportamentos até o destino (como ao voltar de uma aba oculta). */
   fastForward(): void;
   /** Faz todos os ociosos saírem para passear agora. */
-  wanderNow(): void;
+  wanderNow(what?: IdleActivity): void;
+  /** Manda o supervisor agora até o primeiro ocioso na mesa (mesmo sem estar parado há muito tempo). */
+  bossNow(): boolean;
   /**
    * Começa uma roda agora com quem estiver ocioso/esperando shell (ou com `ids`): todos voltam à mesa
    * na hora e saem juntos. Retorna os nomes dos participantes ou null.
@@ -177,6 +180,8 @@ export function createDebug(sim: Sim, renderer: Renderer, camera: Camera, onCame
   return {
     state: () => ({
       cols: sim.building.cols,
+      robot: [Math.round(renderer.robot.x / TILE), Math.round(renderer.robot.y / TILE)],
+      boss: sim.boss && { tile: [sim.boss.tx, sim.boss.ty], step: sim.boss.step?.t ?? null, say: sim.boss.sayText },
       camera: { x: Math.round(camera.x), y: Math.round(camera.y), zoom: camera.zoom },
       rooms: [...sim.rooms.values()].map((r) => ({
         id: r.id,
@@ -333,9 +338,12 @@ export function createDebug(sim: Sim, renderer: Renderer, camera: Camera, onCame
 
     fastForward: () => sim.fastForward(now()),
 
-    wanderNow: () => {
+    wanderNow: (what) => {
+      sim.forceOuting = what ?? null;
       for (const c of sim.chars.values()) c.nextOutingAt = 1;
     },
+
+    bossNow: () => sim.sendBoss(now(), true),
 
     socialize: (kind, ids) => {
       sim.fastForward(now());

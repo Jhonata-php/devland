@@ -25,6 +25,9 @@ interface Toast {
   startedAt: number;
 }
 
+/** Etiqueta do nível no canto do aviso (estilo log). */
+const LEVEL_TAG: Record<string, string> = { alert: tr('alerta'), success: tr('ok'), warn: tr('aviso'), info: tr('info') };
+
 export class Toasts implements UiComponent {
   readonly el: HTMLElement;
   private toasts: Toast[] = [];
@@ -91,7 +94,7 @@ export class Toasts implements UiComponent {
       if (n.agentId && this.ctx.agent(n.agentId)) this.ctx.select({ type: 'agent', id: n.agentId }, { focus: true });
       else if (n.roomId && this.ctx.store.room(n.roomId)) this.ctx.select({ type: 'room', id: n.roomId }, { focus: true });
     });
-    const el = h('div', { class: `ui-toast ui-toast--${n.level}`, role: n.level === 'alert' ? 'alert' : 'status' }, body);
+    const el = h('div', { class: `ui-toast ui-toast--${n.level}`, role: n.level === 'alert' ? 'alert' : 'status', attrs: { 'data-level': LEVEL_TAG[n.level] } }, body);
     const toast: Toast = { key, notice: n, el, count, repeats: 1, timer: null, remaining: 0, startedAt: 0 };
     if (n.level === 'alert' && n.agentId) {
       const id = n.agentId;

@@ -16,6 +16,14 @@ import { handleStatsRoute } from './stats';
 import type { TerminalStreams } from './terminal';
 import { tr } from '../../shared/i18n';
 import type { SpawnService } from '../spawn/spawn';
+import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
+import type { PluginStore } from '../plugins/store';
+import type { LocalAi } from '../ai/local';
+import { mcpCatalog, type McpStore } from '../accounts/mcp';
+import { createPr, githubUser, listProjects, mergePr, projectDetail, projectInfo, pull, pushBranch, ACTIVITY_DAYS } from '../github/projects';
+import { addDays } from '../../shared/daystats';
+import type { DevRunner } from '../preview/devrun';
+import { parsePort, type Preview } from './preview';
 import { ATTACHMENT_BODY_MAX, parseAttachment, type AttachmentStore } from '../spawn/attachments';
 import type { SpawnFolder } from '../spawn/folders';
 import { AUDIO_BODY_MAX, type DictationService } from '../dictation/dictation';
@@ -65,6 +73,28 @@ export interface ApiDeps {
   codexLive?: CodexLive;
   /** Novo agente pelo escritório (/api/spawn e, para o auxiliar do host, /api/host/spawn/*; server/spawn/spawn.ts). */
   spawn?: SpawnService;
+  /** Agentes agendados (schedule/schedules.ts): mesma trava do Novo agente. */
+  schedules?: ScheduleStore;
+  /** Loja de plugins do Claude Code (plugins/store.ts): só admin (Cloud) ou o próprio computador. */
+  plugins?: PluginStore;
+  /** IA local (ai/local.ts): instalar o Ollama, baixar modelos, consumo. Só admin (Cloud) ou o próprio computador. */
+  localAi?: LocalAi;
+  /** Pastas dos projetos para a página GitHub (salas do escritório e, no Cloud, /workspace/*). */
+  projectDirs?: () => string[];
+  /** Conectores MCP do Claude Code (accounts/mcp.ts): só admin ou o próprio computador. */
+  mcp?: McpStore;
+  /** Executável do gh (conta do GitHub conectada), quando existe. */
+  ghBin?: string;
+  /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
+  onPreviewOpen?: (port: number) => void;
+  /** O servidor do projeto não subiu (POST /api/preview/open com {folder}): avisa a pessoa. */
+  onPreviewFail?: (reason: string) => void;
+  /** Rodar o projeto para a prévia (preview/devrun.ts). */
+  devRunner?: DevRunner;
+  /** Mensagem para sessão sem o plugin: retoma a sessão num terminal daqui com o texto (PtyManager.sendMessage). */
+  resumeWithMessage?: (agentId: string, text: string) => Promise<unknown>;
+  /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
+  preview?: Preview;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
   spawnFolders?: () => Promise<SpawnFolder[]>;
   /** Anexos do "Novo agente" (POST /api/spawn/attachments; spawn/attachments.ts). */
@@ -80,15 +110,30 @@ export interface ApiDeps {
   /** Estatísticas do "Meu dia" (GET /api/stats, http/stats.ts). */
   stats?: DayStatsService;
   /** Verificação de versão nova no GitHub (GET /api/updates, POST /api/updates/check; updates/checker.ts). */
+  /** Notificações push (GET /api/push/key, POST /api/push/subscribe|unsubscribe|test; push/service.ts). */
+  push?: {
+    publicKey(): string;
+    subscribe(body: unknown): { ok: true } | { ok: false; error: string };
+    unsubscribe(endpoint: unknown): void;
+    notify(msg: { title: string; body: string; tag?: string }): Promise<number>;
+    notifyDetailed(msg: { title: string; body: string; tag?: string }): Promise<{ sent: number; subscribed: number; failed: number[] }>;
+  };
   updates?: {
     status(): UpdateStatus;
     check(opts: { manual?: boolean }): Promise<UpdateStatus>;
+    /** Cloud: pede ao Velix para atualizar (POST /api/updates/apply, só admin); ausente fora do Cloud. */
+    apply?(): Promise<{ ok: true } | { ok: false; error: string }>;
+    /** Cloud: guarda a conexão com o Velix informada pelo admin (POST /api/updates/config). */
+    configure?(body: unknown): { ok: true } | { ok: false; error: string };
+    /** Cloud: liga/desliga a atualização automática (POST /api/updates/auto). */
+    setAuto?(body: unknown): { ok: true } | { ok: false; error: string };
   };
   /**
    * Porta remota com login (http/remote.ts): `is` diz se a requisição chegou por ela (já autenticada); `allows`, o que
-   * HABBLAUD_REMOTE_ALLOW libera. Requisição remota nunca vale pelo Host: só pelo que `allows` liberar.
+   * HABBLAUD_REMOTE_ALLOW (ou, no Habblaud Cloud, a lista do usuário) libera. Requisição remota nunca vale pelo Host: só
+   * pelo que `allows` liberar.
    */
-  remote?: { is(req: IncomingMessage): boolean; allows(feature: RemoteFeature): boolean };
+  remote?: { is(req: IncomingMessage): boolean; allows(req: IncomingMessage, feature: RemoteFeature): boolean; isAdmin?(req: IncomingMessage): boolean };
   /**
    * Rotas do Habblaud World (/api/world/*, server/world/http.ts). Ausente = HABBLAUD_WORLD=0: 404 em todas. Só pela porta
    * local com Host local: pela porta do celular, nem com login (403 `local_only`).
@@ -270,7 +315,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
    * que HABBLAUD_REMOTE_ALLOW liberar (`feature` ausente = nunca pela porta remota).
    */
   const trusted = (req: IncomingMessage, feature?: RemoteFeature): boolean =>
-    isRemote(req) ? !!feature && !!deps.remote?.allows(feature) : isLoopbackHost(req.headers.host);
+    isRemote(req) ? !!feature && !!deps.remote?.allows(req, feature) : isLoopbackHost(req.headers.host);
   const denied = (req: IncomingMessage, localMessage: string): string =>
     isRemote(req) ? tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') : localMessage;
 
@@ -372,8 +417,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           remote,
           terminal: !!terminals && (!remote || trusted(req, 'terminal')),
           permissions: !!deps.permissions && (!remote || trusted(req, 'permissions')),
-          // O terminal interativo (pty) nunca vale pela porta remota.
-          pty: !!deps.pty && !remote,
+          // O terminal interativo (pty) pela porta remota só no Habblaud Cloud (deps.remote.isAdmin existe só nele).
+          pty: !!deps.pty && (!remote || (!!deps.remote?.isAdmin && trusted(req, 'terminal'))),
           messages: !!deps.messages && (!remote || trusted(req, 'messages')),
           codexEvents: !!deps.codexLive,
           updates: updatesSummary(deps.updates?.status()),
@@ -398,7 +443,9 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           messages: !!deps.messages && trusted(req, 'messages'),
           terminal: !!terminals && trusted(req, 'terminal'),
           spawn: !!deps.spawn && trusted(req, 'spawn'),
+          preview: !!deps.preview && trusted(req, 'terminal'),
           world: !!deps.world && !!deps.terminal && !remote && isLoopbackHost(req.headers.host),
+          ...(deps.remote?.isAdmin ? { admin: remote && deps.remote.isAdmin(req), cloud: remote } : {}),
         };
         sendJson(res, 200, access);
       }
@@ -417,7 +464,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (terminalMatch) {
       if (method !== 'GET') methodNotAllowed(res, 'GET');
       else if (!terminals) {
-        sendJson(res, 403, { error: tr('terminal desligado: ele só funciona com o Habblaud acessível apenas pelo próprio computador') });
+        sendJson(res, 403, { error: tr('terminal desligado: ele só funciona com o DevLand acessível apenas pelo próprio computador') });
       } else if (!trusted(req, 'terminal')) {
         sendJson(res, 403, { error: denied(req, tr('o terminal só abre pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
       } else {
@@ -443,7 +490,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/permissions' || path.startsWith('/api/permissions/')) {
       // Responder pelo escritório age sobre as sessões: a mesma trava do terminal (bind local + Host local).
       if (!deps.permissions) {
-        sendJson(res, 403, { error: tr('responder pelo escritório desligado: só funciona com o Habblaud acessível apenas pelo próprio computador') });
+        sendJson(res, 403, { error: tr('responder pelo escritório desligado: só funciona com o DevLand acessível apenas pelo próprio computador') });
       } else if (!trusted(req, 'permissions')) {
         sendJson(res, 403, { error: denied(req, tr('pedidos de permissão só são respondidos pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
       } else {
@@ -453,8 +500,9 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     }
     if (path === '/api/pty' || path.startsWith('/api/pty/') || AGENT_ACTION_ROUTE.test(path)) {
       // Executa comandos na máquina: nunca pela porta remota, nem com login (o Host e o endereço de quem conecta não
-      // bastam: o Tailscale chega pelo loopback e o Host se imita).
-      if (isRemote(req)) sendJson(res, 403, { error: tr('o terminal interativo só pode ser usado no próprio computador') });
+      // bastam: o Tailscale chega pelo loopback e o Host se imita). Exceção: o Habblaud Cloud (o container é a máquina),
+      // para quem tem a permissão "terminal"; a rota confere de novo (http/pty.ts, remoteOk).
+      if (isRemote(req) && !(deps.remote?.isAdmin && trusted(req, 'terminal'))) sendJson(res, 403, { error: tr('o terminal interativo só pode ser usado no próprio computador') });
       else if (!deps.pty) sendJson(res, 403, { error: tr('terminal interativo desligado (veja o log do servidor)') });
       else deps.pty(req, res, path);
       return true;
@@ -464,7 +512,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       // Mudar o personagem age sobre o escritório: a mesma trava do terminal (bind local + Host local).
       if (method !== 'PUT' && method !== 'DELETE') methodNotAllowed(res, 'PUT, DELETE');
       else if (!deps.terminal) {
-        sendJson(res, 403, { error: tr('editar o personagem desligado: só funciona com o Habblaud acessível apenas pelo próprio computador') });
+        sendJson(res, 403, { error: tr('editar o personagem desligado: só funciona com o DevLand acessível apenas pelo próprio computador') });
       } else if (!trusted(req)) {
         sendJson(res, 403, { error: denied(req, tr('o personagem só é editado pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
       } else {
@@ -487,6 +535,250 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       else if (!trusted(req) || (!deps.inDocker && !isLoopbackAddress(req.socket.remoteAddress))) {
         sendJson(res, 403, { error: denied(req, tr('eventos do Codex só são aceitos pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
       } else handleCodexEvent(req, res, { live: deps.codexLive, entries: () => accounts.entriesOf('codex') }).catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/preview/run' || path === '/api/preview/stop' || path === '/api/preview/runs') {
+      // Rodar o projeto (npm run dev) para a prévia: roda código do projeto, a mesma trava do terminal.
+      const runner = deps.devRunner;
+      if (!runner || !deps.preview) sendJson(res, 403, { error: tr('prévia ao vivo desligada') });
+      else if (!trusted(req, 'terminal')) sendJson(res, 403, { error: denied(req, tr('a prévia só abre pelo próprio computador (http://localhost)')) });
+      else if (path === '/api/preview/runs') {
+        if (!isRead) methodNotAllowed(res, 'GET');
+        else sendJson(res, 200, { runs: runner.list() });
+      } else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else
+        readJson(req)
+          .then(async (body) => {
+            const folder = String((body as { folder?: unknown } | null)?.folder ?? '');
+            if (path === '/api/preview/stop') return sendJson(res, 200, { ok: runner.stop(folder) });
+            try {
+              sendJson(res, 200, await runner.start(folder));
+            } catch (err) {
+              sendJson(res, 400, { error: err instanceof Error ? err.message : String(err) });
+            }
+          })
+          .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/preview' || path === '/api/preview/ports' || path === '/api/preview/open') {
+      // Mostra o que roda nas portas do computador: a mesma trava do terminal (local, ou Cloud com a permissão).
+      const preview = deps.preview;
+      if (!preview) sendJson(res, 403, { error: tr('prévia ao vivo desligada') });
+      else if (!trusted(req, 'terminal')) sendJson(res, 403, { error: denied(req, tr('a prévia só abre pelo próprio computador (http://localhost)')) });
+      else if (path === '/api/preview/ports') {
+        if (!isRead) methodNotAllowed(res, 'GET');
+        else preview.detect().then((ports) => sendJson(res, 200, { ports }), (err) => fail(res, err));
+      } else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (path === '/api/preview/open')
+        // O agente pede para mostrar o site (skill do plugin do DevLand): as páginas abertas abrem a prévia na porta.
+        readJson(req)
+          .then((body) => {
+            // {folder}: o DevLand instala as dependências se faltarem, sobe o servidor do projeto e abre a prévia quando a porta aparecer.
+            const folder = (body as { folder?: unknown } | null)?.folder;
+            if (typeof folder === 'string' && folder && deps.devRunner) {
+              deps.devRunner.start(folder).then((r) => deps.onPreviewOpen?.(r.port), (err) => deps.onPreviewFail?.(err instanceof Error ? err.message : String(err)));
+              return sendJson(res, 202, { ok: true, starting: true });
+            }
+            const port = parsePort((body as { port?: unknown } | null)?.port);
+            if (port === undefined || !preview.issue(port)) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do DevLand)') });
+            deps.onPreviewOpen?.(port);
+            sendJson(res, 200, { ok: true, port });
+          })
+          .catch((err) => fail(res, err));
+      else
+        readJson(req)
+          .then((body) => {
+            const port = parsePort((body as { port?: unknown } | null)?.port);
+            const url = port === undefined ? undefined : preview.issue(port);
+            if (!url) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do DevLand)') });
+            sendJson(res, 200, { url });
+          })
+          .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/plugins' || path.startsWith('/api/plugins/')) {
+      // Plugin roda código no servidor: só quem administra (Cloud) ou o próprio computador.
+      const store = deps.plugins;
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const action = path === '/api/plugins/install' ? 'install' : path === '/api/plugins/uninstall' ? 'uninstall' : null;
+      if (!store) sendJson(res, 404, { error: tr('loja de plugins indisponível (Claude Code não encontrado)') });
+      else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/plugins/marketplaces' && isRead) store.marketplaces().then((list) => sendJson(res, 200, { marketplaces: list }), (err: Error) => sendJson(res, 502, { error: err.message }));
+      else if (path === '/api/plugins/marketplaces' && method === 'POST')
+        readJson(req)
+          .then((body) => store.addMarketplace(String((body as { source?: unknown }).source ?? '')))
+          .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
+      else if (path.startsWith('/api/plugins/marketplaces/') && method === 'DELETE')
+        store.removeMarketplace(decodeURIComponent(path.slice('/api/plugins/marketplaces/'.length))).then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
+      else if (path === '/api/plugins' && isRead) {
+        const q = new URL(req.url ?? '/', 'http://x').searchParams.get('q') ?? '';
+        store.list(q.slice(0, 100)).then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 502, { error: err.message }));
+      } else if (action && method === 'POST')
+        readJson(req)
+          .then((body) => store.change(String((body as { id?: unknown }).id ?? ''), action))
+          .then((r) => sendJson(res, 200, r), (err: Error) => sendJson(res, 400, { error: err.message }));
+      else methodNotAllowed(res, action ? 'POST' : 'GET');
+      return true;
+    }
+    if (path === '/api/mcp' || path.startsWith('/api/mcp/')) {
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const store = deps.mcp;
+      const one = /^\/api\/mcp\/([\w.-]+)$/.exec(path);
+      const answer = (p: Promise<unknown>) => p.then((r) => sendJson(res, 200, r ?? { ok: true }), (err: Error) => sendJson(res, 400, { error: err.message }));
+      if (!store) sendJson(res, 404, { error: tr('Claude Code não encontrado neste servidor.') });
+      else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/mcp' && isRead) answer(store.list().then((servers) => ({ servers, catalog: mcpCatalog(), loginDir: store.loginDir() })));
+      else if (path === '/api/mcp' && method === 'POST') answer(readJson(req).then((b) => {
+        const x = b as { name?: unknown; transport?: unknown; target?: unknown };
+        return store.add(String(x.name ?? ''), String(x.transport ?? 'http'), String(x.target ?? ''));
+      }));
+      else if (one && method === 'DELETE') answer(store.remove(one[1]!));
+      else if (one && method === 'PATCH') answer(readJson(req).then((b) => store.rename(one[1]!, String((b as { alias?: unknown }).alias ?? ''))));
+      else methodNotAllowed(res, 'GET');
+      return true;
+    }
+    if (path === '/api/dash/activity' && isRead) {
+      // Gráficos da Visão geral e página GitHub: tokens e tempo por dia (Meu dia), projetos git e a conta do GitHub.
+      const tz = new URL(req.url ?? '/', 'http://x').searchParams.get('tz') || deps.stats?.tz || 'UTC';
+      const days: { day: string; tokens: number; workMs: number; sessions: number }[] = [];
+      const byProject = new Map<string, number>();
+      try {
+        const today = deps.stats?.today(tz);
+        if (deps.stats && today) {
+          for (let i = ACTIVITY_DAYS - 1; i >= 0; i--) {
+            const day = addDays(today, -i);
+            const r = deps.stats.day(day, tz, 'real');
+            const t = r?.stats.totals;
+            days.push({ day, tokens: t ? t.counts.tokensIn + t.counts.tokensOut : 0, workMs: t ? (t.ms.working ?? 0) + (t.ms.shell ?? 0) : 0, sessions: t?.sessions ?? 0 });
+            for (const room of r?.stats.rooms ?? []) byProject.set(room.name, (byProject.get(room.name) ?? 0) + room.counts.tokensIn + room.counts.tokensOut);
+          }
+        }
+      } catch {
+        // fuso inválido ou sem estatísticas: os gráficos de uso ficam vazios
+      }
+      Promise.all([listProjects(deps.projectDirs?.() ?? []), githubUser(deps.ghBin)])
+        .then(([projects, github]) => {
+          const tokensByProject = [...byProject].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, tokens]) => ({ name, tokens }));
+          sendJson(res, 200, { days, projects, github, ghAvailable: !!deps.ghBin, tokensByProject });
+        })
+        .catch((err: Error) => sendJson(res, 500, { error: err.message }));
+      return true;
+    }
+    if (path === '/api/dash/project' || path === '/api/dash/pr' || path === '/api/dash/push' || path === '/api/dash/merge') {
+      // Diff, PRs e abrir PR de um projeto da lista: só quem administra (Cloud) ou o próprio computador.
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const known = (dir: string) => (deps.projectDirs?.() ?? []).includes(dir);
+      if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/dash/project' && isRead) {
+        const dir = new URL(req.url ?? '/', 'http://x').searchParams.get('path') ?? '';
+        if (!known(dir)) sendJson(res, 400, { error: tr('projeto desconhecido') });
+        else Promise.all([projectDetail(dir, deps.ghBin), projectInfo(dir)]).then(([d, info]) => sendJson(res, 200, { ...d, info }), (err: Error) => sendJson(res, 500, { error: err.message }));
+      } else if (path === '/api/dash/push' && method === 'POST') {
+        readJson(req)
+          .then(async (b) => {
+            const x = b as { path?: unknown; message?: unknown };
+            const dir = String(x.path ?? '');
+            if (!known(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            try {
+              sendJson(res, 200, await pushBranch(dir, typeof x.message === 'string' ? x.message : undefined));
+            } catch (err) {
+              const why = (err as Error).message;
+              sendJson(res, 409, { error: why === 'detached' ? tr('O projeto não está em nenhuma branch.') : why === 'commit' ? tr('Não deu para salvar as alterações (commit).') : tr('Não deu para enviar ao GitHub. Confira se a conta do GitHub está conectada e se você pode escrever neste repositório.') });
+            }
+          })
+          .catch((err) => fail(res, err));
+      } else if (path === '/api/dash/merge' && method === 'POST') {
+        readJson(req)
+          .then(async (b) => {
+            const x = b as { path?: unknown; number?: unknown };
+            const dir = String(x.path ?? '');
+            if (!known(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            try {
+              await mergePr(dir, deps.ghBin, Number(x.number));
+              sendJson(res, 200, { ok: true });
+            } catch (err) {
+              const why = (err as Error).message;
+              sendJson(res, 409, { detail: why.startsWith('merge:') ? why.slice(6) : undefined, error: why === 'gh' ? tr('O GitHub CLI (gh) não está instalado neste servidor.') : tr('O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.') });
+            }
+          })
+          .catch((err) => fail(res, err));
+      } else if (path === '/api/dash/pr' && method === 'POST')
+        readJson(req)
+          .then(async (b) => {
+            const dir = String((b as { path?: unknown }).path ?? '');
+            if (!known(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            try {
+              sendJson(res, 200, { url: await createPr(dir, deps.ghBin) });
+            } catch (err) {
+              const why = (err as Error).message;
+              sendJson(res, 409, { error: why === 'main' ? tr('Crie uma branch antes: o PR não sai da branch principal.') : why === 'push' ? tr('Não deu para enviar a branch ao GitHub.') : why === 'gh' ? tr('O GitHub CLI (gh) não está instalado neste servidor.') : tr('O GitHub não aceitou o PR (talvez já exista um para esta branch).') });
+            }
+          })
+          .catch((err) => fail(res, err));
+      else methodNotAllowed(res, 'GET');
+      return true;
+    }
+    if (path === '/api/dash/pull' && method === 'POST') {
+      // git pull --ff-only num projeto da lista: só quem administra (Cloud) ou o próprio computador.
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else
+        readJson(req)
+          .then(async (b) => {
+            const dir = String((b as { path?: unknown }).path ?? '');
+            if (!(deps.projectDirs?.() ?? []).includes(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            const ok = await pull(dir);
+            sendJson(res, ok ? 200 : 409, ok ? { ok: true } : { error: tr('Não deu para atualizar: há alterações locais ou a branch divergiu do GitHub.') });
+          })
+          .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/ai' || path.startsWith('/api/ai/')) {
+      // Instala programa e roda modelos no servidor: só quem administra (Cloud) ou o próprio computador.
+      const ai = deps.localAi;
+      const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
+      const model = /^\/api\/ai\/models\/(.+)$/.exec(path);
+      const answer = (p: Promise<unknown>) => p.then((r) => sendJson(res, 200, r ?? { ok: true }), (err: Error) => sendJson(res, 400, { error: err.message }));
+      if (!ai) sendJson(res, 404, { error: tr('IA local indisponível') });
+      else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
+      else if (path === '/api/ai' && isRead) answer(ai.status());
+      else if (path === '/api/ai/install' && method === 'POST') answer(Promise.resolve().then(() => ai.install()));
+      else if (path === '/api/ai/pull' && method === 'POST') answer(readJson(req).then((b) => ai.pull(String((b as { model?: unknown }).model ?? ''))));
+      else if (path === '/api/ai/chat' && method === 'POST') answer(readJson(req).then((b) => ai.chat(String((b as { model?: unknown }).model ?? ''), Array.isArray((b as { messages?: unknown }).messages) ? (b as { messages: { role: string; content: string }[] }).messages : [])));
+      else if (path === '/api/ai/agent-model' && method === 'POST') answer(readJson(req).then((b) => ai.setAgentModel(String((b as { model?: unknown }).model ?? ''))));
+      else if (path === '/api/ai/cancel' && method === 'POST') answer(Promise.resolve().then(() => ai.cancel()));
+      else if (path === '/api/ai/uninstall' && method === 'POST') answer(ai.uninstall());
+      else if (model && method === 'DELETE') answer(ai.remove(decodeURIComponent(model[1]!)));
+      else methodNotAllowed(res, 'GET');
+      return true;
+    }
+    if (path === '/api/schedules' || path.startsWith('/api/schedules/')) {
+      // Agendar abre agentes sozinho mais tarde: a mesma trava do Novo agente.
+      const store = deps.schedules;
+      const one = /^\/api\/schedules\/([0-9a-f-]{36})$/.exec(path);
+      if (!store || !deps.spawn) sendJson(res, 403, { error: tr('novo agente pelo escritório desligado') });
+      else if (!trusted(req, 'spawn')) sendJson(res, 403, { error: denied(req, tr('agentes novos só são abertos pelo próprio computador (http://localhost)')) });
+      else if (path === '/api/schedules' && isRead) sendJson(res, 200, { schedules: store.all() });
+      else if (path === '/api/schedules' && method === 'POST')
+        readJson(req)
+          .then((body) => {
+            try {
+              sendJson(res, 201, { schedule: store.add(parseSchedule(body, Date.now())) });
+            } catch (err) {
+              sendJson(res, 400, { error: err instanceof Error ? err.message : String(err) });
+            }
+          })
+          .catch((err) => fail(res, err));
+      else if (one && method === 'DELETE') sendJson(res, store.remove(one[1]) ? 200 : 404, { ok: true });
+      else if (one && method === 'PATCH')
+        readJson(req)
+          .then((body) => {
+            const s = store.setEnabled(one[1], !!(body as { enabled?: unknown }).enabled);
+            if (s) sendJson(res, 200, { schedule: s });
+            else sendJson(res, 404, { error: tr('agendamento não encontrado') });
+          })
+          .catch((err) => fail(res, err));
+      else methodNotAllowed(res, one ? 'DELETE, PATCH' : 'GET, POST');
       return true;
     }
     if (path === '/api/spawn' || path.startsWith('/api/spawn/')) {
@@ -632,11 +924,34 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       }
       return true;
     }
+    if (path === '/api/messages/resume') {
+      // Sessão sem o plugin de mensagens: assume a sessão num terminal daqui (mesma trava do terminal interativo).
+      const resume = deps.resumeWithMessage;
+      if (!resume) sendJson(res, 403, { error: tr('terminal interativo desligado') });
+      else if (!trusted(req, 'messages') || (isRemote(req) && !(deps.remote?.isAdmin && trusted(req, 'terminal')))) sendJson(res, 403, { error: denied(req, tr('o terminal interativo só pode ser usado no próprio computador')) });
+      else if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else
+        readJson(req)
+          .then(async (body) => {
+            const b = (body ?? {}) as { agentId?: unknown; text?: unknown };
+            const agentId = typeof b.agentId === 'string' ? b.agentId : '';
+            const text = typeof b.text === 'string' ? b.text.slice(0, 20_000) : '';
+            if (!agentId || !text.trim()) return sendJson(res, 400, { error: tr('esperado {agentId, text}') });
+            try {
+              await resume(agentId, text);
+              sendJson(res, 200, { ok: true });
+            } catch (err) {
+              sendJson(res, (err as { status?: number }).status ?? 500, { error: err instanceof Error ? err.message : String(err) });
+            }
+          })
+          .catch((err) => fail(res, err));
+      return true;
+    }
     if (isMessagesPath(path)) {
       // As mensagens entram na sessão como se você as tivesse digitado: a mesma trava (recurso ligado + Host local).
       if (!deps.messages) {
         sendJson(res, 403, {
-          error: tr('mensagens pelo escritório desligadas: só funcionam com o Habblaud acessível apenas pelo próprio computador (e sem HABBLAUD_MENSAGENS=0)'),
+          error: tr('mensagens pelo escritório desligadas: só funcionam com o DevLand acessível apenas pelo próprio computador (e sem HABBLAUD_MENSAGENS=0)'),
         });
       } else if (!trusted(req, 'messages')) {
         sendJson(res, 403, { error: denied(req, tr('mensagens só são mandadas pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
@@ -665,7 +980,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/rooms/rename') {
       // Como o personagem: a mesma trava do terminal (bind local + Host local).
       if (method !== 'POST') methodNotAllowed(res, 'POST');
-      else if (!deps.terminal) sendJson(res, 403, { error: tr('renomear salas desligado: só funciona com o Habblaud acessível apenas pelo próprio computador') });
+      else if (!deps.terminal) sendJson(res, 403, { error: tr('renomear salas desligado: só funciona com o DevLand acessível apenas pelo próprio computador') });
       else if (!trusted(req)) sendJson(res, 403, { error: denied(req, tr('renomear salas só pelo próprio computador (http://localhost)')) });
       else
         readJson(req)
@@ -686,13 +1001,89 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/demo') {
       // Liga o modo demonstração para todo mundo: só pelo computador (o celular com login só vê o que foi liberado).
       if (method !== 'POST') methodNotAllowed(res, 'POST');
-      else if (isRemote(req)) sendJson(res, 403, { error: tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') });
+      // Habblaud Cloud: o admin liga (é a instalação dele).
+      else if (isRemote(req) && !deps.remote?.isAdmin?.(req)) sendJson(res, 403, { error: tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') });
       else handleDemo(req, res).catch((err) => fail(res, err));
       return true;
     }
     if (path === '/api/updates') {
       if (!isRead) methodNotAllowed(res, 'GET');
       else sendJson(res, 200, { version: deps.version, ...(deps.updates?.status() ?? { state: 'off', available: false }) });
+      return true;
+    }
+    if (path.startsWith('/api/push/')) {
+      const push = deps.push;
+      if (!push) {
+        req.resume();
+        sendJson(res, 404, { error: tr('notificações push desligadas') });
+      } else if (path === '/api/push/key' && isRead) {
+        sendJson(res, 200, { publicKey: push.publicKey() });
+      } else if (method !== 'POST') {
+        methodNotAllowed(res, 'POST');
+      } else if (path === '/api/push/test') {
+        req.resume();
+        push
+          .notifyDetailed({ title: tr('DevLand — teste'), body: tr('As notificações estão funcionando.'), tag: 'push-test' })
+          .then((r) => sendJson(res, 200, r))
+          .catch((err) => fail(res, err));
+      } else if (path === '/api/push/subscribe' || path === '/api/push/unsubscribe') {
+        readJson(req)
+          .then((body) => {
+            if (path === '/api/push/unsubscribe') {
+              push.unsubscribe((body as { endpoint?: unknown } | null)?.endpoint);
+              return sendJson(res, 200, { ok: true });
+            }
+            const r = push.subscribe(body);
+            sendJson(res, r.ok ? 200 : 400, r.ok ? { ok: true } : { error: r.error });
+          })
+          .catch((err) => fail(res, err));
+      } else {
+        req.resume();
+        sendJson(res, 404, { error: tr('rota desconhecida') });
+      }
+      return true;
+    }
+    if (path === '/api/updates/auto') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (!deps.updates?.setAuto || !isRemote(req) || !deps.remote?.isAdmin?.(req)) {
+        req.resume();
+        sendJson(res, 403, { error: tr('só o administrador configura a atualização, e só no Cloud') });
+      } else
+        readJson(req)
+          .then((body) => {
+            const r = deps.updates!.setAuto!(body);
+            sendJson(res, r.ok ? 200 : 500, r.ok ? { ok: true } : { error: r.error });
+          })
+          .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/updates/config') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (!deps.updates?.configure || !isRemote(req) || !deps.remote?.isAdmin?.(req)) {
+        req.resume();
+        sendJson(res, 403, { error: tr('só o administrador configura a atualização, e só no Cloud') });
+      } else
+        readJson(req)
+          .then((body) => {
+            const r = deps.updates!.configure!(body);
+            sendJson(res, r.ok ? 200 : 400, r.ok ? { ok: true } : { error: r.error });
+          })
+          .catch((err) => fail(res, err));
+      return true;
+    }
+    if (path === '/api/updates/apply') {
+      // Cloud: "Atualizar agora". Só o admin, pela porta com login (o Velix reinicia o app com a imagem nova).
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else {
+        req.resume();
+        const apply = deps.updates?.apply;
+        if (!apply || !isRemote(req) || !deps.remote?.isAdmin?.(req)) sendJson(res, 403, { error: tr('só o administrador atualiza o DevLand, e só no Cloud') });
+        else
+          deps.updates!
+            .apply!()
+            .then((r) => sendJson(res, r.ok ? 200 : 502, r.ok ? { ok: true } : { error: r.error }))
+            .catch((err) => fail(res, err));
+      }
       return true;
     }
     if (path === '/api/updates/check') {

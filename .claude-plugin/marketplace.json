@@ -1,13 +1,16 @@
 {
   "name": "habblaud",
-  "owner": { "name": "Márcio Junior", "url": "https://github.com/marmottajr" },
+  "owner": {
+    "name": "Márcio Junior",
+    "url": "https://github.com/marmottajr"
+  },
   "description": "Plugins do Habblaud, o escritório virtual em pixel art das suas sessões do Claude Code.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "plugins": [
     {
       "name": "habblaud",
       "source": "./mod/habblaud",
-      "description": "Mod do Habblaud: uso do plano (5h e semanal) para o escritório, aviso embaixo do prompt quando outra sessão precisa de você e o comando /habblaud.",
+      "description": "Mod do Habblaud: uso do plano (5h e semanal) para o escritório, aviso embaixo do prompt quando outra sessão precisa de você e o comando /habblaud e a skill de abrir a prévia ao vivo.",
       "category": "productivity"
     },
     {

@@ -252,6 +252,16 @@ export interface UpdateStatus {
   available: boolean;
   /** Motivo da falha (state "error"). */
   error?: string;
+  /** Cloud: o servidor sabe pedir a atualização ao Velix (botão "Atualizar agora" para o admin). */
+  canApply?: boolean;
+  /** Cloud: dá para informar a conexão com o Velix pela tela (o servidor guarda; o token não volta). */
+  canConfigure?: boolean;
+  /** Cloud: a última tentativa de atualizar foi recusada porque a versão muda as dependências (precisa de imagem nova). */
+  needsImage?: boolean;
+  /** Cloud: atualizar sozinho quando sair versão nova (escolha do admin em Ajustes › Sobre). */
+  auto?: { enabled: boolean; window: 'any' | 'night' };
+  /** Cloud: a atualização foi pedida e o servidor está trocando de versão (epoch ms do pedido). */
+  applyingSince?: number;
 }
 
 export interface SourceInfo {
@@ -286,9 +296,10 @@ export interface AccountUsage {
    * - 'statusline': capturado ao vivo e gravado em ~/.habblaud/usage/<conta>.json pelo mod do Habblaud
    *   (mod/habblaud, recomendado) ou pelo scripts/statusline-tap.mjs (campo rate_limits do statusline);
    * - 'cache': `cachedUsageUtilization` gravado pelo próprio Claude Code (atualiza quando alguém roda /usage);
+   * - 'oauth': consulta ao serviço da Anthropic com o login da conta (Cloud; vale para conta sem sessão aberta);
    * - 'codex': `rate_limits` dos arquivos de sessão do Codex (só se renovam enquanto alguma sessão roda).
    */
-  source: 'cache' | 'statusline' | 'codex';
+  source: 'cache' | 'statusline' | 'codex' | 'oauth';
   /** Quem gravou o arquivo ao vivo ('statusline'): o mod do Habblaud no Claude Code ou o tap de statusline. */
   via?: 'mod' | 'tap';
   /**
@@ -391,11 +402,17 @@ export interface AccessInfo {
   terminal: boolean;
   /** Pode abrir agentes novos no app do Claude (POST /api/spawn). */
   spawn: boolean;
+  /** Pode abrir a prévia ao vivo do site do projeto (POST /api/preview). */
+  preview?: boolean;
   /**
    * Pode usar a conta do Habblaud World (/api/world/*): recurso ligado (HABBLAUD_WORLD), trava do terminal e porta local
    * com Host local. Ausente em servidores antigos.
    */
   world?: boolean;
+  /** Habblaud Cloud: quem está logado é admin (vê o link "Usuários"). Ausente fora do Cloud. */
+  admin?: boolean;
+  /** Habblaud Cloud: a página está na porta com login de uma instalação na nuvem. */
+  cloud?: boolean;
 }
 
 export interface FeedItem {
@@ -418,6 +435,8 @@ export interface Notice {
   agentId?: string;
   roomId?: string;
   at: number;
+  /** Um agente pediu para mostrar o site: a página abre a prévia ao vivo nesta porta (POST /api/preview/open). */
+  previewPort?: number;
 }
 
 /**

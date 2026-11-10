@@ -193,6 +193,43 @@ export class OfficeStore {
     return res.ok;
   }
 
+  /** Cloud, "Atualizar agora" (admin): o servidor pede ao Velix para reimplantar. Devolve o motivo se não deu. */
+  async applyUpdate(): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (this.mock) return { ok: false, error: '' };
+    try {
+      const res = await fetch('/api/updates/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (res.ok) return { ok: true };
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      return { ok: false, error: body.error ?? '' };
+    } catch {
+      return { ok: false, error: '' };
+    }
+  }
+
+  /** Cloud (admin): liga/desliga a atualização automática e escolhe a janela. */
+  async setAutoUpdate(body: { enabled: boolean; window: 'any' | 'night'; tz: number }): Promise<boolean> {
+    if (this.mock) return false;
+    try {
+      const res = await fetch('/api/updates/auto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Cloud (admin): guarda a conexão com o Velix para o botão Atualizar. Devolve o motivo se não deu. */
+  async configureUpdates(body: { url: string; token: string; project: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (this.mock) return { ok: false, error: '' };
+    try {
+      const res = await fetch('/api/updates/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (res.ok) return { ok: true };
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      return { ok: false, error: j.error ?? '' };
+    } catch {
+      return { ok: false, error: '' };
+    }
+  }
+
   // ---------------------------------------------------------------- timelapse
 
   /** Snapshots vêm de uma fonte alternativa (o timelapse), não do SSE. */
@@ -292,7 +329,7 @@ export class OfficeStore {
         body: JSON.stringify(body),
       });
     } catch {
-      return tr('Sem conexão com o Habblaud.');
+      return tr('Sem conexão com o DevLand.');
     }
     if (res.ok) return undefined;
     try {
@@ -311,9 +348,9 @@ export class OfficeStore {
    * (agente que não recebe mensagens, fila cheia, acesso que não é local...). Sem conexão com o servidor: lança.
    * No ?mock=1 a entrega é fictícia (o simulador põe a atividade no agente).
    */
-  async sendMessage(agentId: string, text: string): Promise<{ message: OutboxMessage } | { error: string }> {
+  async sendMessage(agentId: string, text: string, attachments?: string[]): Promise<{ message: OutboxMessage } | { error: string }> {
     if (this.mock) return this.mockSend(agentId, text);
-    const res = await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId, text }) });
+    const res = await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId, text, ...(attachments?.length ? { attachments } : {}) }) });
     let body: unknown;
     try {
       body = await res.json();

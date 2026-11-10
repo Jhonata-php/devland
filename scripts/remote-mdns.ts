@@ -19,7 +19,7 @@ const CHECK_MS = 20_000;
 /** Comando que anuncia `host` -> `ip` (undefined = sistema sem suporte). */
 export function mdnsCommand(platform: NodeJS.Platform, name: string, ip: string, port: number): { cmd: string; args: string[] } | undefined {
   const host = `${name}.local`;
-  if (platform === 'darwin') return { cmd: 'dns-sd', args: ['-P', `Habblaud (${name})`, '_https._tcp', 'local', String(port), host, ip] };
+  if (platform === 'darwin') return { cmd: 'dns-sd', args: ['-P', `DevLand (${name})`, '_https._tcp', 'local', String(port), host, ip] };
   if (platform === 'linux') return { cmd: 'avahi-publish', args: ['-a', '-R', host, ip] };
   return undefined;
 }

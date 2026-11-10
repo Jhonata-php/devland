@@ -25,6 +25,10 @@ export interface UiPrefs {
   hiddenAccounts: string[];
   /** Habblaud World: aviso quando o primeiro visitante entra no seu prédio (a cada conexão). Ligado por padrão. */
   worldVisitNotify: boolean;
+  /** Modo da tela: o escritório em pixel art (mapa) ou o painel (ui/dashboard.ts). */
+  view: 'office' | 'panel';
+  /** Cores da interface: escuro, claro ou seguindo o sistema. */
+  uiTheme: 'dark' | 'light' | 'auto';
 }
 
 export const DEFAULT_PREFS: UiPrefs = {
@@ -32,7 +36,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   bubbles: DEFAULT_WORLD_OPTIONS.bubbles,
   liveliness: DEFAULT_WORLD_OPTIONS.liveliness,
   daylight: 'auto',
-  theme: 'auto',
+  theme: 'none',
   sound: false,
   sounds: DEFAULT_SOUND_SETTINGS,
   browserNotifications: false,
@@ -40,6 +44,8 @@ export const DEFAULT_PREFS: UiPrefs = {
   feedOpen: true,
   hiddenAccounts: [],
   worldVisitNotify: true,
+  view: 'panel',
+  uiTheme: 'dark',
 };
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
@@ -66,16 +72,23 @@ export function sanitizePrefs(raw: unknown): UiPrefs {
     feedOpen: bool(o.feedOpen, d.feedOpen),
     hiddenAccounts: Array.isArray(o.hiddenAccounts) ? o.hiddenAccounts.filter((x): x is string => typeof x === 'string').slice(0, 20) : [],
     worldVisitNotify: bool(o.worldVisitNotify, d.worldVisitNotify),
+    view: oneOf(o.view, ['office', 'panel'] as const, d.view),
+    uiTheme: oneOf(o.uiTheme, ['dark', 'light', 'auto'] as const, d.uiTheme),
   };
 }
 
-export function loadPrefs(storage: StorageLike | null): UiPrefs {
-  if (!storage) return { ...DEFAULT_PREFS };
+/**
+ * `phone`: tela de celular na primeira visita (nada guardado ainda): os personagens são pequenos, então o balão do que
+ * cada agente está fazendo aparece sempre ("Todos"), não só nas atividades importantes.
+ */
+export function loadPrefs(storage: StorageLike | null, phone = false): UiPrefs {
+  const first = (): UiPrefs => ({ ...DEFAULT_PREFS, ...(phone ? { bubbles: 'all' as const } : {}) });
+  if (!storage) return first();
   try {
     const raw = storage.getItem(PREFS_KEY);
-    return sanitizePrefs(raw ? JSON.parse(raw) : null);
+    return raw ? sanitizePrefs(JSON.parse(raw)) : first();
   } catch {
-    return { ...DEFAULT_PREFS };
+    return first();
   }
 }
 

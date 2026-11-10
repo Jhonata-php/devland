@@ -24,6 +24,7 @@ import type { Activity, AgentInfo, InboxMessage, OutboxMessage } from '../../sha
 import { errMsg, log } from '../log';
 import type { CodexQueueResult, CodexQueueRunner } from './codex';
 import { tr } from '../../shared/i18n';
+import { withPreviewHint } from './preview-hint';
 
 /** Sessão que perguntou pela caixa de entrada há até este tempo: recebe mensagens (canMessage). */
 export const PRESENCE_MS = 10_000;
@@ -47,7 +48,7 @@ export const ERR_GONE = tr('o agente saiu do escritório');
 export const ERR_REFUSED = tr('a sessão não aceitou a mensagem');
 export const ERR_SESSION_CHANGED = tr('a conversa do agente mudou (/clear ou /resume) antes da entrega');
 export const ERR_CODEX_UNAVAILABLE =
-  tr('não há como entregar ao Codex agora: rode o Habblaud fora do Docker com o `codex` no PATH (ou HABBLAUD_CODEX_BIN) ou, no Docker, deixe o npm run codex:bridge rodando no Mac');
+  tr('não há como entregar ao Codex agora: rode o DevLand fora do Docker com o `codex` no PATH (ou HABBLAUD_CODEX_BIN) ou, no Docker, deixe o npm run codex:bridge rodando no Mac');
 export const ERR_CODEX_NOT_FETCHED = tr('o auxiliar do Codex não buscou a mensagem: o npm run codex:bridge está rodando no Mac?');
 export const ERR_CODEX_SLOW = tr('o Codex demorou demais com as mensagens anteriores a este agente');
 export const ERR_CODEX_NOT_CONFIRMED = tr('o auxiliar do Codex não confirmou a entrega');
@@ -257,7 +258,10 @@ export class MessageRegistry {
    * (too-many). Corpo inválido: lança InvalidRequest.
    */
   send(raw: unknown): SendResult {
-    const { agentId, text } = parseSend(raw);
+    const parsed = parseSend(raw);
+    const agentId = parsed.agentId;
+    // Pedido para ver o site: vai junto como abrir a prévia no DevLand (messages/preview-hint.ts).
+    const text = withPreviewHint(parsed.text);
     const real = this.opts.office.get(agentId);
     const demo = real ? undefined : this.opts.demoAgent?.(agentId);
     const agent = real ?? demo;

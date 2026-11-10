@@ -5,9 +5,10 @@ import type { Notice } from '../../../shared/types';
 import type { SoundBoard } from '../audio/board';
 import type { UiComponent, UiContext } from './context';
 import { computeCounters } from './model';
+import { BRAND } from '../../../shared/brand';
 import { tr } from '../../../shared/i18n';
 
-const BASE_TITLE = 'Habblaud';
+const BASE_TITLE = BRAND;
 
 export type NotificationState = 'unsupported' | 'default' | 'granted' | 'denied';
 
@@ -16,25 +17,107 @@ export function notificationState(): NotificationState {
   return Notification.permission;
 }
 
+/** applicationServerKey do navegador: base64url -> bytes. */
+function keyBytes(b64: string): Uint8Array<ArrayBuffer> {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
 export class Notifier implements UiComponent {
   private lastTitle = '';
+  /** Este aparelho está assinado no push do servidor: ele avisa até com a página fechada, então a página não repete. */
+  private pushActive = false;
 
   constructor(
     private ctx: UiContext,
     private sounds: SoundBoard,
   ) {
     ctx.store.on('notice', (n) => this.onNotice(n));
+    // Já ligado antes (preferência guardada e permissão dada): garante a assinatura do push depois de um reinício do servidor.
+    if (ctx.prefs.browserNotifications && notificationState() === 'granted') void this.subscribePush();
+  }
+
+  /** Registra o service worker e assina este aparelho no push do servidor. Devolve se ficou assinado. */
+  async subscribePush(): Promise<boolean> {
+    if (this.ctx.store.mock || typeof navigator === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const res = await fetch('/api/push/key', { credentials: 'same-origin' });
+      if (!res.ok) return false;
+      const key = ((await res.json()) as { publicKey?: string }).publicKey;
+      if (!key) return false;
+      let sub = await reg.pushManager.getSubscription();
+      try {
+        sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+      } catch {
+        // chave do servidor mudou: a assinatura antiga não vale mais
+        await sub?.unsubscribe();
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+      }
+      const ok = (await fetch('/api/push/subscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) })).ok;
+      this.pushActive = ok;
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Desliga o push deste aparelho (o servidor esquece a assinatura). */
+  async unsubscribePush(): Promise<void> {
+    this.pushActive = false;
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration('/sw.js');
+      const sub = await reg?.pushManager.getSubscription();
+      if (!sub) return;
+      await fetch('/api/push/unsubscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+      await sub.unsubscribe();
+    } catch {
+      // sem service worker: nada a desligar
+    }
+  }
+
+  /**
+   * Teste de notificação: assina este aparelho (se ainda não estiver), manda o push pelo servidor e mostra também um aviso
+   * local pelo service worker, para separar "o aparelho não mostra" de "o servidor não conseguiu enviar".
+   */
+  async testPush(): Promise<{ local: boolean; sent: number; subscribed: number; status?: number; error?: boolean }> {
+    await this.subscribePush();
+    let local = false;
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration('/sw.js');
+      if (reg && notificationState() === 'granted') {
+        await reg.showNotification(tr('DevLand — teste'), { body: tr('As notificações estão funcionando.'), tag: 'local-test', icon: '/assets/brand/icon-192.png' });
+        local = true;
+      }
+    } catch {
+      // sem service worker ou sem permissão: o resultado do push abaixo explica
+    }
+    try {
+      const res = await fetch('/api/push/test', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!res.ok) return { local, sent: 0, subscribed: 0, error: true };
+      const r = (await res.json()) as { sent?: number; subscribed?: number; failed?: number[] };
+      return { local, sent: r.sent ?? 0, subscribed: r.subscribed ?? 0, status: r.failed?.find((c) => c) };
+    } catch {
+      return { local, sent: 0, subscribed: 0, error: true };
+    }
   }
 
   /** Pede permissão de notificação ao ligar a opção. Devolve o estado final. */
   async enableBrowserNotifications(): Promise<NotificationState> {
     const state = notificationState();
-    if (state === 'unsupported' || state === 'denied' || state === 'granted') return state;
-    try {
-      return await Notification.requestPermission();
-    } catch {
-      return notificationState();
+    if (state === 'unsupported' || state === 'denied') return state;
+    if (state === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // alguns navegadores só aceitam a pergunta por gesto do usuário
+      }
     }
+    const now = notificationState();
+    if (now === 'granted') await this.subscribePush();
+    return now;
   }
 
   render(): void {
@@ -50,11 +133,11 @@ export class Notifier implements UiComponent {
   private onNotice(n: Notice): void {
     const prefs = this.ctx.prefs;
     // o sino toca mesmo com a aba oculta (é ele que chama você de volta); o estalo, só com ela à vista
-    if (n.level === 'alert') this.sounds.play('chime');
-    else if (n.level === 'success') this.sounds.play('pop');
-    if (n.level === 'alert' && prefs.browserNotifications && document.hidden && notificationState() === 'granted') {
+    // cada tipo tem o seu som: alarme (precisa de você), arpejo (concluiu), grave (aviso) e pingo (informação)
+    this.sounds.play(n.level === 'alert' ? 'alarm' : n.level === 'success' ? 'done' : n.level === 'warn' ? 'warn' : 'blip');
+    if (!this.pushActive && (n.level === 'alert' || n.level === 'success') && prefs.browserNotifications && document.hidden && notificationState() === 'granted') {
       try {
-        const notification = new Notification(tr('Habblaud — precisa de você'), {
+        const notification = new Notification(n.level === 'alert' ? tr('DevLand — precisa de você') : tr('DevLand — terminou'), {
           body: n.text,
           tag: n.agentId ?? n.id,
           icon: '/assets/brand/favicon-32.png',

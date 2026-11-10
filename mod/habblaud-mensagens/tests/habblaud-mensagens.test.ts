@@ -94,7 +94,7 @@ function world(on: On, w: World = {}) {
 const START = { cwd: '/work', surface: 'terminal', isInteractive: true } as const
 
 describe('rodadas', () => {
-  test('a cada 2 s pergunta ao Habblaud (marca a presença); sem mensagens, nada vai para a sessão e não há ack', async ($, on) => {
+  test('a cada 2 s pergunta ao DevLand (marca a presença); sem mensagens, nada vai para a sessão e não há ack', async ($, on) => {
     const w = world(on)
     await $.session.start(START)
     expect(w.sent).toEqual([])
@@ -204,7 +204,7 @@ describe('rodadas', () => {
     expect(w.texts()).toEqual(['oi'])
   })
 
-  test('Habblaud fora do ar, 403 (mensagens desligadas) ou 404 (versão sem a rota): recua para 30 s até voltar', async ($, on) => {
+  test('DevLand fora do ar, 403 (mensagens desligadas) ou 404 (versão sem a rota): recua para 30 s até voltar', async ($, on) => {
     let answer: Answer = 'offline'
     const w = world(on, { inbox: () => answer })
     await $.session.start(START)
@@ -226,7 +226,7 @@ describe('rodadas', () => {
     expect(w.acks()).toEqual([])
   })
 
-  test('Habblaud travado: desiste em 2 s e recua para 30 s', async ($, on) => {
+  test('DevLand travado: desiste em 2 s e recua para 30 s', async ($, on) => {
     let hang = true
     const w = world(on, { inbox: () => (hang ? 'hang' : []) })
     await $.session.start(START)
@@ -239,7 +239,7 @@ describe('rodadas', () => {
     expect(w.inboxes().length).toBe(2)
   })
 
-  test('sessão sem superfície (claude -p, SDK): nem pergunta ao Habblaud', async ($, on) => {
+  test('sessão sem superfície (claude -p, SDK): nem pergunta ao DevLand', async ($, on) => {
     const w = world(on, { surfaces: [] })
     await $.session.start({ cwd: '/work', surface: null, isInteractive: false })
     await w.clock.advance(10_000)

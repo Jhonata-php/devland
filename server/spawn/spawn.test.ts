@@ -21,7 +21,14 @@ import { runnableClaudeBin } from '../claude-bin';
 describe('novo agente: pedido e link', () => {
   it('aceita só pasta absoluta e pedido do tamanho certo', () => {
     expect(parseSpawn({ folder: ' /Users/a/proj ', prompt: 'faça X  \n' })).toEqual({ folder: '/Users/a/proj', prompt: 'faça X' });
+    // Revisão sem pedido ganha o roteiro de revisão; com pedido, vale o pedido.
+    expect((parseSpawn({ folder: '/p', prompt: '', role: 'review' }) as { prompt: string }).prompt).toMatch(/revisão completa/);
+    expect((parseSpawn({ folder: '/p', prompt: 'só os testes', role: 'review' }) as { prompt: string }).prompt).toBe('só os testes');
     expect(parseSpawn({ folder: 'C:\\code\\proj' })).toEqual({ folder: 'C:\\code\\proj', prompt: '' });
+    // Modelo do Claude: só os apelidos conhecidos; a IA local usa o modelo dela, então ignora o pedido.
+    expect(parseSpawn({ folder: '/p', model: 'sonnet' })).toEqual({ folder: '/p', prompt: '', model: 'sonnet' });
+    expect(parseSpawn({ folder: '/p', model: 'gpt-4' })).toEqual({ folder: '/p', prompt: '' });
+    expect(parseSpawn({ folder: '/p', account: 'ollama', model: 'opus' })).toEqual({ folder: '/p', prompt: '', account: 'ollama' });
     expect(parseSpawn({ folder: 'proj' })).toHaveProperty('error');
     expect(parseSpawn({ folder: '/a\0b' })).toHaveProperty('error');
     expect(parseSpawn({ folder: '/a', prompt: 'x'.repeat(8_001) })).toHaveProperty('error');
@@ -127,7 +134,7 @@ describe('SpawnService com anexos', () => {
     s.submit({ folder: '/p', prompt: 'conserte', attachments: ['f1'] });
     await new Promise((ok) => setTimeout(ok, 0));
     expect(written).toEqual(['s2:print.png']);
-    expect(new URL(opened[0]).searchParams.get('q')).toBe('conserte\n\nAnexo enviado pelo Habblaud (leia antes de começar):\n- /h/att/print.png');
+    expect(new URL(opened[0]).searchParams.get('q')).toBe('conserte\n\nAnexo enviado pelo DevLand (leia antes de começar):\n- /h/att/print.png');
     expect(s.get('s2')?.status).toBe('opened');
   });
 
@@ -154,12 +161,12 @@ describe('SpawnService com anexos', () => {
 
 describe('novo agente em segundo plano (claude --bg)', () => {
   it('nome da sessão e argumentos: o pedido vai depois de `--`', () => {
-    expect(sessionName('  \n rode os testes\nsegunda linha')).toBe('Habblaud: rode os testes');
-    expect(sessionName('')).toBe('Habblaud');
-    expect(sessionName('x'.repeat(100))).toHaveLength('Habblaud: '.length + 48);
-    expect(cliArgs({ folder: '/p', prompt: 'doctor' })).toEqual(['--bg', '-n', 'Habblaud: doctor', '--', 'doctor']);
+    expect(sessionName('  \n rode os testes\nsegunda linha')).toBe('DevLand: rode os testes');
+    expect(sessionName('')).toBe('DevLand');
+    expect(sessionName('x'.repeat(100))).toHaveLength('DevLand: '.length + 48);
+    expect(cliArgs({ folder: '/p', prompt: 'doctor' })).toEqual(['--bg', '-n', 'DevLand: doctor', '--', 'doctor']);
     expect(cliArgs({ folder: '/p', prompt: '--dangerously-skip-permissions' }).slice(-2)).toEqual(['--', '--dangerously-skip-permissions']);
-    expect(cliArgs({ folder: '/p', prompt: '  ' })).toEqual(['--bg', '-n', 'Habblaud']);
+    expect(cliArgs({ folder: '/p', prompt: '  ' })).toEqual(['--bg', '-n', 'DevLand']);
   });
 
   it('createCliRunner roda o binário na pasta, sem shell, e lê o id; erro vira a 1ª linha', async () => {
@@ -177,7 +184,7 @@ describe('novo agente em segundo plano (claude --bg)', () => {
     expect(await run({ folder: dir, prompt: 'faça $(rm -rf x) && y' })).toEqual({ ok: true, id: '7eacc670' });
     const args = readFileSync(join(dir, 'args'), 'utf8').trim().split('\n');
     expect(realpathSync(args[0])).toBe(realpathSync(dir));
-    expect(args.slice(1)).toEqual(['--bg', '-n', 'Habblaud: faça $(rm -rf x) && y', '--', 'faça $(rm -rf x) && y']);
+    expect(args.slice(1)).toEqual(['--bg', '-n', 'DevLand: faça $(rm -rf x) && y', '--', 'faça $(rm -rf x) && y']);
     expect(await run({ folder: tmpdir(), prompt: 'oi' })).toEqual({ ok: false, error: 'Workspace not trusted. Run claude once' });
   });
 
@@ -212,5 +219,23 @@ describe('novo agente em segundo plano (claude --bg)', () => {
     expect(d.get('d1')).toMatchObject({ status: 'opened', how: 'cli' });
     expect(d.get('d2')).toMatchObject({ status: 'opened', how: 'app', note: 'pasta nova' });
     expect(d.get('d3')).toMatchObject({ status: 'opened', how: 'app' });
+  });
+});
+
+describe('trustFolder (Cloud: pasta escolhida já entra como confiável)', () => {
+  it('grava hasTrustDialogAccepted sem perder o resto do .claude.json', async () => {
+    const { mkdtempSync, readFileSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { trustFolder } = await import('./spawn');
+    const home = mkdtempSync(join(tmpdir(), 'trust-'));
+    writeFileSync(join(home, '.claude.json'), JSON.stringify({ theme: 'dark', projects: { '/workspace/a': { allowedTools: ['x'] } } }));
+    const who = { uid: process.getuid!(), gid: process.getgid!(), home, user: 'dev' };
+    trustFolder('/workspace/a', who);
+    trustFolder('/workspace/b', who);
+    const cfg = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+    expect(cfg.theme).toBe('dark');
+    expect(cfg.projects['/workspace/a']).toEqual({ allowedTools: ['x'], hasTrustDialogAccepted: true });
+    expect(cfg.projects['/workspace/b'].hasTrustDialogAccepted).toBe(true);
   });
 });

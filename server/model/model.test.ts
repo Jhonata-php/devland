@@ -37,6 +37,11 @@ describe('salas', () => {
   it('normaliza o cwd', () => {
     expect(normalizeCwd('/a//b/')).toBe('/a/b');
     expect(normalizeCwd('/')).toBe('/');
+    // worktree de agente conta como o projeto (sem sala "worktree" avulsa)
+    expect(normalizeCwd('/w/app/.claude/worktrees/ajuste-x')).toBe('/w/app');
+    expect(normalizeCwd('/w/app/.claude/worktrees/ajuste-x/src/')).toBe('/w/app');
+    expect(normalizeCwd('/w/app/.codex/worktrees/abc')).toBe('/w/app');
+    expect(normalizeCwd('/w/worktrees/app')).toBe('/w/worktrees/app');
   });
 
   it('desambigua basenames repetidos com o diretório pai', () => {
@@ -620,7 +625,7 @@ describe('Office: personagem do projeto', () => {
     expect(names.get('s2')).toBeUndefined();
   });
 
-  describe('reinício do Habblaud (names.json em arquivo)', () => {
+  describe('reinício do DevLand (names.json em arquivo)', () => {
     /** Grava o names.json e sobe um NameStore e um Office novos lendo o mesmo arquivo. */
     const restart = (before: NameStore, file: string) => {
       before.flush();

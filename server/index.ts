@@ -2,22 +2,32 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
+import { McpStore } from './accounts/mcp';
+import { LocalAi, LOCAL_ACCOUNT_DIR } from './ai/local';
+import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
 import { AccountsService } from './accounts/service';
 import { isTruthy, loadConfig, messagesOffReason, terminalOffReason, worldSocketUrl } from './config';
 import { createApiHandler, sendJson } from './http/app';
 import { createRequestGuard, isLoopbackHost } from './http/guard';
-import { createRemoteGate, isRemoteRequest, loadSecret, RemoteSessions, startRemoteListener, type RemoteListener } from './http/remote';
+import { createRemoteGate, isRemoteRequest, loadSecret, RemoteSessions, startRemoteListener, type RemoteFeature, type RemoteListener } from './http/remote';
+import { createCloud, userKeyOf } from './http/cloud';
+import { UserStore } from './cloud/users';
+import { ConnectService } from './cloud/connect';
+import { findExecutable } from './claude-bin';
+import { agentRunAs } from './spawn/runas';
 import { Hub } from './http/sse';
 import { createStaticHandler } from './http/static';
+import { createPreview } from './http/preview';
 import { TerminalStreams } from './http/terminal';
 import { createTimelineHandler } from './http/timeline';
 import { TIMELINE_DIR, TimelineRecorder } from './history/timeline';
 import { DayStatsService } from './history/daystats';
 import { describeStateMigration, legacyEnvWarning, migrateLegacyStateDir } from './legacy';
 import { errMsg, log } from './log';
+import { mailerFromEnv, mailConfigFromEnv } from './mail/smtp';
 import { NameStore } from './model/names';
 import { Office } from './model/office';
 import { RoomAliases } from './model/room-aliases';
@@ -38,16 +48,34 @@ import { discoverCodexDirs } from './sources/codex/accounts';
 import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
 import { createBuildReader, readBuildInfo } from './build';
+import { ensureDevLandPlugins } from './accounts/plugins';
+import { PushService } from './push/service';
+import { pickAccountByLoad } from './pty/pick-account';
+import { dedupeLive, loadLiveAgents, saveLiveAgents, transcriptCwd, withResuming, type LiveAgent } from './pty/live-agents';
+import { ensureUsageTap } from './accounts/usage-tap';
 import { UpdateChecker } from './updates/checker';
+import { stageVersion } from './updates/self-update';
+import { ghcrLatest, loadVelixFile, parseVelixTarget, saveVelixFile, velixRedeploy, velixTargetFromEnv } from './updates/cloud';
 import { getLocale, tr } from '../shared/i18n';
 import type { WorldLocale } from '../shared/world/protocol';
 import { createCliRunner, createOpener, SpawnService } from './spawn/spawn';
 import { runnableClaudeBin } from './claude-bin';
-import { AttachmentStore } from './spawn/attachments';
-import { recentFolders } from './spawn/folders';
+import { fetchOAuthUsage } from './accounts/oauth-usage';
+import { UsageAlerts } from './accounts/usage-alert';
+import { dueSchedules, ScheduleStore } from './schedule/schedules';
+import { PluginStore } from './plugins/store';
+import { locateTranscript } from './sources/transcript-locate';
+import { killOrphanResumes } from './pty/orphans';
+import { clearStaleSessions } from './accounts/stale-sessions';
+import { DevRunner } from './preview/devrun';
+import { withPreviewHint } from './messages/preview-hint';
+import { AttachmentStore, attachmentsRoot, writeAttachments, type Attachment } from './spawn/attachments';
+import { mergeFolders, recentFolders, workspaceFolders } from './spawn/folders';
+import { WORKSPACE } from './cloud/connect';
 import { isDemoId } from '../shared/timeline';
 import { DictationService } from './dictation/dictation';
 import { createWhisperTranscriber, findWhisper } from './dictation/whisper';
+import { createOpenAITranscriber, openAIKeyFromEnv } from './dictation/openai';
 import { DeliveryIndex } from './deliveries/deliveries';
 import { FileFetcher } from './deliveries/fetcher';
 import { WorldClient } from './world/client';
@@ -79,16 +107,53 @@ const roomAliases = new RoomAliases(join(config.dataDir, 'rooms.json'));
 roomAliases.load();
 
 // Office, contas e fontes de agentes se referenciam (avisos de mudança / fontes): ligação tardia.
-const late: { office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
+const late: { connect?: ConnectService; office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
 // Versão nova: consulta a release mais recente no GitHub a cada 6 h (HABBLAUD_UPDATE_CHECK=0 desliga).
+// Cloud (imagem com HABBLAUD_CLOUD_VERSION): a versão mais recente vem das tags da imagem no GHCR e o admin atualiza
+// por um botão que pede ao Velix para reimplantar (HABBLAUD_VELIX_URL/TOKEN/PROJECT; sem elas, só avisa).
+const velixFile = join(config.dataDir, 'velix.json');
+let velix = config.cloudVersion ? (velixTargetFromEnv(process.env) ?? loadVelixFile(velixFile)) : undefined;
 const updates = new UpdateChecker({
   current: config.version,
   repo: config.repo,
   enabled: config.updateCheck,
   file: join(config.dataDir, 'updates.json'),
+  source: config.cloudVersion && config.repo ? ghcrLatest(config.repo) : undefined,
+  // Atualização nativa: baixa o código da versão nova do GHCR para <dados>/app e reinicia (o entrypoint o usa); o Velix só entra
+  // como plano B quando a versão muda as dependências e a conexão com ele foi configurada.
+  apply: config.cloudVersion
+    ? async () => {
+        const latest = updates.status().latest;
+        if (latest && config.repo) {
+          const r = await stageVersion({ image: config.repo, version: latest, dataDir: config.dataDir, depsHashFile: join(config.rootDir, 'deps.hash') });
+          if (r.ok) {
+            setTimeout(() => shutdown('update'), 1_500);
+            return { ok: true as const };
+          }
+          if (!r.needsImage || !velix) return r;
+        }
+        return velix ? velixRedeploy(velix) : { ok: false as const, error: tr('falta configurar a conexão com o Velix') };
+      }
+    : undefined,
+  canApply: () => true,
+  autoFile: join(config.dataDir, 'auto-update.json'),
   onChange: () => late.office?.markDirty(),
 });
+/** Cloud: o admin informa a conexão com o Velix pela tela (Ajustes › Sobre); fica em <dataDir>/velix.json. */
+const configureVelix = (raw: unknown): { ok: true } | { ok: false; error: string } => {
+  const t = parseVelixTarget(raw);
+  if ('error' in t) return { ok: false, error: t.error };
+  try {
+    saveVelixFile(velixFile, t);
+  } catch (err) {
+    return { ok: false, error: errMsg(err) };
+  }
+  velix = t;
+  late.office?.markDirty();
+  return { ok: true };
+};
 updates.load();
+updates.loadAuto();
 // Habblaud World (server/world/): a conta e o personagem neste computador. Ligado por padrão (server.habblaud.com, ou
 // HABBLAUD_WORLD_URL); nada sai do computador antes de a pessoa criar a conta e entrar. HABBLAUD_WORLD=0 esconde tudo
 // (rotas 404 e nada na interface); uma HABBLAUD_WORLD_URL recusada deixa o recurso desligado.
@@ -106,6 +171,12 @@ const world = config.world.enabled
       social: worldSocial,
     })
   : undefined;
+// Cloud: o container acabou de subir, nenhum Claude da rodada anterior está vivo; os registros de sessão velhos (PIDs
+// reaproveitados) faziam o mesmo agente aparecer 2, 3 vezes. Sai antes de alguém ler a pasta (accounts/stale-sessions.ts).
+if (config.remote?.cloud) {
+  const n = clearStaleSessions(config.claudeDirs, Date.now() - 2_000);
+  if (n) log.info(tr('Apaguei {0} registro(s) de sessão da rodada anterior (evita agentes duplicados).', [n]));
+}
 const accounts = new AccountsService({
   dirs: config.claudeDirs,
   home: config.home,
@@ -120,6 +191,8 @@ const office = new Office({
   // No modo dev o Vite serve o cliente direto do código-fonte: não há build para comparar.
   build: config.dev ? undefined : createBuildReader(config.rootDir),
   startedAt,
+  // Cloud: as conversas voltam sozinhas depois de cada atualização; 3 minutos sem avisos de chegada.
+  arrivalQuietMs: config.remote?.cloud ? 180_000 : 0,
   accounts: (sessions) => accounts.list(sessions),
   sources: () => late.agents?.sources() ?? [],
   accountName: (id) => accounts.find(id)?.detected.name,
@@ -144,9 +217,54 @@ const codexLive: CodexLive | undefined = codex;
 late.office = office;
 late.agents = agents;
 // Página que pode responder pelo escritório: Host local na porta local; na remota, só com permissions liberado.
+// Porta remota com login: sessões e, no Habblaud Cloud (HABBLAUD_CLOUD=1), os usuários de <dataDir>/users.json.
+const cloudStore = config.remote?.cloud ? new UserStore(join(config.dataDir, 'users.json')) : undefined;
+const remoteSessions = config.remote
+  ? new RemoteSessions(
+      loadSecret(join(config.dataDir, 'remote-secret')),
+      config.remote,
+      Date.now,
+      join(config.dataDir, 'remote-revoked.json'),
+      cloudStore && userKeyOf(cloudStore),
+    )
+  : undefined;
+/** Atrás do Traefik o TLS termina no proxy: o cookie leva Secure quando ele diz que a conexão era HTTPS. */
+const viaHttps = (req: http.IncomingMessage) => req.headers['x-forwarded-proto'] === 'https';
+const cloud = cloudStore && remoteSessions ? createCloud({
+      store: cloudStore,
+      sessions: remoteSessions,
+      secure: viaHttps,
+      mailer: mailerFromEnv(),
+      warn: (m) => log.warnOnce(`reset-mail:${m}`, m),
+      setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined,
+      connect: () => late.connect,
+      claudeDirs: () => config.claudeDirs,
+    }) : undefined;
+/** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou HABBLAUD_REMOTE_ALLOW. */
+const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (cloud ? cloud.allows(req, f) : !!config.remote?.allow.has(f));
 const hub = new Hub(office, {
-  canAnswer: (req) => (isRemoteRequest(req) ? !!config.remote?.allow.has('permissions') : isLoopbackHost(req.headers.host)),
+  canAnswer: (req) => (isRemoteRequest(req) ? remoteAllows(req, 'permissions') : isLoopbackHost(req.headers.host)),
 });
+// Notificações push (push/service.ts): no Cloud e no acesso remoto, para avisar o celular mesmo com o Habblaud fechado.
+const push = cloud || config.remote ? new PushService({ dir: join(config.dataDir, 'push'), subject: process.env.HABBLAUD_PUSH_SUBJECT?.trim() || `mailto:push@${[...config.allowedHosts].find((h) => h.includes('.')) ?? 'devland.example.com'}` }) : undefined;
+if (push) {
+  push.load();
+  hub.onNotice((n) => {
+    // "Precisa de você" e "concluiu" (o texto do aviso de conclusão começa com ✅); o resto não vira notificação.
+    if (n.level !== 'alert' && !(n.level === 'success' && n.text.startsWith('✅'))) return;
+    // Tocar abre o agente; pedido de permissão (não pergunta) leva o id para Permitir/Negar direto da notificação.
+    const pending = n.level === 'alert' && n.agentId ? late.permissions?.snapshot().get(n.agentId) : undefined;
+    void push.notify({
+      title: n.level === 'alert' ? tr('DevLand — precisa de você') : tr('DevLand — terminou'),
+      body: n.text,
+      tag: n.agentId ?? n.id,
+      url: n.agentId ? `/?agent=${encodeURIComponent(n.agentId)}` : '/',
+      ...(pending && !pending.questions?.length
+        ? { permissionId: pending.id, labels: { allow: tr('Permitir'), deny: tr('Negar'), done: tr('Resposta enviada ao agente.'), failed: tr('Não deu para responder daqui: abra o DevLand.') } }
+        : {}),
+    });
+  });
+}
 // "Meu dia": amostra o escritório a cada segundo e persiste em <dataDir>/stats/ (ver history/daystats.ts).
 const stats = new DayStatsService({ dir: join(config.dataDir, 'stats'), snapshot: () => hub.current() });
 stats.load();
@@ -189,7 +307,7 @@ if (worldUplink && worldSocial) {
 // Terminal: só existe com bind local (ver terminalOffReason em config.ts).
 // Cada agente com o parser da ferramenta dele (o do Claude Code por padrão).
 const terminals = config.terminal
-  ? new TerminalStreams({ office, transcriptPathOf: (id) => agents.transcriptPathOf(id), parserFor: (id) => agents.parserFor(id) })
+  ? new TerminalStreams({ office, transcriptPathOf: (id) => locateTranscript(agents.transcriptPathOf(id), config.claudeDirs), parserFor: (id) => agents.parserFor(id) })
   : undefined;
 // Histórico do terminal (sessões recentes, abertas ou encerradas, de todas as ferramentas): mesma trava.
 const history = config.terminal
@@ -228,12 +346,33 @@ const deliveryFiles = deliveries
 const timelineDir = join(config.dataDir, TIMELINE_DIR);
 const timeline = config.timeline ? new TimelineRecorder({ dir: timelineDir }) : undefined;
 if (timeline) hub.onSnapshot((snap) => timeline.ingest(snap));
+// Uso do plano: UM aviso (escritório e celular) ao chegar perto do limite da sessão de 5 h ou da semana, e UM quando renova.
+// O estado fica em <dataDir>/usage-alerts.json: reiniciar o servidor não avisa tudo de novo (ver accounts/usage-alert.ts).
+const usageAlerts = new UsageAlerts(join(config.dataDir, 'usage-alerts.json'));
+hub.onSnapshot((snap) => {
+  for (const u of usageAlerts.check(snap.accounts)) {
+    const five = u.window === 'fiveHour';
+    const text = u.kind === 'limit'
+      ? five
+        ? tr('📊 {0} chegou a {1}% da sessão de 5 horas. Avisamos de novo quando renovar.', [u.accountName, u.utilization])
+        : tr('📊 {0} chegou a {1}% do limite da semana. Avisamos de novo quando renovar.', [u.accountName, u.utilization])
+      : five
+        ? tr('✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.', [u.accountName])
+        : tr('✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.', [u.accountName]);
+    // 'warn' (não 'alert'): o aviso de "precisa de você" viraria uma segunda notificação. Mesma `tag`: a notificação de
+    // renovação substitui a do limite no aparelho em vez de empilhar.
+    office.noticeSystem(`usage:${u.accountId}`, u.kind === 'limit' ? 'warn' : 'success', text);
+    void push?.notify({ title: tr('DevLand — uso do plano'), body: text, tag: `usage-${u.accountId}-${u.window}`, url: '/' });
+  }
+});
 // Responder pelo escritório (hook PermissionRequest): age sobre as sessões, então segue a mesma trava.
 const permissions = config.terminal
   ? new PermissionRegistry({
       office,
-      viewers: () => hub.localSize,
-      answerLater: () => !!config.remote?.allow.has('permissions'),
+      // No Cloud, um celular com as notificações ligadas também conta: o pedido espera a resposta pela notificação
+      // mesmo com o app fechado (sem isso, ele ia direto para o terminal, que no Cloud ninguém vê).
+      viewers: () => hub.localSize + (cloud && push ? push.count() : 0),
+      answerLater: () => !!config.remote?.allow.has('permissions') || (!!cloud && !!push && push.count() > 0),
       // Só o Claude Code: a busca da resposta dada no terminal lê o formato do transcript dele.
       transcriptPathOf: (id) => claude.transcriptPathOf(id),
       // Pedidos do hook do Codex: a conta pela pasta CODEX_HOME que ele manda.
@@ -255,15 +394,58 @@ const ptyOptIn = isTruthy(ptyFlag);
 // Novo agente pelo escritório (sessão do Claude Code em segundo plano, ou a tela do app do Claude preenchida): a
 // liberação acima mais a trava das mensagens. No Docker, quem roda é o auxiliar do host (npm run codex:bridge).
 const spawnOn = config.messages && ptyOptIn;
+function pickAccountId(list: { id: string; dir: string }[]): string | undefined {
+  const snap = hub.current();
+  return pickAccountByLoad(
+    list.map((a) => {
+      const u = snap.accounts.find((x) => x.id === a.id)?.usage;
+      return { id: a.id, connected: !cloud || existsSync(join(a.dir, '.credentials.json')), fiveHour: u?.fiveHour?.utilization, sevenDay: u?.sevenDay?.utilization };
+    }),
+  );
+}
 const attachments = spawnOn ? new AttachmentStore() : undefined;
+// Anexos gravados na casa de quem roda os agentes (Cloud: o usuário "dev", dono dos arquivos; o servidor roda como root).
+function saveAttachments(id: string, files: readonly Attachment[]): string[] {
+  const who = agentRunAs();
+  if (!who) return writeAttachments(attachmentsRoot(), id, files);
+  const root = join(who.home, '.habblaud', 'attachments');
+  const paths = writeAttachments(root, id, files);
+  if (!paths.length) return paths; // sem anexos nada foi criado: não há o que entregar ao usuário dos agentes
+  for (const p of [join(who.home, '.habblaud'), root, ...new Set(paths.map((f) => dirname(f))), ...paths]) chownSync(p, who.uid, who.gid);
+  return paths;
+}
 const spawnBin = config.inDocker ? undefined : runnableClaudeBin(process.env);
 const spawn = spawnOn
-  ? new SpawnService(config.inDocker ? { attachments } : { opener: createOpener(), cli: spawnBin ? createCliRunner(spawnBin) : undefined, attachments })
+  ? new SpawnService({
+      writeFiles: saveAttachments,
+      ...(config.inDocker ? { attachments } : { opener: createOpener(), cli: spawnBin ? createCliRunner(spawnBin) : undefined, attachments }),
+      // Cloud: a conta escolhida na tela; sem escolha ("Automática"), a de mais folga (a mesma regra das sessões novas).
+      localAgent: async () => {
+        const who = agentRunAs();
+        const a = await localAi.agent(who?.home ?? config.home, who);
+        if (a) accounts.addDir(a.dir);
+        return a;
+      },
+      accountDir: (id) => {
+        // A conta "IA local" só entra quando escolhida pelo nome (ver localAgent): a escolha automática fica nas do Claude.
+        const list = accounts.entries().filter((e) => !e.dir.endsWith(LOCAL_ACCOUNT_DIR));
+        const a = (id && id !== 'auto' ? list.find((e) => e.id === id) : undefined) ?? (cloud ? list.find((e) => e.id === pickAccountId(list.map((x) => ({ id: x.id, dir: x.dir, isDefault: isDefaultDir(x.dir, config.home) })))) : undefined);
+        return a && !isDefaultDir(a.dir, config.home) ? a.dir : undefined;
+      },
+    })
   : undefined;
 // Ditado: no Docker quem transcreve é o auxiliar do host; no Node, o servidor, se achar o Whisper local.
 const whisper = config.messages && !config.inDocker ? findWhisper() : undefined;
+// Sem Whisper local (ex.: Cloud), a API da OpenAI transcreve se houver chave (OPENAI_API_KEY): opt-in, o áudio sai daqui.
+const openAIKey = openAIKeyFromEnv();
 const dictation = config.messages
-  ? new DictationService(whisper && !('missing' in whisper) ? { transcriber: createWhisperTranscriber(whisper) } : {})
+  ? new DictationService(
+      whisper && !('missing' in whisper)
+        ? { transcriber: createWhisperTranscriber(whisper) }
+        : openAIKey
+          ? { transcriber: createOpenAITranscriber(openAIKey, process.env.HABBLAUD_DICTATION_MODEL?.trim() || 'whisper-1') }
+          : {},
+    )
   : undefined;
 const messages = config.messages
   ? new MessageRegistry({
@@ -282,6 +464,32 @@ late.messages = messages;
 // do Docker, com node-pty e o executável do claude no PATH.
 const claudeBinSetting = process.env.HABBLAUD_CLAUDE_BIN?.trim();
 const claudeBin = claudeBinFrom();
+// Loja de plugins (Configurações): instala nas contas do Claude Code pelo CLI; rotas só para admin ou o próprio computador.
+const pluginStore = claudeBin ? new PluginStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir)) : undefined;
+// IA local (Ollama na pasta de dados): sobe sozinho se já estiver instalado; rotas só para admin ou o próprio computador.
+const localAi = new LocalAi(config.dataDir);
+void localAi.start();
+// Conta "IA local" já usada antes: as sessões dela aparecem no escritório desde a subida.
+{
+  const localDir = join(agentRunAs()?.home ?? config.home, LOCAL_ACCOUNT_DIR);
+  if (existsSync(localDir)) accounts.addDir(localDir);
+}
+process.once('exit', () => localAi.stop());
+// Agentes agendados: a cada 30 s, abre pelo Novo agente os agendamentos cuja hora chegou (no fuso de quem agendou).
+const schedules = spawn ? new ScheduleStore(join(config.dataDir, 'schedules.json')) : undefined;
+if (schedules && spawn) {
+  schedules.load();
+  const tickSchedules = () => {
+    const now = Date.now();
+    for (const s of dueSchedules(schedules.all(), now)) {
+      schedules.markRun(s.id, now);
+      const r = spawn.submit({ folder: s.folder, prompt: s.prompt, account: s.account, role: s.role, model: s.model });
+      if ('error' in r) log.warn(tr('Agendamento em {0} não abriu: {1}', [s.folder, r.reason]));
+      else log.info(tr('Agendamento: agente novo em {0} ({1}).', [s.folder, s.time]));
+    }
+  };
+  setInterval(tickSchedules, 30_000).unref();
+}
 let spawnPty: SpawnPty | null = null;
 let ptyScreen: ScreenFactory | undefined;
 let ptyOff: string | undefined;
@@ -305,6 +513,9 @@ const ptys = spawnPty
       spawn: spawnPty,
       claudeBin: claudeBin ?? 'claude',
       accounts: () => accounts.entries().map((a) => ({ id: a.id, dir: a.dir, isDefault: isDefaultDir(a.dir, config.home) })),
+      // Sessão nova sem conta pedida (Novo, Nova sessão, primeiro agente): a conta conectada com mais folga (o maior uso entre 5 h e
+      // semana, o menor vence); sem números, a padrão. Uma conversa em andamento fica na conta dela.
+      pickAccount: pickAccountId,
       agent: (id) => {
         const a = office.get(id);
         return a && { id: a.id, kind: a.kind, account: a.account, sessionId: a.sessionId, cwd: office.roomPath(a.roomId) };
@@ -315,6 +526,37 @@ const ptys = spawnPty
   : undefined;
 late.ptys = ptys;
 late.ptyOff = ptyOff;
+// Habblaud Cloud: conectar contas pela web roda os logins num terminal escondido, como o usuário dos agentes.
+const agentUser = agentRunAs();
+// Cloud: o tap de uso (cartões de 5 h e semana) entra sozinho no statusLine de cada conta do Claude Code.
+const usageTapPath = join(config.rootDir, 'scripts', 'statusline-tap.mjs');
+if (cloud && agentUser) ensureUsageTap(config.claudeDirs, usageTapPath);
+// Cloud: uso de toda conta conectada, mesmo sem sessão (consulta com o login da conta; a cada 3 min).
+if (cloud) {
+  const pollUsage = () => {
+    for (const e of accounts.entries()) void fetchOAuthUsage(e.dir).then((u) => u && accounts.setUsage(e.id, u));
+  };
+  setTimeout(pollUsage, 5_000).unref();
+  setInterval(pollUsage, 180_000).unref();
+}
+// Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do Habblaud na imagem).
+const pluginsReady: Promise<void> = cloud && agentUser && claudeBin ? ensureDevLandPlugins(config.claudeDirs, claudeBin, config.rootDir) : Promise.resolve();
+if (cloud && spawnPty && claudeBin && agentUser) {
+  late.connect = new ConnectService({
+    spawn: spawnPty,
+    home: agentUser.home,
+    env: process.env,
+    claudeBin,
+    codexBin: findCodexBin(process.env),
+    ghBin: findExecutable('gh'),
+    onClaudeDir: (dir) => {
+      accounts.addDir(dir);
+      ensureUsageTap([dir], usageTapPath);
+      void ensureDevLandPlugins([dir], claudeBin, config.rootDir);
+    },
+    onChange: () => office.markDirty(),
+  });
+}
 
 if (config.demo) office.setDemo(true);
 // As fontes síncronas (a do Claude Code) terminam o boot aqui, antes de o hub começar a transmitir.
@@ -329,6 +571,7 @@ permissions?.start();
 messages?.start();
 stats.start();
 updates.start();
+updates.startAuto();
 worldUplink?.start();
 const ticker = setInterval(() => {
   try {
@@ -338,7 +581,15 @@ const ticker = setInterval(() => {
   }
 }, 250);
 
+const preview = createPreview({ blockedPorts: () => [config.port, config.remote?.port ?? 0] });
+// Rodar o projeto para a prévia: só pastas das salas do escritório (ou dentro de /workspace no Cloud).
+const devRunner = new DevRunner({
+  allowed: (folder) => (cloud && (folder === WORKSPACE || folder.startsWith(`${WORKSPACE}/`)) && folder !== WORKSPACE) || hub.current().rooms.some((r) => r.path === folder),
+});
+process.once('exit', () => devRunner.stopAll());
+
 const api = createApiHandler({
+  preview,
   renameRoom: (id, name) => {
     const path = office.roomPath(id);
     if (!path) return undefined;
@@ -357,9 +608,20 @@ const api = createApiHandler({
   sessions: history,
   timeline: createTimelineHandler({ dir: timelineDir, recording: !!timeline }),
   permissions: permissions ? createPermissionRoutes(permissions) : undefined,
-  messages: messages ? createMessageRoutes(messages) : undefined,
-  pty: ptys ? createPtyRoutes(ptys) : undefined,
+  messages: messages ? createMessageRoutes(messages, attachments && { store: attachments, save: saveAttachments }) : undefined,
+  // Habblaud Cloud: o terminal interativo também pela porta com login, para quem tem a permissão "terminal".
+  pty: ptys ? createPtyRoutes(ptys, cloud ? (req) => isRemoteRequest(req) && remoteAllows(req, 'terminal') : undefined) : undefined,
   spawn,
+  schedules,
+  plugins: pluginStore,
+  localAi,
+  mcp: claudeBin ? new McpStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir), join(config.dataDir, 'mcp-names.json')) : undefined,
+  ghBin: findExecutable('gh'),
+  projectDirs: () => [...hub.current().rooms.map((r) => r.path), ...(cloud ? workspaceFolders(WORKSPACE).map((f) => f.path) : [])].filter((p) => p !== WORKSPACE),
+  devRunner,
+  resumeWithMessage: ptys ? (id, text) => ptys.sendMessage(id, withPreviewHint(text)) : undefined,
+  onPreviewFail: (reason) => office.noticeSystem('preview-fail', 'warn', tr('🌐 A prévia não abriu: {0}', [reason])),
+  onPreviewOpen: (port) => office.noticeSystem('preview', 'info', tr('🌐 Abrindo a prévia do site na porta {0}.', [port]), { previewPort: port }),
   attachments,
   dictation,
   deliveries,
@@ -369,12 +631,15 @@ const api = createApiHandler({
     const last = new Map<string, number>();
     for (const a of snap.agents) last.set(a.roomId, Math.max(last.get(a.roomId) ?? 0, a.lastEventAt ?? 0));
     const rooms = snap.rooms.filter((r) => !isDemoId(r.id)).map((r) => ({ path: r.path, lastAt: last.get(r.id) ?? 0 }));
-    return recentFolders(history ? await history.list().catch(() => []) : [], rooms);
+    const recent = recentFolders(history ? await history.list().catch(() => []) : [], rooms);
+    // A raiz /workspace não é projeto (só guarda os projetos clonados): não aparece como opção de pasta.
+    return cloud ? mergeFolders(recent, workspaceFolders(WORKSPACE)).filter((f) => f.path.replace(/\/+$/, '') !== WORKSPACE) : recent;
   },
   codexLive,
   stats,
-  updates,
-  remote: config.remote ? { is: isRemoteRequest, allows: (f) => config.remote!.allow.has(f) } : undefined,
+  push,
+  updates: config.cloudVersion ? Object.assign(updates, { configure: configureVelix }) : updates,
+  remote: config.remote ? { is: isRemoteRequest, allows: remoteAllows, isAdmin: cloud?.isAdmin } : undefined,
   world: world ? createWorldRoutes(world, worldViewer, worldSocial) : undefined,
 });
 
@@ -413,6 +678,7 @@ server.on('request', (req, res) => {
   const url = parseUrl(req);
   try {
     if (guard(req, res)) return;
+    if (preview.handle(req, res, url)) return;
     if (!api(req, res, url)) fallback(req, res, url);
   } catch (err) {
     log.warn(tr('Erro ao responder {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
@@ -436,9 +702,11 @@ if (config.remote) {
   const remote = config.remote;
   const gate = createRemoteGate({
     config: remote,
-    sessions: new RemoteSessions(loadSecret(join(config.dataDir, 'remote-secret')), remote, Date.now, join(config.dataDir, 'remote-revoked.json')),
-    secure: !!remote.tls,
+    sessions: remoteSessions!,
+    secure: cloud ? viaHttps : !!remote.tls,
     caFile: remote.tls?.caFile,
+    cloud: cloud?.gate,
+    selfAuth: preview.verify,
   });
   remoteListener = startRemoteListener(
     remote,
@@ -447,6 +715,8 @@ if (config.remote) {
       try {
         if (guard(req, res)) return;
         if (gate(req, res, url)) return;
+        if (preview.handle(req, res, url)) return;
+        if (cloud?.api(req, res, url)) return;
         if (!api(req, res, url)) fallback(req, res, url);
       } catch (err) {
         log.warn(tr('Erro ao responder (remoto) {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
@@ -458,6 +728,15 @@ if (config.remote) {
     config.allowedHosts,
   );
   remoteListener.server.once('listening', () => {
+    if (cloud) {
+      log.info(tr('   DevLand Cloud: login com usuários na porta {0} (HTTP, para ficar atrás do proxy com HTTPS).', [remote.port]));
+      const smtp = mailConfigFromEnv();
+      log.info(smtp ? tr('   Esqueci a senha: ligado (e-mail por {0}:{1}).', [smtp.host, smtp.port]) : tr('   Esqueci a senha: desligado (defina SMTP_HOST, SMTP_USER, SMTP_PASS e SMTP_FROM para enviar o e-mail).'));
+      log.info(whisper && !('missing' in whisper) ? tr('   Ditado: Whisper local.') : openAIKey ? tr('   Ditado: API da OpenAI (o áudio vai para a OpenAI).') : tr('   Ditado: desligado (defina OPENAI_API_KEY para transcrever pela OpenAI).'));
+      const code = cloud.setupCode();
+      if (code) log.info(tr('   DevLand Cloud: primeiro acesso. Abra /setup e use o código de instalação {0}', [code]));
+      return;
+    }
     const allow = [...remote.allow].join(', ') || tr('só ver');
     const where = config.inDocker ? tr('publicada pelo HABBLAUD_REMOTE_BIND') : remote.host;
     const scheme = remote.tls ? 'HTTPS' : tr('HTTP SEM criptografia (HABBLAUD_REMOTE_INSECURE_HTTP)');
@@ -470,7 +749,7 @@ if (config.remote) {
 
 server.listen(config.port, config.host, () => {
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
-  log.info(tr('🏢 Habblaud {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
+  log.info(tr('🏢 DevLand {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
   const list = accounts.entries();
   if (!list.length) log.warn(tr('Nenhuma pasta do Claude Code encontrada (defina HABBLAUD_CLAUDE_DIRS).'));
   for (const dir of codexDirsRefused(process.env, config.home)) {
@@ -534,15 +813,99 @@ server.listen(config.port, config.host, () => {
   );
   log.info(
     updates.enabled
-      ? tr('   Versão nova: verificando as releases de github.com/{0} a cada 6 h.', [config.repo])
+      ? config.cloudVersion
+        ? tr('   Versão nova: verificando as tags de ghcr.io/{0} a cada 6 h{1}.', [config.repo, velix ? tr(' (botão Atualizar ligado ao Velix)') : tr(' (sem HABBLAUD_VELIX_*: só avisa)')])
+        : tr('   Versão nova: verificando as releases de github.com/{0} a cada 6 h.', [config.repo])
       : tr('   Versão nova: verificação desligada ({0}).', [config.repo ? 'HABBLAUD_UPDATE_CHECK' : tr('package.json sem repositório no GitHub')]),
   );
 });
+
+// Cloud: a versão baixada (<dados>/app) só vale se o servidor ficar de pé; passado 1 minuto no ar, tira o marcador de "subindo".
+if (cloud) setTimeout(() => rmSync(join(config.dataDir, 'app', 'booting'), { force: true }), 60_000).unref();
+
+// Cloud: guarda quem está ativo (a cada 10 s) e retoma essas conversas ao subir; congela a lista ao encerrar, antes de os
+// processos morrerem junto com o container.
+let persistLive = true;
+if (cloud && agentUser && ptys) {
+  const liveFile = join(config.dataDir, 'live-agents.json');
+  const wasLive = loadLiveAgents(liveFile);
+  const liveNow = (): LiveAgent[] => {
+    const snap = hub.current();
+    const out: LiveAgent[] = [];
+    for (const a of snap.agents) {
+      const cwd = snap.rooms.find((r) => r.id === a.roomId)?.path;
+      // A raiz /workspace não é projeto: conversa aberta lá não volta sozinha a cada reinício (criava a sala "workspace").
+      if (a.kind === 'main' && a.sessionId && a.status !== 'offline' && cwd && cwd !== WORKSPACE && !isDemoId(a.id)) out.push({ account: a.account, sessionId: a.sessionId, cwd });
+    }
+    return dedupeLive(out);
+  };
+  // Só depois de os plugins estarem instalados: uma sessão que começa antes deles nunca carrega o plugin de mensagens.
+  // Terminais da rodada anterior que ficaram vivos (a atualização nativa reinicia só o Node): encerra antes de retomar,
+  // senão a mesma conversa voltava 2, 3 vezes no escritório (pty/orphans.ts).
+  const orphans = killOrphanResumes();
+  if (orphans.size) log.info(tr('Encerrei {0} terminal(is) da rodada anterior para retomar cada conversa uma vez só.', [orphans.size]));
+  const recentlyWritten = (sessionId: string): boolean => {
+    const path = locateTranscript(join(config.claudeDirs[0] ?? '', 'projects', '-', `${sessionId}.jsonl`), config.claudeDirs);
+    try {
+      return !!path && Date.now() - statSync(path).mtimeMs < 3 * 60_000;
+    } catch {
+      return false;
+    }
+  };
+  const transcriptOf = (sessionId: string) => locateTranscript(join(config.claudeDirs[0] ?? '', 'projects', '-', `${sessionId}.jsonl`), config.claudeDirs);
+  void pluginsReady.then(() =>
+    setTimeout(() => {
+      const present = new Set(liveNow().map((a) => a.sessionId));
+      for (const saved of wasLive) {
+        // A pasta do histórico manda: a lista salva já veio trocada uma vez e repetia o erro a cada reinício.
+        const a = { ...saved, cwd: transcriptCwd(transcriptOf(saved.sessionId)) ?? saved.cwd };
+        // Órfão encerrado acima: volta aqui, uma vez. Fora isso, quem já está no escritório ou foi gravado há pouco
+        // (viva em outro lugar, ex.: o serviço de segundo plano do Claude) não é retomada por cima.
+        if (a.cwd === WORKSPACE) continue;
+        if (!orphans.has(a.sessionId) && (present.has(a.sessionId) || recentlyWritten(a.sessionId))) continue;
+        try {
+          ptys.resume(a);
+          log.info(tr('Retomando a conversa {0} em {1}.', [a.sessionId, a.cwd]));
+        } catch (err) {
+          log.warn(tr('Não deu para retomar {0}: {1}', [a.sessionId, errMsg(err)]));
+        }
+      }
+    // 15 s: dá tempo de o escritório ver as sessões que seguem vivas (ex.: as de segundo plano) antes de decidir.
+    }, 15_000).unref(),
+  );
+  const liveBootAt = Date.now();
+  // Primeiro agente automático: DESLIGADO por padrão (criava um agente avulso em /workspace a cada reimplantação, e as pessoas
+  // reclamavam do agente "novo" a cada abertura). HABBLAUD_AUTO_AGENT=1 liga: com o escritório vazio ao subir, abre um agente
+  // em /workspace, como o botão "Abrir terminal". Só com uma conta do Claude conectada.
+  void pluginsReady.then(() =>
+    setTimeout(() => {
+      // Se havia conversas para retomar, elas já estão voltando: o primeiro agente avulso só nasce com o escritório mesmo vazio.
+      if (process.env.HABBLAUD_AUTO_AGENT !== '1' || liveNow().length > 0 || wasLive.length > 0) return;
+      if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
+      try {
+        ptys.create({ cwd: '/workspace' });
+        log.info(tr('Escritório vazio: abri um primeiro agente em /workspace.'));
+      } catch (err) {
+        log.warn(tr('Não deu para abrir o primeiro agente: {0}', [errMsg(err)]));
+      }
+    }, 30_000).unref(),
+  );
+  setInterval(() => {
+    // Só depois de as conversas retomadas aparecerem (senão a foto perderia quem ainda está voltando).
+    if (!persistLive || shuttingDown || Date.now() - liveBootAt < 45_000) return;
+    try {
+      saveLiveAgents(liveFile, withResuming(liveNow(), wasLive, Date.now() - liveBootAt));
+    } catch (err) {
+      log.warnOnce('live-agents', tr('Não deu para guardar os agentes ativos: {0}', [errMsg(err)]));
+    }
+  }, 10_000).unref();
+}
 
 let shuttingDown = false;
 function shutdown(signal: string): void {
   if (shuttingDown) return;
   shuttingDown = true;
+  persistLive = false;
   log.info(tr('Encerrando ({0})…', [signal]));
   clearInterval(ticker);
   stats.stop();

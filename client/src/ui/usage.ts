@@ -7,13 +7,14 @@
 // Conta do Codex: os números vêm dos arquivos de sessão dele, que só se renovam enquanto alguma sessão roda; por isso
 // a idade ("há 12 min") fica sempre à mostra. Sem cota nem créditos ("sem cota") nunca vira 0%. Não há o que
 // instalar para o uso: "Como funciona" abre a ajuda na seção do Codex. Sem Opus/Sonnet nem e-mail (só o plano).
+import { access } from '../net/access';
+import { openAccounts } from './accounts';
 import type { AccountInfo } from '../../../shared/types';
 import type { UiContext } from './context';
 import { h, KeyedList, setAttr, setHidden, setStyleVar, setText, setTitle, setVariant } from './dom';
 import { FIVE_HOURS_MS, relativeTime, usageLevel, usageWindowView, WEEK_MS, type UsageWindowView } from './format';
 import { ICONS } from './icons';
 import { isCodex } from './provider';
-import { usageRowFits } from './usage-row';
 import { createAccountChip, createProviderTag, updateAccountChip, updateProviderTag } from './widgets';
 import { tr } from '../../../shared/i18n';
 
@@ -21,11 +22,12 @@ export const SOURCE_LABEL: Record<NonNullable<AccountInfo['usage']>['source'], s
   cache: tr('cache do /usage do Claude Code'),
   statusline: tr('ao vivo (statusline do Claude Code)'),
   codex: tr('arquivos do Codex'),
+  oauth: tr('consulta à Anthropic com o login da conta'),
 };
 
 /** Origem para mostrar: o arquivo ao vivo pode ter sido gravado pelo mod do Habblaud ou pelo tap. */
 export function sourceLabel(u: NonNullable<AccountInfo['usage']>): string {
-  if (u.source === 'statusline' && u.via === 'mod') return tr('ao vivo (mod do Habblaud)');
+  if (u.source === 'statusline' && u.via === 'mod') return tr('ao vivo (mod do DevLand)');
   return SOURCE_LABEL[u.source] ?? u.source;
 }
 
@@ -36,7 +38,7 @@ export function sourceLabel(u: NonNullable<AccountInfo['usage']>): string {
 export const USAGE_SETUP_STEPS: readonly [string, string][] = [
   [
     'npm run mod:install',
-    tr('Recomendado: instala o mod do Habblaud no Claude Code (2.1.287 ou mais novo), que passa o uso de 5 h e da semana ao vivo. Rode na pasta do Habblaud, no computador onde o Claude Code roda; nas sessões já abertas, `/reload-plugins`.'),
+    tr('Recomendado: instala o mod do DevLand no Claude Code (2.1.287 ou mais novo), que passa o uso de 5 h e da semana ao vivo. Rode na pasta do DevLand, no computador onde o Claude Code roda; nas sessões já abertas, `/reload-plugins`.'),
   ],
   [
     'npm run usage:install',
@@ -60,6 +62,8 @@ interface Meter {
 }
 
 interface CardRefs {
+  gauge: HTMLElement;
+  line: HTMLElement;
   chip: HTMLElement;
   flag: HTMLElement;
   name: HTMLElement;
@@ -144,6 +148,8 @@ function syncRows(dl: HTMLElement, rows: [string, string][]): void {
 
 /** Passo a passo para ligar o uso (dica do cartão e ajuda). */
 export function createUsageSetup(): HTMLElement {
+  // Cloud: não há o que rodar (o servidor liga o captador de uso sozinho); só precisa de uma sessão da conta trabalhando.
+  if (access().cloud) return h('p', { class: 'ui-usage-tip__note', text: tr('No Cloud o DevLand liga isso sozinho. Os números se atualizam quando uma sessão desta conta trabalha: abra uma conversa nela.') });
   return h(
     'ol',
     { class: 'ui-usage-setup' },
@@ -218,7 +224,10 @@ export class UsageCards {
   }
 
   render(): void {
-    const accounts = this.ctx.store.snapshot?.accounts ?? [];
+    // No Habblaud Cloud, só o Codex sem números fica de fora do topo (nenhuma conta conectada: conectar é em "+ Contas"); uma conta
+    // do Claude conectada aparece sempre, mesmo antes de ter números (eles chegam quando uma sessão dela trabalha).
+    const all = this.ctx.store.snapshot?.accounts ?? [];
+    const accounts = access().cloud ? all.filter((a) => a.usageStatus !== 'disabled' || !isCodex(a)) : all;
     this.list.sync(accounts);
     this.el.classList.toggle('is-empty', accounts.length === 0);
     setStyleVar(this.el, '--count', String(accounts.length));
@@ -235,37 +244,18 @@ export class UsageCards {
   private fitKey = '';
 
   /**
-   * Os cartões não cabem na linha da barra (muitas contas ou janela estreita)? Então vão para uma segunda linha
-   * (`has-usage-row` na raiz, regras em styles.css). Só conta os tamanhos mínimos, que não dependem de a fila estar
-   * numa linha ou na outra, então o resultado não oscila. No celular a barra já tem duas linhas (bloco próprio do CSS).
+   * Os cartões ficam fora da barra (computador: trilho lateral; celular: só os anéis no topo), então nunca há uma segunda
+   * linha de uso: só garante que a classe antiga não fique ligada.
    */
   private fit(): void {
-    const bar = this.el.parentElement;
-    if (!bar) return;
-    if (window.matchMedia('(max-width: 600px)').matches) {
-      this.ctx.root.classList.remove('has-usage-row');
-      return;
-    }
-    const barStyle = getComputedStyle(bar);
-    const px = (v: string) => Number.parseFloat(v) || 0;
-    // Largura natural dos outros itens (scrollWidth): na linha única eles encolhem, na linha de baixo não, e a
-    // decisão não pode depender de em qual dos dois estados a barra está.
-    const others = [...bar.children]
-      .filter((c) => c !== this.el && getComputedStyle(c).display !== 'none')
-      .map((c) => Math.max((c as HTMLElement).offsetWidth, c.scrollWidth));
-    const fits = usageRowFits({
-      barWidth: bar.clientWidth - px(barStyle.paddingLeft) - px(barStyle.paddingRight),
-      others,
-      gap: px(barStyle.columnGap),
-      cardGap: px(getComputedStyle(this.el).columnGap),
-      cards: [...this.el.children].map((c) => px(getComputedStyle(c).minWidth)),
-    });
-    this.ctx.root.classList.toggle('has-usage-row', !fits);
+    this.ctx.root.classList.remove('has-usage-row');
   }
 
   private createCard(): HTMLElement {
     const tipId = `ui-usage-tip-${++tipSeq}`;
     const chip = createAccountChip('lg');
+    const gauge = h('span', { class: 'ui-gauge', attrs: { 'aria-hidden': 'true' } }, h('i', { class: 'ui-gauge__ring ui-gauge__ring--out' }), h('i', { class: 'ui-gauge__ring ui-gauge__ring--in' }), chip);
+    const line = h('span', { class: 'ui-gauge__line' });
     const flag = h('span', { class: 'ui-usage-card__flag', hidden: true, attrs: { 'aria-hidden': 'true' } });
     flag.innerHTML = ICONS.clock;
     const name = h('span', { class: 'ui-usage-card__name' });
@@ -288,7 +278,7 @@ export class UsageCards {
         class: 'ui-usage-card__how',
         type: 'button',
         title: tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'),
-        on: { click: () => this.ctx.openHelp(howBtn.dataset.help === 'codex' ? 'codex' : 'usage') },
+        on: { click: () => (howBtn.dataset.help === 'cloud' ? openAccounts(document.body) : this.ctx.openHelp(howBtn.dataset.help === 'codex' ? 'codex' : 'usage')) },
       },
       howLong,
       howShort,
@@ -302,12 +292,14 @@ export class UsageCards {
     const card = h(
       'div',
       { class: 'ui-usage-card', tabIndex: 0, attrs: { 'aria-describedby': tipId } },
-      chip,
+      gauge,
       flag,
-      h('div', { class: 'ui-usage-card__body' }, h('div', { class: 'ui-usage-card__head' }, name, prov, email, state), meters, msg),
+      h('div', { class: 'ui-usage-card__body' }, h('div', { class: 'ui-usage-card__head' }, name, prov, email, state), line, meters, msg),
       tip,
     );
     this.refs.set(card, {
+      gauge,
+      line,
       chip,
       flag,
       name,
@@ -356,6 +348,15 @@ export class UsageCards {
       updateMeter(r.week, week, tr('Semana'));
     }
     r.meters.classList.toggle('is-dim', state !== 'ok');
+    // Mostrador circular: anel de fora = sessão de 5 h, anel de dentro = semana (a cor segue o nível de uso).
+    const p5 = five?.pct ?? null;
+    const p7 = week?.pct ?? null;
+    setStyleVar(r.gauge, '--p5', String(p5 ?? 0));
+    setStyleVar(r.gauge, '--p7', String(p7 ?? 0));
+    setStyleVar(r.gauge, '--c5', `var(--lv-${usageLevel(p5 ?? 0)})`);
+    setStyleVar(r.gauge, '--c7', `var(--lv-${usageLevel(p7 ?? 0)})`);
+    r.gauge.classList.toggle('is-empty', p5 === null && p7 === null);
+    setText(r.line, showMeters ? `5H ${p5 === null ? '—' : `${p5}%`}\n${tr('SEM')} ${p7 === null ? '—' : `${p7}%`}` : '');
 
     // Idade dos números antigos no cabeçalho (no celular, um selo no chip faz esse papel). No Codex a idade fica
     // sempre à mostra (os números só se renovam enquanto alguma sessão roda), discreta enquanto são recentes.
@@ -384,10 +385,12 @@ export class UsageCards {
     setHidden(r.how, state === 'noquota');
     r.msg.classList.toggle('is-noquota', state === 'noquota');
     setTitle(r.msg, state === 'noquota' ? codexUsageNote(a, now) : '');
-    setText(r.howLong, codex ? tr('Como funciona') : tr('Como ativar'));
-    setText(r.howShort, codex ? tr('Saber') : tr('Ativar'));
-    r.how.dataset.help = codex ? 'codex' : 'usage';
-    setTitle(r.how, codex ? tr('Como o uso do Codex chega ao Habblaud (abre a ajuda em “Codex”)') : tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'));
+    setText(r.howLong, codex ? tr('Como funciona') : access().cloud ? tr('Abrir contas') : tr('Como ativar'));
+    setText(r.howShort, codex ? tr('Saber') : access().cloud ? tr('Contas') : tr('Ativar'));
+    // No Cloud não há o que instalar: o botão leva às Contas (o uso chega quando uma sessão da conta trabalha).
+    const cloud = access().cloud && !codex;
+    r.how.dataset.help = codex ? 'codex' : cloud ? 'cloud' : 'usage';
+    setTitle(r.how, codex ? tr('Como o uso do Codex chega ao DevLand (abre a ajuda em “Codex”)') : tr('Como mostrar o uso desta conta (abre a ajuda em “Contas e uso”)'));
     this.updateTip(r, a, state, five, week, now);
   }
 

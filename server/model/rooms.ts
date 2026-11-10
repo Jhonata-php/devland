@@ -1,9 +1,13 @@
 // Salas do escritório: identidade (cwd normalizado), nome exibido e posição (slot) no prédio.
 
-/** cwd normalizado: sem barras repetidas nem barra final. */
+/** Worktree de agente (<projeto>/.claude/worktrees/<nome>, ou .codex): a sala é a do projeto, não uma sala "worktree" avulsa. */
+const WORKTREE = /^(.+?)\/\.(?:claude|codex)\/worktrees\/[^/]+(?:\/.*)?$/;
+
+/** cwd normalizado: sem barras repetidas nem barra final, e worktree de agente vira o projeto. */
 export function normalizeCwd(cwd: string): string {
   const p = cwd.trim().replace(/\/{2,}/g, '/');
-  return p.length > 1 ? p.replace(/\/+$/, '') : p;
+  const clean = p.length > 1 ? p.replace(/\/+$/, '') : p;
+  return WORKTREE.exec(clean)?.[1] ?? clean;
 }
 
 function segments(path: string): string[] {

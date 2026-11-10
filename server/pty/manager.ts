@@ -9,6 +9,9 @@
 //
 // Segurança: quem controla um terminal destes executa comandos na máquina. O recurso é opt-in (HABBLAUD_PTY=1),
 // as rotas só aceitam conexões do próprio computador (ver http/pty.ts) e ele fica desligado no Docker.
+import { stripAnsi } from '../../shared/oauth-url';
+import { isModelId, type ModelId } from '../../shared/models';
+import { runAsOptions } from '../spawn/runas';
 import { chmodSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
@@ -72,6 +75,8 @@ export interface PtyManagerOptions {
   disabledReason?: string;
   claudeBin: string;
   accounts: () => PtyAccount[];
+  /** Sessão nova sem conta pedida: id da conta com mais folga de uso (padrão: a conta padrão). */
+  pickAccount?: (accounts: PtyAccount[]) => string | undefined;
   agent: (id: string) => PtyAgentRef | undefined;
   onChange: () => void;
   env?: NodeJS.ProcessEnv;
@@ -169,6 +174,8 @@ interface SpawnPlan {
   account: PtyAccount;
   cols: number;
   rows: number;
+  /** Apelido do modelo (`claude --model`); ausente = o padrão da conta. */
+  model?: ModelId;
 }
 
 export class PtyError extends Error {
@@ -222,8 +229,14 @@ export class PtyManager {
   }
 
   /** Abre uma sessão nova do Claude Code na pasta (`cwd` absoluto), na conta pedida (ou na padrão). */
-  create(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown }): PtyInfo {
+  create(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown; model?: unknown }): PtyInfo {
     return this.spawn(this.plan(p, this.takeovers.size));
+  }
+
+  /** Retoma a conversa de uma sessão (`claude --resume`) na pasta e conta dela: o escritório volta a ver o agente. */
+  resume(p: { cwd: string; account: string; sessionId: string }): PtyInfo {
+    if (!/^[\w-]{8,64}$/.test(p.sessionId)) throw new PtyError(400, tr('sessão inválida'));
+    return this.spawn(this.plan({ cwd: p.cwd, account: p.account }, this.takeovers.size), { resume: p.sessionId });
   }
 
   /**
@@ -251,15 +264,36 @@ export class PtyManager {
    * conversa aqui (`claude --resume <sessão>`, na pasta e na conta originais). O que pode impedir a sessão nova
    * (pasta, conta, limite) é conferido antes de encerrar a de lá; pedidos repetidos esperam o primeiro.
    */
-  takeover(agentId: string, size: { cols?: unknown; rows?: unknown } = {}): Promise<PtyInfo> {
+  takeover(agentId: string, size: { cols?: unknown; rows?: unknown; model?: unknown } = {}, prompt?: string): Promise<PtyInfo> {
     const pending = this.takeovers.get(agentId);
     if (pending) return pending;
-    const run = this.doTakeover(agentId, size).finally(() => this.takeovers.delete(agentId));
+    const run = this.doTakeover(agentId, size, prompt).finally(() => this.takeovers.delete(agentId));
     this.takeovers.set(agentId, run);
     return run;
   }
 
-  private async doTakeover(agentId: string, size: { cols?: unknown; rows?: unknown }): Promise<PtyInfo> {
+  /**
+   * Mensagem para uma sessão sem o plugin de mensagens (ex.: sessão de segundo plano parada): se ela já está num
+   * terminal daqui, cola o texto e aperta Enter; senão assume a sessão com o texto como primeiro pedido
+   * (`claude --resume <sessão> -- <texto>`).
+   */
+  async sendMessage(agentId: string, text: string): Promise<PtyInfo> {
+    const own = this.byAgent(agentId);
+    if (own) {
+      own.proc.write(`\u001b[200~${text}\u001b[201~`);
+      setTimeout(() => {
+        try {
+          own.proc.write('\r');
+        } catch {
+          // terminal fechou no meio
+        }
+      }, 150);
+      return { ...own.info };
+    }
+    return this.takeover(agentId, {}, text);
+  }
+
+  private async doTakeover(agentId: string, size: { cols?: unknown; rows?: unknown; model?: unknown }, prompt?: string): Promise<PtyInfo> {
     // Um tique: o pedido já está em this.takeovers (conta no limite abaixo como "esta" tomada).
     await Promise.resolve();
     if (!this.opts.spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
@@ -269,7 +303,7 @@ export class PtyManager {
     if (!SESSION_ID.test(agent.sessionId)) throw new PtyError(409, tr('sessão sem id válido para retomar'));
     if (!agent.cwd) throw new PtyError(409, tr('não sei a pasta desta sessão'));
     // As outras tomadas em andamento já têm uma vaga prometida.
-    const plan = this.plan({ cwd: agent.cwd, account: agent.account, cols: size.cols, rows: size.rows }, this.takeovers.size - 1);
+    const plan = this.plan({ cwd: agent.cwd, account: agent.account, cols: size.cols, rows: size.rows, model: size.model }, this.takeovers.size - 1);
     const ext = await this.external(agentId);
     try {
       await this.killPid(ext.pid, ext.proc);
@@ -290,7 +324,7 @@ export class PtyManager {
     }
     let info: PtyInfo;
     try {
-      info = this.spawn(plan, { resume: agent.sessionId, from: agentId });
+      info = this.spawn(plan, { resume: agent.sessionId, from: agentId, prompt });
     } catch (err) {
       // A sessão de lá já foi encerrada: dizer como continuar a conversa.
       throw new PtyError(500, tr('a sessão foi encerrada no outro terminal, mas não abriu aqui ({0}); para continuar: claude --resume {1}', [errMsg(err), agent.sessionId]));
@@ -328,6 +362,11 @@ export class PtyManager {
       if (pty.info.exitedAt !== undefined) res.write(frame('exit', { code: pty.info.exitCode ?? 0 }));
       pty.clients.add(res);
     });
+  }
+
+  /** Texto da tela (sem as sequências de controle): serve para achar o link de login que o Claude Code imprime. */
+  screenText(id: string): string {
+    return stripAnsi(this.get(id).screen.serialize());
   }
 
   input(id: string, data: unknown): void {
@@ -370,7 +409,7 @@ export class PtyManager {
   }
 
   /** Valida o pedido de uma sessão nova (`reserved`: vagas já prometidas a tomadas em andamento). */
-  private plan(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown }, reserved = 0): SpawnPlan {
+  private plan(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown; model?: unknown }, reserved = 0): SpawnPlan {
     if (!this.opts.spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
     // Antes de tudo (o "assumir" encerra a sessão de lá depois daqui): um claude que não roda abriria um terminal que
     // sai na hora.
@@ -385,17 +424,18 @@ export class PtyManager {
     }
     if (!isDir) throw new PtyError(400, tr('pasta não encontrada: {0}', [cwd]));
     const accounts = this.opts.accounts();
-    const account = typeof p.account === 'string' ? accounts.find((a) => a.id === p.account) : (accounts.find((a) => a.isDefault) ?? accounts[0]);
+    const picked = typeof p.account === 'string' ? undefined : this.opts.pickAccount?.(accounts);
+    const account = typeof p.account === 'string' ? accounts.find((a) => a.id === p.account) : ((picked ? accounts.find((a) => a.id === picked) : undefined) ?? accounts.find((a) => a.isDefault) ?? accounts[0]);
     if (!account) throw new PtyError(400, tr('conta desconhecida'));
     const running = [...this.ptys.values()].filter((t) => t.info.exitedAt === undefined).length;
     if (running + Math.max(0, reserved) >= MAX_PTYS) throw new PtyError(429, tr('limite de {0} terminais abertos', [MAX_PTYS]));
-    return { cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30) };
+    return { cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30), ...(isModelId(p.model) ? { model: p.model } : {}) };
   }
 
-  private spawn(plan: SpawnPlan, p: { resume?: string; from?: string } = {}): PtyInfo {
+  private spawn(plan: SpawnPlan, p: { resume?: string; from?: string; prompt?: string } = {}): PtyInfo {
     const spawn = this.opts.spawn;
     if (!spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
-    const { cwd, account, cols, rows } = plan;
+    const { cwd, account, cols, rows, model } = plan;
     const env: NodeJS.ProcessEnv = { ...(this.opts.env ?? process.env), TERM: 'xterm-256color', COLORTERM: 'truecolor' };
     for (const k of INHERITED_SESSION_VARS) delete env[k];
     if (account.isDefault) delete env.CLAUDE_CONFIG_DIR;
@@ -403,7 +443,9 @@ export class PtyManager {
 
     let proc: PtyProcess;
     try {
-      const args = p.resume ? ['--resume', p.resume] : [];
+      const args = [...(p.resume ? ['--resume', p.resume] : []), ...(model ? ['--model', model] : [])];
+      // Primeiro pedido já na abertura (mensagem para sessão sem o plugin); `--` para um texto que comece com "-".
+      if (p.prompt) args.push('--', p.prompt);
       proc = spawn(this.opts.claudeBin, args, { cwd, cols, rows, env });
     } catch (err) {
       throw new PtyError(500, tr('não consegui abrir o Claude Code: {0}', [errMsg(err)]));
@@ -543,7 +585,8 @@ export async function loadPty(): Promise<{ spawn: SpawnPty | null; reason?: stri
   }
   if (!ptySpawn) return { spawn: null, reason: tr('node-pty sem spawn()') };
   const nativeSpawn = ptySpawn;
-  const spawn: SpawnPty = (file, args, o) => nativeSpawn(file, args, { name: 'xterm-256color', cwd: o.cwd, cols: o.cols, rows: o.rows, env: o.env });
+  // Habblaud Cloud: o processo roda como o usuário dos agentes (spawn/runas.ts), sem acesso a /data.
+  const spawn: SpawnPty = (file, args, o) => nativeSpawn(file, args, { name: 'xterm-256color', cwd: o.cwd, cols: o.cols, rows: o.rows, ...runAsOptions(o.env) });
   // No Windows não há spawn-helper; o teste de spawn foi pensado para o macOS e o Linux.
   if (process.platform === 'win32') return { spawn };
   const dir = nodePtyDir();

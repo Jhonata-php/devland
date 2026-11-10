@@ -76,6 +76,11 @@ export interface OfficeDeps {
   messages?: () => ReadonlySet<string>;
   /** Verificação de versão nova no GitHub (ver OfficeSnapshot.meta.updates). */
   updates?: () => UpdateStatus;
+  /**
+   * Silêncio dos avisos "chegou" e "Nova sala" depois de subir (ms a partir de startedAt). No Cloud as conversas são
+   * retomadas logo depois de cada atualização, e cada uma virava um aviso.
+   */
+  arrivalQuietMs?: number;
   /** Terminais interativos (PtyManager): estado do recurso e os abertos. */
   ptys?: () => { status: PtyStatus; list: PtyInfo[] };
   /** Habblaud World (WorldService.meta; ver OfficeSnapshot.meta.world). */
@@ -751,6 +756,12 @@ export class Office {
    * Aviso de pedido de permissão (ou de pergunta do AskUserQuestion) vindo do hook; usa o dedupe do "precisa de
    * você" (o mesmo pedido, outro caminho).
    */
+  /** Aviso do escritório sem agente (ex.: uso do plano perto do limite): toast na página, com o nível dado. */
+  noticeSystem(key: string, level: NoticeLevel, text: string, extra: { previewPort?: number } = {}): void {
+    this.notice('room', key, level, text, undefined, { dedupeMs: extra.previewPort ? 0 : undefined }, extra);
+    this.markDirty();
+  }
+
   noticePermission(id: string, what: string, kind: 'permission' | 'question' = 'permission'): void {
     const info = this.agents.get(id)?.info;
     if (!info) return;
@@ -1074,9 +1085,11 @@ export class Office {
     text: string,
     roomId?: string,
     opts: { dedupeKey?: string; dedupeMs?: number } = {},
+    extra: { previewPort?: number } = {},
   ): void {
     if (this.booting) return;
     const now = this.now();
+    if ((kind === 'arrive' || kind === 'room') && now - this.deps.startedAt < (this.deps.arrivalQuietMs ?? 0)) return;
     const k = opts.dedupeKey ?? `${key}|${kind}`;
     const window = opts.dedupeMs ?? NOTICE_DEDUPE_MS;
     const last = this.noticeAt.get(k);
@@ -1089,6 +1102,7 @@ export class Office {
     const n: Notice = { id: `n-${now.toString(36)}-${++this.seq}`, level, text, at: now };
     if (kind !== 'room') n.agentId = key;
     if (roomId) n.roomId = roomId;
+    if (extra.previewPort) n.previewPort = extra.previewPort;
     this.pendingNotices.push(n);
   }
 }

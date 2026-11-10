@@ -10,6 +10,333 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Uso das contas no topo.** Ao lado do **Buscar**, cada conta mostra o logo e duas barrinhas com o uso das 5 horas e da semana (verde, amarelo perto do limite, vermelho no fim); passar o mouse mostra os números e clicar abre a página Contas. Some em telas estreitas.
+- **Prévia ao vivo abre sozinha.** Ao abrir a Prévia, o DevLand sobe (ou reaproveita) o servidor do projeto e mostra o site na hora, sem digitar a porta nem clicar em "Rodar o projeto"; trocar o projeto na lista também roda o novo.
+- **Novo agente abre a conversa dele.** Ao começar um agente pelo botão **+ Novo agente**, assim que ele aparece a conversa nova abre sozinha (na página Conversas), em vez de você ter que procurá-lo.
+- **Mapa redesenhado: Estúdio tech à noite.** O andar ficou escuro e limpo (piso grafite polido nas salas e na faixa central, recepção em pedra escura, copa e banheiros em azulejo escuro, lounge em madeira escura), com o neon de cada projeto só no filete das paredes. Em volta não há mais grama, árvores, rua nem cenário: o piso quadriculado escuro continua por toda a tela, sem faixas pretas nem vinheta nas bordas. O visual neon por filtro de cor foi retirado. A calçada, o totem e o capacho da entrada, do lado de fora à esquerda, saíram.
+- **Bonecos mais vivos e um supervisor.** O copo de café na mão solta vapor; os ociosos às vezes fazem uma pausa para o cigarro junto ao vidro nas pontas do corredor (brasa piscando, tragadas e fumacinha subindo). E o escritório ganhou um **Supervisor**, com mesa própria atrás do balcão da recepção. Quem fica parado muito tempo (cochilando na mesa) leva uma bronca bem-humorada e responde sem graça; quando um PR é mesclado, ele vai dar os parabéns a quem mergeou; e quando uma sessão termina (você para um projeto ou remove um agente), ele vai até o agente e demite: o agente responde, fica cabisbaixo e sai com a caixa das coisas dele até o elevador. O supervisor é só desenho no navegador: não é agente, não aparece nas listas, não dá para clicar nele e não vai para o servidor. E um **robô aspirador** passeia devagar pelo chão livre (corredor, copa, salas), com o led piscando: para quando alguém passa na frente e descansa um pouco a cada destino.
+- **Recarregar a página mantém onde você estava.** O Painel lembra a página aberta (Mapa, Conversas, Agentes...) e volta para ela ao recarregar, em vez de cair sempre na Visão geral. E a visão geral do mapa enquadra o prédio mais justo, ocupando a área livre em vez de sobrar piso em volta.
+- **Tela de carregamento animada.** Enquanto o DevLand conecta, um bonequinho em pixel art anda até o meio da tela, toma um café, se espreguiça e chama a turma, com um balão para cada cena ("Passando um café…", "Ligando os monitores…").
+- **O mapa agora é uma página do Painel ("Mapa" no menu lateral).** Acabou o modo Escritório com os menus no topo: o DevLand tem um só visual, o do Painel, e o escritório em pixel art aparece atrás do menu lateral quando você abre **Mapa** (clicar numa sala ou num agente abre os detalhes à direita, como antes). A opção "Tela" das Configurações saiu. A prévia, aberta ao lado da conversa ou do mapa, ganhou o mesmo visual neutro do resto (sem o verde de terminal) e o mapa se reenquadra para não ficar embaixo dela.
+- **Conversa de outro projeto: "Abrir agente em …".** Quando o agente diz que o trabalho é de outro projeto (cita a pasta dele) e a sessão dele só enxerga o próprio, a conversa mostra um aviso com o botão **Abrir agente em <projeto>**: abre um agente novo já dentro da pasta certa, com o contexto e a última resposta digitados.
+- **Merge com conflito: "Pedir ao agente para resolver".** Quando o GitHub não deixa mesclar o PR, o painel do **Enviar** mostra o motivo real e um botão que manda ao agente, na conversa, o erro com o pedido para trazer a `main` para a branch, resolver os conflitos e dar push (sem mesclar na `main`).
+- **Mesclar o PR pela conversa, e o Enviar redesenhado:** o painel do botão **Enviar** ficou mais largo e organizado (branch, alterações com etiquetas novo/alterado/removido, mensagem do commit, e os PRs abertos em cartões com o estado do CI). Cada PR ganhou um botão **Mesclar** (merge commit, com confirmação). Serve quando o agente se recusa a fazer merge ou push na `main`: a decisão é sua, no clique, e o DevLand executa `gh pr merge` com a sua conta do GitHub.
+- **Conversa mais ampla e com ferramentas à mão (modo Painel):** a conversa ocupa a largura toda (antes ficava numa coluna estreita no meio), o cabeçalho deixou de ser azulado e a sua mensagem ficou em cinza. No cabeçalho, três botões: **Modelo** (mostra o atual e troca para Fable, Opus, Sonnet ou Haiku; no terminal do DevLand troca na hora com `/model`, e em outro terminal assume a sessão e continua a mesma conversa no modelo novo), **Prévia** (abre o site do projeto ao vivo) e **Enviar** (mostra a branch e as alterações, salva num commit com a sua mensagem e faz o `git push`, ou abre o PR; avisa antes de enviar direto para a `main`).
+- **Cloud: gravar áudio funciona em qualquer navegador.** A imagem do Cloud agora traz o Whisper (whisper.cpp com o modelo multilíngue base) e o ffmpeg: o microfone da caixa de mensagem grava, transcreve no próprio servidor e põe o texto no cursor, sem mandar a voz para nenhum serviço. Antes o microfone só aparecia em navegadores com reconhecimento de voz próprio (Chrome, Safari). A imagem fica cerca de 300 MB maior.
+
+### Alterado
+
+- **Conversa: anexos e "Trabalhando…" como no Claude Code.** Imagens e arquivos colados aparecem como chips com o nome do arquivo (antes mostrava o texto "Anexo enviado pelo DevLand… - /caminho"), e o aviso "Trabalhando…" virou uma estrela girando com o texto brilhando, sem o selo.
+- **IA local mais bonita.** Medidores com barras em degradê, cartão "Agentes com IA local" destacado e cartões de modelos maiores, com o modelo usado pelos agentes em destaque e botões que não quebram de linha.
+
+### Corrigido
+
+- **Prévia ao vivo não pede mais para rodar nada na mão.** Se a pasta do projeto já tinha `node_modules` mas sem os programas (erro "tsx: not found", código 127), a Prévia parava com essa mensagem. Agora ela confere a pasta `.bin`, instala as dependências e, se o servidor ainda sair com "comando não encontrado", instala e tenta de novo uma vez.
+
+- **"Trabalhando…" na conversa alinhado e animado.** O aviso de que o agente está trabalhando agora fica alinhado com as mensagens e a caixa de texto, num selo com pontinhos verdes que pulam e um brilho passando pelo texto, em vez de solto no canto.
+- **Novo agente: botões no lugar e o modal fecha.** No último passo, **Voltar** e **Começar** ficam juntos numa barra no rodapé do modal (Voltar à esquerda, Começar à direita), como nos passos anteriores. Quando o agente começa, o modal fecha sozinho e o aviso aparece no canto; se der erro, ele continua aberto com a mensagem.
+- **Barras de rolagem discretas.** As barras de rolagem do app e dos modais ficaram finas e escuras, no tom do Painel (inclusive no Safari e no Firefox).
+- **Menu lateral e celular:** o Mapa aparece nas abas de baixo do celular (as cinco abas cabem numa linha só) e o Plugins não aparece mais duas vezes no menu lateral.
+- **Conectores: entrar com o link direto, sem terminal confuso.** Ao clicar em **Entrar** num conector, o cartão mostra o botão **Abrir link de autorização** assim que o Claude Code imprime o link, e um campo para colar o endereço da página de retorno (a que abre com erro em `localhost`: é esperado, porque o login volta para a porta do container, não para o seu computador). Ao colar e clicar em **Concluir**, o DevLand entrega o endereço ao Claude Code e confere a conexão sozinho.
+- **Prévia ao lado da conversa, que o agente abre sozinho, e sem a tela falsa do Velix:** ao pedir "abre o preview", o DevLand instala as dependências do projeto se faltarem, sobe o servidor e abre a prévia ao lado (antes pedia para você rodar `npm install`). no modo Painel a prévia agora abre ao lado da conversa (a conversa encolhe) em vez de cobrir a tela. E quando o servidor do projeto não está rodando, a prévia mostra "nada respondeu na porta…" em vez da página "Recuperando os serviços" do Velix (que aparecia porque a resposta era um 502).
+- **Conversa mais legível quando o agente trabalha:** as chamadas de ferramenta seguidas viram uma única linha ("⚙ 7 ações · …") que abre para a lista, as mensagens novas entram suavemente e aparece "Trabalhando…" enquanto o agente roda.
+- **Buscar (⌘K) dentro de uma conversa:** a janela de busca ficava escondida atrás da conversa, e só o fundo escurecido aparecia na barra de cima (parecia que nada abria). Agora a busca abre por cima de tudo.
+- **Aviso de limite do plano só uma vez, e outro quando renova.** Antes a notificação de uso (sessão de 5 horas e semana) chegava toda hora: o aviso era lembrado só na memória, então cada reinício ou atualização do servidor avisava tudo de novo, e o horário de renovação que muda um pouco entre leituras fazia o mesmo limite parecer "novo". Agora cada conta e janela avisa **uma vez** ao chegar a 95%, guarda isso em disco (`usage-alerts.json`) e só considera renovado depois de ficar abaixo de 60% por 3 minutos seguidos; aí manda **uma** notificação de "renovou, já dá para trabalhar de novo" (que substitui a anterior no aparelho, em vez de empilhar). Leituras antigas não mexem no estado, e a primeira leitura de uma conta já acima do limite não dispara aviso.
+- **IA local mais bonita e sem botões saindo do cartão:** nos modelos baixados, os botões quebram a linha e o Remover vai para a direita; tamanho, "carregado" e velocidade viram etiquetas. Em "Baixar mais modelos", o tamanho e a memória necessária aparecem inteiros em etiquetas (antes eram cortados com "…") e o botão Baixar fica sempre no pé do cartão.
+
+### Adicionado
+
+- **Escolher o modelo do Claude no Novo agente:** no passo do pedido há uma linha **Modelo** com Padrão da conta, Fable, Opus, Sonnet e Haiku (o apelido sempre aponta para o mais novo da família). Vale para o agente que começa na hora e para os agendados, e some quando o agente é da IA local, que usa o modelo dela. O terminal interativo também aceita o modelo (`model` em `POST /api/pty`).
+- **Conectores mais fáceis de usar:** cada cartão mostra o nome, o tipo (HTTP, SSE ou comando) e o endereço sem o "(HTTP)" solto, e os que precisam de você vêm primeiro. **Entrar** abre o Claude Code num terminal já no menu de conectores (`/mcp`) para entrar na conta do serviço, e a página confere sozinha até conectar. **Testar** confere a conexão na hora, e **Renomear** muda o nome só na tela (os agentes continuam usando o nome técnico, e o login do conector não se perde). Um resumo no topo diz quantos estão conectados e quantos precisam entrar.
+- **Plugins no painel:** página com Instalados e Descobrir, busca, instalar e remover em todas as contas, e os marketplaces (acrescente pelo dono/repositório do GitHub para achar plugins que não aparecem, como os de terceiros).
+- **Conectores por conversa:** a página mostra só os seus conectores; "+ Adicionar conector" abre uma conversa onde você cola o comando `claude mcp add`, o JSON de mcpServers, o endereço ou o nome (ou toca num sugerido). Ele adiciona na hora e diz se conectou, se falta entrar no serviço ou se falhou.
+- **Testar modelo com os dados:** a janela de teste mostra tamanho, memória, velocidade, se os agentes usam e se está carregado, com Medir velocidade e Usar nos agentes ali mesmo.
+- **Testar cada modelo:** na IA local, o botão Testar de cada modelo abre a conversa com ele numa janela (no lugar do bloco grande de assistente na página).
+- **Novo agente em passos:** 1) quem vai trabalhar (conta do Claude, com a escolha da conta, ou a IA local do servidor); 2) o projeto; 3) a função e o pedido. Voltar e Próximo passo entre eles.
+- **Proteção de memória da IA local:** um modelo carregado por vez, um pedido por vez, cache de contexto menor e prioridade baixa para o motor; antes de carregar, o DevLand confere se o modelo cabe deixando uma reserva para o painel, e se a memória acabar ele tira o modelo da memória na hora. A IA local não derruba mais o painel.
+- **Tema claro:** em Configurações › Aparência › Cores, escolha Escuro, Claro ou Automático (segue o sistema). Vale para o painel, as conversas, as janelas e o contorno do escritório; o mapa continua igual.
+- **IA local como conta de agentes:** no Novo agente aparece a conta "IA local · modelo". O agente é o Claude Code de verdade (escritório, conversas, permissões), falando com o Ollama do servidor; na página IA local você escolhe o modelo ("Usar nos agentes"). O Ollama sobe com 32 mil tokens de contexto.
+- **Modelos melhores na IA local:** Qwen3 Coder 30B, GPT-OSS 20B, Devstral 24B, Qwen3 14B/8B/4B e Qwen2.5 Coder, com a marca "para agentes" nos que usam ferramentas e a recomendação pelo que cabe na memória.
+- **Conectar conta passo a passo:** escolha o tipo (Claude Code, Codex ou GitHub), entre pelo link (colando o código, no Claude, ou confirmando o código no site) e pronto. Substitui a janela antiga de Contas em todos os botões.
+- **Conectores (MCP):** página nova no painel para adicionar e remover servidores MCP em todas as contas do Claude: sugeridos (Context7, Playwright, Sentry, Notion, Linear, Figma) com um toque, ou qualquer outro por endereço ou comando, com o estado de cada um.
+- **Revisão automática:** no Novo agente, escolha o projeto e a função Revisão sem escrever nada; o agente instala, roda build e testes, sobe o projeto, testa o fluxo principal e manda um relatório das falhas antes de corrigir.
+- **Busca (⌘K / Ctrl+K):** acha agente, projeto, página ou ação e vai direto; também pelo botão Buscar no topo.
+- **Alterações e PRs dos projetos:** na página GitHub, cada projeto mostra os arquivos alterados, o diff colorido, os PRs abertos com o estado do CI e o botão para enviar a branch e abrir o PR (nunca a partir da branch principal).
+- **Tokens por projeto:** gráfico de onde o plano foi gasto nos últimos 14 dias.
+- **Medir velocidade dos modelos locais:** a IA local testa cada modelo baixado e marca o mais rápido em tokens por segundo.
+- **Puxar para atualizar** no celular, no topo do painel.
+- **Escritório no visual novo:** o modo com o mapa usa as mesmas cores neutras, conversas, janelas, botões e avisos do painel (sai o verde neon de terminal).
+- **Aprovar na Visão geral:** em "Precisam de você", o pedido de permissão aparece com Aprovar e Negar ali mesmo, sem abrir a conversa.
+- **Aviso de limite:** a Visão geral avisa quando uma conta passa de 80% da semana ou de 90% das 5 horas, com a hora em que renova.
+- **Entregas no painel:** botão no topo com o que os agentes terminaram; nos projetos do GitHub, "Abrir agente" começa uma sessão do Claude Code na pasta.
+- **GitHub no painel:** página com a conta do GitHub conectada (foto e login), os projetos git (branch, arquivos alterados, commits a enviar, últimos 14 dias de commits e o link do repositório), puxar do GitHub (só avança, nunca faz merge) e, no Cloud, clonar os seus repositórios.
+- **Gráficos na Visão geral:** tokens usados por dia e commits por dia nos últimos 14 dias, com o valor de cada dia ao passar o mouse. O uso das contas mostra também o limite semanal.
+- **Assistente local:** na IA local, com um modelo baixado, dá para conversar com ele como se fosse um agente (histórico, velocidade em tokens por segundo, nova conversa). Também dá para **desinstalar** o Ollama e **cancelar** um download; a instalação mostra os MB baixados.
+- **IA local (modo Painel):** instala o Ollama no servidor com um clique (na pasta de dados, sem root, sobrevive às atualizações), lista modelos leves que rodam só com CPU e recomenda o que cabe na memória, baixa e remove modelos, mostra memória, CPU, disco e o que está carregado, e tem um teste rápido com a velocidade em tokens por segundo. Só para admin ou pelo próprio computador.
+- **Conversas dentro do painel:** a página Conversas mostra a lista e a conversa no lugar do conteúdo; tocar num agente ou no aviso de entrega abre ali, sem ir ao escritório.
+- **Painel reorganizado:** barra no topo com Conversas, Escritório (um botão só) e Novo agente; menu lateral recolhível (lembra a escolha) e o perfil com Sair no pé do menu.
+- **Lembrar de mim no login:** desmarcado, a sessão acaba ao fechar o navegador. O "Esqueci a senha" fica ao lado do campo da senha.
+- **Modo Painel:** o DevLand sem o mapa, com cara de plataforma. Tem visão geral (quem está trabalhando, quem precisa de você, tokens e linhas), agentes agrupados por projeto, contas com logo e barras de uso do plano, e pessoas (convidar por e-mail, papel, remover). Tocar num agente abre a conversa ao lado. A troca fica no botão Painel da barra do topo, em Configurações › Aparência › Tela e no cartão Escritório do painel; a escolha fica salva. No celular as seções viram abas embaixo.
+- **Telas de entrada novas:** login, esqueci a senha, senha nova, convite e criar o admin no visual do painel, com uma prévia do DevLand ao lado no computador. O link "Esqueci a senha" aparece sempre no Cloud; sem e-mail configurado, a página explica que quem administra redefine a senha.
+
+### Corrigido
+
+- **Avisos a cada atualização:** no Cloud, os avisos "chegou" e "Nova sala" ficam em silêncio nos 3 primeiros minutos depois de subir (as conversas retomadas não enchem mais a tela).
+- **Campo de mensagem do assistente:** uma borda só, sem o contorno verde por dentro.
+- **Página IA local mais simples:** ativar com um botão, o modelo dos agentes num seletor, seus modelos em cartões com botões, e para baixar primeiro os que cabem no servidor (os maiores ficam em "Ver também"). Sem termos técnicos (motor, endereço, porta).
+- **Telas mais largas** no painel (sem ficar espremido no meio) e janela de **Novo agente** redesenhada: projetos em grade, conta e função em botões, pedido maior.
+- **Conversa no painel:** texto do agente solto e legível, a sua mensagem em balão, ferramentas numa linha discreta e um campo de mensagem único e arredondado (o campo azul com borda dupla saiu). Mensagens vazias não deixam mais faixas em branco.
+- **Contas no painel:** aparecem só as contas conectadas de verdade (com e-mail, uso ou sessão aberta).
+- **Conversa retomada na pasta errada (Cloud):** ao reiniciar, o DevLand agora usa a pasta gravada no próprio histórico da conversa. Antes, uma lista salva com pastas trocadas fazia a mesma conversa voltar no projeto errado a cada atualização.
+- **Conversas com o menu recolhido:** a lista não fica mais deslocada com uma faixa vazia à esquerda; as conversas aparecem em cartões. A janela de Plugins também ganhou o visual do painel.
+- **Janelas do modo Painel:** Configurações, Contas, Usuários, Novo agente e as outras janelas abrem no centro, mais largas, com o fundo escurecido e botões neutros (os botões verdes e os campos do tema hacker saíram dessas janelas no painel).
+- O botão principal do painel (ex.: "+ Conectar conta") aparecia branco, sem o texto.
+
+## [1.0.4] - 2026-11-09
+
+### Adicionado
+
+- **Causa real dos agentes duplicados:** a cada subida o container recomeça os PIDs, e os registros de sessão da rodada anterior (`sessions/<pid>.json`) passavam a apontar para processos novos com o mesmo número. No Cloud, o servidor apaga esses registros velhos antes de ler as sessões.
+- **Agentes duplicados no Cloud:** a atualização nativa reinicia só o servidor, e os `claude --resume` que ele tinha aberto continuavam vivos; ao subir, ele retomava as mesmas conversas por cima e o mesmo agente aparecia 2 ou 3 vezes. Agora encerra esses terminais órfãos e retoma cada conversa uma vez só, e não retoma por cima de uma sessão que segue viva em outro lugar (ex.: segundo plano).
+- **Sem a sala "workspace":** o botão do escritório vazio abre o Novo agente (para escolher o projeto) em vez de um terminal na raiz `/workspace`, e conversa aberta na raiz não volta sozinha a cada reinício.
+- **Mensagem para sessão sem o plugin:** em vez de "Esta conversa começou antes do plugin", a caixa fica liberada e o envio retoma a sessão num terminal do DevLand com o texto como pedido (`claude --resume <sessão> -- <texto>`); se ela já está num terminal daqui, o texto é colado e enviado.
+- **Push e merge pelos agentes (Cloud, admin):** em Ajustes, "Agentes podem fazer push e merge" grava em todas as contas do Claude as regras `Bash(git push:*)`, `Bash(git merge:*)` e `Bash(gh pr merge:*)`; o modo automático do Claude Code deixa de recusar subir na main quando você pede. Desligar tira só essas regras.
+- **Aprovar dentro da conversa:** quando o agente pede permissão (ou faz uma pergunta), o cartão com Aprovar, Recusar e as regras de "sempre permitir" aparece na própria conversa, acima da caixa de mensagem.
+- **Janelas arrastáveis (PC):** segure o cabeçalho de uma janela (Novo agente, Prévia, Entregas, Histórico, Ajustes, Contas, Plugins) e arraste para organizar a tela; dois cliques no cabeçalho a devolvem ao lugar.
+- **Reforço da prévia:** mensagem mandada pelo DevLand pedindo para ver o site ("abre o preview", "mostra como ficou") leva junto como abrir a prévia no DevLand, então até uma sessão aberta antes da skill faz o certo.
+- **Rodar o projeto pela prévia:** a janela da prévia ao vivo tem a pasta do projeto e "Rodar o projeto": o DevLand sobe o `npm run dev` (ou start/serve/preview) em segundo plano, acha a porta pela saída e abre a prévia; "Parar" encerra o servidor e os processos filhos.
+- **Plugins no topo (PC):** botão próprio para a loja de plugins do Claude Code, para quem administra.
+- **Aviso de entrega leva à conversa:** tocar em "fulano entregou" abre a conversa com o agente (sessão já encerrada abre a entrega).
+- **O agente abre a prévia:** peça "abre o preview" e o agente sobe o servidor e abre a prévia ao vivo no DevLand, já na porta certa (skill `devland-preview` no plugin do DevLand e rota `POST /api/preview/open`, só pelo próprio computador). No Cloud o plugin se atualiza sozinho ao iniciar.
+- **PC: Conversas e prévia lado a lado:** botão Conversas no topo (antes só existia na barra de baixo do celular); com a conversa aberta, a prévia ao vivo fica à esquerda dela, alta, e não fecha mais ao clicar na conversa (Esc ou o X fecham).
+- **Terminal e conversas sem mensagens (Cloud):** o serviço de segundo plano do Claude Code grava a conversa na pasta da conta com que foi iniciado, e uma sessão da Conta B ficava procurada em `.claude-2` enquanto estava em `.claude`. O servidor agora procura a mesma sessão nas pastas das outras contas.
+- **Colar imagem:** colar um print ou uma foto no Pedido do Novo agente, ou na caixa de mensagem de um agente (Cloud), vira anexo, como pelo botão Anexar.
+- **Novo agente (Cloud):** a raiz `/workspace` não aparece mais como projeto na lista de pastas (ela só guarda os projetos clonados).
+- **Loja de plugins do Claude Code:** em Configurações › Plugins do Claude Code (admin ou o próprio computador), busca no catálogo dos marketplaces configurados e instala ou remove com um toque, em todas as contas do Claude. Só instala o que está no catálogo, e a janela avisa que plugin roda código no servidor.
+- **Verificação em duas etapas (Cloud):** em Configurações, "Ativar" mostra a chave e um link que abre o app autenticador (no iPhone, o app Senhas); depois de confirmar com um código, o login pede o código de 6 dígitos após a senha. Vêm 8 códigos de reserva de uso único, para quem perder o celular. Desativar pede um código.
+- **Agentes agendados:** no Novo agente, "Repetir em dias e horário" agenda o pedido (ex.: revisar os PRs de segunda a sexta às 9h, no seu fuso); o agente abre sozinho na hora, pelo mesmo caminho do Novo agente. Os agendados aparecem embaixo, com Pausar e Apagar.
+- **Ditado pelo servidor no Cloud:** com `OPENAI_API_KEY` definida, o áudio gravado no celular é transcrito pela API da OpenAI (Whisper), no lugar do reconhecimento de voz do iPhone, que trava no app da tela de início. O log de início diz qual motor de ditado está ligado.
+- **Responder pela notificação:** no Android e no computador, a notificação de pedido de permissão traz Permitir e Negar, que respondem ali mesmo; no iPhone (que não mostra botões), tocar abre o DevLand já no agente. No Cloud, com um celular inscrito nas notificações, o pedido espera a resposta mesmo com o app fechado.
+- **Alerta de uso do plano:** aviso no escritório e notificação quando uma conta passa de 80% e de 95% da sessão de 5 horas ou do limite da semana (uma vez por janela).
+- **Revisão no PC e no celular:** a janela Contas, num servidor sem conexão de contas pela web, mostra um aviso em vez de carregar o escritório dentro dela; Usuários não deixa remover nem rebaixar a própria conta por engano; "Sair" e o aviso de login falam em e-mail e senha (o login é por e-mail).
+- **Novo agente (celular):** o cabeçalho com o X fica no topo enquanto a lista rola, e a ajuda não cita mais a pasta antiga `~/.habblaud`.
+- **Caixa de mensagem (celular):** anexo, microfone e Enviar com o mesmo tamanho e alinhados; gravando, o microfone fica vermelho pulsando, e o segundo toque sempre para a gravação (no iPhone ela às vezes ficava presa). Uma conversa sem mensagens gravadas avisa em vez de ficar em branco, e o servidor registra no log qual transcript leu, para achar a causa.
+- **Celular: menus abrem abaixo do topo:** Novo agente, Entregas, Histórico e a prévia começavam atrás da barra de status no app da tela de início; agora começam logo abaixo do topo.
+- **iPhone (app da tela de início): barra de baixo no fim da tela:** o layout segue o do wsat (topo com a área segura, camadas fixas em tela cheia, documento com altura de tela, sem travas de rolagem nem ajustes pela área visível). Antes, com o corpo da página vazio, o iOS deixava a área do app 62 pt mais curta que a tela: topo cortado atrás da barra de status e uma faixa morta embaixo da barra de baixo. Barra de status translúcida: quem já adicionou o ícone precisa removê-lo e adicionar de novo.
+- **Sem o popup "Você está na lista de espera"** (nem os outros avisos de lançamento do Habblaud World) por cima do escritório.
+- **iPhone: o app segue a área visível da tela:** nas telas de toque as camadas do app (mapa, barras e painéis) acompanham o `visualViewport` (posição e altura reais da janela), em vez de ficarem presas a uma janela que o iOS desloca. Em Configurações › Sobre há o botão "Diagnóstico da tela", que mostra os números (janela, área visível, rolagem, áreas seguras, versão do iOS) para mandar em print se o app ainda sair do lugar.
+- **iPhone: o app não "sobe" mais:** a página agora fica presa à tela (`position: fixed`, `overscroll-behavior: none`, altura dinâmica `100dvh`) e uma trava devolve a rolagem a zero quando um campo ganha ou perde o foco, um seletor abre ou o teclado aparece. Antes o Safari deslocava o app para cima e deixava um vazio embaixo, com a barra de baixo flutuando.
+- **Conversas sem duplicar (celular):** a mesma conversa (conta + sessão) aparece uma vez só, mesmo depois de voltar numa reimplantação, e sessões que terminaram sem fazer nada (sem ferramenta e sem título, sobras de agente automático) saem da lista.
+- **Ícone da tela de início com fundo:** os ícones do app (iPhone e Android) agora têm um fundo escuro com brilho verde atrás da logo, em vez de transparente (que o iPhone pintava de preto chapado), mais uma versão "maskable" para o Android. A logo do topo e o favicon seguem sem fundo. Quem já adicionou à tela de início precisa remover e adicionar de novo para o iPhone atualizar o ícone.
+- **Sem sala "worktree" avulsa:** uma conversa dentro de um worktree do Claude Code ou do Codex (`projeto/.claude/worktrees/nome`) agora cai na sala do projeto, em todo o servidor (antes só a retomada depois da reimplantação era tratada).
+- **Chega de agente novo a cada abertura (Cloud):** o "primeiro agente automático" em `/workspace`, que nascia sempre que o servidor subia com o escritório vazio, agora vem desligado. O escritório vazio mostra "Abrir terminal" e "Conectar contas". Quem quiser o antigo comportamento define `HABBLAUD_AUTO_AGENT=1`.
+- **Logo nova, sem fundo:** o planeta com anel e prédio (arte em alta resolução, transparente) substitui a anterior no favicon, nos ícones do app (180, 192 e 512 px), no topo da lateral, na tela de carregamento e no login. O arquivo original fica em `scripts/assets/devland-logo-master.png`; tirei o `image-rendering: pixelated` da logo, que a deixaria serrilhada.
+- **Mapa no celular mostra o prédio inteiro:** tirei a aproximação de 25% que cortava as salas das pontas e os rótulos.
+- **SMTP reconhece mais nomes de variável:** além de `SMTP_*`, valem `MAIL_*` e `EMAIL_*` (host, usuário, senha, remetente, porta), com ou sem o prefixo `HABBLAUD_`.
+- **Placa da recepção com o nome novo:** a placa pixelada do mapa dizia "Habblaud"; agora diz "DevLand" (o gerador `scripts/assets/pixelart.py` ainda desenhava o nome antigo por baixo).
+- **Entrada só por e-mail e convite direto por e-mail (Cloud):** a tela de login pede o e-mail (contas antigas, sem e-mail, ainda entram pelo nome até cadastrarem um). Em Usuários o admin preenche e-mail, nome e permissão (Usuário ou Admin) e o convite sai direto para o e-mail da pessoa, sem mostrar link; a conta nasce com esse e-mail e o nome sugerido. Precisa do SMTP configurado; se o envio falhar, o convite é desfeito.
+- **Janela de Usuários refeita:** pessoas em cartões (inicial, nome, e-mail, papel, permissões em botões), convite em cartão próprio e janela do tamanho do conteúdo.
+- **Corrigido (causa de vários bugs visuais):** o minificador de CSS do build (lightningcss) apagava `backdrop-filter: none`; por isso a barra do topo ficava borrada e o trilho "fixed" da lateral ficava preso à altura dela. O build agora usa o esbuild para o CSS.
+- **Agentes depois da reimplantação:** conversas que demoram a voltar não saem mais da lista guardada nos primeiros 5 minutos, e o agente avulso "primeiro agente" não nasce mais quando já havia conversas para retomar.
+- **Janelas Contas e Usuários mais enxutas:** no computador a janela é mais estreita e tem a altura do conteúdo (sem o vazio embaixo); sem o título repetido dentro da página; permissões viram botões de marcar (chips) em vez de texto em maiúsculas.
+- **X para fechar "O escritório está vazio":** o cartão ganha um X no canto; fechado, só volta quando o escritório tiver agentes e esvaziar de novo.
+- **Esqueci a senha por e-mail (Cloud):** a tela de login ganha o link "Esqueci a senha"; a pessoa digita o e-mail, recebe um link que vale 30 minutos e só funciona uma vez, escolhe a senha nova e as sessões abertas caem. A resposta é a mesma exista a conta ou não. O envio usa o SMTP do ambiente (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_SECURE`; com o prefixo `HABBLAUD_` também vale), sem dependência nova; sem SMTP o link não aparece.
+- **Teste de notificação que explica o resultado:** além do push pelo servidor, mostra um aviso local pelo service worker e diz o que aconteceu (aparelho não assinado, serviço de push recusou com o código X, ou enviado). O contato que o servidor manda ao serviço de push deixou de ser `mailto:habblaud@localhost`, que a Apple e outros serviços recusam: agora usa o domínio do acesso (ou `HABBLAUD_PUSH_SUBJECT`).
+- **Login no celular mais limpo:** sem o texto de apresentação, com a chuva de código mais fraca e o cartão opaco, para o formulário ler bem.
+- **Novo agente sem anexos no Cloud:** corrigido o erro "não deu para gravar os anexos (ENOENT ... chown)" que aparecia ao começar um agente sem anexar nada.
+- **Sem páginas soltas: Contas e Usuários viram janelas do app.** O `/contas` e o `/admin` deixaram de ser páginas à parte (sem as abas Escritório/Contas/Usuários/Configurações): abrem em janelas dentro do escritório, por Configurações (Contas conectadas e Usuários) ou pela barra de baixo. Os endereços antigos redirecionam para o app e abrem a janela certa.
+- **Páginas de administração no visual DevLand:** Escritório, Contas, Usuários e Configurações (`/admin`, `/contas`) agora são verde neon sobre preto, como o login e o escritório, e cabem no celular (as abas rolam de lado em vez de estourar a página).
+- **Topo sem faixa borrada:** a barra do topo no computador não tem mais fundo nem blur, que cobriam o começo da lateral. O botão "+ Contas" saiu do topo: fica em Configurações › Contas conectadas.
+- **Plugins no Cloud novo:** corrigido o erro "Plugin not found in marketplace" que aparecia numa instalação limpa (o servidor deixou de achar a própria pasta depois que o pacote virou `devland`). O prefixo do log agora é `[devland]` e o certificado local do celular se chama "DevLand local CA".
+- **Nome DevLand em todo lugar:** textos da tela, notificações, ajuda, mensagens do servidor e dos plugins, manuais e nome do pacote passam a dizer DevLand. O "Habblaud World", as variáveis `HABBLAUD_*`, as pastas em `~/.habblaud` e o nome da imagem no GitHub continuam como estavam, para não quebrar instalações existentes.
+- **Salas de projeto com visual DevLand:** piso de tapete escuro (grafite, azul-noite, vinho...) e paredes escuras com um neon diferente por sala (verde, roxo, ciano, âmbar, rosa...); mesas e cadeiras escuras. As decorações de Natal/Halloween agora vêm desligadas por padrão (dá para ligar em Ajustes › Aparência).
+- **Mapa sem rua nem carros:** no lugar da rua há um passeio de jardim com trilha de pedra, canteiros floridos, bancos e postes.
+- **Mapa no tema DevLand:** os rótulos das salas e dos agentes no mapa usam fonte de terminal, fundo preto e borda verde (o agente selecionado fica verde); vinheta escura nas bordas para destacar as salas; no celular em pé a visão geral aproxima 25% para as salas ficarem legíveis.
+- **Botão da lateral como o do WCAM:** uma bolinha com seta presa na borda do trilho/painel (abre e fecha), em vez de um quadrado; o logo na lateral agora é só o planeta, sem fundo nem quadrado em volta (o ícone do app e a aba continuam com o fundo escuro).
+- **Marca em duas cores:** `DEV` em verde-neon e `LAND` em branco, com o logo do planeta um pouco maior.
+- **Marca integrada à lateral (computador):** recolhida, a lateral vira um trilho fino com o logo, um botão pequeno para expandir e, embaixo, os anéis de uso das contas; aberta, o mesmo bloco vira o cabeçalho da lista de salas (logo + nome + botão de recolher) e os anéis vão para o canto direito. A barra de atividade começa depois do trilho.
+- **Computador: tudo flutuante e mínimo.** O topo perde a barra: ficam o logo no canto esquerdo e uma cápsula de ícones (sem textos) no canto direito, mais a ficha de quem precisa de você. O uso vira anéis flutuantes com a letra da conta na borda direita, embaixo dos ícones (saem da frente quando a gaveta do agente abre) (sem texto nem porcentagem); ao passar o mouse abre a dica com nome, plano, números e reinício.
+- **Contas como mostradores circulares:** cada conta é uma cápsula com anel duplo (fora = sessão de 5 h, dentro = semana; verde, âmbar ou vermelho conforme o uso), a letra no centro, o nome e uma linha `5H 41% · SEM 21%` (o reinício e o e-mail ficam na dica). As ferramentas do topo ficam em duas cápsulas (câmera e painéis).
+- **Topo com ferramentas legendadas:** ícones verdes com o nome embaixo (Visão, Menos, Mais, Novo, Feed, Ajustes, Ajuda), estado ligado em destaque e brilho; no celular ficam só os ícones. O favicon agora é só o planeta com o anel azul, sem fundo.
+- **Logo do DevLand:** planeta em pixel art (oceanos, continentes, luz de um lado) com anel orbital, lua e estrelas, no topo, no login, no ícone do app e na aba (`scripts/brand-logo.py` gera os PNGs).
+- **Nova marca "DevLand"** no logotipo (texto `DEVLAND_` em terminal), no título da aba, no app da Tela de Início e nas telas de entrada (`shared/brand.ts` é o único lugar para trocar). O Habblaud World e o código interno mantêm o nome original.
+- **Botões, avisos, atividade e janela de Contas no tema hacker:** botões de terminal em caixa-alta que enchem de verde; avisos como cartões de log com etiqueta do nível (`alerta`, `ok`, `aviso`, `info`) e brilho na cor dele; atividade em linhas de log `[hora]`; Contas com barra de terminal.
+- **Agentes por função:** cada agente principal tem uma função (front-end, back-end, testes, DevOps, revisão, design),
+  escolhida em **Novo agente** (campo Função) ou deduzida dos arquivos que ele mexe e do nome do projeto. A função
+  aparece como ficha neon (ícone e cor próprios) no personagem do mapa, na lateral, no cartão do agente e nas
+  Conversas, e a lateral filtra por função.
+- **Prévia ao vivo do site:** o botão de navegador na barra do topo abre uma janela com o site do projeto (detecta
+  servidores de desenvolvimento nas portas comuns ou você digita a porta), recarrega sozinha quando um agente altera um
+  arquivo e tem modo "celular". Passa por um proxy autenticado do servidor (só `127.0.0.1`, só leitura, mesma trava do
+  terminal, endereço com token que expira, iframe em sandbox e sem repassar cookies); no Cloud exige a permissão
+  "terminal". Funciona melhor com sites estáticos, renderizados no servidor e Vite; formulários com POST e o
+  WebSocket do HMR não passam.
+
+- **Sons diferentes por tipo de aviso:** alarme (precisa de você), arpejo (concluiu), grave (aviso) e pingo
+  (informação); em Ajustes › Sons há botões para ouvir cada um.
+- **Layout hacker:** topo em três zonas (marca | métricas num bloco só com número grande e divisórias | contas em etiquetas compactas com faixa colorida e ferramentas soltas), com linha de varredura; lateral como árvore de
+  arquivos (`~/escritório`, `/sala`, `├─ agente`); cada grupo dos ajustes é uma janela de terminal e os interruptores
+  viram `ON`/`OFF`.
+- **Tema hacker em toda a interface:** verde-neon sobre preto (o mapa do escritório mantém as cores originais), fonte monoespaçada, títulos com `>` e rótulos com `$`,
+  bordas com brilho, botão principal em verde e varredura de monitor antigo. Combina com a tela de login.
+- **Habblaud Cloud: login por e-mail.** Criar o admin e aceitar convite pedem e-mail; o login aceita e-mail ou usuário
+  (contas antigas continuam entrando pelo usuário e definem o e-mail em Ajustes › Perfil). O e-mail é único e aparece na
+  lista de usuários. As telas de criar admin e convite usam a mesma moldura hacker do login.
+- **Tela de login no estilo "terminal hacker":** chuva de código ao fundo, terminal que digita os agentes, cartão com
+  barra de janela, agentes em pixel art andando embaixo, olho para ver a senha e erro que balança. No celular o cartão
+  vira uma folha até a borda de baixo. A moldura (`server/http/auth-shell.ts`) serve também às próximas telas.
+- **Habblaud Cloud: uso de toda conta conectada, mesmo sem sessão aberta.** A cada 3 min o servidor consulta o uso
+  com o login da conta (somente leitura; token vencido fica sem números até uma sessão renová-lo).
+- **Habblaud Cloud: escolher a conta no "Novo agente"** ("Automática" usa a de mais folga) e **anexar fotos e arquivos
+  nas Conversas**, mais um microfone que dita pelo navegador (iPhone/Chrome) quando o servidor não tem Whisper.
+  Os anexos agora são gravados na casa do usuário dos agentes, para o Claude conseguir ler.
+- **Habblaud Cloud: vários usuários com login.** Com `HABBLAUD_CLOUD=1` (ou `docker-compose.cloud.yml`), a porta 4748
+  vira um login para várias pessoas, pronto para ficar atrás de um proxy com HTTPS. O primeiro acesso cria o admin
+  com o código de instalação que sai no log; depois, convites com papel (admin ou usuário) e permissões por pessoa, em
+  **Configurações › Usuários**. Todos veem o mesmo escritório. A 4747, sem login, não é publicada.
+- **O login não cai enquanto você usa.** A sessão da porta com login (celular e Cloud) se renova sozinha a cada dia
+  de uso, em vez de vencer 30 dias depois de entrar.
+- **Habblaud Cloud: o container é a máquina de desenvolvimento.** A imagem do Cloud (`Dockerfile.cloud`) traz `git`,
+  o Claude Code e o Codex; o terminal interativo e o Novo agente funcionam pelo navegador, com login, para quem tem a
+  permissão de terminal. Os agentes rodam com um usuário do Linux separado, sem acesso aos dados de login.
+- **Habblaud Cloud: conectar contas pela web.** Em **+ Contas**, o admin conecta contas do Claude, do Codex e do
+  GitHub sem abrir terminal: a página mostra o link de login (e o código, quando há). Com o GitHub conectado, dá para
+  clonar os repositórios em `/workspace` e os agentes fazem `git push` com essa conta. No topo, as contas sem dados de
+  uso dão lugar ao botão **+ Contas**; com o escritório vazio, **Abrir terminal** começa o primeiro agente.
+
+- **Habblaud Cloud: páginas Contas e Usuários com abas.** Escritório, Contas, Usuários e Configurações ficam numa barra
+  de abas (Configurações abre o painel no escritório). Em Contas, cada serviço virou um cartão com o estado
+  (Conectado / Não conectado), o Claude ganhou "Adicionar outra conta", o código do Codex e do GitHub tem botão
+  Copiar e a mensagem velha de "Conta conectada." não fica mais sobrando embaixo do botão.
+
+- **Habblaud Cloud: Novo agente em pasta clonada funciona direto.** A pasta escolhida já entra como confiável para o
+  Claude Code (antes dava "a pasta ainda não é confiável" e tentava abrir o app, que não existe no servidor), e os
+  projetos clonados em `/workspace` aparecem como escolhas na lista de pastas. Em Contas, os repositórios do GitHub
+  viraram cartões com busca.
+
+- **Habblaud Cloud: Contas abre numa janela dentro do escritório.** **+ Contas** e **Conectar contas** mostram a mesma
+  página como um modal, sem trocar de aba; Ctrl/Cmd+clique ainda abre a página inteira.
+
+- **Habblaud Cloud: celular e terminal de agente sem conversa.** Contas e Usuários se ajustam à tela do celular (a
+  janela de Contas ocupa a tela toda). Abrir o terminal de um agente que ainda não tem conversa gravada agora explica o
+  motivo (antes dizia que só funcionava no acesso local) e o servidor registra no log.
+
+- **Notificação do navegador quando o agente termina.** Com **Configurações › Notificações do navegador** ligado, a aba
+  em segundo plano agora também avisa "concluiu" (e o fim de tarefas em segundo plano), além do "precisa de você".
+
+- **Celular: terminal e barra de uso sem sobreposição.** No terminal de um agente, o cabeçalho passa a ter duas linhas
+  ("Assumir daqui" e "Encerrar" ocupam a de baixo, em vez de espremer o nome), o botão de copiar fica só com o ícone numa
+  coluna própria (antes cobria o texto) e os cartões de uso do topo não encolhem mais por cima uns dos outros.
+
+- **Habblaud Cloud: atualizar por dentro do app.** O Habblaud agora sabe a versão da imagem em uso e confere as tags
+  novas no GHCR: aparece o selo "Nova versão" e, em **Configurações › Sobre**, o botão **Atualizar agora** (só admin)
+  pede ao Velix para reimplantar, e a página recarrega quando o app volta. Para o botão aparecer, crie um token de API do
+  Velix (Configurações › Assistentes de IA, escopo escrita) e defina no projeto `HABBLAUD_VELIX_URL`
+  (ex.: `https://velix.suaempresa.com`), `HABBLAUD_VELIX_TOKEN` e `HABBLAUD_VELIX_PROJECT` (id, slug ou nome). Sem elas,
+  só avisa.
+- **Celular: barra lateral em tela cheia.** No celular a barra lateral usa a largura toda (sobrava uma faixa do mapa
+  ao lado) e o "+ Contas" ficou menor para a barra do topo caber melhor.
+- **Terminal de agente recém-criado abre sozinho.** Um agente novo ainda não tem conversa gravada; o terminal tenta de
+  novo a cada 2 s por até 30 s em vez de pedir para clicar em "Tentar de novo".
+
+- **Celular: barra de navegação embaixo.** Até 600 px de largura, uma barra fixa na parte de baixo leva ao
+  **Escritório** (volta ao mapa), **Agentes** (painel lateral, com o número de quem precisa de você), **Novo** agente e
+  **Ajustes**. O painel lateral, a gaveta do agente, o feed e os avisos sobem acima dela.
+
+- **Habblaud Cloud: aba Contas e perfil.** No celular, a barra de baixo ganha a aba **Contas** (no lugar do "+ Contas" do
+  topo), e **Configurações** mostra o **Perfil** (quem está logado) e o atalho **Contas conectadas**.
+
+- **Contas no celular como folha de baixo.** A janela de Contas sobe de baixo com largura total, alça e cantos
+  arredondados; cada serviço é um cartão com ícone, nome e estado (verde quando conectado).
+
+- **Habblaud Cloud: uso das contas.** O servidor instala sozinho o captador de uso no Claude Code de cada conta (ao subir
+  e ao conectar uma conta nova), para os cartões de 5 h e semana aparecerem depois da primeira sessão interativa.
+
+- **Habblaud Cloud: mensagens e permissões pelo escritório.** O servidor instala sozinho, em cada conta do Claude Code, os
+  plugins `habblaud-mensagens` e `habblaud-permissoes` (ao subir e ao conectar uma conta), então "Mandar mensagem" e responder
+  pedidos de permissão funcionam nas sessões novas. O terminal de agente ganhou o botão **Nova sessão**, e no celular o topo
+  não repete o que a barra de baixo já tem.
+
+- **Habblaud Cloud: ligar ao Velix pela tela de Ajustes.** Em **Ajustes › Sobre**, o admin cola o endereço do Velix, um
+  token de API e o projeto (o servidor guarda em `<dados>/velix.json`, e o token nunca volta para a página); com isso o
+  botão **Atualizar agora** aparece quando sai versão nova, sem editar variáveis do Velix. No Cloud, as instruções de
+  `git pull` deixam de aparecer.
+- **Ajustes no celular redesenhados.** O menu vira uma folha cheia (acima da barra de baixo, com rolagem por dentro),
+  com seções em cartões, cabeçalho fixo, fundo sólido e linhas maiores para tocar.
+
+- **Habblaud Cloud: os agentes voltam depois de reimplantar.** O servidor guarda quem estava ativo (conta, sessão e pasta) e,
+  ao subir, retoma cada conversa com `claude --resume` (até 6), em vez de os personagens sumirem e você ter de criar
+  agentes novos. Quem foi encerrado de propósito não volta.
+
+- **Habblaud Cloud: atualizar sozinho.** Em **Ajustes › Sobre** o admin liga "Atualizar sozinho quando sair versão nova" e
+  escolhe a janela: de madrugada (2h às 5h, no fuso dele) ou a qualquer hora. O Habblaud confere as versões a cada hora e,
+  dentro da janela, pede ao Velix para reimplantar (uma vez por tentativa, com pausa de 1 h se falhar). Depende da conexão com
+  o Velix já configurada ali; as conversas abertas voltam sozinhas depois do reinício.
+
+- **Celular: o que cada agente faz aparece no mapa.** Na primeira visita em tela de celular, os balões de atividade vêm em
+  "Todos" (antes só as atividades importantes), porque os personagens são pequenos. Quem já tinha preferências guardadas
+  mantém as suas (Ajustes › Escritório › Balões de atividade).
+
+- **Habblaud Cloud: atualização nativa, sem Velix.** O workflow publica o código de cada versão como um pacote público no GHCR
+  (`dist-cloud-v…`); o botão **Atualizar** (e o "atualizar sozinho") baixa esse pacote, confere o sha256 e as dependências,
+  guarda em `/data/app` e reinicia: o container passa a rodar o código novo, e volta sozinho à imagem se ele não ficar de pé
+  em 1 minuto. Se a versão muda as dependências, o app avisa que precisa de imagem nova (aí vale o Velix, pelo formulário que
+  aparece em Ajustes › Sobre).
+- **Terminal do agente: a conversa aparece mesmo quando o fim do arquivo é só uma linha enorme** (a leitura inicial amplia a
+  janela até achar mensagens), e no celular o campo de mensagem usa o texto curto.
+
+- **Conversas: os agentes como num app de mensagens.** A aba **Conversas** da barra de baixo (celular; no computador abre ao lado)
+  lista os agentes como conversas (foto, projeto, o que estão fazendo, quando) e, ao tocar, abre o histórico em balões: o que
+  você pediu à direita, a resposta do agente à esquerda (com formatação), avisos no meio e as ferramentas em linhas discretas,
+  com a caixa de resposta embaixo. Sem abrir gaveta nem terminal.
+
+- **Habblaud Cloud: o escritório abre funcionando.** Se ao subir não houver agente para retomar, o servidor abre sozinho um
+  primeiro agente em `/workspace` (com uma conta do Claude conectada), em vez de mostrar "O escritório está vazio" e pedir para
+  clicar em Abrir terminal. `HABBLAUD_AUTO_AGENT=0` desliga.
+
+- **Celular: o terminal interativo do Claude ocupa a tela toda.** Ele ficava por baixo da barra do topo (o cabeçalho sumia);
+  agora cobre as barras, como o terminal da conversa.
+
+- **Habblaud Cloud: conversas novas vão para a conta com mais folga.** Novo, Nova sessão e o primeiro agente escolhem sozinhos a
+  conta conectada com menos uso (a pior entre 5 h e semana); uma conversa em andamento fica na conta dela. O mod de uso também é
+  instalado em cada conta, para o uso ao vivo se atualizar a cada turno, e os agentes só são reabertos depois de os plugins
+  estarem instalados (antes, o plugin de mensagens podia não carregar). O aviso de mensagens ficou claro no Cloud, sem `npm run`.
+
+- **Cloud: a segunda conta do Claude aparece no topo.** Uma conta conectada aparecia só depois de ter números de uso; agora
+  todas as contas do Claude conectadas têm o seu cartão, e os números chegam quando uma conversa dela trabalha.
+
+- **Notificações push de verdade (iPhone e computador).** Em **Ajustes › Avisos**, ligar "Notificações do navegador" assina o
+  aparelho no push do servidor (chaves VAPID e criptografia RFC 8291, sem dependência nova): quando um agente termina ou
+  precisa de você, o aviso chega mesmo com o Habblaud fechado. No iPhone é preciso adicionar o Habblaud à Tela de Início e abrir
+  por lá (iOS 16.4 ou mais novo). Há um botão **Enviar teste**.
+
+- **Habblaud Cloud: versão nova avisada pelo Velix.** A imagem do Cloud não consulta mais as releases do projeto
+  original; a versão nova aparece no projeto do Velix ("Atualizar para ...").
+
+### Corrigido
+
+- **Fundo do trilho da lateral cortado (só atrás do logo):** o fundo virou um elemento próprio preso à tela, de cima a baixo, independente do painel do topo.
+- **Marca cortada na lateral em janelas menores:** até ~1040 px de largura, regras antigas escondiam o nome ou o punham por cima do logo; agora o trilho recolhido mostra o logo, a bolinha e os anéis com fundo de cima a baixo, e aberto mostra o logo e `DEVLAND_` lado a lado em qualquer largura.
+- **Bolinha da lateral recolhida espremida:** uma regra antiga a esticava para 48 px de altura; agora é redonda (26 px), entre o logo e os anéis de uso, que ganharam mais espaço.
+- **Revisão visual:** avisos de alerta com fundo sólido (o texto de trás aparecia); no celular um aviso por vez e nenhum por cima da caixa de mensagem dentro de uma conversa; a função do agente nas Conversas virou etiqueta pequena (ocupava a largura toda); a barra de baixo acende Ajustes quando os ajustes estão abertos; a Prévia ao vivo não cobre mais o trilho da esquerda.
+- **Atualização nativa não encontrava o pacote da versão nova (404):** a imagem principal era publicada antes do pacote `dist-`, e o servidor via a versão nova antes de o pacote existir. Agora o pacote sai primeiro.
+- **Celular: topo mínimo.** Uma linha fina de 48 px com o logo, os mostradores de uso (só os anéis) e o aviso de quem precisa de você; as ferramentas ficam na barra de baixo e o mapa ganha a tela. Também corrige a primeira linha dos agentes na lateral, que sobrepunha o papel e a função.
+- **Atualização automática checa as versões novas a cada 30 min** (antes, a cada 6 h; quem estava na frente de uma sequência de versões demorava a receber).
+- **Estilos do seletor de conta no "Novo agente" e dos anexos da caixa de mensagem não eram carregados** (estavam num
+  arquivo que nenhuma página importava); agora estão em `ui/styles.css`.
+- **Habblaud Cloud, segurança:** o freio de tentativas de login agora é por cliente (quem erra a senha não trava mais o
+  dono da conta; há um freio global folgado contra troca de endereço); toda resposta leva HSTS, Permissions-Policy,
+  proteção contra ser embutido por outro site e COOP; o nome do repositório a clonar não aceita começar com "-" nem
+  ter "..".
+- **Habblaud Cloud: agentes retomados não criam mais sala "worktree" nem se duplicam.** A conversa que estava num
+  worktree volta para a pasta do projeto, e a mesma conversa só é retomada uma vez.
+- **Habblaud Cloud: "Ativar" numa conta sem uso abre as Contas** (antes abria a ajuda com comandos `npm` que não
+  servem no Cloud).
+- **Habblaud Cloud: "Ver demonstração" voltou a funcionar para o admin** (antes caía em "não liberado no acesso
+  remoto").
+
 ## [1.0.3] - 2026-10-16
 
 ### Corrigido
@@ -576,7 +903,8 @@ Primeira versão publicada.
   Subagentes chegam, trabalham e entregam ao principal. Mostra as duas contas, com o uso de 5 horas e semanal de
   cada uma (tap de statusline), além de feed de atividade, avisos e modo demonstração. Roda no Node ou no Docker local.
 
-[Não lançado]: https://github.com/marmottajr/habblaud/compare/v1.0.3...HEAD
+[Não lançado]: https://github.com/Jhonata-php/devland/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/Jhonata-php/devland/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/marmottajr/habblaud/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/marmottajr/habblaud/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/marmottajr/habblaud/compare/v1.0.0...v1.0.1

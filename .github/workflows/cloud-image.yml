@@ -1,0 +1,56 @@
+# Imagem do DevLand Cloud em ghcr.io/jhonata-php/habblaud (o nome do pacote no GitHub continua habblaud: trocar quebraria a atualização nativa), para a loja do Velix puxar.
+#
+# Sai a cada tag cloud-v* (ex.: cloud-v0.1.0 vira a imagem :cloud-v0.1.0 e também :latest), para amd64 e arm64.
+# O manifesto do Velix (velix/apps/api/src/catalog/manifests/habblaud.ts) usa :latest.
+name: Imagem do Cloud
+
+on:
+  push:
+    tags: ['cloud-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  imagem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Pacote só com o código novo (uma camada, sem manifesto de atestado): a atualização nativa do Habblaud o baixa
+      # anonimamente (a imagem é pública) em vez de depender do Velix. Mesma tag com o prefixo dist-.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cloud
+          target: dist-pkg
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ghcr.io/jhonata-php/habblaud:dist-${{ github.ref_name }}
+          cache-from: type=gha
+      # A imagem principal vai por ÚLTIMO: a tag da versão só aparece depois de o pacote dist- existir (senão a atualização
+      # nativa encontrava a versão nova e levava 404 no pacote, ainda sendo publicado).
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cloud
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: CLOUD_VERSION=${{ github.ref_name }}
+          # :latest anda junto com a tag da versão: o manifesto do Velix usa :latest e o painel avisa quando ele muda.
+          tags: |
+            ghcr.io/jhonata-php/habblaud:${{ github.ref_name }}
+            ghcr.io/jhonata-php/habblaud:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

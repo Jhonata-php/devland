@@ -167,7 +167,8 @@ describe('visita a um prédio do mundo no Sim', () => {
     run(sim, clock, MISSING_DEBOUNCE_MS / 1000 + 1);
     expect(charByName(sim, 'Larissa').leaving).toBe(true);
     expect(charByName(sim, 'Gustavo').leaving).toBe(true);
-    run(sim, clock, 120, () => !sim.rooms.has('f_2c3d4e5f60') && camila.atSpot === camila.homeSpot && !!camila.homeSpot);
+    // (o supervisor demite quem sai: a saída demora mais, e Larissa leva a caixa até o elevador)
+    run(sim, clock, 180, () => !sim.rooms.has('f_2c3d4e5f60') && !charByName(sim, 'Larissa') && camila.atSpot === camila.homeSpot && !!camila.homeSpot);
     expect(sim.rooms.has('f_2c3d4e5f60')).toBe(false);
     expect(charByName(sim, 'Larissa')).toBeUndefined();
     expect(orion.phase).toBe('ready');

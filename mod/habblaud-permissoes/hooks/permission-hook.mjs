@@ -147,7 +147,7 @@ export function decisionOutput(result, input) {
   }
   if (result.behavior === 'deny') {
     const reason = typeof result.message === 'string' && result.message.trim() ? result.message.trim().slice(0, 1_000) : '';
-    const decision = { behavior: 'deny', message: reason ? `Recusado pelo usuário no Habblaud: ${reason}` : 'Recusado pelo usuário no Habblaud.' };
+    const decision = { behavior: 'deny', message: reason ? `Recusado pelo usuário no DevLand: ${reason}` : 'Recusado pelo usuário no DevLand.' };
     if (result.interrupt === true) decision.interrupt = true;
     return { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision } };
   }
@@ -215,7 +215,7 @@ export async function run(argv = process.argv.slice(2), env = process.env, stdin
     const deadline = Date.now() + opts.timeoutMs;
     const reg = await call(base, 'POST', '/api/permissions', requestBody(input, opts.timeoutMs), REGISTER_TIMEOUT_MS);
     if (!reg || reg.status !== 201 || typeof reg.json?.id !== 'string') {
-      debug(`sem desvio (${reg ? `${reg.status} ${JSON.stringify(reg.json ?? null)}` : 'Habblaud fora do ar'})`);
+      debug(`sem desvio (${reg ? `${reg.status} ${JSON.stringify(reg.json ?? null)}` : 'DevLand fora do ar'})`);
       return undefined;
     }
     const id = encodeURIComponent(reg.json.id);

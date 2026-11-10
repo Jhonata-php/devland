@@ -54,7 +54,7 @@ describe('preferências', () => {
     expect(() => savePrefs(broken, DEFAULT_PREFS)).not.toThrow();
   });
   it('extrai só as opções do mundo', () => {
-    expect(worldOptionsFrom({ ...DEFAULT_PREFS, daylight: 'day' })).toEqual({ showNames: true, bubbles: 'important', liveliness: 'normal', dayNight: false, daylight: 'day', theme: 'auto' });
+    expect(worldOptionsFrom({ ...DEFAULT_PREFS, daylight: 'day' })).toEqual({ showNames: true, bubbles: 'important', liveliness: 'normal', dayNight: false, daylight: 'day', theme: 'none' });
     expect(worldOptionsFrom({ ...DEFAULT_PREFS, daylight: 'night' })).toMatchObject({ dayNight: true, daylight: 'night' });
   });
   it('ciclo dia/noite: valida o modo e migra o interruptor antigo', () => {
@@ -66,8 +66,8 @@ describe('preferências', () => {
     expect(sanitizePrefs({ dayNight: false, daylight: 'night' }).daylight).toBe('night');
   });
   it('temas: preserva preferências antigas e recupera valores inválidos', () => {
-    expect(sanitizePrefs({ daylight: 'night' })).toMatchObject({ theme: 'auto', daylight: 'night' });
-    expect(sanitizePrefs({ theme: 'invalid' }).theme).toBe('auto');
+    expect(sanitizePrefs({ daylight: 'night' })).toMatchObject({ theme: 'none', daylight: 'night' });
+    expect(sanitizePrefs({ theme: 'invalid' }).theme).toBe('none');
     for (const theme of ['christmas', 'halloween', 'none', 'auto'] as const) {
       const st = memoryStorage();
       savePrefs(st, { ...DEFAULT_PREFS, theme });
@@ -121,5 +121,16 @@ describe('migração do nome antigo (CodeTown)', () => {
     };
     expect(migrateLegacyKeys(full)).toBe(0);
     expect(Object.fromEntries(full.data)).toEqual({ 'codetown:prefs': '{}' });
+  });
+});
+
+describe('loadPrefs no celular', () => {
+  it('na primeira visita o balão de atividade vem em "Todos"; depois vale o que foi guardado', () => {
+    const mem = new Map<string, string>();
+    const storage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) };
+    expect(loadPrefs(storage, true).bubbles).toBe('all');
+    expect(loadPrefs(storage, false).bubbles).toBe(DEFAULT_PREFS.bubbles);
+    savePrefs(storage, { ...DEFAULT_PREFS, bubbles: 'none' });
+    expect(loadPrefs(storage, true).bubbles).toBe('none');
   });
 });

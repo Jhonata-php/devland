@@ -5,12 +5,13 @@
 // entre os agentes do mesmo projeto; as duas janelas se revezam no mesmo lugar.
 // As teclas não vazam para os atalhos do escritório (T, P, M, Esc...): Esc, por exemplo, interrompe o Claude.
 // Fechar a janela não encerra a sessão; "Encerrar" encerra.
+import { access } from '../net/access';
 import type { AgentInfo, PtyInfo } from '../../../shared/types';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setHidden, setText } from './dom';
 import { ICONS } from './icons';
 import { maximizeButton, Movable } from './movable';
-import { closePty, createPty, stopAgent, takeoverAgent } from './ptyapi';
+import { closePty, createPty, sendPtyInput, stopAgent, takeoverAgent } from './ptyapi';
 import type { PtyPane } from './ptypane';
 import { TermActions } from './termactions';
 import { TermTabs } from './termtabs';
@@ -32,7 +33,7 @@ export interface PtyControl {
   openAgent(agentId: string): void;
   close(): void;
   takeover(agentId: string): Promise<void>;
-  newSession(cwd: string, account?: string): Promise<void>;
+  newSession(cwd: string, account?: string): Promise<string | undefined>;
   stop(agentId: string): Promise<void>;
 }
 
@@ -99,7 +100,8 @@ export class PtyPanel implements UiComponent, PtyControl {
   }
 
   get enabled(): boolean {
-    return !!this.ctx.store.snapshot?.meta.pty?.enabled && !this.ctx.store.replaying;
+    // Pela porta com login (Habblaud Cloud), só com a permissão "terminal".
+    return !!this.ctx.store.snapshot?.meta.pty?.enabled && !this.ctx.store.replaying && (!access().remote || access().terminal);
   }
 
   get reason(): string {
@@ -139,14 +141,19 @@ export class PtyPanel implements UiComponent, PtyControl {
     this.ctx.invalidate();
   }
 
-  async takeover(agentId: string): Promise<void> {
-    const p = await takeoverAgent(agentId);
+  async takeover(agentId: string, model?: string): Promise<void> {
+    const p = await takeoverAgent(agentId, model);
     if (p) this.show(p, true);
   }
 
-  async newSession(cwd: string, account?: string): Promise<void> {
+  /** `firstInput`: texto digitado assim que o Claude Code abre (ex.: "/mcp\r" para cair no menu de conectores). */
+  async newSession(cwd: string, account?: string, firstInput?: string): Promise<string | undefined> {
     const p = await createPty(cwd, account);
-    if (p) this.show(p, true);
+    if (!p) return undefined;
+    this.show(p, true);
+    // O Claude Code leva um instante para ler o teclado; o que chega antes fica na fila do terminal.
+    if (firstInput) setTimeout(() => void sendPtyInput(p.id, firstInput).catch(() => undefined), 3000);
+    return p.id;
   }
 
   async stop(agentId: string): Promise<void> {

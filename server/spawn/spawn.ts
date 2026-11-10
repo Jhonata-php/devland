@@ -13,9 +13,12 @@
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { statSync } from 'node:fs';
-import { isAbsolute } from 'node:path';
+import { chownSync, existsSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { isAbsolute, join } from 'node:path';
 import { tr } from '../../shared/i18n';
+import { agentRunAs, runAsOptions } from './runas';
+import { isModelId } from '../../shared/models';
+import { isRoleId, type RoleId } from '../../shared/roles';
 import { attachmentsRoot, promptWithAttachments, writeAttachments, type Attachment, type AttachmentStore } from './attachments';
 
 /** Tamanho máximo do pedido (o link inteiro vai pela linha de comando do `open`). */
@@ -43,6 +46,15 @@ const ERROR_MAX = 300;
 export interface SpawnRequest {
   folder: string;
   prompt: string;
+  /** Id da conta escolhida na tela (vazio/"auto": o servidor escolhe; ver SpawnServiceOptions.accountDir). */
+  account?: string;
+  /** Pasta de configuração da conta (CLAUDE_CONFIG_DIR) que o servidor resolveu; sem ela, a conta padrão. */
+  configDir?: string;
+  /** Função do agente (front-end, back-end...): vira a etiqueta `[id]` no nome da sessão. */
+  role?: RoleId;
+  /** Conta "IA local": variáveis que levam o Claude Code ao Ollama e o modelo (`--model`). */
+  extraEnv?: Record<string, string>;
+  model?: string;
 }
 
 export type SpawnStatus = 'queued' | 'sent' | 'opened' | 'failed';
@@ -76,7 +88,19 @@ export function parseSpawn(raw: unknown): SpawnRequest | { error: string } {
     return { error: tr('escolha uma pasta (caminho absoluto, ex.: /Users/voce/projeto)') };
   }
   if (prompt.length > PROMPT_MAX || prompt.includes('\0')) return { error: tr('o pedido passa de {0} caracteres', [PROMPT_MAX]) };
-  return { folder, prompt };
+  const account = typeof r.account === 'string' && r.account.length <= 120 && !r.account.includes('\0') ? r.account : undefined;
+  const role = isRoleId(r.role) ? r.role : undefined;
+  // Modelo da conta do Claude (sonnet, opus...); a IA local usa o modelo dela, definido pelo servidor.
+  const model = isModelId(r.model) && account !== 'ollama' ? r.model : undefined;
+  // Revisão sem pedido: o agente sabe o que fazer sozinho (rodar, testar o fluxo e relatar as falhas).
+  const text = !prompt.trim() && role === 'review' ? reviewPrompt() : prompt;
+  return { folder, prompt: text, ...(account ? { account } : {}), ...(role ? { role } : {}), ...(model ? { model } : {}) };
+}
+
+/** O pedido padrão da função Revisão: só escolher o projeto e começar. */
+export function reviewPrompt(): string {
+  // ponytail: uma linha só, para o i18n:check achar o texto.
+  return tr('Faça uma revisão completa deste projeto, sem mudar nada antes de relatar:\n1. Leia o README e o package.json (ou equivalente) para entender como instalar, rodar e testar.\n2. Instale as dependências, rode o build, o typecheck/lint e os testes; anote cada falha com a mensagem.\n3. Suba o projeto (servidor de desenvolvimento ou o que existir) e teste o fluxo principal de ponta a ponta, como um usuário faria; se for site, abra a prévia do DevLand.\n4. Procure erros comuns: telas quebradas no celular, links mortos, erros no console, variáveis de ambiente faltando, segurança básica.\n5. No fim, mande um relatório curto: o que funciona, o que falhou (com como reproduzir) e as correções sugeridas em ordem de importância. Pergunte antes de corrigir.');
 }
 
 /** O link que o app do Claude entende (claude://code/new; `q` = pedido já escrito). */
@@ -88,24 +112,57 @@ export function spawnUrl(req: SpawnRequest): string {
   return `claude://code/new?${q.toString().replace(/\+/g, '%20')}`;
 }
 
-/** Nome da sessão em segundo plano: "Habblaud: " + começo da 1ª linha do pedido. */
-export function sessionName(prompt: string): string {
+/** Nome da sessão em segundo plano: "Habblaud: " + começo da 1ª linha do pedido ("Habblaud [front]: " com função). */
+export function sessionName(prompt: string, role?: RoleId): string {
   const line = prompt.split('\n').map((l) => l.trim()).find(Boolean) ?? '';
   const cut = line.length > NAME_MAX ? `${line.slice(0, NAME_MAX - 1)}…` : line;
-  return cut ? `Habblaud: ${cut}` : 'Habblaud';
+  const head = role ? `DevLand [${role}]` : 'DevLand';
+  return cut ? `${head}: ${cut}` : head;
 }
 
 /** Argumentos do `claude`: o pedido depois de `--` (um pedido "doctor" ou "-x" continua sendo pedido). */
 export function cliArgs(req: SpawnRequest): string[] {
-  const args = ['--bg', '-n', sessionName(req.prompt)];
+  const args = ['--bg', '-n', sessionName(req.prompt, req.role), ...(req.model ? ['--model', req.model] : [])];
   return req.prompt.trim() ? [...args, '--', req.prompt] : args;
+}
+
+/**
+ * Cloud: ninguém está no terminal para aceitar o aviso de confiança, então a pasta que a pessoa escolheu na tela já
+ * entra como confiável (hasTrustDialogAccepted) no .claude.json do usuário dos agentes, em cada pasta de conta.
+ */
+export function trustFolder(folder: string, who = agentRunAs()): void {
+  if (!who) return;
+  const files = [join(who.home, '.claude.json')];
+  try {
+    for (const n of readdirSync(who.home)) if (n === '.claude' || /^\.claude-(\d+|ollama)$/.test(n)) files.push(join(who.home, n, '.claude.json'));
+  } catch {
+    // sem home: só o arquivo padrão
+  }
+  for (const f of files) {
+    try {
+      const cfg = existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as Record<string, unknown>) : {};
+      const projects = (cfg.projects && typeof cfg.projects === 'object' ? cfg.projects : {}) as Record<string, Record<string, unknown>>;
+      if (projects[folder]?.hasTrustDialogAccepted === true) continue;
+      projects[folder] = { ...projects[folder], hasTrustDialogAccepted: true };
+      cfg.projects = projects;
+      const tmp = `${f}.${process.pid}.tmp`;
+      writeFileSync(tmp, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+      chownSync(tmp, who.uid, who.gid);
+      renameSync(tmp, f);
+    } catch {
+      // arquivo ilegível: não mexe (o aviso volta a aparecer no terminal)
+    }
+  }
 }
 
 /** `claude --bg` na pasta do pedido; devolve o id curto que ele imprime ("backgrounded · 7eacc670 · nome"). */
 export function createCliRunner(bin: string, timeoutMs = CLI_TIMEOUT_MS): CliRunner {
   return (req) =>
     new Promise((ok) => {
-      const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8' }, (err, out, stderr) => {
+      trustFolder(req.folder);
+      const runAs = runAsOptions(process.env);
+      const env = { ...(req.configDir ? { ...runAs.env, CLAUDE_CONFIG_DIR: req.configDir } : runAs.env), ...req.extraEnv };
+      const child = execFile(bin, cliArgs(req), { cwd: req.folder, timeout: timeoutMs, windowsHide: true, encoding: 'utf8', ...runAs, env }, (err, out, stderr) => {
         const id = /backgrounded\s*·\s*([\w-]+)/.exec(out ?? '')?.[1];
         if (!err && id) return ok({ ok: true, id });
         const line = [stderr, out, err?.message].map((t) => (t ?? '').split('\n').map((l) => l.trim()).find(Boolean)).find(Boolean);
@@ -183,6 +240,10 @@ export interface SpawnServiceOptions {
   writeFiles?: (spawnId: string, files: readonly Attachment[]) => string[];
   now?: () => number;
   newId?: () => string;
+  /** Conta do pedido -> pasta de configuração (undefined = conta padrão). Cloud: escolhe a conta quando não vem uma. */
+  accountDir?: (account: string | undefined) => string | undefined;
+  /** Conta "IA local" (ai/local.ts): pasta, modelo e variáveis; null = sem Ollama ou sem modelo. */
+  localAgent?: () => Promise<{ dir: string; model: string; env: Record<string, string> } | null>;
 }
 
 export type SpawnSubmit = { spawn: SpawnInfo } | { error: 'invalid' | 'unavailable' | 'too-many'; reason: string };
@@ -210,7 +271,7 @@ export class SpawnService {
     const req = parseSpawn(raw);
     if ('error' in req) return { error: 'invalid', reason: req.error };
     if (!this.available()) {
-      return { error: 'unavailable', reason: tr('o auxiliar do computador não está rodando: deixe npm run codex:bridge no ar (o Habblaud está no Docker)') };
+      return { error: 'unavailable', reason: tr('o auxiliar do computador não está rodando: deixe npm run codex:bridge no ar (o DevLand está no Docker)') };
     }
     let open = 0;
     for (const e of this.entries.values()) if (e.info.status === 'queued' || e.info.status === 'sent') open++;
@@ -247,7 +308,7 @@ export class SpawnService {
       e.at = this.now();
       const files = e.files.map((f) => ({ name: f.name, type: f.type, data: f.data.toString('base64') }));
       this.dropFiles(e);
-      out.push({ id: e.info.id, folder: e.req.folder, prompt: e.req.prompt, files });
+      out.push({ id: e.info.id, folder: e.req.folder, prompt: e.req.prompt, files, ...(e.req.role ? { role: e.req.role } : {}), ...(e.req.model ? { model: e.req.model } : {}) });
     }
     return out;
   }
@@ -280,7 +341,16 @@ export class SpawnService {
     } finally {
       this.dropFiles(e);
     }
-    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths) };
+    // Conta "IA local": o Claude Code numa pasta própria, falando com o Ollama do servidor.
+    let local: { dir: string; model: string; env: Record<string, string> } | null | undefined;
+    try {
+      local = e.req.account === 'ollama' ? await this.opts.localAgent?.() : undefined;
+    } catch (err) {
+      return this.resolve(e, { ok: false, error: (err as Error).message.slice(0, ERROR_MAX) });
+    }
+    if (e.req.account === 'ollama' && !local) return this.resolve(e, { ok: false, error: tr('IA local sem modelo: ative a IA local e baixe um modelo na página IA local.') });
+    const configDir = local ? local.dir : this.opts.accountDir?.(e.req.account);
+    const req = { folder: e.req.folder, prompt: promptWithAttachments(e.req.prompt, paths), ...(configDir ? { configDir } : {}), ...(e.req.role ? { role: e.req.role } : {}), ...(local ? { extraEnv: local.env, model: local.model } : e.req.model ? { model: e.req.model } : {}) };
     this.resolve(e, await launch(req, opener, this.opts.cli));
   }
 

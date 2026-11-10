@@ -110,7 +110,7 @@ describe('HttpWorldApi', () => {
     expect(await recorder(500, { error: { code: 'algo_novo' } }).api.logout()).toMatchObject({ code: 'unknown' });
   });
 
-  it('sem resposta do Habblaud: offline', async () => {
+  it('sem resposta do DevLand: offline', async () => {
     const api = new HttpWorldApi((() => Promise.reject(new TypeError('rede'))) as unknown as typeof fetch);
     expect(await api.login({ email: 'a@b.co', password: 'x' })).toEqual({ ok: false, code: 'offline', status: 0 });
   });

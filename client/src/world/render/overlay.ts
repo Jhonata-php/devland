@@ -4,6 +4,7 @@
 // Organização: tudo o que flutua (placas, pílulas, balões, etiquetas) disputa espaço na tela.
 // Os itens são POSICIONADOS em ordem decrescente de prioridade (quem chega depois desvia, vira
 // só o ícone ou é descartado) e DESENHADOS em ordem crescente (o mais importante fica por cima).
+import { agentRole, ROLES } from '../../../../shared/roles';
 import { TILE } from '../../art/api';
 import type { WorldOptions } from '../api';
 import type { Camera } from '../camera';
@@ -18,7 +19,8 @@ import { tr } from '../../../../shared/i18n';
 
 // A Pixelify Sans tem o "C" maiúsculo quase fechado (lê-se "Oopa" em vez de "Copa") em qualquer
 // peso/tamanho usado no canvas; os textos do mundo usam a fonte do sistema, sempre legível.
-const UI_FONT = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
+// Tema DevLand: rótulos do mapa em fonte de terminal, como o resto da interface.
+const UI_FONT = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace';
 const LABEL_FONT = `600 10.5px ${UI_FONT}`;
 const BUBBLE_FONT = `500 11.5px ${UI_FONT}`;
 const SAY_FONT = `500 10.5px ${UI_FONT}`;
@@ -419,7 +421,7 @@ export class Overlay {
       const anim = room ? buildAnim(room.phase, room.progress(now)) : null;
       // texto da placa quando ela fica grande o bastante para ler; senão, o nome flutuante
       const rect = this.renderer.signRect(vis);
-      const text = room ? room.info.name : vis.id === 'core:recepcao' ? 'Habblaud' : null;
+      const text = room ? room.info.name : vis.id === 'core:recepcao' ? 'DevLand' : null;
       const readable = !!rect && rect.h * zoom >= SIGN_MIN_PX;
       if (readable && rect && text && (!anim || anim.sign >= 1)) {
         const ax = this.sx(rect.x);
@@ -540,18 +542,23 @@ export class Overlay {
     ctx.beginPath();
     ctx.roundRect(x, y + 2, w, h, 7);
     ctx.fill();
-    ctx.fillStyle = 'rgba(22,27,40,0.9)';
+    ctx.fillStyle = 'rgba(4,12,7,0.92)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 7);
+    ctx.roundRect(x, y, w, h, 4);
     ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(57,255,136,0.35)';
+    ctx.beginPath();
+    ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 4);
+    ctx.stroke();
     ctx.fillStyle = accent;
     ctx.beginPath();
-    ctx.roundRect(x, y, 4, h, [7, 0, 0, 7]);
+    ctx.roundRect(x, y, 3, h, [4, 0, 0, 4]);
     ctx.fill();
     let dx = x + 10;
     if (!compact) {
       ctx.font = ROOM_FONT;
-      ctx.fillStyle = '#f3f5fa';
+      ctx.fillStyle = '#d8f5e4';
       ctx.fillText(text, x + 10, y + h / 2 + 1);
       dx = x + 10 + tw + 8;
     }
@@ -560,12 +567,12 @@ export class Overlay {
       dx += 10;
     }
     if (countText) {
-      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.fillStyle = 'rgba(57,255,136,0.16)';
       ctx.beginPath();
-      ctx.roundRect(dx + 2, y + 4, cw - 4, h - 8, 5);
+      ctx.roundRect(dx + 2, y + 4, cw - 4, h - 8, 3);
       ctx.fill();
       ctx.font = LABEL_FONT;
-      ctx.fillStyle = '#dfe5f2';
+      ctx.fillStyle = '#39ff88';
       ctx.fillText(countText, dx + 7, y + h / 2 + 0.5);
     }
     ctx.restore();
@@ -583,12 +590,12 @@ export class Overlay {
     const h = 18;
     const x = Math.round(cx - w / 2);
     const y = Math.round(cy - h - 4);
-    ctx.fillStyle = 'rgba(22,27,40,0.62)';
+    ctx.fillStyle = 'rgba(4,12,7,0.72)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 6);
+    ctx.roundRect(x, y, w, h, 3);
     ctx.fill();
     ctx.font = font;
-    ctx.fillStyle = '#e8ecf5';
+    ctx.fillStyle = '#a9dcbf';
     ctx.fillText(text, x + 7, y + h / 2 + 1);
     this.place(x, y, w, h);
   }
@@ -869,7 +876,14 @@ export class Overlay {
   // =================================================================== etiquetas
 
   /** Larguras das partes da etiqueta. O selo "CODEX" (como o "SUB") só aparece fora do modo compacto. */
-  private labelWidth(l: Label): { nameW: number; chipW: number; badgeW: number; codexW: number } {
+  /** Função do agente (shared/roles.ts) como ícone curto na etiqueta; ausente em subagentes e na visão geral compacta. */
+  private funcOf(l: Label): { icon: string; color: string } | undefined {
+    if (l.compact || l.ch === this.sim.visitor) return undefined;
+    const id = agentRole(l.ch.info, this.sim.rooms.get(l.ch.info.roomId)?.info);
+    return id ? ROLES[id] : undefined;
+  }
+
+  private labelWidth(l: Label): { nameW: number; chipW: number; badgeW: number; codexW: number; funcW: number } {
     const ch = l.ch;
     const acc = this.sim.accounts.get(ch.info.account);
     const nameW = this.measure(LABEL_FONT, ch.info.name);
@@ -877,13 +891,14 @@ export class Overlay {
     const visitor = ch === this.sim.visitor;
     const badgeW = visitor ? this.measure(BADGE_FONT, visitorBadge()) + 7 : ch.info.kind === 'sub' && !l.compact ? this.measure(BADGE_FONT, 'SUB') + 7 : 0;
     const codexW = ch.info.provider === 'codex' && !l.compact ? this.measure(BADGE_FONT, CODEX_BADGE) + 7 : 0;
-    return { nameW, chipW, badgeW, codexW };
+    const f = this.funcOf(l);
+    return { nameW, chipW, badgeW, codexW, funcW: f ? this.measure(BADGE_FONT, f.icon) + 7 : 0 };
   }
 
   /** Posiciona a etiqueta: nos pés (ou acima da cabeça); se colidir, tenta o outro lado. */
   private placeLabel(l: Label): boolean {
-    const { nameW, chipW, badgeW, codexW } = this.labelWidth(l);
-    const w = Math.round(nameW + 10 + chipW + (badgeW ? badgeW + 3 : 0) + (codexW ? codexW + 3 : 0));
+    const { nameW, chipW, badgeW, codexW, funcW } = this.labelWidth(l);
+    const w = Math.round(nameW + 10 + chipW + (badgeW ? badgeW + 3 : 0) + (codexW ? codexW + 3 : 0) + (funcW ? funcW + 3 : 0));
     const h = LABEL_H;
     const x = Math.round(this.sx(l.head.x) - w / 2);
     const below = Math.round(this.sy(l.head.feetY) + 3);
@@ -908,12 +923,12 @@ export class Overlay {
     const acc = this.sim.accounts.get(ch.info.account);
     const sub = ch.info.kind === 'sub';
     const codex = ch.info.provider === 'codex' || acc?.provider === 'codex';
-    const { nameW, chipW, badgeW, codexW } = this.labelWidth(l);
+    const { nameW, chipW, badgeW, codexW, funcW } = this.labelWidth(l);
     const { x, y, w, h } = l;
     const selected = sel.agent === ch.id;
-    ctx.fillStyle = selected ? 'rgba(18,96,140,0.95)' : ch.mode === 'wait' ? 'rgba(120,78,0,0.92)' : 'rgba(22,26,38,0.82)';
+    ctx.fillStyle = selected ? 'rgba(18,120,70,0.95)' : ch.mode === 'wait' ? 'rgba(120,78,0,0.92)' : 'rgba(4,12,7,0.86)';
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 7.5);
+    ctx.roundRect(x, y, w, h, 4);
     ctx.fill();
     let cx = x + 4;
     if (acc && codex) {
@@ -962,6 +977,21 @@ export class Overlay {
       ctx.beginPath();
       ctx.arc(x + w - 3, y + 3, 2.5, 0, Math.PI * 2);
       ctx.fill();
+    }
+    const fn = funcW ? this.funcOf(l) : undefined;
+    if (fn) {
+      // Função: ficha com a cor neon dela (borda e ícone sobre fundo escuro).
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath();
+      ctx.roundRect(cx, y + 3, funcW, h - 6, 3);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = fn.color;
+      ctx.stroke();
+      ctx.font = BADGE_FONT;
+      ctx.fillStyle = fn.color;
+      ctx.fillText(fn.icon, cx + 3.5, y + h / 2 + 0.5);
+      cx += funcW + 3;
     }
     if (codexW) {
       ctx.fillStyle = 'rgba(255,255,255,0.16)';

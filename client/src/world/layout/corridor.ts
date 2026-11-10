@@ -8,11 +8,12 @@ export const CORRIDOR_ID = 'core:corredor';
 const TALL = ['ficus', 'palm', 'monstera', 'bonsai'] as const;
 const SMALL = ['fern', 'succulent', 'flower'] as const;
 /** Passadeira: uma família de cor só (azul-acinzentado discreto), com leve variação de tom. */
-const RUNNERS = ['#8b9bb0', '#8597ab', '#909fb3'] as const;
+const RUNNERS = ['#3f4a5c', '#45405a', '#3c5257'] as const;
 
 export function layoutCorridor(cols: number): AreaLayout {
   const w = cols * COL_W;
   const b = new AreaBuilder(CORRIDOR_ID, 'corridor', { x: 0, y: CORRIDOR_Y, w, h: CORRIDOR_H });
+  // Faixa central do andar open-space: piso de madeira quente, contínuo, ligando as ilhas de trabalho.
   b.floor('concrete', 0, 0, w, CORRIDOR_H, 501);
   // fachadas de vidro nas pontas do corredor (entrada principal a oeste)
   for (let ly = 0; ly < CORRIDOR_H; ly++) {
@@ -20,6 +21,11 @@ export function layoutCorridor(cols: number): AreaLayout {
     b.furn('glass_partition', w - 1, ly, ly === 0 || ly === CORRIDOR_H - 1 ? 'end' : 'v', { order: 0.1 });
   }
   b.walk(1, 0, w - 2, CORRIDOR_H);
+  // pausa para o cigarro: em pé junto ao vidro das duas pontas do corredor
+  for (const ly of [1, 3]) {
+    b.spot('smoke', 1, ly, 'left', { dx: -4 });
+    b.spot('smoke', w - 2, ly, 'right', { dx: 4 });
+  }
 
   for (let c = 0; c < cols; c++) {
     const x = c * COL_W;

@@ -15,7 +15,7 @@
   /* 5,4:1 sobre o painel (#161a23) e 4,8:1 sobre linhas em destaque: AA para texto pequeno. */
   --ui-faint: #8790a6;
   --ui-accent: #7cc8ff;
-  --ui-accent-soft: rgba(124, 200, 255, 0.13);
+  --ui-accent-soft: rgba(57, 255, 136, 0.13);
 
   --st-working: #4fd18b;
   --st-waiting: #ffb547;
@@ -238,6 +238,75 @@
     color 0.15s;
 }
 
+/* Habblaud Cloud: botões da tela vazia (Conectar contas, Abrir terminal). */
+.ui-empty__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Habblaud Cloud: Contas numa janela dentro do escritório (ui/accounts.ts). */
+.ui-accounts {
+  width: min(760px, 96vw);
+  height: min(86vh, 900px);
+  padding: 0;
+  border: 2px solid #3a3f58;
+  border-radius: 10px;
+  background: #1e2130;
+  color: inherit;
+  overflow: hidden;
+}
+.ui-accounts[open] { display: flex; flex-direction: column; }
+.ui-accounts::backdrop { background: rgba(0, 0, 0, 0.6); }
+.ui-accounts__head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 2px solid #3a3f58; }
+.ui-accounts__head h2 { margin: 0; font-size: 16px; }
+/* Celular: folha vinda de baixo, de largura total, com alça e cantos de cima arredondados. */
+@media (max-width: 640px) {
+  .ui-accounts {
+    width: 100vw;
+    max-width: none;
+    height: min(92dvh, 900px);
+    max-height: none;
+    margin: auto 0 0;
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    animation: ui-accounts-up 0.28s var(--ease);
+  }
+
+  .ui-accounts__head {
+    position: relative;
+    padding: 22px 16px 10px;
+    border-bottom: 0;
+  }
+
+  .ui-accounts__head::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 44px;
+    height: 5px;
+    margin-left: -22px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
+
+@keyframes ui-accounts-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+.ui-accounts__frame { flex: 1; width: 100%; border: 0; background: #1e2130; }
+
+/* Habblaud Cloud: "+ Contas" é um link (vai para /contas) com cara de botão. */
+.ui-btn-accounts {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
 .ui-btn .ui-px-icon {
   width: 14px;
   height: 14px;
@@ -250,7 +319,7 @@
 }
 
 .ui-btn.is-on {
-  border-color: rgba(124, 200, 255, 0.55);
+  border-color: rgba(57, 255, 136, 0.55);
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
 }
@@ -265,8 +334,8 @@
   font-family: var(--font-px);
   font-size: 15px;
   letter-spacing: 0.02em;
-  background: #2f7fd1;
-  border-color: #58a6f2;
+  background: #19c76a;
+  border-color: #39ff88;
   color: #fff;
   box-shadow:
     inset 0 -3px 0 rgba(0, 0, 0, 0.22),
@@ -633,7 +702,6 @@
 .ui-brand__mark img {
   width: 32px;
   height: 32px;
-  image-rendering: pixelated;
 }
 
 .ui-brand__mark .ui-mark {
@@ -1218,7 +1286,7 @@
   padding: 0 8px;
   border-radius: 6px;
   background: var(--ui-accent-soft);
-  box-shadow: inset 0 0 0 1px rgba(124, 200, 255, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 136, 0.3);
   color: var(--ui-accent);
   font-size: 11px;
   font-weight: 650;
@@ -1226,7 +1294,7 @@
 }
 
 .ui-usage-card__how:hover {
-  background: rgba(124, 200, 255, 0.2);
+  background: rgba(57, 255, 136, 0.2);
 }
 
 .ui-usage-card__how-short {
@@ -1457,7 +1525,7 @@
 }
 
 .ui-search:focus-within {
-  border-color: rgba(124, 200, 255, 0.55);
+  border-color: rgba(57, 255, 136, 0.55);
   color: var(--ui-accent);
 }
 
@@ -1537,7 +1605,7 @@
   overscroll-behavior: contain;
   padding: 8px 8px 10px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-rooms {
@@ -1919,7 +1987,7 @@
   overscroll-behavior: contain;
   padding: 4px 4px 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-feed__empty {
@@ -2031,7 +2099,7 @@
   overscroll-behavior: contain;
   padding: 16px 16px 20px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-drawer__view.is-gone .ui-hero,
@@ -2845,8 +2913,8 @@
 }
 
 .ui-switch[aria-checked='true'] {
-  background: #2f7fd1;
-  border-color: #58a6f2;
+  background: #19c76a;
+  border-color: #39ff88;
 }
 
 .ui-switch[aria-checked='true'] .ui-switch__knob {
@@ -2888,7 +2956,7 @@
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(124, 200, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 136, 0.35);
 }
 
 /* ------------------------------------------------------------------ ajuda */
@@ -3040,8 +3108,8 @@
 @keyframes ui-help-flash {
   0%,
   35% {
-    box-shadow: 0 0 0 6px rgba(124, 200, 255, 0.14);
-    background: rgba(124, 200, 255, 0.06);
+    box-shadow: 0 0 0 6px rgba(57, 255, 136, 0.14);
+    background: rgba(57, 255, 136, 0.06);
   }
 }
 
@@ -3143,7 +3211,7 @@
   overflow: visible;
   box-shadow: none;
   background:
-    linear-gradient(180deg, transparent 72%, rgba(124, 200, 255, 0.07) 72%),
+    linear-gradient(180deg, transparent 72%, rgba(57, 255, 136, 0.07) 72%),
     radial-gradient(ellipse 60% 18% at 50% 92%, rgba(0, 0, 0, 0.35), transparent);
   border-radius: 10px;
 }
@@ -4084,6 +4152,14 @@
     --top-h: 108px;
     --gap: 8px;
     --feed-h: 44vh;
+    /* A barra lateral usa a largura toda do celular (sem uma faixa do mapa ao lado). */
+    --side-w: calc(100vw - var(--gap) * 2);
+  }
+
+  /* "+ Contas" (Cloud) menor, para os botões da direita caberem na primeira linha com a marca. */
+  .ui-btn-accounts {
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .ui-topbar {
@@ -4249,6 +4325,12 @@
     order: 10;
     flex: 1 1 60%;
   }
+
+  /* Cartões nunca menores que o conteúdo (chip + "5h 33%" / "Sem. 55%"): encolhidos, os números vazavam para o cartão do
+     lado. O cartão é um contêiner (container query), então "auto" não serve: largura mínima fixa, e a fila rola. */
+  .ui-usage .ui-usage-card {
+    flex: 1 0 106px;
+  }
 }
 
 /* Celulares de 320 px: com os botões de 32 px a primeira linha (marca + 7 botões) não cabe. */
@@ -4286,8 +4368,8 @@
   margin: 0 0 10px;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
-  background: rgba(124, 200, 255, 0.08);
-  border: 1px solid rgba(124, 200, 255, 0.2);
+  background: rgba(57, 255, 136, 0.08);
+  border: 1px solid rgba(57, 255, 136, 0.2);
   color: #cfe9ff;
   font-size: 12.5px;
 }
@@ -4572,7 +4654,7 @@
   right: 0;
   bottom: 0;
   height: 2px;
-  background: repeating-linear-gradient(90deg, rgba(124, 200, 255, 0.32) 0 4px, transparent 4px 5px);
+  background: repeating-linear-gradient(90deg, rgba(57, 255, 136, 0.32) 0 4px, transparent 4px 5px);
 }
 
 .ui-term__icon {
@@ -4673,7 +4755,7 @@
   padding: 14px 16px 18px;
   font: 12.5px/1.55 var(--font-mono);
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-root .ui-term__scroll:focus-visible {
@@ -4971,8 +5053,8 @@ button.ui-term__think:hover,
   height: 28px;
   padding: 0 12px;
   border-radius: 6px;
-  background: #2f7fd1;
-  border: 1px solid #58a6f2;
+  background: #19c76a;
+  border: 1px solid #39ff88;
   font: 500 13px/1 var(--font-px);
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -5076,7 +5158,7 @@ button.ui-term__think:hover,
 }
 
 .ui-term__prompt:focus-within {
-  border-color: rgba(124, 200, 255, 0.55);
+  border-color: rgba(57, 255, 136, 0.55);
 }
 
 .ui-term__prompt.is-disabled {
@@ -5145,7 +5227,7 @@ button.ui-term__think:hover,
 
 .ui-msg--drawer .ui-msg__input:focus {
   outline: none;
-  border-color: rgba(124, 200, 255, 0.6);
+  border-color: rgba(57, 255, 136, 0.6);
 }
 
 .ui-msg--drawer .ui-msg__input::placeholder {
@@ -5156,13 +5238,13 @@ button.ui-term__think:hover,
   flex: none;
   height: 32px;
   background: var(--ui-accent-soft);
-  border-color: rgba(124, 200, 255, 0.5);
+  border-color: rgba(57, 255, 136, 0.5);
   color: #cfe9ff;
   font-weight: 600;
 }
 
 .ui-msg--drawer .ui-msg__send:hover:not(:disabled) {
-  background: rgba(124, 200, 255, 0.22);
+  background: rgba(57, 255, 136, 0.22);
 }
 
 .ui-msg__send:disabled {
@@ -5219,7 +5301,7 @@ button.ui-term__think:hover,
 
 .ui-msg--terminal .ui-msg__send:hover:not(:disabled) {
   color: var(--ui-text);
-  border-color: rgba(124, 200, 255, 0.55);
+  border-color: rgba(57, 255, 136, 0.55);
 }
 
 .ui-msg__hint,
@@ -5327,7 +5409,7 @@ button.ui-term__think:hover,
   overflow-wrap: normal;
   font: inherit;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-md__pre {
@@ -5415,6 +5497,34 @@ button.ui-term__think:hover,
   .ui-term__foot {
     padding: 6px 10px 10px;
   }
+
+  /* Cabeçalho em duas linhas: nome e botões de janela em cima, "Assumir daqui" e "Encerrar" embaixo (em uma só, o nome
+     virava "R..." e os botões estouravam a largura). */
+  .ui-term__bar {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 6px;
+    padding: 6px 6px 8px 12px;
+  }
+
+  .ui-term__who .ui-role,
+  .ui-term__who .ui-prov {
+    display: none;
+  }
+
+  .ui-term .ui-termact {
+    order: 5;
+    flex: 1 1 100%;
+  }
+
+  .ui-term .ui-termact .ui-btn {
+    flex: 1;
+  }
+
+  .ui-term .ui-termact__msg {
+    max-width: 100%;
+    white-space: normal;
+  }
 }
 
 /* ---------------------------------------------------------------- terminal v2: busca, filtro, copiar e histórico */
@@ -5471,7 +5581,7 @@ button.ui-term__think:hover,
 }
 
 .ui-term__search:focus-within {
-  border-color: rgba(124, 200, 255, 0.55);
+  border-color: rgba(57, 255, 136, 0.55);
   color: var(--ui-accent);
 }
 
@@ -5717,7 +5827,7 @@ button.ui-term__think:hover,
   overscroll-behavior: contain;
   padding: 0 6px 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-hist__day-label {
@@ -5940,7 +6050,7 @@ html.is-replay #world {
   height: 36px;
   color: var(--ui-accent);
   background: var(--ui-accent-soft);
-  box-shadow: inset 0 0 0 1px rgba(124, 200, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(57, 255, 136, 0.35);
 }
 
 .ui-lapse__play:disabled {
@@ -6049,7 +6159,7 @@ html.is-replay #world {
   bottom: 0;
   left: 0;
   width: var(--p);
-  background: rgba(124, 200, 255, 0.1);
+  background: rgba(57, 255, 136, 0.1);
   border-right: 2px solid var(--ui-accent);
   border-radius: 6px 0 0 6px;
   pointer-events: none;
@@ -6589,7 +6699,7 @@ html.is-replay #world {
   height: 22px;
   margin: 0;
   background: transparent;
-  accent-color: #2f7fd1;
+  accent-color: #19c76a;
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
@@ -6665,7 +6775,7 @@ html.is-replay #world {
 
 .ui-snd__chip[aria-pressed='true'] {
   background: var(--ui-accent-soft);
-  border-color: rgba(124, 200, 255, 0.35);
+  border-color: rgba(57, 255, 136, 0.35);
   color: var(--ui-accent);
   font-weight: 600;
 }
@@ -8076,7 +8186,7 @@ html.is-replay #world {
 }
 
 .ui-char__chip[aria-checked='true'] {
-  border-color: rgba(124, 200, 255, 0.6);
+  border-color: rgba(57, 255, 136, 0.6);
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
 }
@@ -8650,7 +8760,7 @@ html.is-replay #world {
   place-items: center;
   flex: none;
   border-radius: 6px;
-  background: rgba(124, 200, 255, 0.16);
+  background: rgba(57, 255, 136, 0.16);
   color: #cfe9ff;
   font: 700 12px/1 var(--font-px);
 }
@@ -8730,8 +8840,8 @@ html.is-replay #world {
 .ui-deliv-modal__summary {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(124, 200, 255, 0.08);
-  border: 1px solid rgba(124, 200, 255, 0.25);
+  background: rgba(57, 255, 136, 0.08);
+  border: 1px solid rgba(57, 255, 136, 0.25);
 }
 
 .ui-deliv-modal__summary p,
@@ -9054,7 +9164,7 @@ html.is-replay #world {
   border: 1px solid var(--ui-line-strong);
   box-shadow:
     0 30px 70px rgba(5, 7, 12, 0.55),
-    inset 0 3px 0 rgba(124, 200, 255, 0.35);
+    inset 0 3px 0 rgba(57, 255, 136, 0.35);
   color: var(--ui-text);
   font: 13px/1.45 var(--font-ui);
   overflow: hidden;
@@ -9079,8 +9189,8 @@ html.is-replay #world {
   gap: 12px;
   padding: 16px 14px 12px 22px;
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(124, 200, 255, 0.16), transparent 55%),
-    linear-gradient(180deg, rgba(124, 200, 255, 0.06), transparent);
+    radial-gradient(120% 140% at 0% 0%, rgba(57, 255, 136, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(57, 255, 136, 0.06), transparent);
   border-bottom: 1px solid var(--ui-line);
 }
 
@@ -9091,7 +9201,7 @@ html.is-replay #world {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(160deg, var(--ui-accent-soft), rgba(124, 200, 255, 0.28));
+  background: linear-gradient(160deg, var(--ui-accent-soft), rgba(57, 255, 136, 0.28));
   color: var(--ui-accent);
 }
 
@@ -9178,7 +9288,7 @@ html.is-replay #world {
 
 .ui-world__chip.is-logged_out {
   color: var(--ui-accent);
-  border-color: rgba(124, 200, 255, 0.35);
+  border-color: rgba(57, 255, 136, 0.35);
 }
 
 .ui-world__body,
@@ -9240,7 +9350,7 @@ html.is-replay #world {
   padding: 8px 10px;
   border-radius: 8px;
   background: var(--ui-accent-soft);
-  border: 1px solid rgba(124, 200, 255, 0.25);
+  border: 1px solid rgba(57, 255, 136, 0.25);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -9362,7 +9472,7 @@ html.is-replay #world {
   width: 16px;
   height: 16px;
   margin: 1px 0 0;
-  accent-color: #2f7fd1;
+  accent-color: #19c76a;
 }
 
 /* Resumo de privacidade (tela do cadastro) */
@@ -9438,10 +9548,10 @@ html.is-replay #world {
   /* Prédio apagado em pixels: corpo, janelas e porta. */
   background:
     linear-gradient(var(--ui-faint), var(--ui-faint)) 12px 32px / 6px 8px no-repeat,
-    linear-gradient(rgba(124, 200, 255, 0.35), rgba(124, 200, 255, 0.35)) 6px 8px / 6px 4px no-repeat,
-    linear-gradient(rgba(124, 200, 255, 0.35), rgba(124, 200, 255, 0.35)) 18px 8px / 6px 4px no-repeat,
-    linear-gradient(rgba(124, 200, 255, 0.2), rgba(124, 200, 255, 0.2)) 6px 18px / 6px 4px no-repeat,
-    linear-gradient(rgba(124, 200, 255, 0.2), rgba(124, 200, 255, 0.2)) 18px 18px / 6px 4px no-repeat,
+    linear-gradient(rgba(57, 255, 136, 0.35), rgba(57, 255, 136, 0.35)) 6px 8px / 6px 4px no-repeat,
+    linear-gradient(rgba(57, 255, 136, 0.35), rgba(57, 255, 136, 0.35)) 18px 8px / 6px 4px no-repeat,
+    linear-gradient(rgba(57, 255, 136, 0.2), rgba(57, 255, 136, 0.2)) 6px 18px / 6px 4px no-repeat,
+    linear-gradient(rgba(57, 255, 136, 0.2), rgba(57, 255, 136, 0.2)) 18px 18px / 6px 4px no-repeat,
     linear-gradient(rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.09)) 0 0 / 30px 40px no-repeat;
   image-rendering: pixelated;
 }
@@ -9585,7 +9695,7 @@ html.is-replay #world {
 }
 
 .ui-world__trait-opt[aria-pressed='true'] {
-  border-color: rgba(124, 200, 255, 0.6);
+  border-color: rgba(57, 255, 136, 0.6);
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
   font-weight: 600;
@@ -9665,7 +9775,7 @@ html.is-replay #world {
   border: 1px solid var(--ui-line-strong);
   box-shadow:
     0 30px 70px rgba(5, 7, 12, 0.55),
-    inset 0 3px 0 rgba(124, 200, 255, 0.35);
+    inset 0 3px 0 rgba(57, 255, 136, 0.35);
   color: var(--ui-text);
   font: 13px/1.45 var(--font-ui);
   overflow: hidden;
@@ -9690,8 +9800,8 @@ html.is-replay #world {
   gap: 12px;
   padding: 20px 22px 14px;
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(124, 200, 255, 0.16), transparent 55%),
-    linear-gradient(180deg, rgba(124, 200, 255, 0.06), transparent);
+    radial-gradient(120% 140% at 0% 0%, rgba(57, 255, 136, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(57, 255, 136, 0.06), transparent);
   border-bottom: 1px solid var(--ui-line);
 }
 
@@ -9702,7 +9812,7 @@ html.is-replay #world {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: linear-gradient(160deg, var(--ui-accent-soft), rgba(124, 200, 255, 0.28));
+  background: linear-gradient(160deg, var(--ui-accent-soft), rgba(57, 255, 136, 0.28));
   color: var(--ui-accent);
 }
 
@@ -9764,7 +9874,7 @@ html.is-replay #world {
   padding: 8px 10px;
   border-radius: 8px;
   background: var(--ui-accent-soft);
-  border: 1px solid rgba(124, 200, 255, 0.25);
+  border: 1px solid rgba(57, 255, 136, 0.25);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -10268,7 +10378,7 @@ html.is-replay #world {
 }
 
 .ui-scene-btn.is-city {
-  border-color: rgba(124, 200, 255, 0.35);
+  border-color: rgba(57, 255, 136, 0.35);
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
 }
@@ -10735,7 +10845,7 @@ html.is-replay #world {
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
-  background: rgba(124, 200, 255, 0.14);
+  background: rgba(57, 255, 136, 0.14);
   color: var(--ui-accent);
 }
 
@@ -10877,7 +10987,7 @@ html.is-replay #world {
 }
 
 .ui-visit-agent.is-selected {
-  border-color: rgba(124, 200, 255, 0.5);
+  border-color: rgba(57, 255, 136, 0.5);
   background: var(--ui-accent-soft);
 }
 
@@ -10931,7 +11041,7 @@ html.is-replay #world {
   padding: 10px;
   border-radius: var(--radius-sm);
   background: var(--ui-bg-solid);
-  border: 1px solid rgba(124, 200, 255, 0.4);
+  border: 1px solid rgba(57, 255, 136, 0.4);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -11147,3 +11257,1246 @@ html.is-replay #world {
 .ui-world-chip__visitors[hidden] {
   display: none;
 }
+
+/* Telas de toque: não há hover, então o botão de copiar fica sempre à vista, só com o ícone, em coluna própria à direita
+   (antes aparecia por cima do texto da linha tocada). */
+@media (hover: none) {
+  .ui-term__row,
+  .ui-term__call,
+  .ui-term__result {
+    padding-right: 30px;
+  }
+
+  .ui-term__copy {
+    opacity: 0.55;
+    pointer-events: auto;
+    padding: 0 4px;
+  }
+
+  .ui-term__copy > :not(.ui-term__copy-icon) {
+    display: none;
+  }
+
+  .ui-term__row--user > .ui-term__copy {
+    top: 3px;
+    right: 4px;
+  }
+}
+
+/* ---------------------------------------------------------------- barra de navegação do celular (ui/bottomnav.ts) */
+
+.ui-bnav {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .ui-root {
+    /* Altura da barra (sobe acima da barra de gestos do iPhone); o que ancora embaixo fica acima dela. */
+    --nav-h: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ui-bnav {
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    height: var(--nav-h);
+    padding: 0 4px env(safe-area-inset-bottom, 0px);
+    background: rgba(12, 14, 20, 0.94);
+    -webkit-backdrop-filter: blur(14px) saturate(1.25);
+    backdrop-filter: blur(14px) saturate(1.25);
+    border-top: 1px solid var(--ui-line-strong);
+  }
+
+  .ui-bnav__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ui-muted);
+    font: 500 11px/1 var(--font-ui);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ui-bnav__item.is-active {
+    color: var(--ui-accent);
+    background: rgba(57, 255, 136, 0.1);
+  }
+
+  .ui-bnav__icon {
+    display: grid;
+  }
+
+  .ui-bnav__icon .ui-px-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ui-bnav__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ui-bnav__badge {
+    position: absolute;
+    top: 3px;
+    left: calc(50% + 6px);
+    min-width: 16px;
+    padding: 2px 4px;
+    border-radius: 8px;
+    background: var(--st-waiting, #f4c95d);
+    color: #14161f;
+    font: 700 10px/1 var(--font-ui);
+    text-align: center;
+  }
+
+  .ui-bnav__badge[hidden] {
+    display: none;
+  }
+
+  .ui-bnav__item[hidden] {
+    display: none;
+  }
+
+  /* O que a barra de baixo já tem (Agentes e Novo) sai do topo. */
+  .ui-topbar .ui-btn-sidebar,
+  .ui-topbar .ui-btn-spawn {
+    display: none;
+  }
+
+  /* Terminal: os botões de ação (Nova sessão, Assumir, Encerrar) em linha própria, com a mesma margem dos dois lados. */
+  .ui-term__bar {
+    padding-right: 10px;
+  }
+
+  .ui-term .ui-termact {
+    flex-wrap: wrap;
+  }
+
+  .ui-term .ui-termact .ui-btn {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  /* "+ Contas" do topo vira a aba Contas da barra de baixo. */
+  .ui-topbar .ui-btn-accounts {
+    display: none;
+  }
+
+  /* Tudo que ancorava embaixo sobe acima da barra. */
+  .ui-sidebar,
+  .ui-feed,
+  .ui-drawer {
+    bottom: calc(var(--gap) + var(--nav-h));
+  }
+
+  .ui-deliv-toast {
+    bottom: calc(72px + var(--nav-h));
+  }
+}
+
+/* Ajustes › Sobre (Cloud): ligar o Habblaud ao Velix para atualizar por aqui. */
+.ui-about__cfg {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ui-about__cfg > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ui-about__field {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+@media (max-width: 600px) {
+  /* Menus (Ajustes, Novo agente...) no celular: fundo sólido e sempre acima da barra de baixo. */
+  .ui-popover {
+    background: #12151d;
+    max-height: calc(100dvh - var(--top-h) - var(--nav-h, 0px) - 24px);
+  }
+}
+
+/* Ajustes no celular: folha de baixo até o topo da barra (alça, cabeçalho fixo), seções em cartões e linhas fáceis de tocar. */
+@media (max-width: 600px) {
+  .ui-popover.ui-settings {
+    top: calc(var(--top-h) + var(--gap)) !important;
+    bottom: calc(var(--nav-h, 0px) + var(--gap)) !important;
+    left: var(--gap) !important;
+    right: var(--gap) !important;
+    width: auto;
+    height: calc(100dvh - var(--top-h) - var(--nav-h, 0px) - var(--gap) * 2) !important;
+    max-height: none !important;
+    padding: 0 0 12px;
+    border-radius: 20px;
+    background: #12151d;
+  }
+
+  .ui-settings .ui-popover__head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 16px 12px 10px 18px;
+    background: #12151d;
+    border-bottom: 1px solid var(--ui-line);
+  }
+
+  .ui-settings .ui-popover__head h2 {
+    font-size: 17px;
+  }
+
+  .ui-settings .ui-set-group {
+    margin: 12px 12px 0;
+    padding: 12px 14px 10px;
+    border: 1px solid var(--ui-line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .ui-settings .ui-set-group + .ui-set-group {
+    border-top: 1px solid var(--ui-line);
+    padding-top: 12px;
+  }
+
+  .ui-settings .ui-set-group h3 {
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--ui-accent);
+  }
+
+  .ui-settings .ui-set {
+    min-height: 48px;
+    padding: 8px 0;
+  }
+
+  .ui-settings .ui-set + .ui-set {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .ui-settings .ui-btn {
+    min-height: 40px;
+    padding-inline: 14px;
+  }
+
+  .ui-settings .ui-set__hint {
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+}
+
+.ui-about__auto {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.ui-about__autolabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  font-weight: 600;
+}
+
+.ui-about__autolabel input {
+  width: 20px;
+  height: 20px;
+}
+
+.ui-about__win {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ui-line-strong);
+  background: var(--ui-bg-solid);
+  color: inherit;
+  font: inherit;
+}
+
+/* ---------------------------------------------------------------- Conversas (ui/chats.ts): agentes como mensagens */
+
+.ui-chats {
+  position: fixed;
+  z-index: 36;
+  left: 0;
+  right: 0;
+  top: var(--top-h);
+  bottom: var(--nav-h, 0px);
+  display: flex;
+  flex-direction: column;
+  background: #0e1118;
+  border-top: 1px solid var(--ui-line);
+  color: var(--ui-text);
+}
+
+.ui-chats[hidden],
+.ui-chats__screen[hidden] {
+  display: none;
+}
+
+.ui-chats__screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ui-chats__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 10px 16px;
+  border-bottom: 1px solid var(--ui-line);
+  background: #12151d;
+}
+
+.ui-chats__head h2 {
+  flex: 1;
+  margin: 0;
+  font: 700 18px/1.2 var(--font-ui);
+}
+
+.ui-chats__who {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-chats__title {
+  font: 700 16px/1.2 var(--font-ui);
+}
+
+.ui-chats__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 12px;
+}
+
+.ui-chats__empty {
+  margin: 32px 24px;
+  text-align: center;
+  color: var(--ui-muted);
+}
+
+.ui-chats__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-chats__item:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ui-chats__item.is-gone {
+  opacity: 0.6;
+}
+
+.ui-chats__avatar {
+  position: relative;
+  flex: none;
+  display: grid;
+}
+
+.ui-chats__dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #0e1118;
+  background: #5b6378;
+}
+
+.ui-chats__dot.is-working {
+  background: #5fd38d;
+}
+
+.ui-chats__dot.is-waiting {
+  background: #f4c95d;
+}
+
+.ui-chats__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.ui-chats__text strong {
+  font: 700 16px/1.2 var(--font-ui);
+}
+
+.ui-chats__room {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #b6bdd0;
+}
+
+.ui-chats__when {
+  flex: none;
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__msgs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overscroll-behavior: contain;
+}
+
+.ui-chats__note {
+  margin: 0;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ui-muted);
+}
+
+.ui-chats__note[hidden] {
+  display: none;
+}
+
+.ui-chats__row {
+  display: flex;
+}
+
+.ui-chats__row--me {
+  justify-content: flex-end;
+}
+
+.ui-chats__bubble {
+  position: relative;
+  max-width: 86%;
+  padding: 8px 12px 6px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ui-chats__bubble--me {
+  border-bottom-right-radius: 4px;
+  background: #1f4a7a;
+  color: #eaf3ff;
+  white-space: pre-wrap;
+}
+
+.ui-chats__bubble--agent {
+  border-bottom-left-radius: 4px;
+  background: #1c2030;
+  border: 1px solid var(--ui-line);
+}
+
+.ui-chats__bubble p {
+  margin: 0 0 6px;
+}
+
+.ui-chats__bubble pre {
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 12.5px;
+}
+
+.ui-chats__time {
+  display: block;
+  margin-top: 2px;
+  text-align: right;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.ui-chats__sys {
+  align-self: center;
+  max-width: 90%;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  color: var(--ui-muted);
+  text-align: center;
+}
+
+.ui-chats__tool {
+  align-self: flex-start;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font: 12px/1.4 var(--font-mono, monospace);
+  color: var(--ui-muted);
+}
+
+.ui-chats__composer {
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px) * 0);
+  border-top: 1px solid var(--ui-line);
+  background: #12151d;
+}
+
+@media (min-width: 601px) {
+  /* No computador a barra de baixo não existe: as conversas ficam ao lado, com a largura de um painel. */
+  .ui-chats {
+    left: auto;
+    width: min(420px, 100vw);
+    bottom: 0;
+  }
+}
+
+/* Celular: o terminal interativo (ui-term ui-pty) fica por cima da barra do topo e da de baixo, como o terminal da conversa
+   (a regra .ui-pty { z-index: 31 } o deixava por baixo delas e escondia o cabeçalho). */
+@media (max-width: 600px) {
+  .ui-term.ui-pty {
+    z-index: 58;
+  }
+}
+
+/* Novo agente: escolha da conta */
+.ui-spawn__accounts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ui-spawn__acc { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; }
+.ui-spawn__acc.is-on { border-color: var(--accent, #6cb4ff); background: color-mix(in srgb, var(--accent, #6cb4ff) 16%, transparent); }
+
+/* Caixa de mensagem: anexos e ditado do navegador */
+.ui-msg__attach { min-width: 40px; min-height: 40px; padding: 0 8px; }
+.ui-msg__files { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0 0 6px; padding: 0; }
+.ui-msg__file { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 8px; border: 1px solid var(--line, #2a3550); border-radius: 8px; font-size: 13px; }
+.ui-msg__file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
+.ui-msg__file-x { all: unset; cursor: pointer; padding: 0 4px; font-size: 18px; line-height: 1; }
+.ui-msg__mic.is-recording { border-color: #e5534b; box-shadow: 0 0 0 2px rgba(229, 83, 75, .35); }
+
+/* ===== Tema hacker =====
+   Terminal verde-neon sobre preto: a mesma identidade da tela de login (server/http/auth-shell.ts). Só troca as
+   variáveis e acrescenta brilho/varredura; o layout continua o mesmo. */
+.ui-root {
+  --ui-bg: rgba(5, 12, 8, 0.86);
+  --ui-bg-solid: rgba(6, 13, 9, 0.98);
+  --ui-bg-soft: rgba(57, 255, 136, 0.04);
+  --ui-bg-hover: rgba(57, 255, 136, 0.09);
+  --ui-line: rgba(57, 255, 136, 0.2);
+  --ui-line-strong: rgba(57, 255, 136, 0.4);
+  --ui-text: #d8f5e4;
+  --ui-muted: #86ab98;
+  --ui-faint: #7fa592;
+  --ui-accent: #39ff88;
+  --ui-accent-soft: rgba(57, 255, 136, 0.14);
+  --st-working: #39ff88;
+  --st-waiting: #ffd24a;
+  --st-shell: #4de1ff;
+  --st-done: #4de1ff;
+  --font-ui: ui-monospace, 'SF Mono', SFMono-Regular, 'JetBrains Mono', Menlo, Consolas, monospace;
+  --radius: 8px;
+  --radius-sm: 6px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* Painéis e janelas: borda neon e halo suave. */
+.ui-root :is(.ui-popover, .ui-panel, .ui-drawer, .ui-side, .ui-top, .ui-feed, .ui-dialog, .ui-chats, .ui-accounts, .ui-term, .ui-bnav) {
+  border-color: var(--ui-line-strong);
+  box-shadow: 0 0 0 1px rgba(57, 255, 136, 0.05), 0 12px 40px -14px rgba(0, 0, 0, 0.85), 0 0 36px -22px rgba(57, 255, 136, 0.7);
+}
+
+.ui-root :is(h1, h2, h3, .ui-set__label, .ui-spawn__label) {
+  text-shadow: 0 0 14px rgba(57, 255, 136, 0.25);
+}
+.ui-root :is(.ui-popover__head h2, .ui-dialog__head h2, .ui-accounts__head h2)::before {
+  content: '> ';
+  color: var(--ui-accent);
+}
+.ui-root .ui-spawn__label::before { content: '$ '; color: var(--ui-accent); }
+
+/* Botões e campos. */
+.ui-root :is(.ui-btn, .ui-icon-btn) { border-color: var(--ui-line); }
+.ui-root :is(.ui-btn, .ui-icon-btn):hover { border-color: var(--ui-accent); box-shadow: 0 0 18px -6px rgba(57, 255, 136, 0.7); }
+.ui-root :is(input, textarea, select):focus { border-color: var(--ui-accent); box-shadow: 0 0 0 3px rgba(57, 255, 136, 0.14); outline: 0; }
+.ui-root .ui-perm__btn--allow, .ui-root .ui-spawn__go { color: #03120a; background: linear-gradient(180deg, #39ff88, #19c76a); border-color: #39ff88; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 0 24px -6px rgba(57, 255, 136, 0.65); }
+
+/* Barra de baixo (celular) e abas ativas. */
+.ui-root .ui-bnav__item.is-active, .ui-root .ui-bnav button[aria-current='page'] { color: var(--ui-accent); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
+
+
+
+/* ===== Tema hacker: layout =====
+   Topo = painel de status (HUD) colado nas bordas; lateral = árvore de arquivos; ajustes = janelas de terminal. */
+@media (min-width: 601px) { .ui-root { --top-h: 56px; } }
+
+/* Topo: barra cheia, com a linha de varredura correndo embaixo. */
+.ui-topbar {
+  background: linear-gradient(180deg, rgba(6, 16, 10, 0.97), rgba(4, 10, 6, 0.93));
+  border-bottom: 1px solid var(--ui-line-strong);
+  box-shadow: 0 10px 40px -12px rgba(57, 255, 136, 0.35);
+  padding: 0 14px 0 10px;
+}
+.ui-topbar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #39ff88 20%, #4de1ff 50%, #39ff88 80%, transparent);
+  background-size: 200% 100%;
+  opacity: 0.7;
+  animation: hk-line 6s linear infinite;
+}
+@keyframes hk-line { to { background-position: -200% 0; } }
+
+/* Topo: três zonas bem separadas — marca | métricas | contas e ferramentas. */
+@media (min-width: 601px) { .ui-root { --top-h: 64px; } }
+.ui-topbar { gap: 16px; }
+.ui-topbar__left { padding-right: 16px; border-right: 1px solid var(--ui-line); height: 36px; }
+.ui-brand__text { gap: 2px; }
+/* Métricas: um bloco só, com divisórias, número grande em verde e rótulo pequeno em caixa-alta. */
+.ui-counters { padding: 0; border: 1px solid var(--ui-line-strong); border-radius: 6px; background: rgba(57, 255, 136, 0.05); overflow: hidden; }
+.ui-counter { align-items: center; min-width: 76px; padding: 5px 14px; border-radius: 0; }
+.ui-counter + .ui-counter { box-shadow: none; border-left: 1px solid var(--ui-line); }
+.ui-counter__value { font-size: 22px; line-height: 1; font-weight: 800; color: var(--ui-accent); text-shadow: 0 0 14px rgba(57, 255, 136, 0.55); font-variant-numeric: tabular-nums; }
+.ui-counter__label { margin-top: 3px; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-muted); }
+.ui-counter.is-active { background: rgba(255, 210, 74, 0.12); }
+.ui-counter.is-active .ui-counter__value { color: #ffd24a; text-shadow: 0 0 16px rgba(255, 210, 74, 0.75); }
+.ui-counter.is-active .ui-counter__label { color: #ffd24a; }
+/* Contas: etiquetas compactas com faixa colorida na esquerda; o e-mail fica na dica. */
+.ui-usage { gap: 8px; }
+.ui-usage-card { width: 232px; min-width: 176px; border-radius: 6px; border: 1px solid var(--ui-line); border-left: 3px solid var(--acc); background: rgba(0, 0, 0, 0.4); padding: 5px 10px 5px 8px; }
+.ui-usage-card__email { display: none !important; }
+.ui-usage-card:hover { border-color: var(--acc); box-shadow: 0 0 18px -6px var(--acc); }
+/* Ferramentas: ícones quadrados soltos, sem a caixa em volta do grupo. */
+.ui-btn-group { gap: 4px; padding: 0; background: none; border: 0; }
+.ui-topbar .ui-icon-btn { width: 34px; height: 34px; border-radius: 6px; border: 1px solid transparent; }
+.ui-topbar .ui-icon-btn:hover { border-color: var(--ui-accent); background: rgba(57, 255, 136, 0.1); }
+.ui-topbar__right { gap: 10px; padding-left: 14px; border-left: 1px solid var(--ui-line); height: 36px; }
+
+/* Lateral: árvore de arquivos colada na borda esquerda. */
+.ui-sidebar { top: var(--top-h); left: 0; bottom: 0; border-radius: 0; border-width: 0 1px 0 0; border-right: 1px solid var(--ui-line-strong); background: rgba(3, 9, 5, 0.94); }
+.ui-side__title h2 { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+.ui-side__title h2::before { content: '~/'; color: var(--ui-accent); text-transform: none; }
+.ui-rooms { position: relative; }
+.ui-room { position: relative; border: 0; border-left: 1px dashed var(--ui-line-strong); border-radius: 0; margin-left: 8px; padding-left: 10px; background: none; }
+.ui-room__head::before { content: '▾'; color: var(--ui-accent); margin-right: 6px; }
+.ui-room__name { text-transform: lowercase; letter-spacing: 0.02em; }
+.ui-room__name::before { content: '/'; color: var(--ui-accent); }
+.ui-room__path { opacity: 0.55; }
+.ui-node { position: relative; border-radius: 3px; }
+.ui-node::before { content: '├─'; position: absolute; left: -22px; top: 50%; transform: translateY(-50%); color: var(--ui-line-strong); font-size: 11px; }
+.ui-node:last-child::before { content: '└─'; }
+.ui-node:hover, .ui-node.is-selected { background: rgba(57, 255, 136, 0.1); box-shadow: inset 2px 0 0 var(--ui-accent); }
+
+/* Configurações: cada grupo é uma janela de terminal; interruptor vira [ ON ]/[ OFF ]. */
+.ui-set-group { position: relative; border: 1px solid var(--ui-line); border-radius: 6px; background: rgba(0, 0, 0, 0.32); padding-top: 34px !important; overflow: hidden; }
+.ui-set-group > h3 {
+  position: absolute; left: 0; right: 0; top: 0; margin: 0 !important; padding: 8px 12px 8px 54px;
+  background: rgba(57, 255, 136, 0.07); border-bottom: 1px solid var(--ui-line);
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-accent);
+}
+.ui-set-group > h3::before {
+  content: ''; position: absolute; left: 12px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%;
+  background: #ff5f56; box-shadow: 14px 0 0 #ffbd2e, 28px 0 0 #27c93f;
+}
+.ui-set { border-bottom: 1px dotted var(--ui-line); }
+.ui-set__label::before { content: '$ '; color: var(--ui-accent); }
+.ui-switch { width: 58px; height: 26px; border-radius: 3px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--ui-line-strong); position: relative; }
+.ui-switch::after { content: 'OFF'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: var(--ui-muted); }
+.ui-switch[aria-checked='true'] { background: rgba(57, 255, 136, 0.18); border-color: var(--ui-accent); box-shadow: 0 0 16px -4px rgba(57, 255, 136, 0.7); }
+.ui-switch[aria-checked='true']::after { content: 'ON'; left: 9px; right: auto; color: var(--ui-accent); }
+.ui-switch__knob { border-radius: 2px !important; width: 14px; height: 14px; top: 5px; background: var(--ui-muted); }
+.ui-switch[aria-checked='true'] .ui-switch__knob { transform: translateX(32px); background: var(--ui-accent); box-shadow: 0 0 10px var(--ui-accent); }
+.ui-snd__chip { border-radius: 3px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.ui-snd__chip[aria-pressed='true'] { background: rgba(57, 255, 136, 0.16); border-color: var(--ui-accent); color: var(--ui-accent); }
+
+/* Função do agente: ficha neon com a cor de cada função (--func). */
+.ui-func {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  padding: 1px 6px; border: 1px solid var(--func, var(--ui-accent)); border-radius: 3px;
+  background: rgba(0, 0, 0, 0.5); color: var(--func, var(--ui-accent));
+  font: 700 10px/1.4 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap;
+}
+.ui-func[hidden] { display: none; }
+.ui-func--btn, button.ui-func { cursor: pointer; opacity: 0.6; }
+.ui-func--btn:hover, button.ui-func:hover, .ui-func.is-on { opacity: 1; box-shadow: 0 0 10px -3px var(--func, var(--ui-accent)); background: rgba(57, 255, 136, 0.06); }
+.ui-func-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 2px; }
+.ui-func-filters[hidden] { display: none; }
+.ui-chats__text .ui-func { align-self: flex-start; }
+.ui-spawn__roles { flex-wrap: wrap; }
+.ui-spawn__roles .ui-func { padding: 6px 10px; font-size: 11px; }
+
+/* Prévia ao vivo: navegador de terminal com o site do projeto dentro. */
+.ui-preview { width: min(760px, calc(100vw - 16px)); height: min(640px, calc(100vh - var(--top-h) - 24px)); top: calc(var(--top-h) + 8px); right: 8px; display: flex; flex-direction: column; overflow: hidden; border-color: var(--ui-accent); box-shadow: 0 0 28px -8px rgba(57, 255, 136, 0.55); }
+.ui-preview:not(:popover-open):not(.is-open) { display: none; }
+.ui-preview__bar { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--ui-line); }
+.ui-preview__url { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--ui-line-strong); border-radius: 3px; background: rgba(0, 0, 0, 0.5); color: var(--ui-accent); font: 12px ui-monospace, 'SF Mono', Menlo, monospace; }
+.ui-preview__tool.is-on, .ui-preview__port.is-on { border-color: var(--ui-accent); color: var(--ui-accent); background: rgba(57, 255, 136, 0.12); }
+.ui-preview__ports { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px 0; }
+.ui-preview__ports:empty { display: none; }
+.ui-preview__stage { position: relative; flex: 1; min-height: 0; margin: 8px 12px 12px; border: 1px solid var(--ui-line-strong); border-radius: 4px; background: #000; display: flex; justify-content: center; overflow: hidden; }
+.ui-preview__note { margin: auto; padding: 18px; max-width: 360px; text-align: center; color: var(--ui-muted); font-size: 12px; }
+.ui-preview__frame { display: none; border: 0; width: 100%; height: 100%; background: #fff; }
+.ui-preview__stage.has-frame .ui-preview__frame { display: block; }
+.ui-preview__stage.has-frame .ui-preview__note { display: none; }
+.ui-preview__stage.is-phone .ui-preview__frame { width: 390px; max-width: 100%; border-left: 1px solid var(--ui-accent); border-right: 1px solid var(--ui-accent); }
+@media (max-width: 720px) { .ui-preview { left: 8px; right: 8px; width: auto; } }
+
+/* ===== Tema hacker: botões, avisos, atividade e janela de contas ===== */
+/* Botões: placa de terminal, em caixa-alta; no hover enchem de verde. */
+.ui-root .ui-btn { height: 30px; padding: 0 12px; border-radius: 3px; border: 1px solid var(--ui-line-strong); background: rgba(57, 255, 136, 0.05); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ui-accent); }
+.ui-root .ui-btn:hover { background: var(--ui-accent); color: #03120a; border-color: var(--ui-accent); box-shadow: 0 0 20px -4px rgba(57, 255, 136, 0.8); }
+.ui-root .ui-btn:active { transform: translateY(1px); }
+.ui-root .ui-btn-accounts::before { content: '+'; }
+
+/* Avisos: cartões de log, com tarja e brilho na cor do nível e entrada deslizando. */
+.ui-toast { border-radius: 4px; border: 1px solid var(--lvl); background: rgba(3, 10, 6, 0.96); box-shadow: inset 4px 0 0 var(--lvl), 0 0 26px -8px var(--lvl), 0 14px 30px rgba(0, 0, 0, 0.55); }
+.ui-toast::before { content: attr(data-level); position: absolute; top: 4px; right: 8px; font: 800 9px/1 var(--font-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--lvl); opacity: 0.85; }
+.ui-toast { position: relative; }
+.ui-toast--success { --lvl: #39ff88; }
+.ui-toast--warn { --lvl: #ffd24a; }
+.ui-toast--alert { --lvl: #ff5c6c; border-color: var(--lvl); background: linear-gradient(90deg, rgba(255, 92, 108, 0.18), rgba(3, 10, 6, 0.96)); }
+.ui-toast__text { font-size: 12px; }
+.ui-toast__text::before { content: '> '; color: var(--lvl); font-weight: 800; }
+
+/* Atividade: linhas de log com a hora em verde e o autor em destaque. */
+.ui-feed { border-radius: 6px 6px 0 0; border: 1px solid var(--ui-line-strong); }
+.ui-feed__title { letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-accent); }
+.ui-feed__title::before { content: '▸ '; }
+.ui-feed__row { border-radius: 0; border-bottom: 1px solid rgba(57, 255, 136, 0.06); height: 28px; }
+.ui-feed__row:hover { background: rgba(57, 255, 136, 0.08); box-shadow: inset 2px 0 0 var(--ui-accent); }
+.ui-feed__time { color: var(--ui-accent); opacity: 0.85; }
+.ui-feed__time::before { content: '['; opacity: 0.5; }
+.ui-feed__time::after { content: ']'; opacity: 0.5; }
+.ui-feed__who { color: #c9ffe0; }
+
+/* Contas (janela dentro do escritório): barra de terminal e cantos retos. */
+.ui-accounts { border: 1px solid var(--ui-line-strong); border-radius: 8px; background: #040a06; box-shadow: 0 0 60px -20px rgba(57, 255, 136, 0.55), 0 30px 80px rgba(0, 0, 0, 0.7); }
+.ui-accounts__head { border-bottom: 1px solid var(--ui-line-strong); background: rgba(57, 255, 136, 0.06); }
+.ui-accounts__head h2 { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-accent); }
+.ui-accounts__head h2::before { content: '> '; }
+
+/* Contas conectadas no topo: o nome em caixa-alta e a letra em quadrado. */
+.ui-usage-card__name { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+.ui-acc-chip { border-radius: 3px !important; }
+
+/* Marca em texto: DAEMON_ em fonte de terminal, verde com brilho e cursor piscando. */
+.ui-wordtext { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-weight: 800; font-size: 20px; letter-spacing: 0.14em; line-height: 1; color: var(--ui-accent); text-shadow: 0 0 16px rgba(57, 255, 136, 0.6); }
+.ui-wordtext__cur { margin-left: 2px; animation: hk-blink 1s steps(2, start) infinite; }
+@keyframes hk-blink { 50% { opacity: 0; } }
+.ui-splash__name.ui-wordtext { font-size: 34px; }
+
+/* A marca em texto aparece nas telas largas (nas estreitas o topo mostra só o ícone, como antes). */
+@media (min-width: 1141px) { .ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 19px; } }
+
+/* Topo: ferramentas com legenda sob o ícone, em verde, com estado ligado/desligado bem claro. */
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label] {
+  width: auto; min-width: 48px; height: 48px; padding: 5px 6px 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--ui-accent); border: 1px solid transparent; border-radius: 6px;
+}
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after {
+  content: attr(data-label); font: 700 9px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ui-muted);
+}
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label]:hover { background: rgba(57, 255, 136, 0.1); border-color: var(--ui-line-strong); }
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label]:hover::after { color: var(--ui-accent); }
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-pressed='true'], .ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-expanded='true'] {
+  background: rgba(57, 255, 136, 0.16); border-color: var(--ui-accent); box-shadow: 0 0 18px -6px var(--ui-accent);
+}
+.ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-pressed='true']::after, .ui-topbar .ui-btn-group .ui-icon-btn[data-label][aria-expanded='true']::after { color: var(--ui-accent); }
+.ui-topbar .ui-btn-settings[data-label] { border-color: var(--ui-line-strong); }
+.ui-topbar .ui-btn-sidebar[data-label] { height: 48px; }
+@media (max-width: 700px) {
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label] { min-width: 34px; height: 34px; padding: 0; }
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after { display: none; }
+}
+
+/* ===== Contas como mostradores circulares =====
+   O cartão deixa de ser uma tabela de barras: um anel duplo (fora = 5 h, dentro = semana) com a letra da conta no centro,
+   o nome e uma linha só com os dois números. Os detalhes (reinício, e-mail) continuam na dica ao passar o mouse. */
+.ui-usage-card { width: auto; min-width: 172px; flex: none; gap: 10px; padding: 5px 14px 5px 6px; border-radius: 999px; border: 1px solid var(--ui-line-strong); border-left-width: 1px; background: rgba(0, 0, 0, 0.45); }
+.ui-usage-card .ui-acc-chip { position: relative; z-index: 1; width: 26px; height: 26px; font-size: 13px; border-radius: 50% !important; }
+.ui-gauge { position: relative; display: grid; place-items: center; width: 46px; height: 46px; flex: none; }
+.ui-gauge__ring { position: absolute; border-radius: 50%; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px)); }
+.ui-gauge__ring--out { inset: 0; background: conic-gradient(var(--c5, var(--ui-accent)) calc(var(--p5, 0) * 1%), rgba(255, 255, 255, 0.1) 0); }
+.ui-gauge__ring--in { inset: 6px; background: conic-gradient(var(--c7, var(--ui-accent)) calc(var(--p7, 0) * 1%), rgba(255, 255, 255, 0.1) 0); }
+.ui-gauge.is-empty .ui-gauge__ring { opacity: 0.35; }
+.ui-usage-card__body { gap: 2px; }
+.ui-usage-card__meters { display: none !important; }
+.ui-gauge__line { font: 700 11px/1.2 var(--font-mono); letter-spacing: 0.04em; color: var(--ui-muted); white-space: nowrap; }
+.ui-usage-card:hover .ui-gauge__line { color: var(--ui-accent); }
+.ui-usage-card__flag { display: none !important; }
+
+/* Ferramentas em cápsulas: Câmera numa, painéis noutra, separadas por um vão (em vez de uma fila solta de ícones). */
+.ui-topbar__right { gap: 12px; border-left: 0; padding-left: 0; }
+.ui-topbar__right .ui-btn-group { gap: 2px; padding: 3px; border: 1px solid var(--ui-line-strong); border-radius: 12px; background: rgba(0, 0, 0, 0.4); }
+.ui-topbar__right .ui-btn-group .ui-icon-btn[data-label] { border-radius: 9px; }
+
+/* Lista de agentes: a primeira linha pode quebrar (nome, conta, tempo, papel e função não cabem juntos na lateral). */
+.ui-agent__top { flex-wrap: wrap; row-gap: 3px; }
+.ui-agent__top .ui-func { order: 5; flex: none; }
+.ui-agent__name { max-width: 100%; }
+
+/* Celular: mostradores menores, ferramentas sem cápsula, nada passa da largura da tela. */
+@media (max-width: 600px) {
+  .ui-gauge { width: 36px; height: 36px; }
+  .ui-gauge__ring--in { inset: 5px; }
+  .ui-usage-card { min-width: 0; padding: 4px 10px 4px 5px; gap: 7px; }
+  .ui-usage-card .ui-acc-chip { width: 20px; height: 20px; font-size: 11px; }
+  .ui-gauge__line { font-size: 10px; }
+  .ui-topbar__right .ui-btn-group { padding: 0; border: 0; background: none; gap: 0; }
+  .ui-topbar { overflow: hidden; }
+}
+
+/* ===== Celular: topo mínimo =====
+   As ferramentas já estão na barra de baixo (Escritório, Conversas, Novo, Ajustes), então o topo só mostra o essencial numa
+   linha fina: o logo, os mostradores de uso (só os anéis; o detalhe abre na dica) e o aviso de quem precisa de você. */
+@media (max-width: 600px) {
+  .ui-root.ui-root { --top-h: 48px; }
+  .ui-topbar { flex-wrap: nowrap; height: var(--top-h); padding: 0 10px; gap: 10px; align-items: center; overflow: visible; }
+  .ui-topbar__right, .ui-btn-accounts, .ui-btn-sidebar, .ui-brand__text, .ui-usage-card__body, .ui-usage-card__flag { display: none !important; }
+  .ui-topbar__left { border: 0; padding: 0; height: auto; flex: none; }
+  .ui-brand { gap: 0; }
+  .ui-brand__mark, .ui-brand img { width: 30px; height: 30px; }
+  .ui-usage { order: 2; flex: 1 1 auto; margin: 0; gap: 8px; justify-content: center; overflow: visible; }
+  .ui-usage-card { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; box-shadow: none; min-width: 0; }
+  .ui-gauge { width: 34px; height: 34px; }
+  .ui-usage-card .ui-acc-chip { width: 18px; height: 18px; font-size: 10px; }
+  .ui-counters { order: 3; margin-left: 0; border: 0; background: none; }
+  .ui-counter { padding: 2px 8px; min-width: 0; }
+  .ui-counter__label { display: none; }
+}
+@media (max-width: 600px) {
+  .ui-topbar__left { width: 32px; min-width: 32px; }
+  .ui-brand, .ui-brand__mark { width: 30px; min-width: 30px; flex: none; }
+  .ui-brand__mark img, .ui-brand img { width: 30px; height: 30px; display: block; }
+}
+@media (max-width: 600px) {
+  .ui-usage-card { display: flex !important; flex: none !important; width: auto !important; }
+}
+
+/* ===== Computador: trilho lateral de uso =====
+   Os mostradores saem da barra do topo (onde vazavam) e ficam num trilho estreito colado na borda esquerda, um embaixo do
+   outro: anel duplo, nome e os dois números. A lista de salas abre ao lado dele. */
+@media (min-width: 601px) {
+  .ui-root { --rail-w: 84px; }
+  .ui-usage {
+    position: fixed; z-index: 22; left: 0; top: var(--top-h); width: var(--rail-w);
+    flex-direction: column; align-items: center; gap: 4px; margin: 0; padding: 10px 4px 12px;
+    background: rgba(3, 9, 5, 0.94); border: 1px solid var(--ui-line-strong); border-left: 0; border-radius: 0 12px 12px 0;
+    max-height: calc(100vh - var(--top-h) - 24px); overflow-y: auto; scrollbar-width: none;
+  }
+  .ui-usage-card { flex-direction: column; align-items: center; width: 100% !important; min-width: 0 !important; padding: 6px 2px 8px; gap: 4px; border: 0; border-radius: 10px; background: none; text-align: center; }
+  .ui-usage-card:hover { background: rgba(57, 255, 136, 0.08); box-shadow: none; }
+  .ui-gauge { width: 52px; height: 52px; }
+  .ui-gauge .ui-acc-chip { width: 28px; height: 28px; font-size: 14px; }
+  .ui-usage-card__body { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+  .ui-usage-card__head > :not(.ui-usage-card__name) { display: none !important; }
+  .ui-usage-card__head { justify-content: center; }
+  .ui-usage-card__name { max-width: 76px; overflow: hidden; text-overflow: ellipsis; font-size: 9px; letter-spacing: 0.1em; }
+  .ui-gauge__line { white-space: pre-line; font-size: 10px; line-height: 1.35; text-align: center; }
+  .ui-usage-card__msg { font-size: 9px; text-align: center; }
+  .ui-usage-card__how { font-size: 9px; padding: 2px 4px; }
+  .ui-sidebar { left: var(--rail-w); border-left: 0; }
+  .ui-usage-tip { left: calc(100% + 8px); top: 0; }
+}
+
+/* ===== Computador: tudo flutuante e mínimo =====
+   Topo sem barra: o logo no canto esquerdo e uma cápsula de ícones no canto direito (sem textos; o nome aparece na dica).
+   Uso: só os anéis flutuando na borda esquerda, com a letra da conta; ao passar o mouse abre a dica com nome, números e
+   reinício. Só o aviso de quem precisa de você continua aparecendo como ficha ao lado dos ícones. */
+@media (min-width: 601px) {
+  .ui-root { --rail-w: 0px; --top-h: 56px; }
+  .ui-topbar { background: none; border: 0; box-shadow: none; pointer-events: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 8px 12px; }
+  .ui-topbar::after { display: none; }
+  .ui-topbar > *, .ui-topbar__right, .ui-topbar__left { pointer-events: auto; }
+  .ui-topbar__left { border: 0; padding: 0; height: auto; gap: 8px; }
+  .ui-brand__text { display: none !important; }
+  .ui-brand__mark { filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.7)); }
+  .ui-counters { margin-left: auto; border: 0; background: none; }
+  .ui-counters .ui-counter:not(.ui-counter--waiting):not(.ui-counter--shells) { display: none; }
+  .ui-counters .ui-counter--waiting:disabled { display: none; }
+  .ui-counter { border: 1px solid var(--ui-line-strong); border-radius: 999px; background: rgba(3, 9, 5, 0.88); padding: 4px 12px; flex-direction: row; gap: 6px; align-items: baseline; }
+  .ui-counter__label { display: none; }
+  .ui-counter__value { font-size: 16px; }
+  .ui-topbar__right { gap: 2px; padding: 4px; border: 1px solid var(--ui-line-strong); border-radius: 14px; background: rgba(3, 9, 5, 0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7); height: auto; margin-left: 0; }
+  .ui-topbar__right .ui-btn-group { padding: 0; border: 0; background: none; gap: 2px; }
+  .ui-topbar__right .ui-btn-group + .ui-btn-group { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--ui-line); }
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label] { width: 38px; min-width: 38px; height: 38px; padding: 0; }
+  .ui-topbar .ui-btn-group .ui-icon-btn[data-label]::after { display: none; }
+  .ui-btn-sidebar { border: 1px solid var(--ui-line-strong); border-radius: 12px; background: rgba(3, 9, 5, 0.88); width: 40px; height: 40px; }
+
+  /* Anéis flutuantes, sem texto. */
+  .ui-usage { background: none; border: 0; border-radius: 0; box-shadow: none; padding: 0; gap: 10px; left: 12px; top: calc(var(--top-h) + 4px); width: auto; transition: left 0.32s var(--ease); overflow: visible; max-height: none; }
+  .has-sidebar .ui-usage { left: calc(var(--side-w) + 14px); }
+  .ui-usage-card { width: 46px !important; height: 46px; padding: 0; border-radius: 50%; background: rgba(3, 9, 5, 0.88); box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.8); }
+  .ui-usage-card:hover, .ui-usage-card:focus-visible { background: rgba(3, 9, 5, 0.97); box-shadow: 0 0 0 1px var(--ui-accent), 0 0 22px -4px var(--ui-accent); }
+  .ui-usage-card__body, .ui-usage-card__flag { display: none !important; }
+  .ui-gauge { width: 46px; height: 46px; }
+  .ui-gauge .ui-acc-chip { width: 24px; height: 24px; font-size: 12px; }
+  .ui-usage-tip { left: calc(100% + 10px); top: 0; }
+  .ui-sidebar { left: 0; }
+}
+
+/* Canto esquerdo (computador): o botão da lateral e a marca formam UMA cápsula só — nada solto no canto. */
+@media (min-width: 601px) {
+  .ui-topbar__left { gap: 6px; padding: 4px 14px 4px 4px; height: auto; border: 1px solid var(--ui-line-strong); border-radius: 14px; background: rgba(3, 9, 5, 0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7); }
+  .ui-topbar .ui-btn-sidebar { position: static; transform: none; width: 38px; height: 38px; border: 1px solid transparent; border-radius: 10px; background: none; box-shadow: none; display: grid; color: var(--ui-accent); }
+  .ui-topbar .ui-btn-sidebar svg { display: block; }
+  .ui-topbar .ui-btn-sidebar::before, .ui-topbar .ui-btn-sidebar::after { content: none; }
+  .ui-topbar .ui-btn-sidebar:hover, .ui-topbar .ui-btn-sidebar[aria-pressed='true'] { background: rgba(57, 255, 136, 0.14); border-color: var(--ui-accent); }
+  .ui-topbar__left::after { content: none; }
+  .ui-brand { gap: 8px; padding-left: 6px; border-left: 1px solid var(--ui-line); }
+  .ui-brand__text { display: flex !important; }
+  .ui-brand__text .ui-topbar__status { display: none !important; }
+  .ui-brand__mark, .ui-brand img { width: 30px; height: 30px; }
+  .ui-topbar .ui-brand__name.ui-wordtext { display: inline-flex !important; font-size: 16px; letter-spacing: 0.12em; }
+}
+
+/* Anéis de uso do lado direito (embaixo da cápsula de ícones); saem da frente quando a gaveta do agente abre. */
+@media (min-width: 601px) {
+  .ui-usage { left: auto; right: 14px; top: calc(var(--top-h) + 6px); transition: right 0.32s var(--ease); }
+  .has-sidebar .ui-usage { left: auto; }
+  .has-sidebar.has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
+  .ui-usage-tip { left: auto; right: calc(100% + 10px); }
+}
+
+/* Marca em duas cores: DEV em verde-neon, LAND em branco; o logo um pouco maior. */
+.ui-wordtext__a { color: var(--ui-accent); text-shadow: 0 0 16px rgba(57, 255, 136, 0.7); }
+.ui-wordtext__b { color: #f2fff8; text-shadow: 0 0 10px rgba(255, 255, 255, 0.25); }
+.ui-wordtext { text-shadow: none; font-size: 17px; }
+@media (min-width: 601px) { .ui-topbar .ui-brand__name.ui-wordtext { font-size: 17px; } .ui-brand__mark, .ui-brand img { width: 34px; height: 34px; } }
+
+/* Marca integrada à lateral (computador). Recolhida, a lateral vira um trilho fino na borda esquerda (botão em cima, depois o
+   logo e o nome DEVLAND na vertical). Aberta, o mesmo bloco vira o cabeçalho da lista de salas (logo + nome + botão), na
+   mesma largura e fundo do painel: a marca nunca fica solta no canto, sempre faz parte da lateral. */
+@media (min-width: 601px) {
+  .ui-root { --rail-w: 64px; }
+  .ui-topbar__left {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 56; width: var(--rail-w); height: auto; margin: 0; padding: 10px 0 14px; gap: 14px;
+    flex-direction: column; align-items: center; justify-content: flex-start;
+    border: 0; border-right: 1px solid var(--ui-line-strong); border-radius: 0;
+    background: linear-gradient(180deg, rgba(5, 14, 9, 0.97), rgba(3, 9, 5, 0.94)); box-shadow: 10px 0 30px -14px rgba(0, 0, 0, 0.7);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    transition: width 0.32s var(--ease);
+  }
+  .ui-topbar__left .ui-brand { flex-direction: column; gap: 12px; border: 0; padding: 0; width: auto; }
+  .ui-topbar__left .ui-brand__text { display: flex !important; }
+  .ui-topbar .ui-topbar__left .ui-brand__name.ui-wordtext { writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.3em; }
+  .ui-topbar .ui-topbar__left .ui-wordtext__cur { margin: 6px 0 0; }
+  .ui-brand__mark, .ui-brand img { width: 38px; height: 38px; }
+  .has-sidebar .ui-topbar__left {
+    width: var(--side-w); height: var(--top-h); bottom: auto; padding: 0 12px 0 14px; gap: 8px;
+    flex-direction: row-reverse; align-items: center; justify-content: space-between;
+    border-right: 1px solid var(--ui-line-strong); border-bottom: 1px solid var(--ui-line); box-shadow: none;
+  }
+  .has-sidebar .ui-topbar__left .ui-brand { flex-direction: row; gap: 10px; }
+  .has-sidebar .ui-topbar .ui-topbar__left .ui-brand__name.ui-wordtext { writing-mode: horizontal-tb; font-size: 17px; letter-spacing: 0.12em; }
+  .has-sidebar .ui-topbar .ui-topbar__left .ui-wordtext__cur { margin: 0 0 0 2px; }
+  .ui-sidebar { top: var(--top-h); border-top: 0; left: 0; }
+}
+@media (min-width: 601px) {
+  /* A atividade começa depois do trilho da lateral recolhida. */
+  .ui-feed { left: calc(var(--rail-w) + var(--gap)); width: min(var(--feed-max), calc(100vw - var(--rail-w) - var(--gap) * 2)); }
+  .has-sidebar .ui-feed { left: calc(var(--side-w) + var(--gap) * 2); width: min(var(--feed-max), calc(100vw - var(--side-w) - var(--gap) * 3)); }
+  .has-drawer .ui-feed { width: min(var(--feed-max), calc(100vw - var(--rail-w) - var(--drawer-w) - var(--gap) * 3)); }
+  .has-sidebar.has-drawer .ui-feed { width: min(var(--feed-max), calc(100vw - var(--side-w) - var(--drawer-w) - var(--gap) * 4)); }
+}
+
+/* Trilho recolhido: só o logo, um botão pequeno para expandir e, embaixo, os anéis de uso. Sem nome na vertical. */
+@media (min-width: 601px) {
+  .ui-topbar__left { flex-direction: column-reverse; gap: 10px; padding: 12px 0 14px; justify-content: flex-end; }
+  .ui-topbar__left .ui-brand__text { display: none !important; }
+  .ui-topbar__left .ui-brand { gap: 0; }
+  .ui-topbar .ui-btn-sidebar { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--ui-line-strong); background: rgba(57, 255, 136, 0.06); }
+  .ui-topbar .ui-btn-sidebar:hover { border-color: var(--ui-accent); }
+  .ui-usage { left: 9px; right: auto; top: 112px; flex-direction: column; z-index: 57; }
+  .ui-usage-tip { left: calc(100% + 12px); right: auto; }
+  /* Aberta: o cabeçalho com o nome, e os anéis voltam para o canto direito. */
+  .has-sidebar .ui-topbar__left { flex-direction: row-reverse; padding: 0 12px 0 14px; justify-content: space-between; }
+  .has-sidebar .ui-topbar__left .ui-brand__text { display: flex !important; }
+  .has-sidebar .ui-topbar__left .ui-brand { gap: 10px; }
+  .has-sidebar .ui-topbar .ui-btn-sidebar { width: 36px; height: 36px; }
+  .has-sidebar .ui-usage { left: auto; right: 14px; top: calc(var(--top-h) + 6px); flex-direction: column; }
+  .has-sidebar .ui-usage-tip { left: auto; right: calc(100% + 10px); }
+  .has-sidebar.has-drawer .ui-usage { right: calc(var(--drawer-w) + 18px); }
+}
+
+/* Botão da lateral como o do WCAM: uma bolinha com seta presa na borda do trilho/painel (não é mais um quadrado grande).
+   A marca é só o planeta, sem fundo nem quadrado em volta. */
+@media (min-width: 601px) {
+  .ui-topbar .ui-btn-sidebar {
+    position: fixed; z-index: 58; left: calc(var(--rail-w) - 12px); top: 58px; width: 24px; height: 24px; padding: 0;
+    display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--ui-line-strong);
+    background: rgba(5, 14, 9, 0.98); color: var(--ui-accent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    transition: left 0.32s var(--ease), border-color 0.15s, box-shadow 0.15s;
+  }
+  .ui-topbar .ui-btn-sidebar svg { display: none; }
+  .ui-topbar .ui-btn-sidebar::before { content: '›'; font: 800 16px/1 var(--font-mono); margin-top: -2px; }
+  .ui-topbar .ui-btn-sidebar:hover { border-color: var(--ui-accent); box-shadow: 0 0 16px -2px var(--ui-accent); }
+  .has-sidebar .ui-topbar .ui-btn-sidebar { left: calc(var(--side-w) - 12px); width: 24px; height: 24px; }
+  .has-sidebar .ui-topbar .ui-btn-sidebar::before { content: '‹'; }
+  .ui-brand__mark { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+  .ui-brand__mark img, .ui-brand img { width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(57, 255, 136, 0.35)); }
+  .ui-topbar__left { padding-top: 14px; }
+  .ui-usage { top: 78px; }
+  .has-sidebar .ui-topbar__left { flex-direction: row; justify-content: flex-start; padding: 0 14px; }
+  .has-sidebar .ui-usage { top: calc(var(--top-h) + 6px); }
+}
+
+/* Mapa: vinheta escura nas bordas (sem mudar as cores do escritório), para o olho ir para as salas. */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 55% 45%, transparent 55%, rgba(2, 6, 4, 0.55) 100%);
+}
+@media (min-width: 601px) {
+  /* Janelas grandes do lado direito não passam por cima do trilho da esquerda. */
+  .ui-preview { width: min(760px, calc(100vw - var(--rail-w) - 24px)); }
+}
+/* Avisos de alerta com fundo sólido (o texto da barra de atividade aparecia através deles no celular). */
+.ui-toast--alert { background: linear-gradient(90deg, rgba(255, 92, 108, 0.18), rgba(255, 92, 108, 0.04)), #030a06; }
+.ui-toast { background-color: #030a06; }
+/* Conversas: a função do agente é uma etiqueta pequena, não uma faixa da largura toda. */
+.ui-chats .ui-func, .ui-drawer .ui-func { display: inline-flex; width: auto; max-width: max-content; align-self: flex-start; }
+/* Celular: um aviso por vez (os outros vão para a Atividade), para não cobrir a tela. */
+@media (max-width: 600px) { .ui-toast:not(:first-child) { display: none; } }
+.ui-chats h2::before { content: '> '; color: var(--ui-accent); }
+/* Celular: dentro de uma conversa os avisos não cobrem a caixa de mensagem (eles continuam na Atividade e no badge). */
+@media (max-width: 600px) {
+  .ui-root:has(.ui-chats:not([hidden]) .ui-chats__screen--thread:not([hidden])) .ui-toasts { display: none; }
+}
+
+/* Bolinha da lateral: redonda de verdade (uma regra antiga a esticava para 48 px de altura) e entre o logo e os anéis. */
+@media (min-width: 601px) {
+  .ui-topbar .ui-btn-sidebar.ui-btn-sidebar { width: 26px !important; height: 26px !important; min-width: 0; min-height: 0; padding: 0 !important; top: 62px; left: calc(var(--rail-w) - 13px); }
+  .has-sidebar .ui-topbar .ui-btn-sidebar.ui-btn-sidebar { top: 16px; left: calc(var(--side-w) - 13px); }
+  .ui-topbar .ui-btn-sidebar.ui-btn-sidebar::before { margin: -2px 0 0 1px; }
+  .ui-usage { top: 100px; gap: 12px; }
+  .ui-topbar__left { align-items: center; }
+}
+
+/* ===== Marca e trilho da lateral: regra final (computador, todas as larguras) =====
+   Substitui as tentativas anteriores e as regras antigas de largura que escondiam ou giravam o nome. */
+@media (min-width: 601px) {
+  .ui-root .ui-topbar__left {
+    position: fixed; z-index: 56; left: 0; top: 0; bottom: 0; right: auto; width: var(--rail-w); height: auto; margin: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0; padding: 14px 0 0;
+    background: linear-gradient(180deg, rgba(5, 14, 9, 0.98), rgba(3, 9, 5, 0.96));
+    border: 0; border-right: 1px solid var(--ui-line-strong); border-radius: 0; box-shadow: 10px 0 30px -14px rgba(0, 0, 0, 0.7);
+    backdrop-filter: none; -webkit-backdrop-filter: none; overflow: visible;
+  }
+  .ui-root .ui-topbar__left .ui-brand { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 0; border: 0; width: auto; }
+  .ui-root .ui-topbar__left .ui-brand__text { display: none !important; }
+  .ui-root .ui-topbar__left .ui-brand__mark, .ui-root .ui-topbar__left .ui-brand img { width: 38px; height: 38px; flex: none; }
+  .ui-root.has-sidebar .ui-topbar__left {
+    bottom: auto; width: var(--side-w); height: var(--top-h); flex-direction: row; justify-content: flex-start; padding: 0 16px;
+    border-bottom: 1px solid var(--ui-line); box-shadow: none;
+  }
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__text { display: flex !important; align-items: center; }
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__text .ui-topbar__status { display: none !important; }
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__name {
+    display: inline-flex !important; writing-mode: horizontal-tb !important; font-size: 17px; letter-spacing: 0.12em; white-space: nowrap;
+  }
+  .ui-root.has-sidebar .ui-topbar__left .ui-wordtext__cur { margin: 0 0 0 2px; }
+  /* A lista abre logo abaixo do cabeçalho; o "~/escritório" dela não repete a marca. */
+  .ui-root .ui-sidebar { top: var(--top-h); left: 0; }
+}
+@media (min-width: 601px) {
+  /* Nas larguras menores uma regra antiga punha o texto da marca em posição absoluta, por cima do logo. */
+  .ui-root.has-sidebar .ui-topbar__left .ui-brand__text { position: static !important; inset: auto !important; transform: none !important; }
+}
+@media (min-width: 601px) {
+  /* Fundo do trilho num elemento próprio, preso à tela: não depende de nenhum painel acima (no servidor real ele ficava
+     só atrás do logo). O bloco da marca fica transparente quando recolhido. */
+  .ui-root::before {
+    content: ''; position: fixed; z-index: 54; left: 0; top: 0; bottom: 0; width: var(--rail-w); pointer-events: none;
+    background: linear-gradient(180deg, rgba(5, 14, 9, 0.98), rgba(3, 9, 5, 0.96));
+    border-right: 1px solid var(--ui-line-strong); box-shadow: 10px 0 30px -14px rgba(0, 0, 0, 0.7);
+  }
+  .ui-root.has-sidebar::before { display: none; }
+  .ui-root:not(.has-sidebar) .ui-topbar__left { background: none; border-right: 0; box-shadow: none; }
+}
+
+/* Topo (computador): a barra em si nunca tem fundo nem blur (o blur criava uma faixa sobre o trilho da lateral e prendia o
+   trilho "fixed" à altura da barra). "+ Contas" mora em Configurações. */
+@media (min-width: 601px) {
+  .ui-root .ui-topbar.ui-topbar { background: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none; transform: none; box-shadow: none; border: 0; }
+  .ui-root .ui-topbar .ui-btn-accounts { display: none !important; }
+}
+
+/* Janelas do Cloud (Contas, Usuários): mesmo visual neon do resto. */
+.ui-accounts { border: 1px solid var(--ui-line-strong); border-radius: 16px; background: #04100a; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.85), 0 0 50px -20px rgba(57, 255, 136, 0.5); }
+.ui-accounts::backdrop { background: rgba(0, 4, 2, 0.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.ui-accounts__head { border-bottom: 1px solid var(--ui-line); background: rgba(5, 14, 9, 0.9); }
+.ui-accounts__head h2 { color: var(--ui-accent); font-family: var(--ui-font-mono, ui-monospace, monospace); letter-spacing: 0.04em; text-shadow: 0 0 14px rgba(57, 255, 136, 0.4); }
+
+/* "O escritório está vazio": X no canto para fechar. */
+.ui-empty { position: fixed; }
+.ui-empty .ui-empty__close { position: absolute; top: 10px; right: 10px; z-index: 2; }
+
+/* Janelas do Cloud no computador: mais estreitas e do tamanho do conteúdo (a página dentro avisa a altura). */
+@media (min-width: 641px) {
+  .ui-accounts { width: min(660px, 94vw); height: fit-content; max-height: 86vh; }
+  .ui-accounts__frame { flex: none; height: 360px; min-height: 200px; }
+  .ui-accounts__head h2 { font-size: 13px; }
+}
+
+/* Sobre: o diagnóstico da tela e o link do código lado a lado, com espaço. */
+.ui-about__links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
+
+/* Celular com a barra de status por cima do app (app da tela de início, barra translúcida): o topo desce o tamanho da
+   área segura, e a barra de baixo já soma a área do indicador de início. Como no wsat. */
+@media (max-width: 600px) {
+  .ui-root.ui-root { --top-h: calc(48px + env(safe-area-inset-top, 0px)); }
+  .ui-topbar.ui-topbar { padding-top: env(safe-area-inset-top, 0px); }
+}
+
+/* Menus flutuantes no celular (Novo agente, Entregas, Histórico…): o JS os ancora num botão do topo que no celular está
+   escondido (top 8px), e com a barra de status por cima do app eles subiam para trás dela. Começam logo abaixo do topo. */
+@media (max-width: 600px) {
+  .ui-popover { top: calc(var(--top-h) + var(--gap)) !important; }
+}
+
+/* Caixas de mensagem: anexo e microfone do mesmo tamanho, centrados na linha; gravando fica vermelho, pulsando. */
+.ui-msg .ui-msg__attach.ui-msg__attach,
+.ui-msg .ui-msg__mic.ui-msg__mic {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--ui-line-strong);
+  background: none;
+}
+.ui-msg .ui-msg__mic .ui-px-icon,
+.ui-msg .ui-msg__attach svg { width: 18px; height: 18px; }
+/* Painel do agente: a linha alinha caixa e botões pelo meio, e o Enviar tem a mesma altura dos outros. */
+.ui-msg--drawer .ui-msg__row.ui-msg__row { align-items: center; }
+.ui-msg--drawer .ui-msg__send.ui-msg__send { height: 40px; min-height: 40px; align-self: center; }
+.ui-msg__mic.ui-msg__mic.is-recording {
+  border-color: #e5534b;
+  background: rgba(229, 83, 75, 0.16);
+  color: #ff8a8a;
+  animation: ui-dictate-pulse 1.2s ease-in-out infinite;
+}
+
+/* Novo agente (celular): o cabeçalho com o X fica no topo enquanto a lista rola. */
+@media (max-width: 600px) {
+  .ui-spawn .ui-popover__head { position: sticky; top: 0; z-index: 2; background: #12151d; }
+}
+
+/* Novo agente: agendar (repetir em dias e horário) e a lista dos agendados. */
+.ui-spawn__repeat-toggle { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-size: 14px; color: var(--ui-text); cursor: pointer; }
+.ui-spawn__repeat-toggle input { width: 18px; height: 18px; accent-color: var(--ui-accent, #39ff88); }
+.ui-spawn__repeat { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.ui-spawn__repeat[hidden] { display: none; }
+.ui-spawn__time { width: 130px; }
+.ui-spawn__days .ui-btn { min-height: 34px; padding: 0 10px; }
+.ui-spawn__scheds { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.ui-spawn__scheds[hidden] { display: none; }
+.ui-spawn__sched { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--ui-line-strong); border-radius: 8px; }
+.ui-spawn__sched.is-off { opacity: 0.55; }
+.ui-spawn__sched-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ui-spawn__sched-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-muted); font-size: 12px; }
+.ui-spawn__sched-tools { display: flex; gap: 6px; flex: none; }
+.ui-spawn__sched-tools .ui-btn { min-height: 32px; padding: 0 8px; font-size: 12px; }
+.ui-spawn__days .ui-btn.is-on { border-color: var(--ui-accent, #39ff88); background: rgba(57, 255, 136, 0.16); color: var(--ui-accent, #39ff88); }
+.ui-spawn__days .ui-btn:not(.is-on) { opacity: 0.55; }
+
+/* Verificação em duas etapas (Configurações › Cloud). */
+.ui-totp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.ui-totp[hidden] { display: none; }
+.ui-totp__link { color: var(--ui-accent, #39ff88); font-weight: 600; }
+.ui-totp__secret { font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; padding: 6px 8px; border: 1px dashed var(--ui-line-strong); border-radius: 6px; word-break: break-all; user-select: all; }
+.ui-totp__row { display: flex; gap: 8px; align-items: center; }
+.ui-totp__row input { width: 120px; letter-spacing: 0.2em; }
+.ui-totp__codes { margin: 0; padding: 8px; border: 1px solid var(--ui-line-strong); border-radius: 6px; font-family: var(--font-mono, ui-monospace, monospace); user-select: all; }
+.ui-set--totp { flex-wrap: wrap; }
+
+/* Loja de plugins (janela no estilo de Contas). */
+.ui-plugins__body { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; overflow: auto; min-height: 0; flex: 1; }
+.ui-plugins__list { display: flex; flex-direction: column; gap: 8px; }
+.ui-plugins__item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--ui-line-strong); border-radius: 8px; }
+.ui-plugins__item.is-on { border-color: var(--ui-accent, #39ff88); }
+.ui-plugins__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ui-plugins__text small { color: var(--ui-muted); font-size: 11px; }
+.ui-plugins__text span { color: var(--ui-text); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ui-plugins__item .ui-btn { flex: none; min-height: 36px; }
+@media (min-width: 641px) { .ui-plugins { height: min(80vh, 760px); } }
+
+/* PC: Conversas no topo (o celular já tem na barra de baixo). */
+@media (max-width: 600px) { .ui-topbar .ui-btn-chats { display: none !important; } }
+/* PC com a conversa aberta: a prévia ao vivo fica à esquerda dela, alta, para ver o site enquanto conversa. */
+@media (min-width: 601px) {
+  .ui-root:has(.ui-chats:not([hidden])) .ui-preview {
+    right: calc(min(420px, 100vw) + 8px);
+    width: min(900px, calc(100vw - min(420px, 100vw) - 24px));
+    height: calc(100vh - var(--top-h) - 16px);
+  }
+}
+
+/* Prévia: rodar o projeto (escolha da pasta e botões). */
+.ui-preview__runbar { gap: 6px; }
+.ui-preview__project { flex: 1; min-width: 0; }
+.ui-preview__run, .ui-preview__stop { flex: none; }
+@media (max-width: 600px) { .ui-topbar .ui-btn-plugins { display: none !important; } }
+
+/* Janelas arrastáveis (PC): o cabeçalho mostra que dá para pegar; durante o arrasto não seleciona texto. */
+@media (min-width: 641px) and (pointer: fine) {
+  .ui-popover__head, .ui-accounts__head, .ui-dialog__head { cursor: grab; }
+  body.is-dragging-panel, body.is-dragging-panel * { cursor: grabbing !important; user-select: none !important; }
+  body.is-dragging-panel iframe { pointer-events: none; }
+}
+
+/* Conversa: o pedido de permissão fica acima da caixa de mensagem, sem tomar a tela toda. */
+.ui-chats__perm { flex: none; margin: 8px 10px 0; max-height: 45vh; overflow: auto; }
+.ui-chats__perm[hidden] { display: none; }

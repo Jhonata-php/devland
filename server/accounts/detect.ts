@@ -357,7 +357,9 @@ export function detectAccounts(dirs: string[], opts: { home?: string; env?: Node
     const id = ids[i];
     const ov = matchOverride(overrides, id, resolve(dir), home);
     const cfg = readGlobalConfig(dir, home);
-    return { dir, id, ov, cfg, short: str(ov?.short)?.slice(0, 3) ?? shortcuts.get(resolve(dir)) };
+    // A conta "IA local" (ai/local.ts) tem nome e atalho próprios.
+    const local = /[\\/]\.claude-ollama$/.test(dir);
+    return { dir, id, ov: local && !ov ? { name: 'IA local', short: 'L', color: '#14b8a6' } : ov, cfg, short: str(ov?.short)?.slice(0, 3) ?? (local ? 'L' : shortcuts.get(resolve(dir))) };
   });
 
   // Contas sem atalho detectado recebem A, B, C... (sem colidir com os atalhos já usados).

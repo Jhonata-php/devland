@@ -203,7 +203,7 @@ describe('ClaudeWatcher', () => {
         'Prompt anterior', 'Prompt posterior',
       ]);
       expect(c.agent(id)!.activity?.detail).toBe('Prompt posterior');
-      expect(warn).toHaveBeenCalledWith(`[habblaud] Linha do transcript de ${id} ignorada: Cannot convert object to primitive value`);
+      expect(warn).toHaveBeenCalledWith(`[devland] Linha do transcript de ${id} ignorada: Cannot convert object to primitive value`);
       expect(warn).toHaveBeenCalledTimes(1);
     } finally {
       setQuiet(true);

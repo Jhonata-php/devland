@@ -35,6 +35,7 @@ import { RoomState } from './room-state';
 import { countShells, latestShellDone, shellLabel, shellStage, shellWaitSince, spinDir, spinPhase, yawnPhase } from './shell';
 import { SpotRegistry } from './spots';
 import type { Step } from './steps';
+import * as L from '../social/lines';
 import { EXIT_RADIUS, NO_INTENT, stepFree, tileAt, VISITOR_LANYARD, type VisitorIntent } from './visitor';
 import { tr } from '../../../../shared/i18n';
 
@@ -97,6 +98,9 @@ function between(rng: () => number, a: number, b: number): number {
 /** O que define a aparência de um personagem (muda quando o personagem é editado). */
 const lookSig = (a: AgentInfo): string => `${a.seed}|${a.look}|${partsKey(a.parts)}`;
 
+/** Id do supervisor (não é agente: fora do snapshot, das listas e do clique). */
+export const BOSS_ID = 'npc:supervisor';
+
 export class Sim {
   readonly chars = new Map<string, Character>();
   readonly rooms = new Map<string, RoomState>();
@@ -141,6 +145,11 @@ export class Sim {
   visitorIntent: VisitorIntent = { ...NO_INTENT };
   /** Visita: as luzes do prédio (aplicadas a cada snapshot e a cada segundo). */
   visitLight: VisitLight = 'live';
+  /** Supervisor (só desenho, nunca sai do navegador): mesa na recepção; bronca, parabéns e demissões. */
+  boss: Character | null = null;
+  private nextBossAt = 0;
+  /** Depuração: todo passeio sorteado vira esta atividade (debug.wanderNow('smoke')). */
+  forceOuting: IdleActivity | null = null;
 
   /** `storage` das carteiras: null = só em memória (o timelapse não mexe nas moedinhas de verdade). */
   constructor(
@@ -583,6 +592,8 @@ export class Sim {
       this.runCharacter(ch, dt, now);
     }
     if (this.visitor) this.runVisitor(this.visitor, dt, now);
+    this.ensureBoss();
+    if (this.boss) this.runBoss(this.boss, dt, now);
     for (const [id, ch] of this.chars) {
       if (ch.gone) {
         this.spots.releaseAll(id);
@@ -606,6 +617,7 @@ export class Sim {
       }
     }
     if (this.shrinkPending) this.relayout();
+    this.sendBoss(now);
     this.social.housekeeping(now);
     for (const [id, until] of this.machineUntil) if (until < now) this.machineUntil.delete(id);
     this.refreshRoomInfo();
@@ -865,7 +877,10 @@ export class Sim {
           if (s.machine) this.machineUntil.set(s.machine, now + s.ms);
         }
         ch.setPose(s.pose, s.held ?? 'none');
-        return ch.stepT >= s.ms;
+        ch.smoking = !!s.smoke;
+        const done = ch.stepT >= s.ms;
+        if (done) ch.smoking = false;
+        return done;
       }
       case 'until': {
         if (first && s.dir) ch.dir = s.dir;
@@ -1367,7 +1382,18 @@ export class Sim {
     ch.tempSpots.length = 0;
     if (ch.gathering) this.social.leave(ch, now);
     const steps: Step[] = [];
-    this.pushLeave(ch, steps);
+    // sessão encerrada (projeto parado, agente removido): o supervisor vem demitir; o agente espera, ouve, responde
+    // e sai cabisbaixo com a caixa das coisas dele
+    const fired = { done: false };
+    const firing = ch.info.kind === 'main' && !ch.inside && !ch.arriving && ch.alpha > 0.5 && this.bossMission(ch, 'fire', () => (fired.done = true));
+    if (firing) {
+      steps.push(
+        { t: 'until', cond: () => fired.done, minMs: 0, maxMs: 40_000, dir: ch.dir },
+        { t: 'do', fn: () => this.social.say(ch, L.pick(L.FIRED_REPLY, ch.rng), this.now) },
+      );
+      this.pushLeave(ch, steps);
+      steps.push({ t: 'act', pose: 'sulk', held: 'box', ms: 2600 });
+    } else this.pushLeave(ch, steps);
     const room = this.rooms.get(ch.roomId);
     if (room && room.present && room.lightOn && !this.switchClaimValid(room) && isLastInRoom(room.id, ch.id, this.chars.values())) {
       const sw = room.layout.spots.find((p) => p.kind === 'switch');
@@ -1385,6 +1411,11 @@ export class Sim {
     const es = this.spots.get(el.spotId)!;
     steps.push({ t: 'go', tx: es.tx, ty: es.ty, fx: es.tx * TILE + FOOT_DX + (es.x - (es.tx * TILE + FOOT_DX)) * 0.5, fy: es.ty * TILE + FOOT_DY - 2, dir: 'up' });
     steps.push({ t: 'elevIn', elev: el.index, phase: 0 }, { t: 'remove' });
+    if (firing) {
+      // depois da demissão, tudo com a caixa na mão (a espera antes dela, não)
+      const from = steps.findIndex((st) => st.t === 'act' && st.pose === 'sulk');
+      for (const st of steps.slice(from + 1)) if (st.t === 'go' || st.t === 'until') st.held = 'box';
+    }
     ch.queue.push(...steps);
     void now;
     return true;
@@ -1498,8 +1529,9 @@ export class Sim {
       stretch: true,
       mirror: !!this.social.plan('mirror', 1, ch),
       phone: !!this.randomFree(PHONE_SEATS, ch),
+      smoke: !!this.spots.findFree('smoke', { by: ch.id }),
     };
-    const what = pickIdleActivity(rng, avail, soloWeights(persona));
+    const what = this.forceOuting && avail[this.forceOuting] !== false ? this.forceOuting : pickIdleActivity(rng, avail, soloWeights(persona));
     if (!what) return false;
     const steps: Step[] = [];
     const goUse = (s: SpotDef, held: 'none' | 'coffee' = 'none'): void => {
@@ -1588,6 +1620,18 @@ export class Sim {
         this.pushLeave(ch, steps);
         goUse(s);
         steps.push({ t: 'act', pose: board ? 'read' : 'stand', held: board ? 'papers' : 'none', ms: between(rng, 5000, 10000), icon: rng() < 0.3 ? 'idea' : undefined });
+        release(s);
+        break;
+      }
+      case 'smoke': {
+        // pausa para o cigarro junto ao vidro: tragadas (mão à boca) entre um tempo parado olhando para fora
+        const s = this.spots.findFree('smoke', { near, by: ch.id, rng });
+        if (!s || !this.reserveTemp(ch, s)) return false;
+        this.pushLeave(ch, steps);
+        goUse(s);
+        const puffs = 2 + Math.floor(rng() * 3);
+        for (let i = 0; i < puffs; i++) steps.push({ t: 'act', pose: 'stand', ms: between(rng, 2200, 4200), smoke: true }, { t: 'act', pose: 'drink', ms: 1100, smoke: true });
+        steps.push({ t: 'act', pose: 'stand', ms: 1500, smoke: true });
         release(s);
         break;
       }
@@ -1725,7 +1769,137 @@ export class Sim {
   *people(): IterableIterator<Character> {
     yield* this.chars.values();
     if (this.visitor && !this.visitor.gone) yield this.visitor;
+    if (this.boss && !this.boss.gone) yield this.boss;
   }
+
+  /** A cadeira do supervisor (atrás do balcão da recepção). */
+  private bossSpot(): SpotDef | undefined {
+    return this.spots.ofKind('boss')[0];
+  }
+
+  /** O supervisor está sentado na mesa dele, livre para uma missão. */
+  get bossFree(): boolean {
+    const b = this.boss;
+    return !!b && !b.step && !b.queue.length && b.atSpot === this.bossSpot()?.id;
+  }
+
+  /** Senta o supervisor na mesa dele assim que o prédio existe (fora da visita). */
+  private ensureBoss(): void {
+    if (this.boss || this.visit || !this.initialized) return;
+    const spot = this.bossSpot();
+    const anyone = this.chars.values().next().value;
+    if (!spot || !anyone) return;
+    const info: AgentInfo = { ...anyone.info, id: BOSS_ID, kind: 'main', name: tr('Supervisor'), role: tr('Supervisor'), look: 'm', seed: 0x5b055, parts: undefined, parentId: undefined, sessionId: BOSS_ID, account: '', status: 'working', recent: [], tasks: [], shells: undefined, roomId: RECEPTION_ID };
+    let appearance;
+    try {
+      appearance = { ...this.art.appearanceFromSeed(info.seed, { look: 'm' }), top: '#2b2f3a', topAccent: '#e5484d', topStyle: 'shirt_tie' as const, accessory: 'glasses' as const, lanyard: '#e5484d' };
+    } catch {
+      return;
+    }
+    const boss = new Character(info, appearance);
+    boss.placeAtTile(spot.tx, spot.ty);
+    boss.queue.push({ t: 'enter', spot: spot.id });
+    this.boss = boss;
+  }
+
+  /**
+   * Missão do supervisor: levanta da mesa, vai até `target`, fala (`kind`), ouve a resposta e volta a sentar.
+   * - scold: quem está parado há muito tempo leva bronca (fica sem graça);
+   * - praise: PR mesclado (a festa da sala), parabéns a quem mergeou;
+   * - fire: o agente está indo embora (sessão encerrada, projeto parado): é demitido e sai com a caixa; `onFired`
+   *   libera a saída dele.
+   */
+  private bossMission(target: Character, kind: 'scold' | 'praise' | 'fire', onFired?: () => void): boolean {
+    const boss = this.boss;
+    const desk = this.bossSpot();
+    if (!boss || !desk || !this.bossFree) return false;
+    const home = (target.homeSpot && this.spots.get(target.homeSpot)) || { tx: target.tx, ty: target.ty, x: target.x, y: target.y };
+    // em pé num tile livre ao lado de quem ele procura (o mais perto)
+    let stand: { x: number; y: number } | null = null;
+    for (let r = 1; r <= 3 && !stand; r++)
+      for (let dy = -r; dy <= r && !stand; dy++)
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          if (this.building.grid.get(home.tx + dx, home.ty + dy) === FREE) {
+            stand = { x: home.tx + dx, y: home.ty + dy };
+            break;
+          }
+        }
+    if (!stand) return false;
+    const dir = facing(stand.x * TILE + FOOT_DX, stand.y * TILE + FOOT_DY, home.x, home.y);
+    const vars = { nome: target.info.name };
+    const say = { scold: L.BOSS_SCOLD, praise: L.BOSS_PRAISE, fire: L.BOSS_FIRE }[kind];
+    const bye = { scold: L.BOSS_BYE, praise: L.BOSS_PRAISE_BYE, fire: L.BOSS_FIRE_BYE }[kind];
+    const icon = { scold: 'lightning', praise: 'star', fire: 'storm' } as const;
+    boss.queue.push(
+      { t: 'exit' },
+      { t: 'go', tx: stand.x, ty: stand.y, run: kind === 'fire' },
+      { t: 'do', fn: () => (this.social.say(boss, L.pick(say, boss.rng, vars), this.now), boss.setIcon(icon[kind], 3200, this.now)) },
+      { t: 'act', pose: kind === 'fire' ? 'raise_hand' : 'talk', dir, ms: 3400 },
+      {
+        t: 'do',
+        fn: () => {
+          if (kind === 'fire') return onFired?.();
+          if (target.gone || target.leaving) return;
+          if (kind === 'praise') {
+            // elogiado: agradece, todo contente
+            this.social.say(target, L.pick(L.BOSS_THANKS, target.rng), this.now);
+            target.setIcon('heart', 2600, this.now);
+            return;
+          }
+          // quem levou a bronca acorda, se desculpa e fica sem graça um pouco (se ainda está na mesa)
+          if (target.atSpot !== target.homeSpot) return;
+          if (target.icon === 'zzz') target.setIcon(null, 0, this.now);
+          this.social.say(target, L.pick(L.BOSS_REPLY, target.rng), this.now);
+          if (!target.step) target.queue.unshift({ t: 'act', pose: 'sulk', seated: true, ms: 3600 });
+        },
+      },
+      { t: 'act', pose: 'stand', dir, ms: 2600 },
+      { t: 'do', fn: () => this.social.say(boss, L.pick(bye, boss.rng, vars), this.now) },
+      { t: 'act', pose: 'talk', dir, ms: 1800 },
+      { t: 'go', tx: desk.tx, ty: desk.ty },
+      { t: 'enter', spot: desk.id },
+    );
+    return true;
+  }
+
+  /**
+   * Bronca em quem está ocioso há muito tempo (cochilando na mesa); com `praise`, parabéns a quem mergeou.
+   * `force` = já (depuração), mesmo sem ninguém parado há tanto tempo.
+   */
+  sendBoss(now: number, force = false, praise?: Character): boolean {
+    if (this.visit || !this.bossFree || (!praise && !force && now < this.nextBossAt)) return false;
+    if (praise) return !praise.leaving && !praise.gone && this.bossMission(praise, 'praise');
+    const target = [...this.chars.values()].find(
+      (c) => c.info.kind === 'main' && c.mode === 'idle' && !c.leaving && !c.gathering && c.homeSpot && c.atSpot === c.homeSpot && (force || this.longIdle(c, now)),
+    );
+    if (!target) {
+      this.nextBossAt = now + 30_000;
+      return false;
+    }
+    this.nextBossAt = now + between(target.rng, 4 * 60_000, 9 * 60_000);
+    return this.bossMission(target, 'scold');
+  }
+
+  private runBoss(b: Character, dt: number, now: number): void {
+    b.animT += dt * 1000;
+    if (b.icon && now >= b.iconUntil) b.icon = null;
+    if (!b.step) {
+      b.step = b.queue.shift() ?? null;
+      b.stepT = 0;
+      b.stepStarted = false;
+    }
+    if (b.step) {
+      const done = this.runStep(b, b.step, dt, now);
+      b.stepT += dt * 1000;
+      if (done) b.step = null;
+      return;
+    }
+    // na mesa: alterna entre conferir uns papéis e ficar sentado
+    if (b.atSpot) b.setPose(Math.floor(now / 7000) % 3 === 0 ? 'read' : 'sit', Math.floor(now / 7000) % 3 === 0 ? 'papers' : 'none');
+    else b.setPose('stand');
+  }
+
 
   /** Um personagem desenhado pelo id (agente ou o visitante). */
   person(id: string): Character | undefined {

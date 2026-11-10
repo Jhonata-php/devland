@@ -1,5 +1,5 @@
 // Barra lateral: busca, filtro por conta e a lista de salas -> agentes -> subagentes.
-import type { AccountInfo, AgentInfo } from '../../../shared/types';
+import type { AccountInfo, AgentInfo, OfficeSnapshot } from '../../../shared/types';
 import { roomTheme } from '../art';
 import type { UiComponent, UiContext } from './context';
 import { moveAgent, orderAgents } from './agentorder';
@@ -12,6 +12,8 @@ import { officeIsEmpty } from './overlays';
 import { createAgentRow, updateAgentRow } from './rows';
 import { createAccountChip, createProgress, updateAccountChip, updateProgress } from './widgets';
 import { tr } from '../../../shared/i18n';
+import { ROLE_IDS, ROLES, type RoleId } from '../../../shared/roles';
+import { roleLabel, roleOf } from './roles';
 
 interface RoomRefs {
   head: HTMLButtonElement;
@@ -41,6 +43,9 @@ export class Sidebar implements UiComponent {
   private input: HTMLInputElement;
   private query = '';
   private filters: HTMLElement;
+  /** Filtro por função (ui/roles.ts): só uma por vez; clicar de novo desliga. */
+  private role: RoleId | undefined;
+  private roleBar: HTMLElement;
   private filterList: KeyedList<AccountInfo, HTMLButtonElement>;
   private scroller: HTMLElement;
   private rooms: KeyedList<RoomGroup>;
@@ -103,6 +108,7 @@ export class Sidebar implements UiComponent {
       },
     });
 
+    this.roleBar = h('div', { class: 'ui-func-filters', role: 'group', attrs: { 'aria-label': tr('Filtrar por função') } });
     this.scroller = h('div', { class: 'ui-side__scroll' });
     const list = h('div', { class: 'ui-rooms', role: 'list', attrs: { 'aria-label': tr('Salas') } });
     this.scroller.append(list);
@@ -121,6 +127,7 @@ export class Sidebar implements UiComponent {
         click: () => {
           this.input.value = '';
           this.query = '';
+          this.role = undefined;
           this.ctx.updatePrefs({ hiddenAccounts: [] });
         },
       },
@@ -132,7 +139,7 @@ export class Sidebar implements UiComponent {
     this.el = h(
       'aside',
       { class: 'ui-panel ui-sidebar', attrs: { 'aria-label': tr('Salas e agentes'), id: 'ui-sidebar' } },
-      h('div', { class: 'ui-side__head' }, h('div', { class: 'ui-side__title' }, h('h2', { text: tr('Escritório') }), close), search, this.filters),
+      h('div', { class: 'ui-side__head' }, h('div', { class: 'ui-side__title' }, h('h2', { text: tr('Escritório') }), close), search, this.filters, this.roleBar),
       this.scroller,
     );
   }
@@ -150,11 +157,12 @@ export class Sidebar implements UiComponent {
     setHidden(this.filters, accounts.length <= 1);
 
     // Ordem das salas escolhida pelo usuário (arrastando o cabeçalho da sala).
-    const groups = orderRooms(groupRooms(snap, { query: this.query, hiddenAccounts: hidden }), (g) => g.room.id);
+    const groups = orderRooms(groupRooms(snap, { query: this.query, hiddenAccounts: hidden, role: this.role }), (g) => g.room.id);
+    this.renderRoleBar(snap);
     this.shownRooms = groups.map((g) => g.room.id);
     this.rooms.sync(groups);
 
-    const filtering = this.query.trim().length > 0 || hidden.size > 0;
+    const filtering = this.query.trim().length > 0 || hidden.size > 0 || !!this.role;
     const total = snap?.agents.length ?? 0;
     // Escritório vazio sem filtro: o cartão central já explica; a lista não repete o aviso.
     const showEmpty = groups.length === 0 && (filtering || !officeIsEmpty(this.ctx));
@@ -184,6 +192,33 @@ export class Sidebar implements UiComponent {
         target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     }
+  }
+
+  /** Uma ficha por função que existe no escritório (some quando ninguém tem função). */
+  private renderRoleBar(snap: OfficeSnapshot | null): void {
+    const present = new Set<RoleId>();
+    for (const a of snap?.agents ?? []) {
+      const r = roleOf(a, snap?.rooms);
+      if (r) present.add(r);
+    }
+    if (this.role) present.add(this.role);
+    const ids = ROLE_IDS.filter((r) => present.has(r));
+    setHidden(this.roleBar, ids.length === 0);
+    const key = ids.map((r) => `${r}${r === this.role ? '*' : ''}`).join();
+    if (this.roleBar.dataset.key === key) return;
+    this.roleBar.dataset.key = key;
+    this.roleBar.replaceChildren(
+      ...ids.map((id) => {
+        const b = h('button', { class: 'ui-func ui-func--btn', type: 'button', text: `${ROLES[id].icon} ${roleLabel(id)}`, attrs: { 'aria-pressed': String(this.role === id) } });
+        setStyleVar(b, '--func', ROLES[id].color);
+        b.classList.toggle('is-on', this.role === id);
+        b.addEventListener('click', () => {
+          this.role = this.role === id ? undefined : id;
+          this.ctx.invalidate();
+        });
+        return b;
+      }),
+    );
   }
 
   private toggleAccount(id: string): void {
@@ -413,7 +448,8 @@ export class Sidebar implements UiComponent {
 
   private updateRow(row: HTMLElement, a: AgentInfo): void {
     const sel = this.ctx.selection();
-    updateAgentRow(row, a, this.ctx.account(a.account), sel?.type === 'agent' && sel.id === a.id, this.ctx.now(), this.ctx.store.snapshot?.agents);
+    const snap = this.ctx.store.snapshot;
+    updateAgentRow(row, a, this.ctx.account(a.account), sel?.type === 'agent' && sel.id === a.id, this.ctx.now(), snap?.agents, roleOf(a, snap?.rooms));
   }
 
   private pick(id: string): void {

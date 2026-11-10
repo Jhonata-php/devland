@@ -11,11 +11,11 @@ export const LOUNGE_ID = 'core:lounge';
 
 /** Paredes do núcleo: tons claros e neutros (frios), com acabamentos diferentes por ambiente. */
 export const CORE_WALLS = {
-  reception: { base: '#e9e5dc', trim: '#a88e6c', pattern: 'wood_panel' } satisfies WallStyle,
+  reception: { base: '#3a4150', trim: '#c49a6c', pattern: 'wood_panel' } satisfies WallStyle,
   restroom: { base: '#dce8ee', trim: '#8fb0c0', pattern: 'tiles' } satisfies WallStyle,
-  cafe: { base: '#eef0ee', trim: '#9aa6ad', pattern: 'plain' } satisfies WallStyle,
+  cafe: { base: '#34413f', trim: '#7fd1b9', pattern: 'plain' } satisfies WallStyle,
   cafeSplash: { base: '#d9dcdf', trim: '#8d969e', pattern: 'marble' } satisfies WallStyle,
-  lounge: { base: '#e6e2ea', trim: '#8f8aa3', pattern: 'plain' } satisfies WallStyle,
+  lounge: { base: '#3b3550', trim: '#b49cff', pattern: 'stripes' } satisfies WallStyle,
   glass: { base: '#cfe6f0', trim: '#9fb9c6', pattern: 'glass' } satisfies WallStyle,
 };
 
@@ -45,6 +45,8 @@ export function layoutReception(): AreaLayout {
   b.furn('plant_tall', 1, 2, 'monstera', { order: 0.2 });
   b.furn('plant_tall', 14, 4, 'ficus', { order: 0.21 });
   b.furn('reception_desk', 9, 5, undefined, { order: 0.4 });
+  // mesa do supervisor: ele fica sentado atrás do balcão, de frente para o hall
+  b.seat('boss', 'office_chair_front', 10, 4, 'down', undefined, { order: 0.43 });
   b.furn('plant_small', 12, 5, 'flower', { order: 0.45 });
   b.furn('filing_cabinet', 8, 5, undefined, { order: 0.42 });
   // cantinho de espera com poltronas

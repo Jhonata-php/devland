@@ -1,5 +1,6 @@
 // Barra superior: marca, conexão, contadores, uso por conta e botões de controle.
 import { access } from '../net/access';
+import { accountsClick } from './accounts';
 import { SpawnPanel } from './spawn';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText, setTitle, setVariant } from './dom';
@@ -41,6 +42,7 @@ export class TopBar implements UiComponent {
   /** Próximo agente do botão de shells (cliques seguidos passam por todos, do que espera há mais tempo). */
   private shellCursor = 0;
   private usage: UsageCards;
+  private accountsLink: HTMLElement;
   private version: VersionChip;
   private hadOpen = false;
   private sidebarBtn: HTMLButtonElement;
@@ -50,7 +52,23 @@ export class TopBar implements UiComponent {
   /** Abre a janela do Habblaud World (ao lado de Configurações); a janela decide quando ele aparece. */
   readonly worldBtn: HTMLButtonElement;
   private readonly spawnBtn: HTMLButtonElement;
+  /** Abre/fecha o painel de Novo agente (a barra inferior do celular usa). */
+  /** Novo agente disponível agora (o botão aparece). */
+  get canSpawn(): boolean {
+    return !this.spawnBtn.hidden;
+  }
+  toggleSpawn(): void {
+    this.spawnPanel.toggle(this.spawnBtn);
+  }
   private readonly spawnPanel: SpawnPanel;
+  /** Agente novo criado pelo Novo agente: quem usa abre a conversa dele. */
+  set onSpawned(fn: (agentId: string) => void) {
+    this.spawnPanel.onStarted = fn;
+  }
+  /** Aviso do Novo agente depois que o modal fecha (toast). */
+  set onSpawnNotice(fn: (text: string, level: 'success' | 'warn') => void) {
+    this.spawnPanel.onNotice = fn;
+  }
   /** Grupo dos botões de painéis (feed, Habblaud World, configurações, ajuda); o histórico entra aqui (ui/index.ts). */
   readonly panelGroup: HTMLElement;
 
@@ -101,6 +119,8 @@ export class TopBar implements UiComponent {
     }
 
     this.usage = new UsageCards(ctx);
+    // Habblaud Cloud: conectar contas (Claude, Codex, GitHub) numa página própria, no lugar dos cartões sem uso.
+    this.accountsLink = h('a', { class: 'ui-btn ui-btn-accounts', text: tr('+ Contas'), hidden: true, attrs: { href: '/contas', title: tr('Conectar contas do Claude, do Codex e do GitHub') }, on: { click: accountsClick(ctx.root) } });
 
     this.sidebarBtn = iconButton(ICONS.sidebar, tr('Painel lateral ( [ )'), () => ctx.togglePanel('sidebar'), 'ui-btn-sidebar');
     this.feedBtn = iconButton(ICONS.feed, tr('Feed de atividade ( ] )'), () => ctx.togglePanel('feed'), 'ui-btn-feed');
@@ -109,7 +129,7 @@ export class TopBar implements UiComponent {
     this.worldBtn = iconButton(ICONS.city, tr('Habblaud World'), () => ctx.toggleWorld(), 'ui-btn-world');
     this.worldBtn.setAttribute('aria-haspopup', 'dialog');
     this.worldBtn.hidden = true;
-    this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings());
+    this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings(), 'ui-btn-settings');
     this.settingsBtn.setAttribute('aria-haspopup', 'dialog');
     this.spawnPanel = new SpawnPanel(ctx);
     ctx.root.append(this.spawnPanel.el);
@@ -136,6 +156,16 @@ export class TopBar implements UiComponent {
       iconButton(ICONS.help, tr('Ajuda (?)'), () => ctx.openHelp()),
     );
     this.panelGroup = panelGroup;
+    // Legendas curtas sob os ícones (a dica longa continua no title).
+    const caption = (btn: HTMLElement, text: string) => btn.setAttribute('data-label', text);
+    caption(this.sidebarBtn, tr('Salas'));
+    caption(this.spawnBtn, tr('Novo'));
+    caption(this.timelapseBtn, tr('Tempo'));
+    caption(this.feedBtn, tr('Feed'));
+    caption(this.worldBtn, tr('Mundo'));
+    caption(this.settingsBtn, tr('Ajustes'));
+    for (const [i, label] of [tr('Visão'), tr('Menos'), tr('Mais')].entries()) caption(viewGroup.children[i] as HTMLElement, label);
+    caption(panelGroup.lastElementChild as HTMLElement, tr('Ajuda'));
 
     this.el = h(
       'header',
@@ -153,6 +183,7 @@ export class TopBar implements UiComponent {
       ),
       counterWrap,
       this.usage.el,
+      this.accountsLink,
       h('div', { class: 'ui-topbar__right' }, viewGroup, panelGroup),
     );
   }
@@ -189,7 +220,7 @@ export class TopBar implements UiComponent {
         ? tr('Dados simulados no navegador (?mock=1)')
         : conn === 'open'
           ? tr('Recebendo eventos do servidor em tempo real')
-          : tr('Sem conexão com o servidor do Habblaud'),
+          : tr('Sem conexão com o servidor do DevLand'),
     );
     setHidden(this.demoBadge, !(conn === 'open' && snap?.meta.demo));
 
@@ -220,6 +251,7 @@ export class TopBar implements UiComponent {
     this.usage.render();
     this.version.render();
     setHidden(this.spawnBtn, !access().spawn || store.mock || store.replaying);
+    setHidden(this.accountsLink, !access().cloud);
 
     this.sidebarBtn.setAttribute('aria-pressed', String(this.ctx.isPanelOpen('sidebar')));
     this.feedBtn.setAttribute('aria-pressed', String(this.ctx.isPanelOpen('feed')));
