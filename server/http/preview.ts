@@ -75,6 +75,7 @@ export function createPreview(opts: { blockedPorts: () => number[]; now?: () => 
     return { port, token: `${m[2]}.${m[3]}`, rest: m[4] ?? '/' };
   };
 
+  // 424, não 502/503/504: o Velix troca esses por "Recuperando os serviços" e a prévia some atrás de um aviso que engana.
   const fail = (res: ServerResponse, status: number, text: string, extra: Record<string, string> = {}) => {
     const body = `<!doctype html><meta charset="utf-8"><body style="font:14px ui-monospace,monospace;background:#030905;color:#39ff88;padding:24px">${esc(text)}</body>`;
     res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extra });
@@ -176,7 +177,7 @@ export function createPreview(opts: { blockedPorts: () => number[]; now?: () => 
       );
       up.on('timeout', () => up.destroy());
       up.on('error', () => {
-        if (!res.headersSent) fail(res, 502, tr('nada respondeu na porta {0}: o servidor do projeto está rodando?', [p.port]));
+        if (!res.headersSent) fail(res, 424, tr('nada respondeu na porta {0}: o servidor do projeto está rodando?', [p.port]));
       });
       up.end();
       return true;

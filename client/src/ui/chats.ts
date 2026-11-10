@@ -73,6 +73,7 @@ export class ChatsView implements UiComponent {
   private readonly title: HTMLElement;
   private readonly sub: HTMLElement;
   private readonly note: HTMLElement;
+  private readonly typing: HTMLElement;
   private readonly composer: MessageComposer;
   private open = false;
   private current: string | null = null;
@@ -102,6 +103,7 @@ export class ChatsView implements UiComponent {
       this.stick = this.msgs.scrollHeight - this.msgs.scrollTop - this.msgs.clientHeight < 80;
     });
     this.note = h('p', { class: 'ui-chats__note', hidden: true });
+    this.typing = h('div', { class: 'ui-chats__typing', hidden: true, attrs: { 'aria-hidden': 'true' } }, h('i'), h('i'), h('i'), h('span', { text: tr('Trabalhando…') }));
     this.composer = new MessageComposer(ctx, 'terminal');
     // Pedido de permissão (ou pergunta) do agente: aprovar ou negar sem sair da conversa.
     this.perm = new PermissionCard(ctx);
@@ -118,6 +120,7 @@ export class ChatsView implements UiComponent {
         h('button', { class: 'ui-icon-btn ui-icon-btn--sm', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: () => this.close() } }),
       ),
       this.msgs,
+      this.typing,
       this.note,
       this.perm.el,
       h('div', { class: 'ui-chats__composer' }, this.composer.el),
@@ -194,7 +197,9 @@ export class ChatsView implements UiComponent {
       this.entries = [];
       this.seen.clear();
       this.msgs.replaceChildren();
+      this.msgs.classList.remove('is-live');
       this.add(init.entries);
+      this.msgs.classList.add('is-live'); // só o que chega depois entra animado
       // Sem nenhuma mensagem gravada: avisa em vez de deixar a tela em branco.
       setHidden(this.note, init.entries.length > 0);
       if (!init.entries.length) setText(this.note, tr('Esta conversa ainda não tem mensagens gravadas, ou o agente já foi fechado.'));
@@ -230,11 +235,28 @@ export class ChatsView implements UiComponent {
       if (this.seen.has(e.id)) continue;
       this.seen.add(e.id);
       this.entries.push(e);
+      if (e.kind === 'tool') {
+        this.addTool(frag, e.title);
+        continue;
+      }
       const node = this.bubble(e);
       if (node) frag.append(node);
     }
     this.msgs.append(frag);
     while (this.msgs.childElementCount > MAX_ENTRIES) this.msgs.firstElementChild?.remove();
+  }
+
+  /** Ferramentas seguidas viram UMA linha ("⚙ 7 ações · …") que abre para a lista, em vez de um paredão de linhas. */
+  private addTool(frag: DocumentFragment, title: string): void {
+    const last = (frag.lastElementChild ?? this.msgs.lastElementChild) as HTMLElement | null;
+    let g = last?.classList.contains('ui-chats__tools') ? last : null;
+    if (!g) {
+      g = h('details', { class: 'ui-chats__tools' }, h('summary'));
+      frag.append(g);
+    }
+    g.append(h('div', { class: 'ui-chats__tool', text: `⚙ ${title}` }));
+    const n = g.childElementCount - 1;
+    setText(g.firstElementChild as HTMLElement, n === 1 ? `⚙ ${title}` : tr('⚙ {0} ações · {1}', [n, title]));
   }
 
   private bubble(e: TerminalEntry): HTMLElement | null {
@@ -269,6 +291,7 @@ export class ChatsView implements UiComponent {
       setText(this.title, a?.name ?? '…');
       const fr = a && roleOf(a, snap?.rooms);
       setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}${fr ? ` · ${ROLES[fr].icon} ${roleLabel(fr)}` : ''}` : tr('saiu do escritório'));
+      setHidden(this.typing, a?.status !== 'working');
       this.tools.update(a, a ? snap?.rooms.find((r) => r.id === a.roomId)?.path : undefined);
       this.composer.render(a, a?.id ?? this.current);
       // ctx.agent junta ao agente o pedido de permissão em aberto (o snapshot puro não o traz).

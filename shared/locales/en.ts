@@ -4048,4 +4048,5 @@ export const EN: Readonly<Record<string, string>> = {
   "📊 {0} chegou a {1}% do limite da semana. Avisamos de novo quando renovar.": "📊 {0} reached {1}% of the weekly limit. We'll tell you again when it renews.",
   "✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.": "✅ {0}: the 5-hour session renewed. You can work again.",
   "✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.": "✅ {0}: the weekly limit renewed. You can work again.",
+  "⚙ {0} ações · {1}": "⚙ {0} actions · {1}",
 };

@@ -87,6 +87,7 @@ export class PreviewPanel implements UiComponent {
       const open = this.isOpen;
       this.button.setAttribute('aria-expanded', String(open));
       this.button.classList.toggle('is-on', open);
+      document.documentElement.classList.toggle('preview-docked', open); // no modo Painel, a prévia fica ao lado da conversa
       if (open) {
         void this.refreshPorts();
         this.fillProjects();

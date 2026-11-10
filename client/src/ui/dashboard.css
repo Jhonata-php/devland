@@ -1037,3 +1037,29 @@ html.theme-light.is-panel.dash-on-chats .ui-chats__bubble--me { background: #ece
 html.theme-light .ui-ctool__menu { background: #fff; border-color: rgba(0, 0, 0, 0.12); }
 html.theme-light .ui-ctool__msg { background: #fff; }
 @media (max-width: 900px) { .ui-ctools { gap: 4px; } .ui-ctool { padding: 0 8px; } }
+
+/* Conversa: ferramentas agrupadas, indicador "trabalhando" e entrada suave das mensagens novas. */
+html .ui-chats__tools { align-self: flex-start; max-width: 100%; margin: -10px 0 0; }
+html .ui-chats__tools > summary { display: block; max-width: 100%; padding: 4px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); color: #8f8c86; font: 12.5px/1.4 ui-monospace, 'SF Mono', Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; list-style: none; }
+html .ui-chats__tools > summary::-webkit-details-marker { display: none; }
+html .ui-chats__tools > summary:hover { background: rgba(255, 255, 255, 0.07); }
+html .ui-chats__tools[open] > summary { white-space: normal; }
+html .ui-chats__tools .ui-chats__tool { margin: 2px 0 0; background: none; padding: 2px 10px; }
+html.theme-light .ui-chats__tools > summary { background: rgba(0, 0, 0, 0.045); color: #6b6862; }
+.ui-chats__typing { display: flex; align-items: center; gap: 4px; padding: 6px 4px 0; margin: 0 auto; width: min(100% - 32px, 100%); color: #8f8c86; font: 12.5px var(--font-ui, sans-serif); }
+.ui-chats__typing[hidden] { display: none; }
+.ui-chats__typing i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.4; animation: ui-chat-dot 1.2s infinite; }
+.ui-chats__typing i:nth-child(2) { animation-delay: 0.15s; }
+.ui-chats__typing i:nth-child(3) { animation-delay: 0.3s; }
+.ui-chats__typing span { margin-left: 6px; }
+@keyframes ui-chat-dot { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+@keyframes ui-chat-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ui-chats__msgs.is-live > .ui-chats__row, .ui-chats__msgs.is-live > .ui-chats__tools { animation: ui-chat-in 0.2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .ui-chats__msgs.is-live > *, .ui-chats__typing i { animation: none !important; } }
+
+/* Prévia ao lado da conversa (modo Painel, tela larga): a conversa encolhe e a prévia ocupa a metade direita, sem cobrir nada. */
+@media (min-width: 900px) {
+  html.is-panel.dash-on-chats .ui-root .ui-popover.ui-preview:popover-open { left: auto !important; right: 0 !important; top: var(--d-top-h, 60px) !important; bottom: 0 !important; transform: none !important; width: min(50vw, 860px); height: auto; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -18px 0 40px -24px rgba(0, 0, 0, 0.7); }
+  html.is-panel.dash-on-chats .ui-root .ui-popover.ui-preview::backdrop { background: transparent; backdrop-filter: none; }
+  html.is-panel.dash-on-chats.preview-docked .ui-chats { right: min(50vw, 860px); }
+}
