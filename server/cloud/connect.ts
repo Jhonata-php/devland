@@ -5,7 +5,7 @@
 // código depois de autorizar, que a página manda para cá (`paste`) e vai direto para o `claude` (nunca é gravado).
 //   claude  claude auth login                 CLAUDE_CONFIG_DIR = ~/.claude (1ª conta), ~/.claude-2...
 //   codex   codex login --device-auth         CODEX_HOME = ~/.codex
-//   github  gh auth login --web               e depois gh auth setup-git (o git push dos agentes usa esta conta)
+//   github  gh auth login --web (+ write:packages, para publicar imagens/pacotes)  e depois gh auth setup-git (o git push dos agentes usa esta conta)
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { chownSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
@@ -96,7 +96,7 @@ export class ConnectService {
       env.CODEX_HOME = job.dir;
       [file, args] = [this.deps.codexBin!, ['login', '--device-auth']];
     } else {
-      [file, args] = [this.deps.ghBin!, ['auth', 'login', '--hostname', 'github.com', '--git-protocol', 'https', '--web']];
+      [file, args] = [this.deps.ghBin!, ['auth', 'login', '--hostname', 'github.com', '--git-protocol', 'https', '--scopes', 'repo,read:org,gist,write:packages', '--web']];
     }
     job.proc = this.deps.spawn(file, args, { cwd: this.deps.home, cols: 400, rows: 40, env });
     job.proc.onData((d) => this.onData(job, d));
