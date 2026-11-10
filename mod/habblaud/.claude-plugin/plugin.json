@@ -1,7 +1,7 @@
 {
   "name": "habblaud",
   "displayName": "DevLand",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Liga a sessão ao DevLand: grava o uso do plano (5h e semanal) para o escritório, avisa embaixo do prompt quando outra sessão precisa de você e adiciona o comando /habblaud, e a skill devland-preview (o agente abre a prévia ao vivo do site no DevLand).",
   "author": {
     "name": "Márcio Junior",

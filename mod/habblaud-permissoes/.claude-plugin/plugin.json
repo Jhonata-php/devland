@@ -1,7 +1,7 @@
 {
   "name": "habblaud-permissoes",
   "displayName": "DevLand: permissões pelo escritório",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Hook PermissionRequest que deixa aprovar ou recusar pelo DevLand os pedidos de permissão do Claude Code e responder as perguntas do AskUserQuestion; o diálogo continua no terminal e vale o que você responder primeiro.",
   "author": {
     "name": "Márcio Junior",

@@ -10,8 +10,6 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
-## [1.1.0] - 2026-11-10
-
 ### Adicionado
 
 - **Uso das contas no topo.** Ao lado do **Buscar**, cada conta mostra o logo e duas barrinhas com o uso das 5 horas e da semana (verde, amarelo perto do limite, vermelho no fim); passar o mouse mostra os números e clicar abre a página Contas. Some em telas estreitas.
@@ -905,8 +903,7 @@ Primeira versão publicada.
   Subagentes chegam, trabalham e entregam ao principal. Mostra as duas contas, com o uso de 5 horas e semanal de
   cada uma (tap de statusline), além de feed de atividade, avisos e modo demonstração. Roda no Node ou no Docker local.
 
-[Não lançado]: https://github.com/Jhonata-php/devland/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/Jhonata-php/devland/compare/v1.0.4...v1.1.0
+[Não lançado]: https://github.com/Jhonata-php/devland/compare/v1.0.4...HEAD
 [1.0.4]: https://github.com/Jhonata-php/devland/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/marmottajr/habblaud/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/marmottajr/habblaud/compare/v1.0.1...v1.0.2

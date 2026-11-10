@@ -1,7 +1,7 @@
 {
   "name": "habblaud-mensagens",
   "displayName": "DevLand: mensagens pelo escritório",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Leva para a sessão do Claude Code as mensagens que você digita no DevLand (painel do agente ou terminal), como se você as tivesse digitado no terminal.",
   "author": {
     "name": "Márcio Junior",
