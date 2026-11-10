@@ -617,5 +617,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   world.setOptions(worldOptionsFrom(prefs));
   applyLayout();
   setView('panel');
+  // recarregou: volta à página do Painel em que estava (Mapa, Conversas...)
+  dashboard.restorePage();
   renderAll();
 }

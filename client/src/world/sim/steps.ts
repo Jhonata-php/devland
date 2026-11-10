@@ -10,7 +10,7 @@ export type Step =
   /** Sai do spot atual de volta ao tile de aproximação (levantar). */
   | { t: 'exit' }
   /** Fica numa pose por um tempo. */
-  | { t: 'act'; pose: Pose; ms: number; held?: HeldItem; dir?: Dir; icon?: IconName; machine?: string; seated?: boolean }
+  | { t: 'act'; pose: Pose; ms: number; held?: HeldItem; dir?: Dir; icon?: IconName; machine?: string; seated?: boolean; smoke?: boolean }
   /** Espera uma condição (ou o tempo máximo), numa pose. */
   | { t: 'until'; cond: () => boolean; minMs: number; maxMs: number; pose?: Pose; held?: HeldItem; dir?: Dir }
   /** Surge dentro do elevador e sai para o tile da frente. */

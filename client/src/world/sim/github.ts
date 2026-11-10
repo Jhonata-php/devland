@@ -24,6 +24,8 @@ export interface RoomFx {
   cheered: Set<string>;
   /** Forçado pela depuração (debug.roomEffect): o snapshot não apaga. */
   sticky?: boolean;
+  /** O supervisor já foi chamado para dar os parabéns. */
+  praised?: boolean;
 }
 
 /** Duração dos pulinhos com os braços para cima ('cheer': 2 quadros de 260 ms). */
@@ -83,6 +85,12 @@ export class RoomFxState {
         continue;
       }
       if (fx.kind === 'party' && fx.end - now >= CHEER_MIN_LEFT_MS) celebrate(sim, fx, now);
+      // festa nova (PR mesclado): o supervisor vem dar os parabéns a quem mergeou (se ele estiver livre)
+      if (fx.kind === 'party' && !fx.praised) {
+        fx.praised = true;
+        const who = fx.agentId ? sim.chars.get(fx.agentId) : undefined;
+        if (who) sim.sendBoss(now, false, who);
+      }
     }
   }
 }

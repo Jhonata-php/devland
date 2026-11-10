@@ -2,23 +2,75 @@
 import type { UiComponent, UiContext } from './context';
 import { accountsClick } from './accounts';
 import { h, iconButton, prefersReducedMotion, setHidden, setText } from './dom';
-import { FALLBACK_MARK, ICONS } from './icons';
+import { ICONS } from './icons';
 import { emptyOfficeHint } from './provider';
 import { wordmark } from './widgets';
 import { tr } from '../../../shared/i18n';
 import { access } from '../net/access';
+import { appearanceFromSeed, characterSprite, poseFrameCount, poseFrameDuration } from '../art';
+import type { Dir, HeldItem, Pose } from '../art/api';
 
 /** Depois de quanto tempo sem conexão o aviso aparece. */
 const DISCONNECTED_BANNER_MS = 8_000;
 
-function brandMark(size: number): HTMLElement {
-  const mark = h('span', { class: 'ui-brand__mark' });
-  const img = h('img', { attrs: { src: '/assets/brand/logo-mark@4x.png', alt: '', width: size, height: size, draggable: 'false' } });
-  img.addEventListener('error', () => {
-    mark.innerHTML = FALLBACK_MARK;
-  });
-  mark.append(img);
-  return mark;
+/** Cenas do bonequinho da tela de carregamento: a pose, para onde olha, o que segura e o balão. */
+const SPLASH_SCENES: { pose: Pose; dir: Dir; held?: HeldItem; walk?: boolean; say: () => string }[] = [
+  { pose: 'walk', dir: 'right', walk: true, say: () => tr('Chegando no escritório…') },
+  { pose: 'drink', dir: 'down', held: 'coffee', say: () => tr('Passando um café…') },
+  { pose: 'stretch', dir: 'down', say: () => tr('Ligando os monitores…') },
+  { pose: 'talk', dir: 'down', say: () => tr('Chamando os agentes…') },
+];
+const SPLASH_SCENE_MS = 2400;
+/** Palco em px de mundo (desenhado 3x maior, pixelado). */
+const STAGE_W = 72;
+const STAGE_H = 36;
+
+/** O bonequinho da tela de carregamento: anda, toma café, se espreguiça e chama a turma, com um balão por cena. */
+function splashScene(): { el: HTMLElement; stop(): void } {
+  const canvas = h('canvas', { class: 'ui-splash__stage', attrs: { width: STAGE_W, height: STAGE_H, 'aria-hidden': 'true' } });
+  const say = h('span', { class: 'ui-splash__say' });
+  const el = h('div', { class: 'ui-splash__scene' }, say, canvas);
+  const ctx = canvas.getContext('2d');
+  const look = Math.random() < 0.5 ? 'f' : 'm';
+  const appearance = appearanceFromSeed(Math.floor(Math.random() * 1e9), { look });
+  const t0 = performance.now();
+  let raf = 0;
+  let scene = -1;
+  const draw = (now: number) => {
+    const t = Math.max(0, now - t0);
+    const i = Math.floor(t / SPLASH_SCENE_MS) % SPLASH_SCENES.length;
+    const sc = SPLASH_SCENES[i];
+    if (i !== scene) {
+      scene = i;
+      say.textContent = sc.say();
+      say.classList.remove('is-pop');
+      void say.offsetWidth;
+      say.classList.add('is-pop');
+    }
+    if (ctx) {
+      ctx.clearRect(0, 0, STAGE_W, STAGE_H);
+      // chão: uma faixa de piso com o quadriculado do mapa
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(0, STAGE_H - 4, STAGE_W, 1);
+      for (let x = 2; x < STAGE_W; x += 8) ctx.fillRect(x, STAGE_H - 3, 1, 3);
+      const p = (t % SPLASH_SCENE_MS) / SPLASH_SCENE_MS;
+      // na cena de andar ele entra pela esquerda e para no meio; nas outras fica no meio
+      const x = sc.walk ? Math.round(8 + (STAGE_W / 2 - 8) * Math.min(1, p * 1.25)) : STAGE_W / 2;
+      const pose: Pose = sc.walk && p * 1.25 >= 1 ? 'stand' : sc.pose;
+      const frame = Math.floor(t / poseFrameDuration(pose)) % poseFrameCount(pose);
+      const spr = characterSprite({ appearance, dir: sc.dir, pose, frame, held: sc.held });
+      ctx.drawImage(spr.canvas, Math.round(x - spr.ax), Math.round(STAGE_H - 4 - spr.ay));
+    }
+    raf = requestAnimationFrame(draw);
+  };
+  if (prefersReducedMotion()) {
+    say.textContent = SPLASH_SCENES[1].say();
+    requestAnimationFrame((now) => {
+      draw(now);
+      cancelAnimationFrame(raf);
+    });
+  } else raf = requestAnimationFrame(draw);
+  return { el, stop: () => cancelAnimationFrame(raf) };
 }
 
 export class Splash implements UiComponent {
@@ -27,13 +79,14 @@ export class Splash implements UiComponent {
   private done = false;
   private readonly startedAt = performance.now();
   private tick: ReturnType<typeof setTimeout> | null = null;
+  private readonly scene = splashScene();
 
   constructor(private ctx: UiContext) {
     this.text = h('p', { class: 'ui-splash__text', text: tr('Conectando ao escritório…') });
     this.el = h(
       'div',
       { class: 'ui-splash', role: 'status', attrs: { 'aria-live': 'polite' } },
-      h('div', { class: 'ui-splash__inner' }, brandMark(64), wordmark('ui-splash__name'), this.text, h('span', { class: 'ui-splash__bar' })),
+      h('div', { class: 'ui-splash__inner' }, this.scene.el, wordmark('ui-splash__name'), this.text, h('span', { class: 'ui-splash__bar' })),
     );
   }
 
@@ -43,7 +96,10 @@ export class Splash implements UiComponent {
     if (store.snapshot) {
       this.done = true;
       this.el.classList.add('is-hidden');
-      const remove = () => this.el.remove();
+      const remove = () => {
+        this.scene.stop();
+        this.el.remove();
+      };
       if (prefersReducedMotion()) remove();
       else setTimeout(remove, 600);
       return;

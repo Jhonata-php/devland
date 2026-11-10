@@ -242,6 +242,100 @@ describe('simulação do escritório', () => {
     expect(ana.pose).toBe('type');
   });
 
+  it('pausa do cigarro: o ocioso vai até o vidro na ponta do corredor, fuma (com tragadas) e volta', () => {
+    const sim = newSim();
+    const clock = { now: T0 };
+    sim.applySnapshot(snap([room('/a', 0)], [agent('ana', '/a', 'idle', { statusSince: T0 })]), clock.now);
+    const ana = sim.chars.get('ana')!;
+    sim.forceOuting = 'smoke';
+    ana.nextOutingAt = 1;
+    let smoked = false;
+    let puffed = false;
+    let spotKind = '';
+    run(sim, clock, 90, () => {
+      if (ana.smoking) {
+        smoked = true;
+        spotKind = sim.spots.get(ana.tempSpots[0])?.kind ?? spotKind;
+        if (ana.pose === 'drink') puffed = true;
+      }
+      return smoked && puffed && !ana.smoking && ana.atSpot === ana.homeSpot;
+    });
+    expect(smoked).toBe(true);
+    expect(puffed).toBe(true);
+    expect(spotKind).toBe('smoke');
+    expect(ana.smoking).toBe(false);
+  });
+
+  it('supervisor: quem está parado há muito tempo leva uma bronca; o chefe levanta da mesa dele, fala e volta', () => {
+    const sim = newSim();
+    const clock = { now: T0 };
+    // ocioso há 20 minutos: cochilando na mesa
+    sim.applySnapshot(snap([room('/a', 0)], [agent('ana', '/a', 'idle', { statusSince: T0 - 20 * 60_000 })]), clock.now);
+    const ana = sim.chars.get('ana')!;
+    run(sim, clock, 5);
+    let scolded = false;
+    let replied = false;
+    run(sim, clock, 120, () => {
+      const boss = sim.boss;
+      if (boss?.sayText && clock.now < boss.sayUntil) scolded = true;
+      if (scolded && ana.sayText && clock.now < ana.sayUntil) replied = true;
+      return replied && sim.bossFree;
+    });
+    expect(scolded).toBe(true);
+    expect(replied).toBe(true);
+    // de volta à mesa dele, na recepção
+    expect(sim.bossFree).toBe(true);
+    // não fica no meio dos agentes
+    expect(sim.chars.has('npc:supervisor')).toBe(false);
+  });
+
+  it('supervisor elogia: festa na sala (PR mesclado) traz o chefe para dar os parabéns a quem mergeou', () => {
+    const sim = newSim();
+    const clock = { now: T0 };
+    const r = room('/a', 0);
+    sim.applySnapshot(snap([r], [agent('ana', '/a', 'working')]), clock.now);
+    run(sim, clock, 3);
+    const ana = sim.chars.get('ana')!;
+    const party = { ...r, effect: { kind: 'party' as const, text: 'PR #7 mesclado', at: T0, until: T0 + 12_000, agentId: 'ana' } };
+    sim.applySnapshot({ ...snap([party], [agent('ana', '/a', 'working')], 2), serverTime: T0 }, clock.now);
+    let praised = '';
+    let thanked = false;
+    run(sim, clock, 120, () => {
+      const boss = sim.boss;
+      if (boss?.sayText && clock.now < boss.sayUntil && !praised) praised = boss.sayText;
+      if (praised && ana.sayText && clock.now < ana.sayUntil) thanked = true;
+      return thanked && sim.bossFree;
+    });
+    expect(praised).toContain('ana');
+    expect(thanked).toBe(true);
+    expect(sim.bossFree).toBe(true);
+  });
+
+  it('demissão: sessão encerrada, o supervisor vem demitir e o agente sai com a caixa', () => {
+    const sim = newSim();
+    const clock = { now: T0 };
+    sim.applySnapshot(snap([room('/a', 0)], [agent('ana', '/a', 'working'), agent('bia', '/a', 'working')]), clock.now);
+    run(sim, clock, 5);
+    const ana = sim.chars.get('ana')!;
+    // a sessão da Ana some do snapshot
+    sim.applySnapshot(snap([room('/a', 0)], [agent('bia', '/a', 'working')], 2), clock.now);
+    let fired = '';
+    let reply = false;
+    let box = false;
+    run(sim, clock, 180, () => {
+      const boss = sim.boss!;
+      if (boss.sayText && clock.now < boss.sayUntil && !fired) fired = boss.sayText;
+      if (fired && ana.sayText && clock.now < ana.sayUntil) reply = true;
+      if (ana.held === 'box') box = true;
+      return !sim.chars.has('ana') && sim.bossFree;
+    });
+    expect(fired).toContain('ana');
+    expect(reply).toBe(true);
+    expect(box).toBe(true);
+    expect(sim.chars.has('ana')).toBe(false);
+    expect(sim.bossFree).toBe(true);
+  });
+
   it('quem cochila na mesa (ocioso há muito tempo) acorda ao levantar: o "zzz" não vai junto', () => {
     const sim = newSim();
     const clock = { now: T0 };

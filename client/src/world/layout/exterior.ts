@@ -38,11 +38,9 @@ export function layoutExterior(cols: number): ExteriorLayout {
   const rng = mulberry32(0xc0de + cols);
 
   // Estúdio tech à noite: em volta do andar só a noite escura (sem grama, árvores nem rua); a cidade aparece como skyline
-  // desenhado pelo renderer acima do prédio. Uma calçada escura estreita contorna o prédio e leva à entrada (oeste).
-  floors.push({ kind: 'street', x: px(bounds.x), y: px(bounds.y), w: px(bounds.w), h: px(bounds.h), seed: 11 });
-  floors.push({ kind: 'concrete', x: px(-2), y: px(-1), w: px(w + 4), h: px(BUILDING_H + 2), seed: 12 });
-  floors.push({ kind: 'concrete', x: px(-8), y: px(CORRIDOR_Y), w: px(6), h: px(5), seed: 13 });
-  props.push({ kind: 'totem', x: px(-5) + 6, y: px(CORRIDOR_Y + 1), seed: 2 });
+  // desenhado pelo renderer acima do prédio. Uma calçada escura estreita contorna o prédio (sem entrada desenhada do lado de fora).
+  // o mesmo piso quadriculado em volta de tudo (sem fundo preto nem vinheta)
+  floors.push({ kind: 'concrete', x: px(bounds.x), y: px(bounds.y), w: px(bounds.w), h: px(bounds.h), seed: 12 });
   void rng;
   return { bounds, floors, props, lanes: [], streetY: 0, streetH: 0 };
 }

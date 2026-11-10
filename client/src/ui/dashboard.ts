@@ -55,6 +55,8 @@ const PAGES: { id: DashPage; icon: string; label: () => string; short?: () => st
 ];
 /** Chave do menu recolhido (preferência só deste navegador). */
 const COLLAPSE_KEY = 'devland:dash-collapsed';
+/** A página aberta: ao recarregar, o Painel volta para ela (não para a Visão geral). */
+const PAGE_KEY = 'devland:dash-page';
 
 const LOGO = {
   claude: '<svg viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round">' +
@@ -225,7 +227,19 @@ export class Dashboard implements UiComponent {
     return { top: Math.round(top.bottom), left: narrow ? 0 : Math.round(side!.right), right: pv && pv.width > 0 && !narrow ? Math.round(innerWidth - pv.left) : 0, bottom: narrow ? Math.round(innerHeight - tabs.top) : 0 };
   }
 
+  /** Volta à página em que se estava antes de recarregar (chamado depois de a UI ligar `onMap`). */
+  restorePage(): void {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(PAGE_KEY);
+    } catch { /* sem armazenamento: Visão geral */ }
+    if (saved && saved !== this.page && PAGES.some((p) => p.id === saved)) this.go(saved as DashPage);
+  }
+
   go(page: DashPage): void {
+    try {
+      localStorage.setItem(PAGE_KEY, page);
+    } catch { /* sem armazenamento: só nesta visita */ }
     if (page !== this.page && (page === 'chats' || this.page === 'chats')) this.act.showChats(page === 'chats');
     this.page = page;
     document.documentElement.classList.toggle('dash-on-chats', page === 'chats');

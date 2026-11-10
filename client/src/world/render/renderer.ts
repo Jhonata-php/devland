@@ -1,11 +1,12 @@
 // Desenho do mundo por frame: camada externa -> pisos -> paredes/itens de parede -> entidades
 // ordenadas por profundidade -> luz/escuridão -> ícones. A passada em espaço de tela (texto
 // nítido) fica em overlay.ts.
+import { Robot } from './robot';
 import { TILE, type ArtModule, type CharacterFrameRequest, type IconName, type ScreenMode, type Sprite } from '../../art/api';
 import type { SeasonalTheme, WorldOptions } from '../api';
 import type { WorldAssets } from '../assets';
 import type { Camera } from '../camera';
-import { BUILDING_H, COL_W, CORE_COLS, CORRIDOR_Y } from '../constants';
+import { CORE_COLS } from '../constants';
 import { layoutExterior, slotShell, type ExteriorLayout, type SlotShell } from '../layout/exterior';
 import { slotAt } from '../layout/geometry';
 import type { ExteriorProp } from '../layout/types';
@@ -69,13 +70,15 @@ const TV_MODES: ScreenMode[] = ['browser', 'idle', 'chat', 'code'];
  */
 const POPCORN_DX: Readonly<Record<string, number>> = { down: 0, up: -9, left: -5, right: 5 };
 const POPCORN_DY: Readonly<Record<string, number>> = { down: 11, up: 8, left: 9, right: 9 };
+/** Mão de quem está em pé (px a partir dos pés), por direção: onde fica o copo de café e o cigarro. */
+const HAND: Readonly<Record<string, readonly [number, number]>> = { down: [5, -9], up: [-5, -9], left: [-3, -9], right: [3, -9] };
+/** A mão na boca (pose 'drink'): a tragada. */
+const MOUTH: Readonly<Record<string, readonly [number, number]>> = { down: [3, -16], up: [-3, -16], left: [-4, -16], right: [4, -16] };
 /** Teia ao lado de um vizinho: no máximo isto (px) para fora do corpo. */
 const WEB_MAX_OUT = 9;
-/** Tom das bordas da área externa (vinheta) e do gramado além dela. */
-const VIGNETTE_ALPHA = 0.2;
-const VIGNETTE_EDGE = `rgba(18,40,26,${VIGNETTE_ALPHA})`;
 
 export class Renderer {
+  readonly robot = new Robot();
   readonly ctx: CanvasRenderingContext2D;
   readonly areas = new Map<string, AreaVis>();
   readonly heads = new Map<string, HeadInfo>();
@@ -202,121 +205,26 @@ export class Renderer {
         for (const w of sh.windows) this.shellWindows.push(toWallVis(w, `shell:${sh.slot}`));
       }
     }
-    this.desaturate(ctx);
-    // fundo além da área desenhada: a própria grama (amostra espelhada 2x2, sem emendas), já no
-    // tom da borda da vinheta
+    // fundo além da área desenhada: o próprio piso quadriculado (um bloco de 4x4 tiles repetido)
     const s = 4 * TILE;
     try {
       const tile = document.createElement('canvas');
-      tile.width = 2 * s;
-      tile.height = 2 * s;
+      tile.width = s;
+      tile.height = s;
       const tctx = tile.getContext('2d')!;
       tctx.imageSmoothingEnabled = false;
-      for (const [mx, my] of [
-        [0, 0],
-        [1, 0],
-        [0, 1],
-        [1, 1],
-      ] as const) {
-        tctx.setTransform(mx ? -1 : 1, 0, 0, my ? -1 : 1, mx ? 2 * s : 0, my ? 2 * s : 0);
-        tctx.drawImage(c, 0, 0, s, s, 0, 0, s, s);
-      }
-      tctx.setTransform(1, 0, 0, 1, 0, 0);
-      // média da amostra: suaviza as manchas grandes (que viram faixas ao repetir), mantém o capim
-      const d = tctx.getImageData(0, 0, 2 * s, 2 * s).data;
-      let r = 0;
-      let g = 0;
-      let bl = 0;
-      for (let i = 0; i < d.length; i += 4) {
-        r += d[i];
-        g += d[i + 1];
-        bl += d[i + 2];
-      }
-      const n = d.length / 4;
-      const avg = `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(bl / n)})`;
-      tctx.globalAlpha = 0.6;
-      tctx.fillStyle = avg;
-      tctx.fillRect(0, 0, 2 * s, 2 * s);
-      tctx.globalAlpha = 1;
-      tctx.fillStyle = VIGNETTE_EDGE;
-      tctx.fillRect(0, 0, 2 * s, 2 * s);
+      tctx.drawImage(c, 0, 0, s, s, 0, 0, s, s);
+      const d = tctx.getImageData(1, 1, 1, 1).data;
       this.grass = this.ctx.createPattern(tile, 'repeat');
-      // cor de fundo (antes do padrão carregar): a média já com o tom da vinheta
-      const k = VIGNETTE_ALPHA;
-      this.clearColor = `rgb(${Math.round((r / n) * (1 - k) + 18 * k)},${Math.round((g / n) * (1 - k) + 40 * k)},${Math.round((bl / n) * (1 - k) + 26 * k)})`;
+      // cor de fundo (antes do padrão carregar)
+      this.clearColor = `rgb(${d[0]},${d[1]},${d[2]})`;
     } catch {
       this.grass = null;
       this.clearColor = '#6f9a5a';
     }
-    this.finishBase(ctx, cols);
     this.base = c;
   }
 
-  /** Grama ~15% menos saturada: o gramado não compete com o escritório. */
-  private desaturate(ctx: CanvasRenderingContext2D): void {
-    const b = this.exterior.bounds;
-    ctx.save();
-    try {
-      ctx.globalCompositeOperation = 'saturation';
-      ctx.fillStyle = 'rgba(128,128,128,0.16)';
-      ctx.fillRect(b.x * TILE, b.y * TILE, b.w * TILE, b.h * TILE);
-    } catch {
-      // navegador sem o modo de mistura: segue sem dessaturar
-    }
-    ctx.restore();
-  }
-
-  /** Acabamento da camada externa: bordas levemente mais escuras (vinheta) e o capacho da entrada. */
-  private finishBase(ctx: CanvasRenderingContext2D, cols: number): void {
-    const b = this.exterior.bounds;
-    const x0 = b.x * TILE;
-    const y0 = b.y * TILE;
-    const w = b.w * TILE;
-    const h = b.h * TILE;
-    ctx.save();
-    // vinheta: escurece com a distância ao prédio e chega ao tom da grama "de fora" exatamente na
-    // borda da área desenhada (máscara de 1 px por tile, ampliada com suavização)
-    const bwT = cols * COL_W;
-    const smooth = (a: number, z: number, v: number) => {
-      const t = Math.max(0, Math.min(1, (v - a) / Math.max(1e-6, z - a)));
-      return t * t * (3 - 2 * t);
-    };
-    try {
-      const m = document.createElement('canvas');
-      m.width = b.w;
-      m.height = b.h;
-      const mctx = m.getContext('2d')!;
-      const img = mctx.createImageData(b.w, b.h);
-      for (let ty = 0; ty < b.h; ty++) {
-        for (let tx = 0; tx < b.w; tx++) {
-          const wx = b.x + tx + 0.5;
-          const wy = b.y + ty + 0.5;
-          const fx = wx < 0 ? smooth(6, -b.x, -wx) : wx > bwT ? smooth(6, b.x + b.w - bwT, wx - bwT) : 0;
-          const fy = wy < 0 ? smooth(5, -b.y, -wy) : wy > BUILDING_H ? smooth(12, b.y + b.h - BUILDING_H, wy - BUILDING_H) : 0;
-          const i = (ty * b.w + tx) * 4;
-          img.data[i] = 18;
-          img.data[i + 1] = 40;
-          img.data[i + 2] = 26;
-          img.data[i + 3] = Math.round(Math.max(fx, fy) * VIGNETTE_ALPHA * 255);
-        }
-      }
-      mctx.putImageData(img, 0, 0);
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(m, x0, y0, w, h);
-      ctx.imageSmoothingEnabled = false;
-    } catch {
-      // sem vinheta
-    }
-    // capacho diante da fachada de vidro da entrada (oeste do corredor)
-    const my = (CORRIDOR_Y + 1.25) * TILE;
-    ctx.fillStyle = '#3f4652';
-    ctx.fillRect(-1.75 * TILE, my, 1.5 * TILE, 2.5 * TILE);
-    ctx.fillStyle = '#596170';
-    ctx.fillRect(-1.75 * TILE + 2, my + 2, 1.5 * TILE - 4, 2.5 * TILE - 4);
-    ctx.fillStyle = '#4b525f';
-    for (let y = my + 4; y < my + 2.5 * TILE - 4; y += 3) ctx.fillRect(-1.75 * TILE + 3, y, 1.5 * TILE - 6, 1);
-    ctx.restore();
-  }
 
   // =================================================================== frame
 
@@ -392,6 +300,11 @@ export class Renderer {
     const view = { x0: vx0, y0: vy0, x1: vx1, y1: vy1 };
     // alarme de CI: tom vermelho no piso (por baixo dos móveis e personagens)
     this.roomFx.drawFloor(ctx, this.sim, now, view);
+    // robô aspirador passeando pelo chão (por baixo de móveis e pessoas)
+    this.safe(() => {
+      this.robot.update(this.sim, dt, now);
+      this.robot.draw(ctx, now);
+    });
 
     // ---- entidades ordenadas por profundidade
     const ents = this.ents;
@@ -810,6 +723,36 @@ export class Renderer {
     return 'idle';
   }
 
+  /** Cigarro aceso na mão (ou na boca, na tragada) e a fumaça subindo devagar e se espalhando. */
+  private drawCigarette(ch: Character, x: number, y: number, now: number): void {
+    const { ctx } = this;
+    const atMouth = ch.pose === 'drink';
+    const [hx, hy] = (atMouth ? MOUTH : HAND)[ch.dir] ?? HAND.down;
+    const tx = x + hx;
+    const ty = y + hy;
+    const toward = ch.dir === 'left' ? -1 : 1;
+    if (ch.dir !== 'up') {
+      ctx.fillStyle = '#f2efe8';
+      ctx.fillRect(tx, ty, 2 * toward, 1);
+      // brasa: mais forte na tragada
+      const glow = atMouth ? 1 : 0.55 + 0.45 * Math.abs(Math.sin(now / 260 + ch.info.seed));
+      ctx.fillStyle = `rgba(255, ${Math.round(110 + 60 * glow)}, 60, ${glow.toFixed(2)})`;
+      ctx.fillRect(tx + 2 * toward, ty, 1, 1);
+    }
+    // fumaça: fiapos cinza que sobem, balançam e somem (mais densos logo depois da tragada)
+    const sx = tx + 2 * toward;
+    for (let i = 0; i < 5; i++) {
+      const ph = ((now / 1600 + i / 5 + (ch.info.seed % 11) / 11) % 1 + 1) % 1;
+      ctx.globalAlpha = 0.45 * (1 - ph) * (atMouth ? 0.6 : 1);
+      ctx.fillStyle = '#c9ccd2';
+      const px = Math.round(sx + Math.sin(ph * 7 + i * 1.7) * (1 + ph * 3) + ph * 3 * toward);
+      const py = Math.round(ty - 1 - ph * 14);
+      const size = ph > 0.5 ? 2 : 1;
+      ctx.fillRect(px, py, size, size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   private drawSteam(x: number, y: number, now: number, seed: number): void {
     const { ctx } = this;
     ctx.fillStyle = '#ffffff';
@@ -909,6 +852,14 @@ export class Renderer {
     if (shell && ch.shellStage === 'nap' && ch.pose === 'sleep') {
       // cochilando: "zzz" flutuando acima e à direita da ampulheta (o selo "×N" fica embaixo)
       this.pushIcon(x + 10, head.y - 13, 'zzz', Math.round(Math.sin(now / 500) * 1.5), ch.alpha, 0);
+    }
+    // café na mão: o vapor sobe do copo; pausa do cigarro: brasa piscando e fumaça
+    if (sprite && !ch.seated && ch.visible) {
+      if (ch.held === 'coffee' && ch.pose !== 'drink') {
+        const [hx, hy] = HAND[ch.dir] ?? HAND.down;
+        if (ch.dir !== 'up') this.drawSteam(x + hx, y + hy - 3, now, ch.info.seed);
+      }
+      if (ch.smoking) this.drawCigarette(ch, x, y, now);
     }
     // pipoca pulando do balde de vez em quando
     if (shell && ch.pose === 'wait' && ch.held === 'popcorn' && sprite && now >= ch.popcornAt) {

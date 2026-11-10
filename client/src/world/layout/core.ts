@@ -45,6 +45,8 @@ export function layoutReception(): AreaLayout {
   b.furn('plant_tall', 1, 2, 'monstera', { order: 0.2 });
   b.furn('plant_tall', 14, 4, 'ficus', { order: 0.21 });
   b.furn('reception_desk', 9, 5, undefined, { order: 0.4 });
+  // mesa do supervisor: ele fica sentado atrás do balcão, de frente para o hall
+  b.seat('boss', 'office_chair_front', 10, 4, 'down', undefined, { order: 0.43 });
   b.furn('plant_small', 12, 5, 'flower', { order: 0.45 });
   b.furn('filing_cabinet', 8, 5, undefined, { order: 0.42 });
   // cantinho de espera com poltronas

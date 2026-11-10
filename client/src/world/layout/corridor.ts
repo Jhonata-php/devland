@@ -21,6 +21,11 @@ export function layoutCorridor(cols: number): AreaLayout {
     b.furn('glass_partition', w - 1, ly, ly === 0 || ly === CORRIDOR_H - 1 ? 'end' : 'v', { order: 0.1 });
   }
   b.walk(1, 0, w - 2, CORRIDOR_H);
+  // pausa para o cigarro: em pé junto ao vidro das duas pontas do corredor
+  for (const ly of [1, 3]) {
+    b.spot('smoke', 1, ly, 'left', { dx: -4 });
+    b.spot('smoke', w - 2, ly, 'right', { dx: 4 });
+  }
 
   for (let c = 0; c < cols; c++) {
     const x = c * COL_W;

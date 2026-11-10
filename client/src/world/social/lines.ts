@@ -22,6 +22,29 @@ export const INVITE = {
   mirror: [tr('Bora dar um tapa no visual? 💄'), tr('Espelho? Preciso me arrumar ✨')],
 } satisfies Record<string, Pool>;
 
+/** Supervisor: a bronca em quem está parado há muito tempo, a desculpa e a despedida (sim/sim.ts, sendBoss). */
+export const BOSS_SCOLD: Pool = [
+  tr('Acorda, {nome}! Isso aqui não é colônia de férias! 😤'),
+  tr('{nome}, cadê o commit? ⏰'),
+  tr('Dormindo no expediente, {nome}?!'),
+  tr('O prazo era ontem, {nome}! 📅'),
+  tr('{nome}, o cliente tá ligando! 📞'),
+];
+export const BOSS_REPLY: Pool = [
+  tr('Tô só pensando na arquitetura… 🤔'),
+  tr('Já vou, chefe! 😅'),
+  tr('É o build, juro! ⏳'),
+  tr('Foi só um minutinho… 😴'),
+  tr('Tava esperando o review! 🙏'),
+];
+export const BOSS_BYE: Pool = [tr('Quero isso pronto até o almoço! 👀'), tr('Tô de olho, hein! 👀'), tr('Depois a gente conversa… 😒')];
+export const BOSS_FIRE: Pool = [tr('{nome}, passa no RH. Você tá demitido! 📦'), tr('Acabou pra você, {nome}! 🚪'), tr('{nome}, recolhe tuas coisas! 📦'), tr('Obrigado pelos serviços, {nome}. Tchau! 👋')];
+export const BOSS_FIRE_BYE: Pool = [tr('Próximo! 😤'), tr('Nada pessoal… 🤷'), tr('Sem choro! 😒')];
+export const FIRED_REPLY: Pool = [tr('Mas eu nem terminei o commit… 😢'), tr('Posso levar o grampeador? 📎'), tr('Vou abrir uma startup! 😤'), tr('Era só um bug… 😭')];
+export const BOSS_PRAISE: Pool = [tr('Mandou bem, {nome}! 🎉'), tr('PR no ar! Orgulho, {nome}! 🚀'), tr('Isso é que é entrega, {nome}! 👏'), tr('{nome}, você é fera! 🏆')];
+export const BOSS_THANKS: Pool = [tr('Valeu, chefe! 😄'), tr('Foi trabalho em equipe! 🙌'), tr('Merecia um aumento, hein? 😏'), tr('Tamo junto! 🤜🤛')];
+export const BOSS_PRAISE_BYE: Pool = [tr('Pizza por minha conta hoje! 🍕'), tr('Continua assim! 💪'), tr('Vou contar pra diretoria! 📈')];
+
 export const ACCEPT: Pool = [tr('Bora!'), tr('Partiu!'), 'Fechado! 🤝', tr('Só se for agora!'), tr('Opa!'), tr('Já é!'), tr('Demorou!')];
 export const ACCEPT_BET: Pool = ['Fechado! 🤝', tr('Prepara o bolso 💰'), tr('Vai perder!'), tr('Aceito!')];
 export const ACCEPT_BROKE: Pool = [tr('Tô liso 😅 Só pela honra!'), tr('Sem 🪙… valendo nada?')];

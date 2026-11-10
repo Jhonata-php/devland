@@ -15,7 +15,7 @@ import type { AgentInfo } from '../../../shared/types';
 import { rebaseSnapshot } from './playback';
 import { Overlay } from './render/overlay';
 import { Renderer } from './render/renderer';
-import { Sim, type VisitLight } from './sim/sim';
+import { BOSS_ID, Sim, type VisitLight } from './sim/sim';
 import { NO_INTENT, VISITOR_ID, visitorInfo, type VisitorIntent } from './sim/visitor';
 import { SoundCues } from './sound-cues';
 
@@ -112,7 +112,7 @@ export function createWorld(canvas: HTMLCanvasElement, store: OfficeStore, o: Cr
     const f = overviewFrame(buildingRect(), camera.viewW, camera.viewH, camera.insets);
     const fit = Math.max(camera.minZoom, f.zoom);
     const snapped = camera.snapZoom(fit, 'down');
-    const zoom = snapped >= fit * 0.82 ? snapped : fit;
+    const zoom = snapped >= fit * 0.95 ? snapped : fit;
     const z = Math.min(zoom, 4);
     const c = camera.centerFor(f.cx, f.cy, z);
     // as margens de tela (pílulas acima, meio-fio abaixo) não são simétricas
@@ -186,7 +186,7 @@ export function createWorld(canvas: HTMLCanvasElement, store: OfficeStore, o: Cr
     let bestDepth = -Infinity;
     const slack = Math.max(1, 3 / camera.zoom);
     for (const [id, h] of renderer.heads) {
-      if (!h.visible || id === VISITOR_ID) continue;
+      if (!h.visible || id === VISITOR_ID || id === BOSS_ID) continue;
       if (w.x < h.bx - slack || w.x > h.bx + h.bw + slack || w.y < h.by - slack || w.y > h.by + h.bh + slack) continue;
       if (h.depth > bestDepth) {
         bestDepth = h.depth;

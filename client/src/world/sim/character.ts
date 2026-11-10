@@ -117,6 +117,8 @@ export class Character {
   shellDoneAt = 0;
   /** Render: próxima pipoca que pula do balde (epoch ms). */
   popcornAt = 0;
+  /** Na pausa do cigarro (o render desenha o cigarro aceso e a fumaça). */
+  smoking = false;
 
   constructor(info: AgentInfo, appearance: Appearance) {
     this.id = info.id;
