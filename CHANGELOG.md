@@ -28,6 +28,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **"Trabalhando…" na conversa alinhado e animado.** O aviso de que o agente está trabalhando agora fica alinhado com as mensagens e a caixa de texto, num selo com pontinhos verdes que pulam e um brilho passando pelo texto, em vez de solto no canto.
 - **Novo agente: botões no lugar e o modal fecha.** No último passo, **Voltar** e **Começar** ficam juntos numa barra no rodapé do modal (Voltar à esquerda, Começar à direita), como nos passos anteriores. Quando o agente começa, o modal fecha sozinho e o aviso aparece no canto; se der erro, ele continua aberto com a mensagem.
 - **Barras de rolagem discretas.** As barras de rolagem do app e dos modais ficaram finas e escuras, no tom do Painel (inclusive no Safari e no Firefox).
 - **Menu lateral e celular:** o Mapa aparece nas abas de baixo do celular (as cinco abas cabem numa linha só) e o Plugins não aparece mais duas vezes no menu lateral.

@@ -108,7 +108,7 @@ export class ChatsView implements UiComponent {
     });
     this.note = h('p', { class: 'ui-chats__note', hidden: true });
     this.handoff = h('div', { class: 'ui-chats__handoff', hidden: true });
-    this.typing = h('div', { class: 'ui-chats__typing', hidden: true, attrs: { 'aria-hidden': 'true' } }, h('i'), h('i'), h('i'), h('span', { text: tr('Trabalhando…') }));
+    this.typing = h('div', { class: 'ui-chats__typing', hidden: true, attrs: { 'aria-hidden': 'true' } }, h('div', { class: 'ui-chats__typing-pill' }, h('i'), h('i'), h('i'), h('span', { text: tr('Trabalhando…') })));
     this.composer = new MessageComposer(ctx, 'terminal');
     // Pedido de permissão (ou pergunta) do agente: aprovar ou negar sem sair da conversa.
     this.perm = new PermissionCard(ctx);
