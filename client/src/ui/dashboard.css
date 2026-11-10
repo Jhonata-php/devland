@@ -1088,3 +1088,6 @@ html.theme-light .ui-ctool__branch { background: rgba(0, 0, 0, 0.06); }
 html.theme-light .ui-ctool__sec { border-color: rgba(0, 0, 0, 0.1); }
 html.theme-light .ui-ctool__pr { border-color: rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.02); }
 @media (max-width: 600px) { .ui-ctool__push { width: min(380px, 92vw); } }
+
+.ui-ctool__push .ui-ctool__note { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ui-ctool__push [role='status'] .ui-ctool__row { margin-top: 8px; }

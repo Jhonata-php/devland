@@ -698,7 +698,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
               sendJson(res, 200, { ok: true });
             } catch (err) {
               const why = (err as Error).message;
-              sendJson(res, 409, { error: why === 'gh' ? tr('O GitHub CLI (gh) não está instalado neste servidor.') : tr('O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.') });
+              sendJson(res, 409, { detail: why.startsWith('merge:') ? why.slice(6) : undefined, error: why === 'gh' ? tr('O GitHub CLI (gh) não está instalado neste servidor.') : tr('O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.') });
             }
           })
           .catch((err) => fail(res, err));

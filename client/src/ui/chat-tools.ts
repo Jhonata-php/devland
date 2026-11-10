@@ -19,6 +19,8 @@ export interface ChatToolsHooks {
   /** Assume a sessão (encerra a de lá) e continua a conversa aqui no modelo pedido. */
   takeover(agentId: string, model: ModelId): Promise<void>;
   announce(text: string): void;
+  /** Manda uma mensagem ao agente desta conversa. */
+  sendText(text: string): Promise<void>;
 }
 
 interface ProjectView {
@@ -38,7 +40,7 @@ export function modelName(model: string | undefined): string {
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   const json = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(json.error ?? tr('Não deu certo.'));
+  if (!res.ok) throw Object.assign(new Error(json.error ?? tr('Não deu certo.')), { detail: (json as { detail?: string }).detail });
   return json;
 }
 
@@ -182,7 +184,21 @@ export class ChatTools {
       merge.addEventListener('click', () => {
         if (!confirm(tr('Mesclar o PR #{0} ({1}) na branch principal?', [x.number, x.title]))) return;
         void run(merge, async () => {
-          await call('POST', '/api/dash/merge', { path: this.project, number: x.number });
+          try {
+            await call('POST', '/api/dash/merge', { path: this.project, number: x.number });
+          } catch (err) {
+            const detail = (err as { detail?: string }).detail;
+            say(detail ? `${(err as Error).message}\n${detail}` : (err as Error).message, true);
+            const fix = h('button', { class: 'ui-btn ui-btn--accent', type: 'button', text: tr('Pedir ao agente para resolver'), title: tr('Manda o erro ao agente na conversa') }) as HTMLButtonElement;
+            fix.addEventListener('click', () => {
+              fix.disabled = true;
+              void this.hooks
+                .sendText(tr('O merge do PR #{0} ({1}, branch {2}) falhou. Motivo do GitHub: {3}\n\nResolva: traga a main para a branch do PR (merge ou rebase), resolva os conflitos, rode os testes e dê push da branch. Não faça merge na main: eu mesclo pelo botão Mesclar do DevLand.', [x.number, x.title, x.branch, detail || tr('conflito ou checagens pendentes')]))
+                .then(() => (fix.textContent = tr('Enviado ao agente')));
+            });
+            out.append(h('div', { class: 'ui-ctool__row' }, fix));
+            return;
+          }
           card.classList.add('is-done');
           merge.remove();
           say(tr('PR #{0} mesclado.', [x.number]));

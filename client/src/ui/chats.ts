@@ -87,8 +87,8 @@ export class ChatsView implements UiComponent {
   private readonly perm: PermissionCard;
   private readonly tools: ChatTools;
 
-  constructor(private ctx: UiContext, hooks: Omit<ChatToolsHooks, 'announce'>) {
-    this.tools = new ChatTools({ ...hooks, announce: (t) => ctx.announce(t) });
+  constructor(private ctx: UiContext, hooks: Omit<ChatToolsHooks, 'announce' | 'sendText'>) {
+    this.tools = new ChatTools({ ...hooks, announce: (t) => ctx.announce(t), sendText: (t) => this.composer.sendText(t) });
     this.listBody = h('div', { class: 'ui-chats__list' });
     this.listEl = h(
       'div',

@@ -380,6 +380,15 @@ export class MessageComposer {
     this.ctx.invalidate();
   }
 
+  /** Manda um texto pronto ao agente desta conversa (sem mexer no rascunho que você está escrevendo). */
+  async sendText(text: string): Promise<void> {
+    const prev = this.box.value;
+    this.box.value = text;
+    await this.send();
+    this.box.value = prev;
+    this.resize();
+  }
+
   private async send(): Promise<void> {
     const agentId = this.agentId;
     const raw = this.box.value;

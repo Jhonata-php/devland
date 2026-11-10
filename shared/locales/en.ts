@@ -4060,4 +4060,9 @@ export const EN: Readonly<Record<string, string>> = {
   "alterado": "modified",
   "novo": "new",
   "removido": "removed",
+  "Enviado ao agente": "Sent to the agent",
+  "Manda o erro ao agente na conversa": "Sends the error to the agent in the chat",
+  "O merge do PR #{0} ({1}, branch {2}) falhou. Motivo do GitHub: {3}\n\nResolva: traga a main para a branch do PR (merge ou rebase), resolva os conflitos, rode os testes e dê push da branch. Não faça merge na main: eu mesclo pelo botão Mesclar do DevLand.": "Merging PR #{0} ({1}, branch {2}) failed. GitHub's reason: {3}\n\nPlease fix it: bring main into the PR branch (merge or rebase), resolve the conflicts, run the tests and push the branch. Do not merge into main: I will merge with DevLand's Merge button.",
+  "Pedir ao agente para resolver": "Ask the agent to fix it",
+  "conflito ou checagens pendentes": "conflict or pending checks",
 };

@@ -170,9 +170,11 @@ export async function createPr(dir: string, ghBin: string | undefined, run: Run 
   return url.trim().split('\n').pop() ?? '';
 }
 
-/** Mescla um PR aberto (merge commit), a pedido de quem clicou em "Mesclar". Não apaga a branch. */
-export async function mergePr(dir: string, ghBin: string | undefined, number: number, run: Run = slowRun): Promise<void> {
-  if (!ghBin) throw new Error('gh');
-  if (!Number.isInteger(number) || number < 1) throw new Error('number');
-  if ((await run(ghBin, ['pr', 'merge', String(number), '--merge'], dir)) === null) throw new Error('merge');
+/** Mescla um PR aberto (merge commit), a pedido de quem clicou em "Mesclar". Não apaga a branch. Em erro, o motivo do gh vai na mensagem. */
+export function mergePr(dir: string, ghBin: string | undefined, number: number): Promise<void> {
+  if (!ghBin) return Promise.reject(new Error('gh'));
+  if (!Number.isInteger(number) || number < 1) return Promise.reject(new Error('number'));
+  return new Promise((ok, fail) => {
+    execFile(ghBin, ['pr', 'merge', String(number), '--merge'], { cwd: dir, timeout: 90_000, encoding: 'utf8', maxBuffer: 1024 * 1024, ...runAsOptions(process.env) }, (err, _out, stderr) => (err ? fail(new Error(`merge:${String(stderr || err.message).trim().slice(0, 500)}`)) : ok()));
+  });
 }

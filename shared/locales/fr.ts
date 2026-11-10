@@ -4077,4 +4077,9 @@ export const FR: Readonly<Record<string, string>> = {
   "alterado": "modifié",
   "novo": "nouveau",
   "removido": "supprimé",
+  "Enviado ao agente": "Envoyé à l'agent",
+  "Manda o erro ao agente na conversa": "Envoie l'erreur à l'agent dans la conversation",
+  "O merge do PR #{0} ({1}, branch {2}) falhou. Motivo do GitHub: {3}\n\nResolva: traga a main para a branch do PR (merge ou rebase), resolva os conflitos, rode os testes e dê push da branch. Não faça merge na main: eu mesclo pelo botão Mesclar do DevLand.": "La fusion de la PR #{0} ({1}, branche {2}) a échoué. Raison de GitHub : {3}\n\nCorrigez : intégrez main dans la branche de la PR (merge ou rebase), résolvez les conflits, lancez les tests et poussez la branche. Ne fusionnez pas dans main : je fusionne avec le bouton Fusionner de DevLand.",
+  "Pedir ao agente para resolver": "Demander à l'agent de corriger",
+  "conflito ou checagens pendentes": "conflit ou vérifications en attente",
 };
