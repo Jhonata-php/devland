@@ -57,10 +57,13 @@ try {
     config: { mediaType: 'application/vnd.oci.image.config.v1+json', ...cfg },
     layers: [{ mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip', ...lay }],
   });
-  const tag = `dist-cloud-v${version}`;
-  const res = await fetch(`https://ghcr.io/v2/${IMAGE}/manifests/${tag}`, { method: 'PUT', headers: { ...auth, 'Content-Type': 'application/vnd.oci.image.manifest.v1+json' }, body: manifest });
-  if (!res.ok) throw new Error(`GHCR recusou o manifesto (${res.status}): ${(await res.text()).slice(0, 200)}`);
-  console.log(`publicado: ghcr.io/${IMAGE}:${tag}`);
+  // dist- primeiro e cloud-v por último: o "Verificar agora" só enxerga cloud-v*, e aí o pacote já existe (como no workflow).
+  // shortcut: cloud-v aponta para o pacote, não para uma imagem executável; quem roda a imagem por essa tag (Velix) precisa do workflow.
+  for (const tag of [`dist-cloud-v${version}`, `cloud-v${version}`]) {
+    const res = await fetch(`https://ghcr.io/v2/${IMAGE}/manifests/${tag}`, { method: 'PUT', headers: { ...auth, 'Content-Type': 'application/vnd.oci.image.manifest.v1+json' }, body: manifest });
+    if (!res.ok) throw new Error(`GHCR recusou o manifesto (${res.status}): ${(await res.text()).slice(0, 200)}`);
+    console.log(`publicado: ghcr.io/${IMAGE}:${tag}`);
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

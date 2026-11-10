@@ -12,7 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
-- **Publicar versão buildando na própria máquina.** `npm run release:local -- X.Y.Z` builda o código e envia o pacote de atualização nativa (`dist-cloud-vX.Y.Z`) ao GHCR sem Docker nem GitHub Actions; passa a ser o jeito padrão de publicar (CONTRIBUTING.md).
+- **Publicar versão buildando na própria máquina.** `npm run release:local -- X.Y.Z` builda o código e envia o pacote de atualização nativa (`dist-cloud-vX.Y.Z`) ao GHCR e publica também a tag `cloud-vX.Y.Z`, que é a que o "Verificar agora" enxerga, sem Docker nem GitHub Actions; passa a ser o jeito padrão de publicar (CONTRIBUTING.md).
 - **Uso das contas no topo.** Ao lado do **Buscar**, cada conta mostra o logo e duas barrinhas com o uso das 5 horas e da semana (verde, amarelo perto do limite, vermelho no fim); passar o mouse mostra os números e clicar abre a página Contas. Some em telas estreitas.
 - **Prévia ao vivo abre sozinha.** Ao abrir a Prévia, o DevLand sobe (ou reaproveita) o servidor do projeto e mostra o site na hora, sem digitar a porta nem clicar em "Rodar o projeto"; trocar o projeto na lista também roda o novo.
 - **Novo agente abre a conversa dele.** Ao começar um agente pelo botão **+ Novo agente**, assim que ele aparece a conversa nova abre sozinha (na página Conversas), em vez de você ter que procurá-lo.
