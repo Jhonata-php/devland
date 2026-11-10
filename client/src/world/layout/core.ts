@@ -11,11 +11,11 @@ export const LOUNGE_ID = 'core:lounge';
 
 /** Paredes do núcleo: tons claros e neutros (frios), com acabamentos diferentes por ambiente. */
 export const CORE_WALLS = {
-  reception: { base: '#e9e5dc', trim: '#a88e6c', pattern: 'wood_panel' } satisfies WallStyle,
+  reception: { base: '#3a4150', trim: '#c49a6c', pattern: 'wood_panel' } satisfies WallStyle,
   restroom: { base: '#dce8ee', trim: '#8fb0c0', pattern: 'tiles' } satisfies WallStyle,
-  cafe: { base: '#eef0ee', trim: '#9aa6ad', pattern: 'plain' } satisfies WallStyle,
+  cafe: { base: '#34413f', trim: '#7fd1b9', pattern: 'plain' } satisfies WallStyle,
   cafeSplash: { base: '#d9dcdf', trim: '#8d969e', pattern: 'marble' } satisfies WallStyle,
-  lounge: { base: '#e6e2ea', trim: '#8f8aa3', pattern: 'plain' } satisfies WallStyle,
+  lounge: { base: '#3b3550', trim: '#b49cff', pattern: 'stripes' } satisfies WallStyle,
   glass: { base: '#cfe6f0', trim: '#9fb9c6', pattern: 'glass' } satisfies WallStyle,
 };
 

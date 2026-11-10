@@ -1,4 +1,4 @@
-// Área externa: grama, árvores, calçada e um passeio com jardim (sem rua nem carros); pátio/jardim nos slots sem sala.
+// Área externa: quarteirão de cidade (praça, duas avenidas com carros, parques fora); pátio/jardim nos slots sem sala.
 import type { WallStyle } from '../../art/api';
 import { mulberry32 } from '../../../../shared/hash';
 import { BUILDING_H, COL_W, CORE_COLS, CORRIDOR_Y, EXT_EAST, EXT_NORTH, EXT_SOUTH, EXT_WEST, SOUTH_Y, TILE } from '../constants';
@@ -37,73 +37,74 @@ export function layoutExterior(cols: number): ExteriorLayout {
   const props: ExteriorProp[] = [];
   const rng = mulberry32(0xc0de + cols);
 
-  floors.push({ kind: 'grass', x: px(bounds.x), y: px(bounds.y), w: px(bounds.w), h: px(bounds.h), seed: 11 });
-  // calçada em volta do prédio
+  // Quarteirão de cidade (andar open-space): praça de pedra em volta do prédio, uma avenida ao norte e outra ao sul
+  // com carros, árvores em canteiros nas calçadas e parques (grama) nos quarteirões de fora.
   const south = BUILDING_H;
-  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(south + 2), w: px(bounds.w), h: px(2), seed: 12 });
-  // passeio do jardim (no lugar da antiga rua): uma trilha de pedra mais estreita, com canteiros e bancos dos dois lados
-  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(south + 6), w: px(bounds.w), h: px(1), seed: 13 });
-  // caminho de pedra até a calçada, na frente da recepção
-  floors.push({ kind: 'sidewalk', x: px(-3), y: px(CORRIDOR_Y), w: px(3), h: px(5), seed: 15 });
-  floors.push({ kind: 'sidewalk', x: px(-3), y: px(CORRIDOR_Y + 5), w: px(2), h: px(south + 2 - CORRIDOR_Y - 5), seed: 16 });
+  const NORTH_ST = -11; // avenida norte: linhas -11..-6
+  const SOUTH_ST = south + 6; // avenida sul: 6 linhas
+  const ST_H = 6;
+  floors.push({ kind: 'grass', x: px(bounds.x), y: px(bounds.y), w: px(bounds.w), h: px(bounds.h), seed: 11 });
+  // praça de cimento claro em volta do prédio, com calçada de pedra só junto às avenidas
+  floors.push({ kind: 'concrete', x: px(bounds.x), y: px(NORTH_ST + ST_H), w: px(bounds.w), h: px(SOUTH_ST - NORTH_ST - ST_H), seed: 12 });
+  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(NORTH_ST + ST_H), w: px(bounds.w), h: px(3), seed: 17 });
+  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(SOUTH_ST - 3), w: px(bounds.w), h: px(3), seed: 18 });
+  // canteiros de grama na praça, dos dois lados do prédio
+  floors.push({ kind: 'grass', x: px(-14), y: px(2), w: px(10), h: px(CORRIDOR_Y - 4), seed: 19 });
+  floors.push({ kind: 'grass', x: px(-14), y: px(CORRIDOR_Y + 7), w: px(10), h: px(BUILDING_H - CORRIDOR_Y - 9), seed: 20 });
+  floors.push({ kind: 'grass', x: px(w + 4), y: px(2), w: px(10), h: px(BUILDING_H - 4), seed: 21 });
+  floors.push({ kind: 'street', x: px(bounds.x), y: px(NORTH_ST), w: px(bounds.w), h: px(ST_H), seed: 13 });
+  floors.push({ kind: 'street', x: px(bounds.x), y: px(SOUTH_ST), w: px(bounds.w), h: px(ST_H), seed: 14 });
+  // meio-fio das avenidas (faixa de calçada estreita do outro lado)
+  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(NORTH_ST - 2), w: px(bounds.w), h: px(2), seed: 15 });
+  floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(SOUTH_ST + ST_H), w: px(bounds.w), h: px(2), seed: 16 });
 
-  // árvores ao norte (fileira com variação) e a oeste/leste
-  for (let x = bounds.x + 1; x < bounds.x + bounds.w - 1; x += 4 + Math.floor(rng() * 3)) {
-    props.push({ kind: rng() < 0.25 ? 'pine' : 'tree', x: px(x) + Math.floor(rng() * 8), y: px(-3) - Math.floor(rng() * 20), seed: Math.floor(rng() * 1e9) });
-    if (rng() < 0.6) props.push({ kind: 'bush', x: px(x + 2), y: px(-1) - 2, seed: Math.floor(rng() * 1e9) });
+  // árvores em canteiros e postes nas calçadas das duas avenidas
+  for (let x = bounds.x + 2; x < bounds.x + bounds.w - 1; x += 6) {
+    props.push({ kind: 'tree', x: px(x) + 4, y: px(NORTH_ST + ST_H + 2), seed: Math.floor(rng() * 1e9) });
+    props.push({ kind: 'tree', x: px(x + 3) + 4, y: px(SOUTH_ST - 1), seed: Math.floor(rng() * 1e9) });
+    props.push({ kind: 'lamp', x: px(x + 3), y: px(NORTH_ST + ST_H + 1) + 4, seed: x });
+    props.push({ kind: 'lamp', x: px(x), y: px(SOUTH_ST) - 4, seed: x + 1 });
   }
-  // bosque ao norte: fileiras irregulares cada vez mais esparsas
-  for (const [row, gap] of [
-    [-6, 5],
-    [-10, 6],
-    [-14, 8],
-  ] as const) {
-    for (let x = bounds.x + 2; x < bounds.x + bounds.w - 1; x += gap + Math.floor(rng() * 4)) {
-      props.push({ kind: rng() < 0.3 ? 'pine' : 'tree', x: px(x) + Math.floor(rng() * 8), y: px(row) - Math.floor(rng() * 12), seed: Math.floor(rng() * 1e9) });
-    }
-  }
-  for (const side of [-1, 1]) {
-    for (const band of [0, 7, 13]) {
-      const baseX = side < 0 ? -6 - band : w + 4 + band;
-      for (let y = 1; y < BUILDING_H; y += 3 + Math.floor(rng() * 3)) {
-        if (side < 0 && band === 0 && y >= CORRIDOR_Y - 1 && y <= south + 1) continue;
-        props.push({ kind: rng() < 0.3 ? 'pine' : 'tree', x: px(baseX + Math.floor(rng() * 5)), y: px(y + 1), seed: Math.floor(rng() * 1e9) });
-        if (band === 0 && rng() < 0.5) props.push({ kind: 'bush', x: px(side < 0 ? -2 : w + 1), y: px(y + 2), seed: Math.floor(rng() * 1e9) });
-      }
-    }
-  }
-  // cerca viva + flores ao longo da fachada sul e postes na calçada; diante de cada slot de
-  // projeto, o trecho do caminho do jardim só tem cerca quando há sala ali
+  // cerca viva + flores ao longo da fachada sul (abre diante das salas de projeto que existem)
   for (let x = 0; x < w; x += 2) {
     const col = Math.floor(x / COL_W);
     const lx = x - col * COL_W;
     const gate = col >= CORE_COLS && (lx === 6 || lx === 8) ? slotAt(col, 'south') : undefined;
     props.push({ kind: (x / 2) % 3 === 1 ? 'flowers' : 'hedge', x: px(x) + TILE, y: px(south + 1) + 10, seed: x * 7 + 3, whenRoom: gate });
   }
-  for (let x = bounds.x + 4; x < bounds.x + bounds.w; x += 10) {
-    props.push({ kind: 'lamp', x: px(x), y: px(south + 3) + 6, seed: x });
+  // bancos na praça em volta do prédio
+  for (let x = bounds.x + 5; x < bounds.x + bounds.w - 3; x += 14) {
+    props.push({ kind: 'bench', x: px(x), y: px(south + 3) + 10, seed: x });
+    props.push({ kind: 'bench', x: px(x + 7), y: px(NORTH_ST + ST_H + 3) + 10, seed: x + 3 });
   }
-  // canteiros floridos e bancos ao longo do passeio
-  for (let x = bounds.x + 2; x < bounds.x + bounds.w - 1; x += 3) {
-    props.push({ kind: (x % 9) === 0 ? 'bush' : 'flowers', x: px(x) + 4, y: px(south + 5) + 8, seed: x * 13 + 5 });
-    props.push({ kind: (x % 9) === 3 ? 'bush' : 'flowers', x: px(x) + 10, y: px(south + 8) + 4, seed: x * 17 + 9 });
-  }
-  for (let x = bounds.x + 7; x < bounds.x + bounds.w - 3; x += 12) {
-    props.push({ kind: 'bench', x: px(x), y: px(south + 7) + 10, seed: x });
-    props.push({ kind: 'lamp', x: px(x + 6), y: px(south + 7) + 6, seed: x + 1 });
-  }
-  for (const row of [13, 17, 21]) {
-    for (let x = bounds.x + 3; x < bounds.x + bounds.w - 2; x += 6 + Math.floor(rng() * 5)) {
-      props.push({ kind: rng() < 0.2 ? 'pine' : 'tree', x: px(x) + Math.floor(rng() * 10), y: px(south + row) + Math.floor(rng() * 10), seed: Math.floor(rng() * 1e9) });
-      if (rng() < 0.3) props.push({ kind: 'bush', x: px(x + 3), y: px(south + row + 1), seed: Math.floor(rng() * 1e9) });
+  // parques nos quarteirões de fora (norte e sul): árvores e arbustos sobre a grama
+  for (const [y0, y1] of [[bounds.y + 1, NORTH_ST - 3], [SOUTH_ST + ST_H + 3, bounds.y + bounds.h - 1]] as const) {
+    for (let y = y0; y < y1; y += 3) {
+      for (let x = bounds.x + 2; x < bounds.x + bounds.w - 1; x += 4 + Math.floor(rng() * 4)) {
+        props.push({ kind: rng() < 0.25 ? 'pine' : rng() < 0.15 ? 'bush' : 'tree', x: px(x) + Math.floor(rng() * 10), y: px(y + 1) + Math.floor(rng() * 10), seed: Math.floor(rng() * 1e9) });
+      }
     }
   }
-  props.push({ kind: 'bench', x: px(-4), y: px(CORRIDOR_Y + 3) + 6, seed: 1 });
+  // laterais (oeste/leste) da praça: algumas árvores em canteiros, fora do caminho da entrada
+  for (const side of [-1, 1]) {
+    for (let y = 1; y < BUILDING_H; y += 4) {
+      if (side < 0 && y >= CORRIDOR_Y - 2 && y <= CORRIDOR_Y + 6) continue;
+      props.push({ kind: 'tree', x: px(side < 0 ? -8 : w + 6), y: px(y + 1), seed: Math.floor(rng() * 1e9) });
+      props.push({ kind: 'bush', x: px(side < 0 ? -3 : w + 2), y: px(y + 2), seed: Math.floor(rng() * 1e9) });
+    }
+  }
+  props.push({ kind: 'bench', x: px(-5), y: px(CORRIDOR_Y + 3) + 6, seed: 1 });
   // totem com a marca na entrada principal (oeste)
   props.push({ kind: 'totem', x: px(-3) + 6, y: px(CORRIDOR_Y + 1), seed: 2 });
 
-  // ponytail: sem rua — os campos ficam vazios e o renderer não desenha faixas nem carros
-  return { bounds, floors, props, lanes: [], streetY: 0, streetH: 0 };
+  // faixas das avenidas: duas por avenida, uma em cada sentido; a linha amarela central é a da avenida sul
+  const lanes: ExteriorLayout['lanes'] = [
+    { y: px(NORTH_ST + 2) + 6, dir: -1 },
+    { y: px(NORTH_ST + 4) + 10, dir: 1 },
+    { y: px(SOUTH_ST + 2) + 6, dir: -1 },
+    { y: px(SOUTH_ST + 4) + 10, dir: 1 },
+  ];
+  return { bounds, floors, props, lanes, streetY: px(SOUTH_ST), streetH: px(ST_H) };
 }
 
 /** Parede externa + jardim de um slot vazio: deck de madeira com mesas e guarda-sóis, canteiros e caminho. */

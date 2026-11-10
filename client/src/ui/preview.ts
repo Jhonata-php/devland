@@ -61,6 +61,7 @@ export class PreviewPanel implements UiComponent {
     this.input.addEventListener('keyup', (e) => e.stopPropagation());
     this.ports = h('div', { class: 'ui-preview__ports' });
     this.projectSel = h('select', { class: 'ui-rename__input ui-preview__project', attrs: { 'aria-label': tr('Projeto') } });
+    this.projectSel.addEventListener('change', () => void this.runProject());
     this.runBtn = h('button', { class: 'ui-btn ui-perm__btn--allow ui-preview__run', type: 'button', text: tr('Rodar o projeto'), attrs: { title: tr('Sobe o servidor de desenvolvimento (npm run dev) da pasta e abre a prévia') }, on: { click: () => void this.runProject() } });
     this.stopBtn = h('button', { class: 'ui-btn ui-preview__stop', type: 'button', text: tr('Parar'), hidden: true, on: { click: () => void this.stopProject() } });
     this.liveBtn = h('button', { class: 'ui-btn ui-preview__tool is-on', type: 'button', text: tr('ao vivo'), attrs: { 'aria-pressed': 'true', title: tr('Recarrega quando um agente altera um arquivo') }, on: { click: () => this.setLive(!this.live) } });
@@ -92,6 +93,8 @@ export class PreviewPanel implements UiComponent {
       if (open) {
         void this.refreshPorts();
         this.fillProjects();
+        // Automático: sobe (ou reaproveita) o servidor do projeto e abre a prévia, sem digitar porta nem clicar em Rodar.
+        if (!this.src && !this.port && this.projectSel.value) void this.runProject();
       }
     });
     try {
@@ -113,6 +116,7 @@ export class PreviewPanel implements UiComponent {
   /** Um agente pediu para mostrar o site: abre a prévia já na porta. */
   openPort(port: number): void {
     this.input.value = String(port);
+    this.port = port; // a abertura automática (runProject) não atropela a porta pedida
     if (!this.isOpen) {
       if (typeof this.el.showPopover === 'function') this.el.showPopover();
       else this.el.classList.add('is-open');
@@ -125,7 +129,6 @@ export class PreviewPanel implements UiComponent {
     else {
       if (typeof this.el.showPopover === 'function') this.el.showPopover();
       else this.el.classList.add('is-open');
-      if (this.input.value && !this.src) void this.go(portOf(this.input.value));
     }
   }
 

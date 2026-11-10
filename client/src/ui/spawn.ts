@@ -141,6 +141,8 @@ interface PendingFile {
 
 export class SpawnPanel {
   readonly el: HTMLElement;
+  /** Chamado com o agente novo assim que ele aparece no escritório (a página abre a conversa dele). */
+  onStarted?: (agentId: string) => void;
   private readonly folderList: HTMLElement;
   private readonly otherBtn: HTMLButtonElement;
   private readonly folder: HTMLInputElement;
@@ -631,6 +633,22 @@ export class SpawnPanel {
     }
   }
 
+  /** Espera o agente novo aparecer no escritório (até 30 s) e abre a conversa dele. */
+  private async openNew(before: Set<string>, folder: string): Promise<void> {
+    const norm = (p: string) => p.replace(/[\\/]+$/, '');
+    for (let i = 0; i < 60; i++) {
+      const snap = this.ctx.store.snapshot;
+      const fresh = (snap?.agents ?? []).filter((a) => !before.has(a.id));
+      const hit = fresh.find((a) => norm(this.ctx.store.room(a.roomId)?.path ?? '') === norm(folder)) ?? (fresh.length === 1 ? fresh[0] : undefined);
+      if (hit) {
+        this.hide();
+        this.onStarted?.(hit.id);
+        return;
+      }
+      await new Promise((ok) => setTimeout(ok, 500));
+    }
+  }
+
   private async submit(): Promise<void> {
     if (this.busy) return;
     if (this.dictate.busy) return this.say(tr('Espere o ditado terminar.'), true);
@@ -639,6 +657,7 @@ export class SpawnPanel {
     if (this.repeat.checked) return this.schedule(folder);
     this.busy = true;
     this.submitBtn.disabled = true;
+    const before = new Set((this.ctx.store.snapshot?.agents ?? []).map((a) => a.id));
     try {
       const ids: string[] = [];
       for (const [i, f] of this.files.entries()) {
@@ -675,6 +694,7 @@ export class SpawnPanel {
         this.clearFiles();
         writePref(folder);
         this.ctx.announce(running ? tr('Agente novo rodando.') : tr('Agente novo aberto no app do Claude.'));
+        if (running && this.onStarted) void this.openNew(before, folder);
       } else this.say(info.error ? tr('Não abriu: {0}', [info.error]) : tr('O computador não confirmou a abertura.'), true);
     } catch (err) {
       this.say(tr('Não abriu: {0}', [(err as Error).message]), true);

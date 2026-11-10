@@ -61,6 +61,10 @@ export class TopBar implements UiComponent {
     this.spawnPanel.toggle(this.spawnBtn);
   }
   private readonly spawnPanel: SpawnPanel;
+  /** Agente novo criado pelo Novo agente: quem usa abre a conversa dele. */
+  set onSpawned(fn: (agentId: string) => void) {
+    this.spawnPanel.onStarted = fn;
+  }
   /** Grupo dos botões de painéis (feed, Habblaud World, configurações, ajuda); o histórico entra aqui (ui/index.ts). */
   readonly panelGroup: HTMLElement;
 
