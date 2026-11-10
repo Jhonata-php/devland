@@ -4067,4 +4067,8 @@ export const EN: Readonly<Record<string, string>> = {
   "Essa conversa é do projeto {0}, mas este agente só enxerga {1}.": "This work belongs to project {0}, but this agent can only see {1}.",
   "Mapa": "Map",
   "os agentes em pixel art": "the agents in pixel art",
+  "Neon": "Neon",
+  "Clássico": "Classic",
+  "Visual do mapa": "Map look",
+  "Neon: cidade noturna com luzes de neon (o mapa fica sempre à noite). Clássico: o escritório original, com o ciclo dia/noite abaixo.": "Neon: a night city with neon lights (the map is always at night). Classic: the original office, with the day/night cycle below.",
 };

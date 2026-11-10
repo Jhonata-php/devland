@@ -90,6 +90,7 @@ export class SettingsPopover implements UiComponent {
   private bubbles: ReturnType<typeof segmented<UiPrefs['bubbles']>>;
   private liveliness: ReturnType<typeof segmented<UiPrefs['liveliness']>>;
   private daylight: ReturnType<typeof segmented<UiPrefs['daylight']>>;
+  private mapStyle: ReturnType<typeof segmented<UiPrefs['mapStyle']>>;
   private theme: ReturnType<typeof segmented<UiPrefs['theme']>>;
   private view: ReturnType<typeof segmented<UiPrefs['view']>>;
   private uiTheme: ReturnType<typeof segmented<UiPrefs['uiTheme']>>;
@@ -155,6 +156,8 @@ export class SettingsPopover implements UiComponent {
       ],
       (v) => ctx.updatePrefs({ liveliness: v }),
     );
+    this.mapStyle = segmented<UiPrefs['mapStyle']>(tr('Visual do mapa'), [['neon', tr('Neon')], ['classic', tr('Clássico')]], (v) => ctx.updatePrefs({ mapStyle: v }));
+    this.mapStyle.row.append(h('span', { class: 'ui-set__hint', text: tr('Neon: cidade noturna com luzes de neon (o mapa fica sempre à noite). Clássico: o escritório original, com o ciclo dia/noite abaixo.') }));
     this.daylight = segmented<UiPrefs['daylight']>(
       tr('Ciclo dia/noite'),
       [
@@ -305,7 +308,7 @@ export class SettingsPopover implements UiComponent {
       'div',
       { class: 'ui-popover ui-settings', role: 'dialog', tabIndex: -1, attrs: { 'aria-label': tr('Configurações'), id: 'ui-settings', popover: 'auto' } },
       h('div', { class: 'ui-popover__head' }, h('h2', { text: tr('Configurações') }), close),
-      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.view.row, this.uiTheme.row, this.theme.row),
+      h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Aparência') }), this.view.row, this.mapStyle.row, this.uiTheme.row, this.theme.row),
       h(
         'div',
         { class: 'ui-set-group' },
@@ -400,6 +403,7 @@ export class SettingsPopover implements UiComponent {
     this.liveliness.set(p.liveliness);
     this.daylight.set(p.daylight);
     this.theme.set(p.theme);
+    this.mapStyle.set(p.mapStyle);
     this.view.set(p.view);
     this.uiTheme.set(p.uiTheme);
     this.language.set(savedLanguage());
