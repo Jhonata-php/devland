@@ -34,7 +34,7 @@ export interface DashActions {
   /** Sessão nova do Claude Code na pasta (terminal interativo); ausente quando o terminal interativo está desligado. */
   newSessionIn?(path: string): void;
   /** Abre o Claude Code na pasta já no menu de conectores (/mcp), para entrar num conector; ausente sem terminal interativo. */
-  loginConnector?(path: string): void;
+  loginConnector?(path: string): Promise<string | undefined>;
   /** Janelas do Cloud: conectar contas ou permissões detalhadas das pessoas. */
   openCloud(kind: 'contas' | 'usuarios'): void;
 }

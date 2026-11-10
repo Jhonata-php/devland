@@ -1,5 +1,7 @@
 // Página "Conectores" do modo Painel: servidores MCP do Claude Code (documentação, navegador, Sentry, Notion...).
 // Adiciona em todas as contas do Claude, no escopo do usuário. Conversa com /api/mcp (server/accounts/mcp.ts).
+import { callbackUrl, extractAuthUrl } from '../../../shared/oauth-url';
+import { ptyScreen, sendPtyInput } from './ptyapi';
 import { access } from '../net/access';
 import { tr } from '../../../shared/i18n';
 import { h } from './dom';
@@ -23,17 +25,22 @@ export class McpPage {
   private editing = '';
   /** Conector em que a pessoa clicou em Entrar: a página confere sozinha até conectar. */
   private waiting = '';
+  /** Terminal aberto para o login, o link de autorização que ele imprimiu e se o endereço de retorno já foi enviado. */
+  private ptyId = '';
+  private authUrl = '';
+  private sent = false;
+  private peekTimer: ReturnType<typeof setInterval> | undefined;
   private timer: ReturnType<typeof setInterval> | undefined;
 
   constructor(
     private invalidate: () => void,
     private header: (title: string, sub: string, ...right: (HTMLElement | null)[]) => HTMLElement,
     /** Abre o terminal já no /mcp (ausente sem terminal interativo: cai na dica de rodar /mcp à mão). */
-    private canLogin: () => ((path: string) => void) | undefined = () => undefined,
+    private canLogin: () => ((path: string) => Promise<string | undefined>) | undefined = () => undefined,
   ) {}
 
   key(): string {
-    return `${this.err}|${this.busy}|${this.servers?.map((s) => s.name + s.status + (s.alias ?? '')).join(',') ?? '-'}|${this.talk.length}|${this.talk.map((t) => t.added.size + t.errors.size).join(',')}|${this.open}|${this.editing}|${this.waiting}`;
+    return `${this.err}|${this.busy}|${this.servers?.map((s) => s.name + s.status + (s.alias ?? '')).join(',') ?? '-'}|${this.talk.length}|${this.talk.map((t) => t.added.size + t.errors.size).join(',')}|${this.open}|${this.editing}|${this.waiting}|${this.authUrl}|${this.sent}`;
   }
 
   /** Confere de 8 em 8 s (por até 3 min) se o login que a pessoa foi fazer no terminal já valeu. */
@@ -49,7 +56,59 @@ export class McpPage {
     }, 8000);
   }
 
+  /** Olha a tela do terminal de 2 em 2 s até o Claude Code imprimir o link de autorização, e o mostra no cartão. */
+  private peek(id: string): void {
+    this.ptyId = id;
+    this.authUrl = '';
+    this.sent = false;
+    clearInterval(this.peekTimer);
+    this.peekTimer = setInterval(() => {
+      if (!this.waiting || this.ptyId !== id) return;
+      void ptyScreen(id).then((text) => {
+        const url = extractAuthUrl(text);
+        if (url && url !== this.authUrl && this.ptyId === id) {
+          this.authUrl = url;
+          this.invalidate();
+        }
+      });
+    }, 2000);
+  }
+
+  /** Manda ao terminal o endereço de retorno colado (o Claude Code termina o login com ele). */
+  private async finish(text: string): Promise<string | undefined> {
+    const url = callbackUrl(text);
+    if (!url) return tr('Cole o endereço completo da página que abriu (começa com http://localhost e tem "code=").');
+    try {
+      await sendPtyInput(this.ptyId, `${url}\r`);
+      this.sent = true;
+      this.invalidate();
+    } catch (err) {
+      return (err as Error).message;
+    }
+    return undefined;
+  }
+
+  /** Passo a passo do login no cartão: abrir o link, autorizar e colar o endereço de retorno. */
+  private authSteps(): HTMLElement {
+    const field = h('input', { class: 'dash-mcp-rename', type: 'text', attrs: { placeholder: 'http://localhost:…/callback?code=…', 'aria-label': tr('Endereço da página de retorno'), autocomplete: 'off', spellcheck: 'false' } }) as HTMLInputElement;
+    const msg = h('p', { class: 'dash-mcp-hint is-bad', hidden: true });
+    const go = h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Concluir') }) as HTMLButtonElement;
+    const send = () => void this.finish(field.value).then((err) => { msg.hidden = !err; msg.textContent = err ?? ''; });
+    go.addEventListener('click', send);
+    field.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) send(); });
+    if (this.sent) return h('div', { class: 'dash-mcp-steps' }, h('p', { class: 'dash-mcp-hint', text: tr('Enviado ao Claude Code. Conferindo a conexão…') }));
+    return h('div', { class: 'dash-mcp-steps' },
+      h('p', { class: 'dash-mcp-hint', text: tr('1. Abra o link e autorize o acesso.') }),
+      h('a', { class: 'dash-btn dash-btn--primary', attrs: { href: this.authUrl, target: '_blank', rel: 'noopener noreferrer' }, text: tr('Abrir link de autorização') }),
+      h('p', { class: 'dash-mcp-hint', text: tr('2. Ao terminar, o navegador abre uma página com erro (localhost). É esperado: copie o endereço dessa página e cole aqui.') }),
+      h('div', { class: 'dash-mcp-edit' }, field, go), msg);
+  }
+
   private stopWatch(): void {
+    clearInterval(this.peekTimer);
+    this.peekTimer = undefined;
+    this.ptyId = this.authUrl = '';
+    this.sent = false;
     clearInterval(this.timer);
     this.timer = undefined;
     this.waiting = '';
@@ -148,7 +207,7 @@ export class McpPage {
 
     const card = (sv: Server) => {
       const enter = sv.status === 'auth' && login
-        ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Entrar'), title: tr('Abre o Claude Code já no menu de conectores'), on: { click: () => { this.watch(sv.name); login(this.loginDir || '/'); } } })
+        ? h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Entrar'), title: tr('Abre o Claude Code já no menu de conectores'), on: { click: () => { this.watch(sv.name); void login(this.loginDir || '/').then((id) => id && this.peek(id)); } } })
         : null;
       const test = h('button', { class: 'dash-btn', type: 'button', text: tr('Testar'), title: tr('Confere a conexão agora'), attrs: { disabled: !!this.busy }, on: { click: () => this.act(sv.name, async () => undefined) } });
       const hint = sv.status === 'auth'
@@ -160,6 +219,7 @@ export class McpPage {
         h('div', { class: 'dash-model__top' }, this.editing === sv.name ? renamer(sv) : h('b', { text: titleOf(sv) }), pill(sv)),
         h('p', { class: 'dash-mcp-target', title: sv.target, text: `${sv.name !== titleOf(sv) ? `${sv.name} · ` : ''}${where(sv)}` }),
         hint ? h('p', { class: `dash-mcp-hint${sv.status === 'fail' ? ' is-bad' : ''}`, text: hint }) : null,
+        this.waiting === sv.name && this.authUrl ? this.authSteps() : null,
         h('div', { class: 'dash-model__foot' }, enter, test, h('span', { class: 'dash-grow' }),
           this.editing === sv.name ? null : h('button', { class: 'dash-btn', type: 'button', text: tr('Renomear'), title: tr('Só o nome aqui na tela; os agentes continuam usando "{0}".', [sv.name]), on: { click: () => { this.editing = sv.name; this.invalidate(); } } }),
           remove(sv.name)));

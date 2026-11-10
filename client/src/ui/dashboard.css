@@ -1119,3 +1119,10 @@ html.is-panel .ui-preview__note { color: #8f8c86; font-size: 13px; }
 html.theme-light.is-panel .ui-root .ui-popover.ui-preview { background: #fff; border-color: rgba(0, 0, 0, 0.12); }
 html.theme-light.is-panel .ui-preview__url { background: #f4f3f0; color: #1d1c1a; border-color: rgba(0, 0, 0, 0.14); }
 html.theme-light.is-panel .ui-preview__stage { background: #f4f3f0; border-color: rgba(0, 0, 0, 0.12); }
+
+/* Conectores: passo a passo do login (abrir o link, colar o endereço de retorno). */
+.dash-mcp-steps { display: grid; gap: 8px; margin: 4px 0 8px; padding: 10px 12px; border: 1px solid var(--d-line2); border-radius: 12px; background: rgba(255, 255, 255, 0.03); }
+.dash-mcp-steps .dash-btn { justify-self: start; text-decoration: none; }
+.dash-mcp-steps .dash-mcp-edit { display: flex; gap: 8px; }
+.dash-mcp-steps .dash-mcp-edit input { flex: 1; min-width: 0; font-size: 12.5px; }
+.dash-mcp-steps .dash-mcp-hint { margin: 0; }

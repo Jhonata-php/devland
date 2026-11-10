@@ -33,7 +33,7 @@ export interface PtyControl {
   openAgent(agentId: string): void;
   close(): void;
   takeover(agentId: string): Promise<void>;
-  newSession(cwd: string, account?: string): Promise<void>;
+  newSession(cwd: string, account?: string): Promise<string | undefined>;
   stop(agentId: string): Promise<void>;
 }
 
@@ -147,12 +147,13 @@ export class PtyPanel implements UiComponent, PtyControl {
   }
 
   /** `firstInput`: texto digitado assim que o Claude Code abre (ex.: "/mcp\r" para cair no menu de conectores). */
-  async newSession(cwd: string, account?: string, firstInput?: string): Promise<void> {
+  async newSession(cwd: string, account?: string, firstInput?: string): Promise<string | undefined> {
     const p = await createPty(cwd, account);
-    if (!p) return;
+    if (!p) return undefined;
     this.show(p, true);
     // O Claude Code leva um instante para ler o teclado; o que chega antes fica na fila do terminal.
     if (firstInput) setTimeout(() => void sendPtyInput(p.id, firstInput).catch(() => undefined), 3000);
+    return p.id;
   }
 
   async stop(agentId: string): Promise<void> {

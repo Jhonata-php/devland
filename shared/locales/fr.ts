@@ -4084,4 +4084,10 @@ export const FR: Readonly<Record<string, string>> = {
   "Essa conversa é do projeto {0}, mas este agente só enxerga {1}.": "Ce travail concerne le projet {0}, mais cet agent ne voit que {1}.",
   "Mapa": "Carte",
   "os agentes em pixel art": "les agents en pixel art",
+  "1. Abra o link e autorize o acesso.": "1. Ouvrez le lien et autorisez l'accès.",
+  "2. Ao terminar, o navegador abre uma página com erro (localhost). É esperado: copie o endereço dessa página e cole aqui.": "2. À la fin, le navigateur ouvre une page d'erreur (localhost). C'est normal : copiez l'adresse de cette page et collez-la ici.",
+  "Abrir link de autorização": "Ouvrir le lien d'autorisation",
+  "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Collez l'adresse complète de la page ouverte (elle commence par http://localhost et contient « code= »).",
+  "Endereço da página de retorno": "Adresse de la page de retour",
+  "Enviado ao Claude Code. Conferindo a conexão…": "Envoyé à Claude Code. Vérification de la connexion…",
 };

@@ -37,6 +37,13 @@ export function sendPtyInput(id: string, data: string): Promise<unknown> {
   return postPty(`/api/pty/${encodeURIComponent(id)}/input`, { data });
 }
 
+/** Texto que está na tela do terminal interativo (para achar o link de login do conector). */
+export async function ptyScreen(id: string): Promise<string> {
+  const res = await fetch(`/api/pty/${encodeURIComponent(id)}/screen`, { credentials: 'same-origin' });
+  if (!res.ok) return '';
+  return ((await res.json().catch(() => ({}))) as { text?: string }).text ?? '';
+}
+
 /** Encerra a sessão noutro terminal e continua a mesma conversa aqui. */
 export function takeoverAgent(agentId: string, model?: string): Promise<PtyInfo | undefined> {
   return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, { ...SIZE, ...(model ? { model } : {}) });

@@ -9,6 +9,7 @@
 //
 // Segurança: quem controla um terminal destes executa comandos na máquina. O recurso é opt-in (HABBLAUD_PTY=1),
 // as rotas só aceitam conexões do próprio computador (ver http/pty.ts) e ele fica desligado no Docker.
+import { stripAnsi } from '../../shared/oauth-url';
 import { isModelId, type ModelId } from '../../shared/models';
 import { runAsOptions } from '../spawn/runas';
 import { chmodSync, readFileSync, statSync } from 'node:fs';
@@ -361,6 +362,11 @@ export class PtyManager {
       if (pty.info.exitedAt !== undefined) res.write(frame('exit', { code: pty.info.exitCode ?? 0 }));
       pty.clients.add(res);
     });
+  }
+
+  /** Texto da tela (sem as sequências de controle): serve para achar o link de login que o Claude Code imprime. */
+  screenText(id: string): string {
+    return stripAnsi(this.get(id).screen.serialize());
   }
 
   input(id: string, data: unknown): void {

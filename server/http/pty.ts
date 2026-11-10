@@ -98,6 +98,10 @@ export function createPtyRoutes(
       if (method !== 'GET') return notAllowed(res, 'GET');
       return ptys.attach(id, req, res);
     }
+    if (act === 'screen') {
+      if (method !== 'GET') return notAllowed(res, 'GET');
+      return sendJson(res, 200, { text: ptys.screenText(id) });
+    }
     if (method !== 'POST') return notAllowed(res, 'POST');
     const body = (await readJson(req)) as Record<string, unknown>;
     if (act === 'input') ptys.input(id, body?.data);

@@ -4067,4 +4067,10 @@ export const EN: Readonly<Record<string, string>> = {
   "Essa conversa é do projeto {0}, mas este agente só enxerga {1}.": "This work belongs to project {0}, but this agent can only see {1}.",
   "Mapa": "Map",
   "os agentes em pixel art": "the agents in pixel art",
+  "1. Abra o link e autorize o acesso.": "1. Open the link and authorize access.",
+  "2. Ao terminar, o navegador abre uma página com erro (localhost). É esperado: copie o endereço dessa página e cole aqui.": "2. When you finish, the browser opens an error page (localhost). That is expected: copy that page's address and paste it here.",
+  "Abrir link de autorização": "Open authorization link",
+  "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Paste the full address of the page that opened (it starts with http://localhost and has \"code=\").",
+  "Endereço da página de retorno": "Return page address",
+  "Enviado ao Claude Code. Conferindo a conexão…": "Sent to Claude Code. Checking the connection…",
 };

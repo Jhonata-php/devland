@@ -213,7 +213,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     get interactiveEnabled() {
       return pty.enabled;
     },
-    newSession: (cwd, account) => pty.newSession(cwd, account),
+    newSession: (cwd, account) => pty.newSession(cwd, account).then(() => undefined),
     open(id, opener) {
       const readOnly = !!store.snapshot?.meta.terminal && !store.replaying;
       if (pty.ptyOf(id) || (pty.enabled && !readOnly && ctx.agent(id)?.kind === 'main')) pty.openAgent(id);
@@ -326,7 +326,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     openPreview: () => previewPanel.toggle(),
     ptyOf: (id) => pty.ptyOf(id),
     takeover: (id, model) => pty.takeover(id, model),
-    openIn: (path, text) => pty.newSession(path, undefined, text),
+    openIn: (path, text) => pty.newSession(path, undefined, text).then(() => undefined),
   });
   // Aviso "fulano entregou": tocar abre a conversa com ele.
   // (no modo Painel, na página Conversas dele)
@@ -361,7 +361,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
       return router.interactiveEnabled ? (path: string) => void router.newSession(path) : undefined;
     },
     get loginConnector() {
-      return pty.enabled ? (path: string) => void pty.newSession(path, undefined, '/mcp\r') : undefined;
+      return pty.enabled ? (path: string) => pty.newSession(path, undefined, '/mcp\r') : undefined;
     },
   });
   // Conectar conta passo a passo (Cloud): substitui a página antiga de Contas em todos os botões.
