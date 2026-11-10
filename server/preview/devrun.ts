@@ -69,7 +69,7 @@ export class DevRunner {
   }
 
   /** Sobe (ou reaproveita) o servidor da pasta e espera a porta aparecer na saída. */
-  async start(raw: string): Promise<{ port: number; script: string; reused: boolean }> {
+  async start(raw: string, retried = false): Promise<{ port: number; script: string; reused: boolean }> {
     const folder = resolve(raw.trim());
     if (!raw.trim() || !this.opts.allowed(folder)) throw new Error(tr('Essa pasta não é de um projeto do escritório.'));
     const current = this.runs.get(folder);
@@ -84,7 +84,8 @@ export class DevRunner {
     const script = pickScript(pkg.scripts);
     if (!script) throw new Error(tr('O package.json não tem script dev, start, serve nem preview.'));
     const npm = this.opts.npm ?? 'npm';
-    if (!existsSync(join(folder, 'node_modules'))) await this.install(npm, folder);
+    // .bin (e não só node_modules): uma pasta vazia ou instalada sem as dependências de desenvolvimento deixava "tsx: not found".
+    if (!existsSync(join(folder, 'node_modules', '.bin'))) await this.install(npm, folder);
     const proc = spawn(npm, ['run', script], { cwd: folder, detached: true, stdio: ['ignore', 'pipe', 'pipe'], ...runAsOptions({ ...process.env, FORCE_COLOR: '0', BROWSER: 'none' }, agentRunAs()) });
     const run: Run = { folder, script, proc, output: '', startedAt: Date.now() };
     this.runs.set(folder, run);
@@ -103,6 +104,11 @@ export class DevRunner {
       proc.stderr?.on('data', onData);
       proc.on('exit', (code) => {
         clearTimeout(timer);
+        // 127 = comando não encontrado (dependência faltando): instala e tenta de novo uma vez.
+        if (!run.port && code === 127 && !retried) {
+          this.install(npm, folder).then(() => this.start(raw, true)).then(ok, fail);
+          return;
+        }
         if (!run.port) fail(new Error(tr('O servidor parou (código {0}). Saída: {1}', [String(code), run.output.slice(-300)])));
       });
       proc.on('error', (err) => {
