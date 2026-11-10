@@ -143,6 +143,8 @@ export class SpawnPanel {
   readonly el: HTMLElement;
   /** Chamado com o agente novo assim que ele aparece no escritório (a página abre a conversa dele). */
   onStarted?: (agentId: string) => void;
+  /** Aviso visível (toast) para quando o modal já fechou. */
+  onNotice?: (text: string, level: 'success' | 'warn') => void;
   private readonly folderList: HTMLElement;
   private readonly otherBtn: HTMLButtonElement;
   private readonly folder: HTMLInputElement;
@@ -279,11 +281,10 @@ export class SpawnPanel {
         h('p', { class: 'ui-rename__hint', text: tr('Começa na hora uma sessão do Claude Code em segundo plano no computador, na pasta escolhida; as permissões chegam aqui. Pasta que o Claude Code ainda não conhece abre no app do Claude e espera o Enter lá. Anexos vão para a pasta de anexos do DevLand e o pedido leva os caminhos.') }),
         h('label', { class: 'ui-spawn__repeat-toggle' }, this.repeat, ' ', tr('Repetir em dias e horário (agendar)')),
         this.repeatBox,
-        this.submitBtn,
         this.status,
         this.schedList),
       ),
-      h('div', { class: 'ui-spawn__nav' }, this.backBtn, this.nextBtn),
+      h('div', { class: 'ui-spawn__nav' }, this.backBtn, this.nextBtn, this.submitBtn),
     );
     this.showStep(1);
     this.el.addEventListener('toggle', () => {
@@ -392,6 +393,7 @@ export class SpawnPanel {
     }
     setHidden(this.backBtn, this.step === 1);
     setHidden(this.nextBtn, this.step === 3);
+    setHidden(this.submitBtn, this.step !== 3);
     this.nextBtn.disabled = this.step === 2 && !this.selected;
     if (this.step === 3 && !matchMedia('(pointer: coarse)').matches) this.prompt.focus();
   }
@@ -641,7 +643,6 @@ export class SpawnPanel {
       const fresh = (snap?.agents ?? []).filter((a) => !before.has(a.id));
       const hit = fresh.find((a) => norm(this.ctx.store.room(a.roomId)?.path ?? '') === norm(folder)) ?? (fresh.length === 1 ? fresh[0] : undefined);
       if (hit) {
-        this.hide();
         this.onStarted?.(hit.id);
         return;
       }
@@ -682,18 +683,19 @@ export class SpawnPanel {
       }
       if (info.status === 'opened') {
         const running = info.how === 'cli';
-        this.say(
-          running
-            ? tr('Rodando: a sessão já começou no computador e aparece no escritório em instantes.')
-            : info.note
-              ? tr('Abri no app do Claude: aperte Enter lá para começar. Não rodou sozinho: {0}.', [info.note])
-              : tr('Abri no app do Claude: aperte Enter lá para começar.'),
-          !running && !!info.note,
-        );
+        const msg = running
+          ? tr('Rodando: a sessão já começou no computador e aparece no escritório em instantes.')
+          : info.note
+            ? tr('Abri no app do Claude: aperte Enter lá para começar. Não rodou sozinho: {0}.', [info.note])
+            : tr('Abri no app do Claude: aperte Enter lá para começar.');
+        this.say('');
         this.prompt.value = '';
         this.clearFiles();
         writePref(folder);
-        this.ctx.announce(running ? tr('Agente novo rodando.') : tr('Agente novo aberto no app do Claude.'));
+        // Deu certo: o modal fecha e o aviso vira toast; a conversa do agente novo abre quando ele aparecer.
+        this.hide();
+        if (this.onNotice) this.onNotice(msg, !running && info.note ? 'warn' : 'success');
+        else this.ctx.announce(msg);
         if (running && this.onStarted) void this.openNew(before, folder);
       } else this.say(info.error ? tr('Não abriu: {0}', [info.error]) : tr('O computador não confirmou a abertura.'), true);
     } catch (err) {

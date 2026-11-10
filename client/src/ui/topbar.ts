@@ -65,6 +65,10 @@ export class TopBar implements UiComponent {
   set onSpawned(fn: (agentId: string) => void) {
     this.spawnPanel.onStarted = fn;
   }
+  /** Aviso do Novo agente depois que o modal fecha (toast). */
+  set onSpawnNotice(fn: (text: string, level: 'success' | 'warn') => void) {
+    this.spawnPanel.onNotice = fn;
+  }
   /** Grupo dos botões de painéis (feed, Habblaud World, configurações, ajuda); o histórico entra aqui (ui/index.ts). */
   readonly panelGroup: HTMLElement;
 

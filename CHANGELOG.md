@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Uso das contas no topo.** Ao lado do **Buscar**, cada conta mostra o logo e duas barrinhas com o uso das 5 horas e da semana (verde, amarelo perto do limite, vermelho no fim); passar o mouse mostra os números e clicar abre a página Contas. Some em telas estreitas.
 - **Prévia ao vivo abre sozinha.** Ao abrir a Prévia, o DevLand sobe (ou reaproveita) o servidor do projeto e mostra o site na hora, sem digitar a porta nem clicar em "Rodar o projeto"; trocar o projeto na lista também roda o novo.
 - **Novo agente abre a conversa dele.** Ao começar um agente pelo botão **+ Novo agente**, assim que ele aparece a conversa nova abre sozinha (na página Conversas), em vez de você ter que procurá-lo.
 - **Mapa redesenhado: Estúdio tech à noite.** O andar ficou escuro e limpo (piso grafite polido nas salas e na faixa central, recepção em pedra escura, copa e banheiros em azulejo escuro, lounge em madeira escura), com o neon de cada projeto só no filete das paredes. Em volta não há mais grama, árvores, rua nem cenário: o piso quadriculado escuro continua por toda a tela, sem faixas pretas nem vinheta nas bordas. O visual neon por filtro de cor foi retirado. A calçada, o totem e o capacho da entrada, do lado de fora à esquerda, saíram.
@@ -27,6 +28,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Novo agente: botões no lugar e o modal fecha.** No último passo, **Voltar** e **Começar** ficam juntos numa barra no rodapé do modal (Voltar à esquerda, Começar à direita), como nos passos anteriores. Quando o agente começa, o modal fecha sozinho e o aviso aparece no canto; se der erro, ele continua aberto com a mensagem.
+- **Barras de rolagem discretas.** As barras de rolagem do app e dos modais ficaram finas e escuras, no tom do Painel (inclusive no Safari e no Firefox).
 - **Menu lateral e celular:** o Mapa aparece nas abas de baixo do celular (as cinco abas cabem numa linha só) e o Plugins não aparece mais duas vezes no menu lateral.
 - **Conectores: entrar com o link direto, sem terminal confuso.** Ao clicar em **Entrar** num conector, o cartão mostra o botão **Abrir link de autorização** assim que o Claude Code imprime o link, e um campo para colar o endereço da página de retorno (a que abre com erro em `localhost`: é esperado, porque o login volta para a porta do container, não para o seu computador). Ao colar e clicar em **Concluir**, o DevLand entrega o endereço ao Claude Code e confere a conexão sozinho.
 - **Prévia ao lado da conversa, que o agente abre sozinho, e sem a tela falsa do Velix:** ao pedir "abre o preview", o DevLand instala as dependências do projeto se faltarem, sobe o servidor e abre a prévia ao lado (antes pedia para você rodar `npm install`). no modo Painel a prévia agora abre ao lado da conversa (a conversa encolhe) em vez de cobrir a tela. E quando o servidor do projeto não está rodando, a prévia mostra "nada respondeu na porta…" em vez da página "Recuperando os serviços" do Velix (que aparecia porque a resposta era um 502).

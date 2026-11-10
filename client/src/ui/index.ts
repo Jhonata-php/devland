@@ -347,6 +347,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   };
   // Novo agente criado: abre a conversa dele (no modo Painel, na página Conversas), em vez de ficar só no terminal/escritório.
   topbar.onSpawned = (id) => (prefs.view === 'panel' ? dashboard.openChat(id) : chats.openChat(id));
+  topbar.onSpawnNotice = (text, level) => toasts.push({ id: `spawn-${Date.now()}`, level, text, at: Date.now() });
   const bottomNav = new BottomNav(ctx, () => topbar.toggleSpawn(), chats);
   // Modo Painel (sem o mapa): o mesmo DevLand como plataforma de gestão. prefs.view lembra a escolha.
   const dashboard = new Dashboard(ctx, {

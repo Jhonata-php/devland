@@ -2384,8 +2384,6 @@ export const ES: Readonly<Record<string, string>> = {
   "Rodando: a sessão já começou no computador e aparece no escritório em instantes.": "En ejecución: la sesión ya empezó en el equipo y aparecerá en la oficina en unos instantes.",
   "Abri no app do Claude: aperte Enter lá para começar. Não rodou sozinho: {0}.": "Lo abrí en la app de Claude: presiona Enter allí para empezar. No se ejecutó solo: {0}.",
   "Abri no app do Claude: aperte Enter lá para começar.": "Lo abrí en la app de Claude: presiona Enter allí para empezar.",
-  "Agente novo rodando.": "Agente nuevo en ejecución.",
-  "Agente novo aberto no app do Claude.": "Agente nuevo abierto en la app de Claude.",
   "Não abriu: {0}": "No se abrió: {0}",
   "O computador não confirmou a abertura.": "El equipo no confirmó la apertura.",
 
@@ -4115,4 +4113,10 @@ export const ES: Readonly<Record<string, string>> = {
   "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Pega la dirección completa de la página que se abrió (empieza con http://localhost y tiene \"code=\").",
   "Endereço da página de retorno": "Dirección de la página de retorno",
   "Enviado ao Claude Code. Conferindo a conexão…": "Enviado a Claude Code. Comprobando la conexión…",
+
+  // client/src/ui/dashboard.ts (uso das contas no topo)
+  "{0}: sem cota agora": "{0}: sin cuota ahora",
+  "{0}: {1}% das 5 horas · {2}% da semana": "{0}: {1}% de las 5 horas · {2}% de la semana",
+  "5h": "5h",
+  "sem.": "sem.",
 };

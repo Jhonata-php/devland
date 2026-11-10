@@ -2384,8 +2384,6 @@ export const EN: Readonly<Record<string, string>> = {
   "Rodando: a sessão já começou no computador e aparece no escritório em instantes.": "Running: the session has started on the computer and will show up in the office in a moment.",
   "Abri no app do Claude: aperte Enter lá para começar. Não rodou sozinho: {0}.": "Opened in the Claude app: press Enter there to start. It didn't run on its own: {0}.",
   "Abri no app do Claude: aperte Enter lá para começar.": "Opened in the Claude app: press Enter there to start.",
-  "Agente novo rodando.": "New agent running.",
-  "Agente novo aberto no app do Claude.": "New agent opened in the Claude app.",
   "Não abriu: {0}": "Didn't open: {0}",
   "O computador não confirmou a abertura.": "The computer didn't confirm it opened.",
 
@@ -4114,4 +4112,10 @@ export const EN: Readonly<Record<string, string>> = {
   "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Paste the full address of the page that opened (it starts with http://localhost and has \"code=\").",
   "Endereço da página de retorno": "Return page address",
   "Enviado ao Claude Code. Conferindo a conexão…": "Sent to Claude Code. Checking the connection…",
+
+  // client/src/ui/dashboard.ts (uso das contas no topo)
+  "{0}: sem cota agora": "{0}: no quota right now",
+  "{0}: {1}% das 5 horas · {2}% da semana": "{0}: {1}% of the 5 hours · {2}% of the week",
+  "5h": "5h",
+  "sem.": "wk",
 };

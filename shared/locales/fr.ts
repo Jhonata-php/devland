@@ -2400,8 +2400,6 @@ export const FR: Readonly<Record<string, string>> = {
   "Rodando: a sessão já começou no computador e aparece no escritório em instantes.": "Lancé : la session a démarré sur l'ordinateur et apparaîtra dans le bureau dans un instant.",
   "Abri no app do Claude: aperte Enter lá para começar. Não rodou sozinho: {0}.": "Ouvert dans l'app Claude : appuyez sur Entrée là-bas pour commencer. Pas de lancement automatique : {0}.",
   "Abri no app do Claude: aperte Enter lá para começar.": "Ouvert dans l'app Claude : appuyez sur Entrée là-bas pour commencer.",
-  "Agente novo rodando.": "Nouvel agent lancé.",
-  "Agente novo aberto no app do Claude.": "Nouvel agent ouvert dans l'app Claude.",
   "Não abriu: {0}": "Échec de l'ouverture : {0}",
   "O computador não confirmou a abertura.": "L'ordinateur n'a pas confirmé l'ouverture.",
 
@@ -4131,4 +4129,10 @@ export const FR: Readonly<Record<string, string>> = {
   "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Collez l'adresse complète de la page ouverte (elle commence par http://localhost et contient « code= »).",
   "Endereço da página de retorno": "Adresse de la page de retour",
   "Enviado ao Claude Code. Conferindo a conexão…": "Envoyé à Claude Code. Vérification de la connexion…",
+
+  // client/src/ui/dashboard.ts (uso das contas no topo)
+  "{0}: sem cota agora": "{0} : plus de quota pour l’instant",
+  "{0}: {1}% das 5 horas · {2}% da semana": "{0} : {1} % des 5 heures · {2} % de la semaine",
+  "5h": "5h",
+  "sem.": "sem.",
 };

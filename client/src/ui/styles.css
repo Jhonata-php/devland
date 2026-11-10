@@ -1605,7 +1605,7 @@
   overscroll-behavior: contain;
   padding: 8px 8px 10px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-rooms {
@@ -1987,7 +1987,7 @@
   overscroll-behavior: contain;
   padding: 4px 4px 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-feed__empty {
@@ -2099,7 +2099,7 @@
   overscroll-behavior: contain;
   padding: 16px 16px 20px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-drawer__view.is-gone .ui-hero,
@@ -4755,7 +4755,7 @@
   padding: 14px 16px 18px;
   font: 12.5px/1.55 var(--font-mono);
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-root .ui-term__scroll:focus-visible {
@@ -5409,7 +5409,7 @@ button.ui-term__think:hover,
   overflow-wrap: normal;
   font: inherit;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-md__pre {
@@ -5827,7 +5827,7 @@ button.ui-term__think:hover,
   overscroll-behavior: contain;
   padding: 0 6px 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(160, 176, 210, 0.25) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .ui-hist__day-label {

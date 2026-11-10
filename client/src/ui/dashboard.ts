@@ -196,7 +196,26 @@ export class Dashboard implements UiComponent {
       h('img', { class: 'dash-only-sm dash-top__logo', attrs: { src: '/assets/brand/logo-mark.png', srcset: '/assets/brand/logo-mark@4x.png 4x', alt: BRAND, width: 28, height: 28 } }),
       h('div', { class: 'dash-top__title' }, h('b', { text: page.label() }),
         h('span', { class: 'dash-live dash-hide-sm' }, h('i', { class: working ? 'is-on' : '' }), h('span', { text: working ? tr('{0} trabalhando', [working]) : tr('Ninguém trabalhando agora') }))),
-      h('div', { class: 'dash-top__act' }, find, chats, deliveries, settings, this.newBtn(true)));
+      h('div', { class: 'dash-top__act' }, this.quota(), find, chats, deliveries, settings, this.newBtn(true)));
+  }
+
+  /** Uso das contas na barra do topo: logo e duas barrinhas (5 horas e semana) por conta; leva à página Contas. */
+  private quota(): HTMLElement | null {
+    const accs = this.accounts().filter((a) => a.usage).slice(0, 3); // ponytail: só as 3 primeiras; o resto fica na página Contas.
+    if (!accs.length) return null;
+    const meter = (label: string, win: { utilization: number } | undefined) => {
+      const pct = clampPercent(win?.utilization ?? 0);
+      return h('span', { class: `dash-q__m is-${usageLevel(pct)}` }, h('small', { text: label }), h('i', {}, h('b', { style: `width:${pct}%` })), h('em', { text: win ? `${Math.round(pct)}%` : '—' }));
+    };
+    const tip = accs.map((a) => a.usage!.noQuota ? tr('{0}: sem cota agora', [a.name]) : tr('{0}: {1}% das 5 horas · {2}% da semana', [a.name, Math.round(a.usage!.fiveHour?.utilization ?? 0), Math.round(a.usage!.sevenDay?.utilization ?? 0)])).join('\n');
+    return h('button', { class: 'dash-btn dash-quota dash-hide-sm', type: 'button', title: tip, attrs: { 'aria-label': tip }, on: { click: () => this.go('accounts') } },
+      ...accs.map((a) => {
+        const logo = this.logo(a);
+        logo.classList.add('is-xs');
+        return h('span', { class: 'dash-q' }, logo, a.usage!.noQuota
+          ? h('span', { class: 'dash-q__none', text: tr('sem cota') })
+          : h('span', { class: 'dash-q__bars' }, meter(tr('5h'), a.usage!.fiveHour), meter(tr('sem.'), a.usage!.sevenDay)));
+      }));
   }
 
   private toolBtn(svg: string, label: string, fn: () => void, cls = ''): HTMLButtonElement {
