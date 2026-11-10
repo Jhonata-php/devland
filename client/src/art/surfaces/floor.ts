@@ -62,6 +62,9 @@ export function floorChunk(kind: FloorKind, cx: number, cy: number, o: FloorOpts
     case 'sidewalk':
       paintSidewalk(b, x0, y0, o.seed);
       break;
+    case 'grass':
+      paintGrass(b, x0, y0, o.seed);
+      break;
     default:
       for (let ty = 0; ty < CHUNK_TILES; ty++) {
         for (let tx = 0; tx < CHUNK_TILES; tx++) {
@@ -104,8 +107,8 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
       break;
     }
     case 'tile_check': {
-      const a = '#f2ede4';
-      const c = '#d2d8de';
+      const a = '#f6efe2';
+      const c = '#9fd0c4';
       for (let qy = 0; qy < 2; qy++) {
         for (let qx = 0; qx < 2; qx++) {
           const col = (qx + qy + tx + ty) % 2 ? c : a;
@@ -180,7 +183,7 @@ function rgba(c: string): RGBA {
   return parseColor(c);
 }
 
-const WOOD_TONES = ['#c99668', '#c48f61', '#cf9f72', '#c6925f'] as const;
+const WOOD_TONES = ['#c58a5b', '#bb8052', '#d09a69', '#b9794b', '#cfa075'] as const;
 /** [tom][0 normal, 1 topo, 2 base, 3 veio, 4 emenda, 5 após emenda, 6 nó]. */
 const WOOD: readonly (readonly RGBA[])[] = WOOD_TONES.map((t) =>
   [t, shade(t, 0.03), shade(t, -0.075), shade(t, -0.03), shade(t, -0.1), shade(t, 0.03), shade(t, -0.12)].map(rgba),
@@ -267,11 +270,64 @@ function paintMarble(b: PixelBuf, x0: number, y0: number, seed: number): void {
   }
 }
 
-const WALK_TONES = ['#d3cdc2', '#cfc8bc', '#d8d2c8'] as const;
-/** [tom][0 normal, 1 junta, 2 borda clara, 3 mancha]. */
-const WALK: readonly (readonly RGBA[])[] = WALK_TONES.map((t) => [t, '#b8b1a5', shade(t, 0.03), shade(t, -0.05)].map(rgba));
+const GRASS = ramp('#62a84f', 0.05);
+/** 8 níveis da grama, do mais fundo ao mais claro (mistura de 4 tons). */
+const GRASS_LV: readonly RGBA[] = Array.from({ length: 8 }, (_, i) => rgba(i < 4 ? mix(GRASS.dd, GRASS.dk, i / 3) : mix(GRASS.dk, GRASS.lt, (i - 4) / 3)));
+const GRASS_BLADE = [rgba(GRASS.dd), rgba(GRASS.lt), rgba(shade(GRASS.lt, 0.08))] as const;
+const FLOWERS = ['#ffffff', '#f7d154', '#f28fb0', '#b9a2f0', '#ff9a62'] as const;
 
-/** Calçada de placas 16x8 em fileiras desencontradas. */
+/**
+ * Gramado contínuo (coordenadas de mundo, sem repetir de um tile para o outro): manchas suaves de tom, faixas de corte do
+ * cortador de grama, tufos de folhas e canteiros de florzinhas que aparecem em grupos.
+ */
+function paintGrass(b: PixelBuf, x0: number, y0: number, seed: number): void {
+  for (let py = 0; py < CHUNK_PX; py++) {
+    for (let px = 0; px < CHUNK_PX; px++) {
+      const wx = x0 + px;
+      const wy = y0 + py;
+      const patch = noise(wx, wy, 70, seed + 5) * 0.55 + noise(wx, wy, 19, seed + 8) * 0.3 + noise(wx, wy, 6, seed + 3) * 0.15;
+      // Faixas do cortador: diagonais largas que clareiam um pouco.
+      const mow = ((wx + wy) >> 6) & 1 ? 0.07 : 0;
+      b.put(px, py, GRASS_LV[Math.max(0, Math.min(7, Math.floor((patch + mow) * 8)))]);
+    }
+  }
+  // Tufos (um pixel escuro embaixo e dois claros em V em cima) em posições espalhadas.
+  for (let py = 1; py < CHUNK_PX - 2; py++) {
+    for (let px = 1; px < CHUNK_PX - 1; px++) {
+      const hv = h3(x0 + px, y0 + py, 7, seed) % 97;
+      if (hv === 0) {
+        b.put(px, py, GRASS_BLADE[0]);
+        b.put(px - 1, py - 1, GRASS_BLADE[1]);
+        b.put(px + 1, py - 1, GRASS_BLADE[1]);
+        b.put(px, py - 2, GRASS_BLADE[2]);
+      } else if (hv === 1) {
+        b.put(px, py, GRASS_BLADE[1]);
+        b.put(px, py - 1, GRASS_BLADE[2]);
+      }
+    }
+  }
+  // Canteiros de flores: onde o ruído de baixa frequência passa de um limiar, nascem flores em grupo.
+  for (let py = 2; py < CHUNK_PX - 2; py++) {
+    for (let px = 2; px < CHUNK_PX - 2; px++) {
+      const wx = x0 + px;
+      const wy = y0 + py;
+      if (noise(wx, wy, 90, seed + 21) < 0.74) continue;
+      const hv = h3(wx, wy, 11, seed) % 53;
+      if (hv > 1) continue;
+      const c = FLOWERS[h3(wx >> 4, wy >> 4, 12, seed) % FLOWERS.length]!;
+      b.set(px, py, c);
+      b.set(px + 1, py, c);
+      b.set(px, py - 1, shade(c, 0.05));
+      b.set(px + 1, py + 1, '#f2c14e');
+    }
+  }
+}
+
+const WALK_TONES = ['#d6cdc0', '#cdc2b4', '#dbd2c6', '#c8bdb0', '#d2c7c9', '#c5c9c6'] as const;
+/** [tom][0 normal, 1 junta, 2 borda clara, 3 mancha, 4 sombra de baixo, 5 musgo]. */
+const WALK: readonly (readonly RGBA[])[] = WALK_TONES.map((t) => [t, '#a99f92', shade(t, 0.05), shade(t, -0.06), shade(t, -0.09), '#7fa86a'].map(rgba));
+
+/** Calçada de pedras 16x8 em fileiras desencontradas: tons variados, chanfro, sombra e um pouco de musgo nas juntas. */
 function paintSidewalk(b: PixelBuf, x0: number, y0: number, seed: number): void {
   for (let py = 0; py < CHUNK_PX; py++) {
     for (let px = 0; px < CHUNK_PX; px++) {
@@ -281,12 +337,13 @@ function paintSidewalk(b: PixelBuf, x0: number, y0: number, seed: number): void 
       const off = row & 1 ? 8 : 0;
       const ix = (wx + off) & 15;
       const iy = wy & 7;
-      const t = WALK[h3((wx + off) >> 4, row, 5, seed) % WALK.length];
+      const t = WALK[h3((wx + off) >> 4, row, 5, seed) % WALK.length]!;
       let k = 0;
-      if (iy === 7 || ix === 15) k = 1;
+      if (iy === 7 || ix === 15) k = h3(wx, wy, 8, seed) % 9 === 0 ? 5 : 1;
+      else if (iy === 6) k = 4;
       else if (iy === 0 || ix === 0) k = 2;
       else if (h3(wx, wy, 6, seed) % 41 === 0) k = 3;
-      b.put(px, py, t[k]);
+      b.put(px, py, t[k]!);
     }
   }
 }

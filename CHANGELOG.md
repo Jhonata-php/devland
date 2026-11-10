@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Mapa redesenhado (sem filtro de cor):** o gramado agora é contínuo, com manchas de tom, faixas de corte, tufos e canteiros de flores; a calçada virou um calçamento de pedras com tons variados, chanfro e musgo nas juntas; a copa ganhou piso xadrez menta e creme, e a madeira, tons mais quentes e variados. O visual neon (filtro de cor) foi retirado.
 - **O mapa agora é uma página do Painel ("Mapa" no menu lateral).** Acabou o modo Escritório com os menus no topo: o DevLand tem um só visual, o do Painel, e o escritório em pixel art aparece atrás do menu lateral quando você abre **Mapa** (clicar numa sala ou num agente abre os detalhes à direita, como antes). A opção "Tela" das Configurações saiu. A prévia, aberta ao lado da conversa ou do mapa, ganhou o mesmo visual neutro do resto (sem o verde de terminal) e o mapa se reenquadra para não ficar embaixo dela.
 - **Conversa de outro projeto: "Abrir agente em …".** Quando o agente diz que o trabalho é de outro projeto (cita a pasta dele) e a sessão dele só enxerga o próprio, a conversa mostra um aviso com o botão **Abrir agente em <projeto>**: abre um agente novo já dentro da pasta certa, com o contexto e a última resposta digitados.
 - **Merge com conflito: "Pedir ao agente para resolver".** Quando o GitHub não deixa mesclar o PR, o painel do **Enviar** mostra o motivo real e um botão que manda ao agente, na conversa, o erro com o pedido para trazer a `main` para a branch, resolver os conflitos e dar push (sem mesclar na `main`).
