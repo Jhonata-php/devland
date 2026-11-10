@@ -26,6 +26,10 @@ do meio (0.**3**.0).
 - **Conversa mais ampla e com ferramentas à mão (modo Painel):** a conversa ocupa a largura toda (antes ficava numa coluna estreita no meio), o cabeçalho deixou de ser azulado e a sua mensagem ficou em cinza. No cabeçalho, três botões: **Modelo** (mostra o atual e troca para Fable, Opus, Sonnet ou Haiku; no terminal do DevLand troca na hora com `/model`, e em outro terminal assume a sessão e continua a mesma conversa no modelo novo), **Prévia** (abre o site do projeto ao vivo) e **Enviar** (mostra a branch e as alterações, salva num commit com a sua mensagem e faz o `git push`, ou abre o PR; avisa antes de enviar direto para a `main`).
 - **Cloud: gravar áudio funciona em qualquer navegador.** A imagem do Cloud agora traz o Whisper (whisper.cpp com o modelo multilíngue base) e o ffmpeg: o microfone da caixa de mensagem grava, transcreve no próprio servidor e põe o texto no cursor, sem mandar a voz para nenhum serviço. Antes o microfone só aparecia em navegadores com reconhecimento de voz próprio (Chrome, Safari). A imagem fica cerca de 300 MB maior.
 
+### Alterado
+
+- **IA local mais bonita.** Medidores com barras em degradê, cartão "Agentes com IA local" destacado e cartões de modelos maiores, com o modelo usado pelos agentes em destaque e botões que não quebram de linha.
+
 ### Corrigido
 
 - **"Trabalhando…" na conversa alinhado e animado.** O aviso de que o agente está trabalhando agora fica alinhado com as mensagens e a caixa de texto, num selo com pontinhos verdes que pulam e um brilho passando pelo texto, em vez de solto no canto.
