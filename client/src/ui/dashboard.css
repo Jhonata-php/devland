@@ -1119,17 +1119,3 @@ html.is-panel .ui-preview__note { color: #8f8c86; font-size: 13px; }
 html.theme-light.is-panel .ui-root .ui-popover.ui-preview { background: #fff; border-color: rgba(0, 0, 0, 0.12); }
 html.theme-light.is-panel .ui-preview__url { background: #f4f3f0; color: #1d1c1a; border-color: rgba(0, 0, 0, 0.14); }
 html.theme-light.is-panel .ui-preview__stage { background: #f4f3f0; border-color: rgba(0, 0, 0, 0.12); }
-
-/* ---------- Mapa neon: cidade noturna. O mundo já desenha à noite; aqui entra a paleta e o brilho de neon. ---------- */
-html.map-neon #world { filter: hue-rotate(75deg) saturate(1.35) contrast(1.3) brightness(0.66); }
-html.map-neon.is-panel.dash-on-map #world { background: #07050f; }
-/* Brilho de neon por cima do mapa (só na página Mapa): magenta no canto, ciano no outro, e uma vinheta escura. */
-html.map-neon .dash.is-map::before { content: ''; position: fixed; inset: var(--d-top-h, 60px) 0 0 var(--d-side-w, 248px); pointer-events: none; z-index: 0;
-  background: radial-gradient(60% 55% at 12% 0%, rgba(255, 46, 190, 0.13), transparent 70%), radial-gradient(55% 50% at 100% 100%, rgba(0, 220, 255, 0.12), transparent 70%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(4, 2, 12, 0.55));
-  mix-blend-mode: screen; }
-html.map-neon .dash.is-map::after { content: ''; position: fixed; inset: var(--d-top-h, 60px) 0 0 var(--d-side-w, 248px); pointer-events: none; z-index: 0;
-  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px); mix-blend-mode: overlay; }
-html.map-neon.dash-collapsed .dash.is-map::before, html.map-neon.dash-collapsed .dash.is-map::after { left: 68px; }
-@media (max-width: 760px) { html.map-neon .dash.is-map::before, html.map-neon .dash.is-map::after { left: 0; } }
-@media (prefers-reduced-motion: no-preference) { html.map-neon .dash.is-map::before { animation: map-neon-pulse 6s ease-in-out infinite alternate; } }
-@keyframes map-neon-pulse { from { opacity: 0.75; } to { opacity: 1; } }

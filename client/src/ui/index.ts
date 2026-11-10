@@ -100,7 +100,6 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
   const applyTheme = () => {
     const light = prefs.uiTheme === 'light' || (prefs.uiTheme === 'auto' && !!lightMq?.matches);
     document.documentElement.classList.toggle('theme-light', light);
-    document.documentElement.classList.toggle('map-neon', prefs.mapStyle === 'neon');
     document.querySelector?.('meta[name="theme-color"]')?.setAttribute('content', light ? '#f7f6f3' : '#111110');
   };
   lightMq?.addEventListener?.('change', applyTheme);

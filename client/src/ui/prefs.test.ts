@@ -54,10 +54,8 @@ describe('preferências', () => {
     expect(() => savePrefs(broken, DEFAULT_PREFS)).not.toThrow();
   });
   it('extrai só as opções do mundo', () => {
-    expect(worldOptionsFrom({ ...DEFAULT_PREFS, mapStyle: 'classic', daylight: 'day' })).toEqual({ showNames: true, bubbles: 'important', liveliness: 'normal', dayNight: false, daylight: 'day', theme: 'none' });
-    expect(worldOptionsFrom({ ...DEFAULT_PREFS, mapStyle: 'classic', daylight: 'night' })).toMatchObject({ dayNight: true, daylight: 'night' });
-    // O visual neon é sempre noite, mesmo com "sempre dia" nas configurações.
-    expect(worldOptionsFrom({ ...DEFAULT_PREFS, mapStyle: 'neon', daylight: 'day' })).toMatchObject({ dayNight: true, daylight: 'night' });
+    expect(worldOptionsFrom({ ...DEFAULT_PREFS, daylight: 'day' })).toEqual({ showNames: true, bubbles: 'important', liveliness: 'normal', dayNight: false, daylight: 'day', theme: 'none' });
+    expect(worldOptionsFrom({ ...DEFAULT_PREFS, daylight: 'night' })).toMatchObject({ dayNight: true, daylight: 'night' });
   });
   it('ciclo dia/noite: valida o modo e migra o interruptor antigo', () => {
     expect(DEFAULT_PREFS.daylight).toBe('auto');
