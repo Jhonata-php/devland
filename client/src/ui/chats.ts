@@ -277,10 +277,20 @@ export class ChatsView implements UiComponent {
       if (!e.text.trim()) return null;
       const body = h('div', { class: 'ui-chats__body' });
       if (role === 'agent') body.append(renderMarkdown(e.text));
-      else body.textContent = e.text;
+      else this.fillUser(body, e.text);
       return h('div', { class: `ui-chats__row ui-chats__row--${role}` }, h('div', { class: `ui-chats__bubble ui-chats__bubble--${role}` }, body, h('time', { class: 'ui-chats__time', text: new Date(e.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })));
     }
     return null;
+  }
+
+  /** Mensagem do usuário: a lista "Anexo enviado pelo DevLand… - /caminho" no fim vira chips com o nome do arquivo. */
+  private fillUser(body: HTMLElement, text: string): void {
+    const m = /\n*[^\n]*:\n((?:- \/[^\n]+\n?)+)\s*$/.exec(text);
+    if (!m) { body.textContent = text; return; }
+    const files = m[1].trim().split('\n').map((l) => l.slice(2).trim());
+    body.textContent = text.slice(0, m.index).trim();
+    body.append(h('div', { class: 'ui-chats__files' }, ...files.map((f) => h('span', { class: 'ui-chats__file', attrs: { title: f } },
+      h('i', { text: /\.(png|jpe?g|gif|webp)$/i.test(f) ? '🖼' : '📎' }), h('span', { text: f.split('/').pop()! })))));
   }
 
   /**

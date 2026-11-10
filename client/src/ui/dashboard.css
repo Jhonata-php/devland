@@ -1190,3 +1190,19 @@ html.theme-light ::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.2
 .dash-model.is-rec { border-color: rgba(74, 222, 128, 0.45); }
 @media (max-width: 1100px) { .dash-ai-meters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dash-ai-state { grid-column: 1 / -1; height: 44px; } }
 html.theme-light .dash-model:hover { border-color: rgba(0, 0, 0, 0.22); }
+
+/* Anexos na mensagem: chips em vez do texto cru com o caminho. */
+.ui-chats__files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ui-chats__files:first-child { margin-top: 0; }
+.ui-chats__file { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 5px 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.06); font-size: 12.5px; }
+.ui-chats__file i { font-style: normal; }
+.ui-chats__file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.theme-light .ui-chats__file { border-color: rgba(0, 0, 0, 0.14); background: rgba(0, 0, 0, 0.04); }
+
+/* "Trabalhando…" no estilo do Claude Code: sem selo, só a estrela girando e o texto com brilho. */
+.ui-chats__typing-pill { padding: 2px 0; border: 0; background: none; gap: 0; }
+.ui-chats__typing i:nth-child(n+2) { display: none; }
+.ui-chats__typing i:first-child { width: auto; height: auto; background: none; border-radius: 0; color: #e8845f; font-size: 15px; line-height: 1; animation: ui-chat-spin 2.4s linear infinite; }
+.ui-chats__typing i:first-child::before { content: '✻'; }
+.ui-chats__typing span { margin-left: 8px; font-size: 13.5px; }
+@keyframes ui-chat-spin { to { transform: rotate(360deg); } }

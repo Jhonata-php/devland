@@ -28,6 +28,7 @@ do meio (0.**3**.0).
 
 ### Alterado
 
+- **Conversa: anexos e "Trabalhando…" como no Claude Code.** Imagens e arquivos colados aparecem como chips com o nome do arquivo (antes mostrava o texto "Anexo enviado pelo DevLand… - /caminho"), e o aviso "Trabalhando…" virou uma estrela girando com o texto brilhando, sem o selo.
 - **IA local mais bonita.** Medidores com barras em degradê, cartão "Agentes com IA local" destacado e cartões de modelos maiores, com o modelo usado pelos agentes em destaque e botões que não quebram de linha.
 
 ### Corrigido
