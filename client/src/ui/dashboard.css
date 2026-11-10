@@ -581,6 +581,8 @@ html .ui-root .ui-room__head { font-family: var(--font-ui); }
 .dash-find kbd, .dash-search kbd { padding: 1px 6px; border: 1px solid var(--d-line2); border-radius: 5px; color: var(--d-mut); font: 11px var(--d-font); }
 .dash-search { position: fixed; inset: 0; z-index: 70; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px); }
 .dash-search[hidden] { display: none; }
+/* A busca mora dentro do .dash (z 30), abaixo da conversa (z 31/40): enquanto aberta, o painel inteiro sobe acima dela. */
+html.dash-searching .dash { z-index: 80; }
 .dash-search__box { width: min(620px, 100%); max-height: 70vh; display: flex; flex-direction: column; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; background: #1a1a18; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8); overflow: hidden; }
 .dash-search__field { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--d-line); }
 .dash-search__field input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--d-txt); font: 16px var(--d-font); outline: none; }

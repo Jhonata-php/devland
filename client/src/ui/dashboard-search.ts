@@ -42,6 +42,7 @@ export class SearchPalette {
   open(): void {
     this.items = this.source();
     this.el.hidden = false;
+    document.documentElement.classList.add('dash-searching');
     this.input.value = '';
     this.filter();
     requestAnimationFrame(() => this.input.focus());
@@ -49,6 +50,7 @@ export class SearchPalette {
 
   close(): void {
     this.el.hidden = true;
+    document.documentElement.classList.remove('dash-searching');
   }
 
   private pick(item: SearchItem | undefined): void {
