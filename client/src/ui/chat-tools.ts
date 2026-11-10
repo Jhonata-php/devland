@@ -180,7 +180,18 @@ export class ChatTools {
       dirty ? h('ul', { class: 'ui-ctool__files' }, ...[...p.files.slice(0, 6).map((f) => `${f.status} ${f.path}`), ...(p.files.length > 6 ? [tr('e mais {0}…', [p.files.length - 6])] : [])].map((text) => h('li', { text }))) : null,
       dirty ? msg : null,
       h('div', { class: 'ui-ctool__row' }, push, pr),
-      p.prs.length ? h('p', { class: 'ui-ctool__note' }, tr('PRs abertos: {0}', [p.prs.length])) : null,
+      ...p.prs.slice(0, 4).map((x) => {
+        const merge = h('button', { class: 'ui-btn', type: 'button', text: tr('Mesclar'), title: tr('Mescla este PR na branch principal (merge commit)') }) as HTMLButtonElement;
+        merge.addEventListener('click', () => {
+          if (!confirm(tr('Mesclar o PR #{0} ({1}) na branch principal?', [x.number, x.title]))) return;
+          void run(merge, async () => {
+            await call('POST', '/api/dash/merge', { path: this.project, number: x.number });
+            merge.remove();
+            say(tr('PR #{0} mesclado.', [x.number]));
+          });
+        });
+        return h('div', { class: 'ui-ctool__row' }, h('a', { attrs: { href: x.url, target: '_blank', rel: 'noopener noreferrer' }, text: `#${x.number} ${x.title}` }), merge);
+      }),
       out,
     ];
     this.pushBox.replaceChildren(...parts.filter((n): n is Node => !!n));

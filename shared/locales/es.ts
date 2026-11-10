@@ -4040,7 +4040,6 @@ export const ES: Readonly<Record<string, string>> = {
   "sem alterações novas": "sin cambios nuevos",
   "{0} commit(s) para enviar": "{0} commit(s) por enviar",
   "e mais {0}…": "y {0} más…",
-  "PRs abertos: {0}": "PRs abiertos: {0}",
   "O projeto não está em nenhuma branch.": "El proyecto no está en ninguna rama.",
   "Não deu para salvar as alterações (commit).": "No se pudieron guardar los cambios (commit).",
   "Não deu para enviar ao GitHub. Confira se a conta do GitHub está conectada e se você pode escrever neste repositório.": "No se pudo enviar a GitHub. Comprueba que la cuenta de GitHub esté conectada y que puedas escribir en este repositorio.",
@@ -4051,4 +4050,9 @@ export const ES: Readonly<Record<string, string>> = {
   "⚙ {0} ações · {1}": "⚙ {0} acciones · {1}",
   "🌐 A prévia não abriu: {0}": "🌐 La vista previa no se abrió: {0}",
   "npm install falhou: {0}": "npm install falló: {0}",
+  "Mescla este PR na branch principal (merge commit)": "Fusiona este PR en la rama principal (merge commit)",
+  "Mesclar o PR #{0} ({1}) na branch principal?": "¿Fusionar el PR #{0} ({1}) en la rama principal?",
+  "Mesclar": "Fusionar",
+  "O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.": "GitHub no dejó fusionar el PR (conflicto, comprobaciones en curso o falta de permiso). Abre el PR en GitHub para ver el motivo.",
+  "PR #{0} mesclado.": "PR #{0} fusionado.",
 };

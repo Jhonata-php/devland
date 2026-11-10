@@ -20,7 +20,7 @@ import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
 import type { LocalAi } from '../ai/local';
 import { mcpCatalog, type McpStore } from '../accounts/mcp';
-import { createPr, githubUser, listProjects, projectDetail, projectInfo, pull, pushBranch, ACTIVITY_DAYS } from '../github/projects';
+import { createPr, githubUser, listProjects, mergePr, projectDetail, projectInfo, pull, pushBranch, ACTIVITY_DAYS } from '../github/projects';
 import { addDays } from '../../shared/daystats';
 import type { DevRunner } from '../preview/devrun';
 import { parsePort, type Preview } from './preview';
@@ -664,7 +664,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         .catch((err: Error) => sendJson(res, 500, { error: err.message }));
       return true;
     }
-    if (path === '/api/dash/project' || path === '/api/dash/pr' || path === '/api/dash/push') {
+    if (path === '/api/dash/project' || path === '/api/dash/pr' || path === '/api/dash/push' || path === '/api/dash/merge') {
       // Diff, PRs e abrir PR de um projeto da lista: só quem administra (Cloud) ou o próprio computador.
       const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
       const known = (dir: string) => (deps.projectDirs?.() ?? []).includes(dir);
@@ -684,6 +684,21 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
             } catch (err) {
               const why = (err as Error).message;
               sendJson(res, 409, { error: why === 'detached' ? tr('O projeto não está em nenhuma branch.') : why === 'commit' ? tr('Não deu para salvar as alterações (commit).') : tr('Não deu para enviar ao GitHub. Confira se a conta do GitHub está conectada e se você pode escrever neste repositório.') });
+            }
+          })
+          .catch((err) => fail(res, err));
+      } else if (path === '/api/dash/merge' && method === 'POST') {
+        readJson(req)
+          .then(async (b) => {
+            const x = b as { path?: unknown; number?: unknown };
+            const dir = String(x.path ?? '');
+            if (!known(dir)) return sendJson(res, 400, { error: tr('projeto desconhecido') });
+            try {
+              await mergePr(dir, deps.ghBin, Number(x.number));
+              sendJson(res, 200, { ok: true });
+            } catch (err) {
+              const why = (err as Error).message;
+              sendJson(res, 409, { error: why === 'gh' ? tr('O GitHub CLI (gh) não está instalado neste servidor.') : tr('O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.') });
             }
           })
           .catch((err) => fail(res, err));

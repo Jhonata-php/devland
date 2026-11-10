@@ -4039,7 +4039,6 @@ export const EN: Readonly<Record<string, string>> = {
   "sem alterações novas": "no new changes",
   "{0} commit(s) para enviar": "{0} commit(s) to send",
   "e mais {0}…": "and {0} more…",
-  "PRs abertos: {0}": "Open PRs: {0}",
   "O projeto não está em nenhuma branch.": "The project isn't on any branch.",
   "Não deu para salvar as alterações (commit).": "Couldn't save the changes (commit).",
   "Não deu para enviar ao GitHub. Confira se a conta do GitHub está conectada e se você pode escrever neste repositório.": "Couldn't send to GitHub. Check that the GitHub account is connected and that you can write to this repository.",
@@ -4050,4 +4049,9 @@ export const EN: Readonly<Record<string, string>> = {
   "⚙ {0} ações · {1}": "⚙ {0} actions · {1}",
   "🌐 A prévia não abriu: {0}": "🌐 The preview did not open: {0}",
   "npm install falhou: {0}": "npm install failed: {0}",
+  "Mescla este PR na branch principal (merge commit)": "Merges this PR into the main branch (merge commit)",
+  "Mesclar o PR #{0} ({1}) na branch principal?": "Merge PR #{0} ({1}) into the main branch?",
+  "Mesclar": "Merge",
+  "O GitHub não deixou mesclar o PR (conflito, checagens em andamento ou falta de permissão). Abra o PR no GitHub para ver o motivo.": "GitHub would not merge the PR (conflict, checks still running or missing permission). Open the PR on GitHub to see why.",
+  "PR #{0} mesclado.": "PR #{0} merged.",
 };

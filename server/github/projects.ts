@@ -169,3 +169,10 @@ export async function createPr(dir: string, ghBin: string | undefined, run: Run 
   if (url === null) throw new Error('pr');
   return url.trim().split('\n').pop() ?? '';
 }
+
+/** Mescla um PR aberto (merge commit), a pedido de quem clicou em "Mesclar". Não apaga a branch. */
+export async function mergePr(dir: string, ghBin: string | undefined, number: number, run: Run = slowRun): Promise<void> {
+  if (!ghBin) throw new Error('gh');
+  if (!Number.isInteger(number) || number < 1) throw new Error('number');
+  if ((await run(ghBin, ['pr', 'merge', String(number), '--merge'], dir)) === null) throw new Error('merge');
+}
