@@ -62,3 +62,7 @@ Use o caminho do plugin alterado (`mod/habblaud-permissoes` ou `mod/habblaud-men
 - Não inclua dados pessoais, credenciais ou conteúdo privado de sessões em capturas, exemplos ou logs.
 
 Se algo não estiver claro, pergunte na issue relacionada antes de seguir por uma direção que possa mudar o comportamento do projeto.
+
+## Publicar uma versão do Cloud
+
+O padrão é buildar **localmente**, sem depender do GitHub Actions: com a tag `cloud-vX.Y.Z` criada na `main`, abra uma cópia limpa dela (`git worktree add ../x cloud-vX.Y.Z`), rode `npm ci --include=dev` e `npm run release:local -- X.Y.Z`. O script builda e envia o pacote de atualização nativa (`dist-cloud-vX.Y.Z`) ao GHCR; precisa do `gh` com o escopo `write:packages`. A imagem completa do Velix continua saindo pelo workflow `cloud-image`.
