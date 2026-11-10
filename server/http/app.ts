@@ -87,6 +87,8 @@ export interface ApiDeps {
   ghBin?: string;
   /** Um agente pediu a prévia numa porta (POST /api/preview/open): avisa as páginas. */
   onPreviewOpen?: (port: number) => void;
+  /** O servidor do projeto não subiu (POST /api/preview/open com {folder}): avisa a pessoa. */
+  onPreviewFail?: (reason: string) => void;
   /** Rodar o projeto para a prévia (preview/devrun.ts). */
   devRunner?: DevRunner;
   /** Mensagem para sessão sem o plugin: retoma a sessão num terminal daqui com o texto (PtyManager.sendMessage). */
@@ -571,6 +573,12 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         // O agente pede para mostrar o site (skill do plugin do DevLand): as páginas abertas abrem a prévia na porta.
         readJson(req)
           .then((body) => {
+            // {folder}: o DevLand instala as dependências se faltarem, sobe o servidor do projeto e abre a prévia quando a porta aparecer.
+            const folder = (body as { folder?: unknown } | null)?.folder;
+            if (typeof folder === 'string' && folder && deps.devRunner) {
+              deps.devRunner.start(folder).then((r) => deps.onPreviewOpen?.(r.port), (err) => deps.onPreviewFail?.(err instanceof Error ? err.message : String(err)));
+              return sendJson(res, 202, { ok: true, starting: true });
+            }
             const port = parsePort((body as { port?: unknown } | null)?.port);
             if (port === undefined || !preview.issue(port)) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do DevLand)') });
             deps.onPreviewOpen?.(port);

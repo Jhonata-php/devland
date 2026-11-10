@@ -3628,7 +3628,6 @@ export const FR: Readonly<Record<string, string>> = {
   "{0} removido. As sessões novas já vêm sem ele.": "{0} retiré. Les nouvelles sessions ne l’incluent plus.",
   "🌐 Abrindo a prévia do site na porta {0}.": "🌐 Ouverture de l’aperçu du site sur le port {0}.",
   "Essa pasta não é de um projeto do escritório.": "Ce dossier n’est pas un projet du bureau.",
-  "Instale as dependências primeiro (npm install na pasta do projeto).": "Installez d’abord les dépendances (npm install dans le dossier du projet).",
   "O package.json não tem script dev, start, serve nem preview.": "Le package.json n’a pas de script dev, start, serve ou preview.",
   "O servidor não mostrou a porta em 90 s. Saída: {0}": "Le serveur n’a pas indiqué son port en 90 s. Sortie : {0}",
   "O servidor parou (código {0}). Saída: {1}": "Le serveur s’est arrêté (code {0}). Sortie : {1}",
@@ -4066,4 +4065,6 @@ export const FR: Readonly<Record<string, string>> = {
   "✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.": "✅ {0} : la session de 5 heures a été renouvelée. Vous pouvez retravailler.",
   "✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.": "✅ {0} : la limite hebdomadaire a été renouvelée. Vous pouvez retravailler.",
   "⚙ {0} ações · {1}": "⚙ {0} actions · {1}",
+  "🌐 A prévia não abriu: {0}": "🌐 L'aperçu ne s'est pas ouvert : {0}",
+  "npm install falhou: {0}": "npm install a échoué : {0}",
 };

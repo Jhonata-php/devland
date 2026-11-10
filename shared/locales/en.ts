@@ -3611,7 +3611,6 @@ export const EN: Readonly<Record<string, string>> = {
   "{0} removido. As sessões novas já vêm sem ele.": "{0} removed. New sessions come without it.",
   "🌐 Abrindo a prévia do site na porta {0}.": "🌐 Opening the site preview on port {0}.",
   "Essa pasta não é de um projeto do escritório.": "That folder isn't one of the office's projects.",
-  "Instale as dependências primeiro (npm install na pasta do projeto).": "Install the dependencies first (npm install in the project folder).",
   "O package.json não tem script dev, start, serve nem preview.": "package.json has no dev, start, serve or preview script.",
   "O servidor não mostrou a porta em 90 s. Saída: {0}": "The server didn't show its port within 90 s. Output: {0}",
   "O servidor parou (código {0}). Saída: {1}": "The server stopped (code {0}). Output: {1}",
@@ -4049,4 +4048,6 @@ export const EN: Readonly<Record<string, string>> = {
   "✅ {0}: a sessão de 5 horas renovou. Já dá para trabalhar de novo.": "✅ {0}: the 5-hour session renewed. You can work again.",
   "✅ {0}: o limite da semana renovou. Já dá para trabalhar de novo.": "✅ {0}: the weekly limit renewed. You can work again.",
   "⚙ {0} ações · {1}": "⚙ {0} actions · {1}",
+  "🌐 A prévia não abriu: {0}": "🌐 The preview did not open: {0}",
+  "npm install falhou: {0}": "npm install failed: {0}",
 };

@@ -52,6 +52,22 @@ export class DevRunner {
     return [...this.runs.values()].map((r) => ({ folder: r.folder, script: r.script, port: r.port, running: r.proc.exitCode === null && !r.proc.killed, startedAt: r.startedAt }));
   }
 
+  /** Sem node_modules, instala as dependências antes de subir (como você faria): npm install, até 5 minutos. */
+  private install(npm: string, folder: string): Promise<void> {
+    return new Promise((ok, fail) => {
+      const proc = spawn(npm, ['install', '--no-audit', '--no-fund'], { cwd: folder, stdio: ['ignore', 'ignore', 'pipe'], ...runAsOptions({ ...process.env, FORCE_COLOR: '0' }, agentRunAs()) });
+      let err = '';
+      proc.stderr?.on('data', (d: Buffer) => (err = (err + d.toString()).slice(-400)));
+      const timer = setTimeout(() => proc.kill('SIGKILL'), 5 * 60_000);
+      proc.once('error', (e) => (clearTimeout(timer), fail(e)));
+      proc.once('exit', (code) => {
+        clearTimeout(timer);
+        if (code === 0) ok();
+        else fail(new Error(tr('npm install falhou: {0}', [err.trim() || String(code)])));
+      });
+    });
+  }
+
   /** Sobe (ou reaproveita) o servidor da pasta e espera a porta aparecer na saída. */
   async start(raw: string): Promise<{ port: number; script: string; reused: boolean }> {
     const folder = resolve(raw.trim());
@@ -67,8 +83,8 @@ export class DevRunner {
     }
     const script = pickScript(pkg.scripts);
     if (!script) throw new Error(tr('O package.json não tem script dev, start, serve nem preview.'));
-    if (!existsSync(join(folder, 'node_modules'))) throw new Error(tr('Instale as dependências primeiro (npm install na pasta do projeto).'));
     const npm = this.opts.npm ?? 'npm';
+    if (!existsSync(join(folder, 'node_modules'))) await this.install(npm, folder);
     const proc = spawn(npm, ['run', script], { cwd: folder, detached: true, stdio: ['ignore', 'pipe', 'pipe'], ...runAsOptions({ ...process.env, FORCE_COLOR: '0', BROWSER: 'none' }, agentRunAs()) });
     const run: Run = { folder, script, proc, output: '', startedAt: Date.now() };
     this.runs.set(folder, run);

@@ -11,17 +11,18 @@ para abrir a prévia na porta do servidor de desenvolvimento.
 
 ## Como abrir
 
-1. Garanta que o servidor de desenvolvimento do projeto está rodando (em segundo plano, para não travar a sessão) e
-   descubra a porta (a saída do `npm run dev`, do vite, do next etc. mostra; ex.: 3000, 5173, 3220).
-2. Peça ao DevLand para abrir a prévia nessa porta:
+1. Na pasta do projeto, peça ao DevLand para abrir a prévia. Ele instala as dependências se faltarem (`npm install`),
+   sobe o servidor de desenvolvimento e abre a prévia ao lado da conversa quando a porta aparecer. Pode levar alguns
+   minutos na primeira vez; você não precisa subir o servidor nem usar navegador:
 
 ```bash
 curl -s -X POST "http://127.0.0.1:${HABBLAUD_PORT:-4747}/api/preview/open" \
-  -H 'Content-Type: application/json' -d '{"port": 5173}'
+  -H 'Content-Type: application/json' -d "{\"folder\":\"$PWD\"}"
 ```
 
-Resposta `{"ok":true,...}`: a prévia abriu no DevLand de quem está olhando. Avise a pessoa em uma frase ("abri a prévia
-na porta 5173").
+2. Se o projeto já roda por conta própria (você subiu o servidor), passe a porta: `-d '{"port": 5173}'`.
+
+Resposta `{"ok":true,...}`: o DevLand já está cuidando e a prévia abre sozinha. Avise a pessoa em uma frase.
 
 ## Observações
 
