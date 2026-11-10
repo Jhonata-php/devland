@@ -33,6 +33,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Prévia ao vivo não pede mais para rodar nada na mão.** Se a pasta do projeto já tinha `node_modules` mas sem os programas (erro "tsx: not found", código 127), a Prévia parava com essa mensagem. Agora ela confere a pasta `.bin`, instala as dependências e, se o servidor ainda sair com "comando não encontrado", instala e tenta de novo uma vez.
+
 - **"Trabalhando…" na conversa alinhado e animado.** O aviso de que o agente está trabalhando agora fica alinhado com as mensagens e a caixa de texto, num selo com pontinhos verdes que pulam e um brilho passando pelo texto, em vez de solto no canto.
 - **Novo agente: botões no lugar e o modal fecha.** No último passo, **Voltar** e **Começar** ficam juntos numa barra no rodapé do modal (Voltar à esquerda, Começar à direita), como nos passos anteriores. Quando o agente começa, o modal fecha sozinho e o aviso aparece no canto; se der erro, ele continua aberto com a mensagem.
 - **Barras de rolagem discretas.** As barras de rolagem do app e dos modais ficaram finas e escuras, no tom do Painel (inclusive no Safari e no Firefox).
