@@ -165,10 +165,8 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
       break;
     }
     case 'street': {
-      const n = noise(tx * TILE, ty * TILE, 64, o.seed + 9);
-      const col = mix('#0d1017', '#11151d', n);
-      b.rect(0, 0, TILE, TILE, col);
-      for (let i = 0; i < 14; i++) b.set(Math.floor(r(i) * TILE), Math.floor(r(i + 30) * TILE), r(i + 60) < 0.5 ? '#151a23' : '#0a0d13');
+      // fundo liso, na mesma cor do painel: o andar fica "flutuando" na tela, sem cenário em volta
+      b.rect(0, 0, TILE, TILE, '#111110');
       break;
     }
     default:
