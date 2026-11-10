@@ -326,6 +326,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
     openPreview: () => previewPanel.toggle(),
     ptyOf: (id) => pty.ptyOf(id),
     takeover: (id, model) => pty.takeover(id, model),
+    openIn: (path, text) => pty.newSession(path, undefined, text),
   });
   // Aviso "fulano entregou": tocar abre a conversa com ele.
   // (no modo Painel, na página Conversas dele)

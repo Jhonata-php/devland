@@ -21,6 +21,8 @@ export interface ChatToolsHooks {
   announce(text: string): void;
   /** Manda uma mensagem ao agente desta conversa. */
   sendText(text: string): Promise<void>;
+  /** Abre um agente novo na pasta do projeto, já com o pedido digitado. */
+  openIn(path: string, text: string): Promise<void>;
 }
 
 interface ProjectView {

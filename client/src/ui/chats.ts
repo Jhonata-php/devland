@@ -4,7 +4,7 @@
 // mesma caixa de mensagem (ui/composer.ts), então não precisa abrir gaveta nem terminal.
 import { ROLES } from '../../../shared/roles';
 import { funcChip, roleLabel, roleOf } from './roles';
-import type { AgentInfo, TerminalEntry } from '../../../shared/types';
+import type { AgentInfo, RoomInfo, TerminalEntry } from '../../../shared/types';
 import { tr } from '../../../shared/i18n';
 import type { UiComponent, UiContext } from './context';
 import { PermissionCard } from './permission';
@@ -86,8 +86,12 @@ export class ChatsView implements UiComponent {
   private lastListKey = '';
   private readonly perm: PermissionCard;
   private readonly tools: ChatTools;
+  private readonly hooks: Omit<ChatToolsHooks, 'announce' | 'sendText'>;
+  private readonly handoff: HTMLElement;
+  private lastAgentText = '';
 
   constructor(private ctx: UiContext, hooks: Omit<ChatToolsHooks, 'announce' | 'sendText'>) {
+    this.hooks = hooks;
     this.tools = new ChatTools({ ...hooks, announce: (t) => ctx.announce(t), sendText: (t) => this.composer.sendText(t) });
     this.listBody = h('div', { class: 'ui-chats__list' });
     this.listEl = h(
@@ -103,6 +107,7 @@ export class ChatsView implements UiComponent {
       this.stick = this.msgs.scrollHeight - this.msgs.scrollTop - this.msgs.clientHeight < 80;
     });
     this.note = h('p', { class: 'ui-chats__note', hidden: true });
+    this.handoff = h('div', { class: 'ui-chats__handoff', hidden: true });
     this.typing = h('div', { class: 'ui-chats__typing', hidden: true, attrs: { 'aria-hidden': 'true' } }, h('i'), h('i'), h('i'), h('span', { text: tr('Trabalhando…') }));
     this.composer = new MessageComposer(ctx, 'terminal');
     // Pedido de permissão (ou pergunta) do agente: aprovar ou negar sem sair da conversa.
@@ -120,6 +125,7 @@ export class ChatsView implements UiComponent {
         h('button', { class: 'ui-icon-btn ui-icon-btn--sm', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: () => this.close() } }),
       ),
       this.msgs,
+      this.handoff,
       this.typing,
       this.note,
       this.perm.el,
@@ -197,6 +203,7 @@ export class ChatsView implements UiComponent {
       this.entries = [];
       this.seen.clear();
       this.msgs.replaceChildren();
+      this.lastAgentText = '';
       this.msgs.classList.remove('is-live');
       this.add(init.entries);
       this.msgs.classList.add('is-live'); // só o que chega depois entra animado
@@ -235,6 +242,7 @@ export class ChatsView implements UiComponent {
       if (this.seen.has(e.id)) continue;
       this.seen.add(e.id);
       this.entries.push(e);
+      if (e.kind === 'assistant' && e.text.trim()) this.lastAgentText = e.text;
       if (e.kind === 'tool') {
         this.addTool(frag, e.title);
         continue;
@@ -275,6 +283,25 @@ export class ChatsView implements UiComponent {
     return null;
   }
 
+  /**
+   * O agente disse que o trabalho é em OUTRO projeto (cita a pasta dele, ex.: /workspace/wsat) e a sessão dele só enxerga a
+   * própria pasta: oferece abrir um agente novo lá, com o contexto e a última resposta já digitados.
+   */
+  private renderHandoff(a: AgentInfo | undefined, rooms: readonly RoomInfo[]): void {
+    const own = rooms.find((r) => r.id === a?.roomId);
+    const text = this.lastAgentText;
+    const other = text && own ? rooms.find((r) => r.id !== own.id && r.path && r.path !== '/workspace' && text.includes(r.path)) : undefined;
+    const key = `${a?.id ?? ''}|${other?.id ?? ''}|${this.lastAgentText.length}`;
+    if (this.handoff.dataset.key === key) return;
+    this.handoff.dataset.key = key;
+    setHidden(this.handoff, !other);
+    if (!other || !own || !a) return;
+    const flat = text.replace(/\s+/g, ' ').trim().slice(0, 1500);
+    const prompt = `Contexto: eu estava conversando com ${a.name} no projeto ${own.name} e o trabalho é neste projeto (${other.name}). Última resposta dele: ${flat} — Continue por aqui, no projeto ${other.name}, e comece pelo que ele descreveu.\r`;
+    const btn = h('button', { class: 'ui-btn ui-btn--accent', type: 'button', text: tr('Abrir agente em {0}', [other.name]), on: { click: () => void this.hooks.openIn(other.path, prompt) } });
+    this.handoff.replaceChildren(h('span', { text: tr('Essa conversa é do projeto {0}, mas este agente só enxerga {1}.', [other.name, own.name]) }), btn);
+  }
+
   private scrollEnd(force: boolean): void {
     if (!force && !this.stick) return;
     requestAnimationFrame(() => {
@@ -292,6 +319,7 @@ export class ChatsView implements UiComponent {
       const fr = a && roleOf(a, snap?.rooms);
       setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}${fr ? ` · ${ROLES[fr].icon} ${roleLabel(fr)}` : ''}` : tr('saiu do escritório'));
       setHidden(this.typing, a?.status !== 'working');
+      this.renderHandoff(a, snap?.rooms ?? []);
       this.tools.update(a, a ? snap?.rooms.find((r) => r.id === a.roomId)?.path : undefined);
       this.composer.render(a, a?.id ?? this.current);
       // ctx.agent junta ao agente o pedido de permissão em aberto (o snapshot puro não o traz).

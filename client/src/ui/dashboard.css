@@ -1091,3 +1091,6 @@ html.theme-light .ui-ctool__pr { border-color: rgba(0, 0, 0, 0.1); background: r
 
 .ui-ctool__push .ui-ctool__note { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ui-ctool__push [role='status'] .ui-ctool__row { margin-top: 8px; }
+
+.ui-chats__handoff { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px auto 0; width: min(100% - 32px, 1200px); padding: 8px 12px; border: 1px solid rgba(240, 190, 90, 0.3); border-radius: 12px; background: rgba(240, 190, 90, 0.08); color: #e8d9b5; font-size: 13px; }
+.ui-chats__handoff[hidden] { display: none; }
