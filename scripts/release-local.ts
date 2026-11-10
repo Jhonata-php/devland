@@ -23,7 +23,12 @@ execFileSync('npm', ['run', 'build'], { stdio: 'inherit' });
 const work = mkdtempSync(join(tmpdir(), 'devland-pkg-'));
 try {
   const pkg = join(work, 'pkg');
-  writeFileSync(join(work, 'deps.hash'), `${sha(readFileSync('package-lock.json')).slice(7)}\n`);
+  // A atualização nativa só aceita o pacote se o deps.hash for o da imagem em uso (sha256 do package-lock). Bump só de
+  // devDependencies muda o lock sem mudar o que roda: --deps-from cloud-vX.Y.Z usa o hash do lock dessa tag (confira antes
+  // que os pacotes de produção do lock são os mesmos).
+  const from = process.argv.find((a, i) => process.argv[i - 1] === '--deps-from');
+  const lock = from ? execFileSync('git', ['show', `${from}:package-lock.json`], { maxBuffer: 1 << 26 }) : readFileSync('package-lock.json');
+  writeFileSync(join(work, 'deps.hash'), `${sha(lock).slice(7)}\n`);
   execFileSync('mkdir', [pkg]);
   for (const f of ['dist', 'package.json', 'scripts', '.claude-plugin', 'mod']) cpSync(f, join(pkg, f), { recursive: true });
   cpSync(join(work, 'deps.hash'), join(pkg, 'deps.hash'));
