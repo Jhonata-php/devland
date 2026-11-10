@@ -26,7 +26,14 @@ do meio (0.**3**.0).
 - **Conversa mais ampla e com ferramentas à mão (modo Painel):** a conversa ocupa a largura toda (antes ficava numa coluna estreita no meio), o cabeçalho deixou de ser azulado e a sua mensagem ficou em cinza. No cabeçalho, três botões: **Modelo** (mostra o atual e troca para Fable, Opus, Sonnet ou Haiku; no terminal do DevLand troca na hora com `/model`, e em outro terminal assume a sessão e continua a mesma conversa no modelo novo), **Prévia** (abre o site do projeto ao vivo) e **Enviar** (mostra a branch e as alterações, salva num commit com a sua mensagem e faz o `git push`, ou abre o PR; avisa antes de enviar direto para a `main`).
 - **Cloud: gravar áudio funciona em qualquer navegador.** A imagem do Cloud agora traz o Whisper (whisper.cpp com o modelo multilíngue base) e o ffmpeg: o microfone da caixa de mensagem grava, transcreve no próprio servidor e põe o texto no cursor, sem mandar a voz para nenhum serviço. Antes o microfone só aparecia em navegadores com reconhecimento de voz próprio (Chrome, Safari). A imagem fica cerca de 300 MB maior.
 
+### Alterado
+
+- **Conversa: anexos e "Trabalhando…" como no Claude Code.** Imagens e arquivos colados aparecem como chips com o nome do arquivo (antes mostrava o texto "Anexo enviado pelo DevLand… - /caminho"), e o aviso "Trabalhando…" virou uma estrela girando com o texto brilhando, sem o selo.
+- **IA local mais bonita.** Medidores com barras em degradê, cartão "Agentes com IA local" destacado e cartões de modelos maiores, com o modelo usado pelos agentes em destaque e botões que não quebram de linha.
+
 ### Corrigido
+
+- **Prévia ao vivo não pede mais para rodar nada na mão.** Se a pasta do projeto já tinha `node_modules` mas sem os programas (erro "tsx: not found", código 127), a Prévia parava com essa mensagem. Agora ela confere a pasta `.bin`, instala as dependências e, se o servidor ainda sair com "comando não encontrado", instala e tenta de novo uma vez.
 
 - **"Trabalhando…" na conversa alinhado e animado.** O aviso de que o agente está trabalhando agora fica alinhado com as mensagens e a caixa de texto, num selo com pontinhos verdes que pulam e um brilho passando pelo texto, em vez de solto no canto.
 - **Novo agente: botões no lugar e o modal fecha.** No último passo, **Voltar** e **Começar** ficam juntos numa barra no rodapé do modal (Voltar à esquerda, Começar à direita), como nos passos anteriores. Quando o agente começa, o modal fecha sozinho e o aviso aparece no canto; se der erro, ele continua aberto com a mensagem.
