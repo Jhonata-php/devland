@@ -364,7 +364,7 @@ export function createUI(root: HTMLElement, store: OfficeStore, world: WorldApi,
       return router.interactiveEnabled ? (path: string) => void router.newSession(path) : undefined;
     },
     get loginConnector() {
-      return pty.enabled ? (path: string) => pty.newSession(path, undefined, '/mcp\r') : undefined;
+      return pty.enabled ? (path: string) => pty.newSession(path, undefined, '/mcp\r', false) : undefined;
     },
   });
   // Conectar conta passo a passo (Cloud): substitui a página antiga de Contas em todos os botões.

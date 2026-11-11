@@ -147,10 +147,11 @@ export class PtyPanel implements UiComponent, PtyControl {
   }
 
   /** `firstInput`: texto digitado assim que o Claude Code abre (ex.: "/mcp\r" para cair no menu de conectores). */
-  async newSession(cwd: string, account?: string, firstInput?: string): Promise<string | undefined> {
+  async newSession(cwd: string, account?: string, firstInput?: string, visible = true): Promise<string | undefined> {
     const p = await createPty(cwd, account);
     if (!p) return undefined;
-    this.show(p, true);
+    // visible=false: roda sem abrir a janela (o login de conector é guiado pela página Conectores).
+    if (visible) this.show(p, true);
     // O Claude Code leva um instante para ler o teclado; o que chega antes fica na fila do terminal.
     if (firstInput) setTimeout(() => void sendPtyInput(p.id, firstInput).catch(() => undefined), 3000);
     return p.id;

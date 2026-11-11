@@ -255,6 +255,8 @@ html .ui-toast--warn { --lvl: #f5b84a; }
 /* Janelas que abrem presas a um botão da barra do topo (escondida aqui): no centro da tela. */
 @media (min-width: 901px) {
   html.is-panel .ui-root .ui-popover:popover-open { position: fixed; inset: auto !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; max-height: min(86vh, 860px); margin: 0; }
+  /* Painel: avisos sempre no canto inferior direito da tela (a área livre do mapa não vale aqui e os empurrava para fora). */
+  html.is-panel .ui-root .ui-toasts { left: auto !important; right: 16px !important; bottom: 16px !important; width: min(344px, calc(100vw - 32px)) !important; }
 }
 /* Configurações no visual do painel: sem "$", sem bolinhas de janela, interruptor arredondado. */
 html .ui-root .ui-set__label::before { content: none; }
@@ -357,6 +359,9 @@ html.is-panel.dash-on-chats .ui-chats .ui-chats__head .ui-icon-btn:last-child { 
   .dash-only-sm { display: inline-flex !important; }
   .dash-hide-sm { display: none !important; }
   .dash-top { height: auto; min-height: var(--d-top-h); padding: max(8px, env(safe-area-inset-top)) 12px 8px; gap: 10px; }
+  /* Topo opaco no celular: translúcido com blur, o escritório aparecia borrado por trás e até sob a barra de status. */
+  .dash-top, .dash.is-map .dash-top { background: #111110 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  html.theme-light .dash-top, html.theme-light .dash.is-map .dash-top { background: #f7f6f3 !important; }
   .dash-top__logo { image-rendering: pixelated; }
   .dash-top .dash-btn { width: 40px; padding: 0; }
   .dash-page { padding-top: 18px; }

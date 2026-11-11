@@ -13,3 +13,6 @@ const locale = getLocale();
 const load = LOADERS[locale];
 const dictionary = load ? load().then((d) => registerDictionary(locale, d)).catch(() => undefined) : Promise.resolve();
 void dictionary.then(() => import('./app')).then((app) => app.start());
+
+// O iOS ignora user-scalable=no: a pinça da página só se desfaz bloqueando o gesto. O mapa usa pointer events, não isto.
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());

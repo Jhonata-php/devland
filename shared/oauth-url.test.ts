@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { callbackUrl, extractAuthUrl } from './oauth-url';
+import { callbackUrl, extractAuthUrl, mcpKeys } from './oauth-url';
 
 const SCREEN = [
   'Authenticating with ns1…',
@@ -25,4 +25,11 @@ describe('login de conector', () => {
     expect(callbackUrl('http://localhost:54119/callback')).toBeUndefined();
     expect(callbackUrl('lixo')).toBeUndefined();
   });
+});
+
+describe('mcpKeys', () => {
+  const menu = ['Manage MCP servers', '', '  ❯ alpha · ✔ connected', '    ns1 · △ needs authentication'].join('\n');
+  it('desce até o conector e confirma', () => expect(mcpKeys(menu, 'ns1')).toBe('\x1b[B\r'));
+  it('aperta Enter no Authenticate', () => expect(mcpKeys('ns1 MCP Server\n ❯ 1. Authenticate\n   2. Disable', 'ns1')).toBe('\r'));
+  it('tela vazia: nada', () => expect(mcpKeys('', 'ns1')).toBe(''));
 });

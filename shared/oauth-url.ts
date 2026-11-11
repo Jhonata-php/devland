@@ -32,3 +32,16 @@ export function callbackUrl(text: string): string | undefined {
     return undefined;
   }
 }
+
+/** Teclas que levam o menu /mcp (terminal escondido) ao "Authenticate" do conector; vazio se a tela ainda não é um menu. */
+export function mcpKeys(screen: string, name: string): string {
+  const lines = stripAnsi(screen).split(/\r?\n/);
+  if (/trust (this|the) (folder|files)|Yes, I trust/i.test(screen)) return '\r';
+  if (/authenticate/i.test(screen) && !/Authenticating|authorization url|paste/i.test(screen)) return '\r';
+  const cursor = lines.findIndex((l) => /^\s*[❯›>]\s/.test(l));
+  const word = new RegExp(`(^|[^\\w-])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^\\w-]|$)`, 'i');
+  const target = lines.findIndex((l) => /^\s*(?:[❯›>]\s+)?(?:\d+\.\s*)?\S/.test(l) && word.test(l) && /·|needs|connected|failed|auth/i.test(l));
+  if (!/MCP/i.test(screen) || cursor < 0 || target < 0) return '';
+  const delta = target - cursor;
+  return (delta > 0 ? '\x1b[B'.repeat(delta) : '\x1b[A'.repeat(-delta)) + '\r';
+}

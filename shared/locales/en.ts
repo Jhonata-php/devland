@@ -4108,6 +4108,8 @@ export const EN: Readonly<Record<string, string>> = {
   "os agentes em pixel art": "the agents in pixel art",
   "1. Abra o link e autorize o acesso.": "1. Open the link and authorize access.",
   "2. Ao terminar, o navegador abre uma página com erro (localhost). É esperado: copie o endereço dessa página e cole aqui.": "2. When you finish, the browser opens an error page (localhost). That is expected: copy that page's address and paste it here.",
+  "Preparando o login: o link de autorização abre em instantes.": "Getting the login ready: the authorization link opens in a moment.",
+  "Não consegui pegar o link de autorização. Clique em Entrar de novo.": "Could not get the authorization link. Click Enter again.",
   "Abrir link de autorização": "Open authorization link",
   "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Paste the full address of the page that opened (it starts with http://localhost and has \"code=\").",
   "Endereço da página de retorno": "Return page address",

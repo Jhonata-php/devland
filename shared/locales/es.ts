@@ -4109,6 +4109,8 @@ export const ES: Readonly<Record<string, string>> = {
   "os agentes em pixel art": "los agentes en pixel art",
   "1. Abra o link e autorize o acesso.": "1. Abre el enlace y autoriza el acceso.",
   "2. Ao terminar, o navegador abre uma página com erro (localhost). É esperado: copie o endereço dessa página e cole aqui.": "2. Al terminar, el navegador abre una página con error (localhost). Es lo esperado: copia la dirección de esa página y pégala aquí.",
+  "Preparando o login: o link de autorização abre em instantes.": "Preparando el acceso: el enlace de autorización se abre en un momento.",
+  "Não consegui pegar o link de autorização. Clique em Entrar de novo.": "No pude obtener el enlace de autorización. Haz clic en Entrar de nuevo.",
   "Abrir link de autorização": "Abrir enlace de autorización",
   "Cole o endereço completo da página que abriu (começa com http://localhost e tem \"code=\").": "Pega la dirección completa de la página que se abrió (empieza con http://localhost y tiene \"code=\").",
   "Endereço da página de retorno": "Dirección de la página de retorno",

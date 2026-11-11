@@ -13,6 +13,7 @@ do meio (0.**3**.0).
 ### Adicionado
 
 - **Mensagens na fila aparecem na conversa.** Mandou uma ou mais mensagens enquanto o agente trabalha? Cada uma aparece no fim da conversa como um card tracejado "Na fila (1 de 2) · entra quando o agente terminar", na ordem em que vão entrar, e some quando o agente a lê e ela vira mensagem de verdade.
+- **Conectores: Entrar guiado, sem terminal.** Ao clicar em **Entrar**, o DevLand conduz o menu do Claude Code por trás (sem abrir o terminal), abre o link de autorização numa aba e, ao você voltar para o DevLand com o endereço de retorno copiado, envia-o sozinho. Os avisos no canto da tela do Painel não ficam mais cortados.
 - **Uso das contas no topo.** Ao lado do **Buscar**, cada conta mostra o logo e duas barrinhas com o uso das 5 horas e da semana (verde, amarelo perto do limite, vermelho no fim); passar o mouse mostra os números e clicar abre a página Contas. Some em telas estreitas.
 - **Prévia ao vivo abre sozinha.** Ao abrir a Prévia, o DevLand sobe (ou reaproveita) o servidor do projeto e mostra o site na hora, sem digitar a porta nem clicar em "Rodar o projeto"; trocar o projeto na lista também roda o novo.
 - **Novo agente abre a conversa dele.** Ao começar um agente pelo botão **+ Novo agente**, assim que ele aparece a conversa nova abre sozinha (na página Conversas), em vez de você ter que procurá-lo.
@@ -37,6 +38,7 @@ do meio (0.**3**.0).
 
 - **Prévia ao vivo não pede mais para rodar nada na mão.** Se a pasta do projeto já tinha `node_modules` mas sem os programas (erro "tsx: not found", código 127), a Prévia parava com essa mensagem. Agora ela confere a pasta `.bin`, instala as dependências e, se o servidor ainda sair com "comando não encontrado", instala e tenta de novo uma vez.
 
+- **Celular: sem zoom e topo nítido.** A página não dá mais zoom por pinça nem por toque duplo (fica como um app) e a barra do topo, que deixava o escritório aparecer borrado por trás, agora é opaca.
 - **"Trabalhando…" na conversa alinhado e animado.** O aviso de que o agente está trabalhando agora fica alinhado com as mensagens e a caixa de texto, num selo com pontinhos verdes que pulam e um brilho passando pelo texto, em vez de solto no canto.
 - **Novo agente: botões no lugar e o modal fecha.** No último passo, **Voltar** e **Começar** ficam juntos numa barra no rodapé do modal (Voltar à esquerda, Começar à direita), como nos passos anteriores. Quando o agente começa, o modal fecha sozinho e o aviso aparece no canto; se der erro, ele continua aberto com a mensagem.
 - **Barras de rolagem discretas.** As barras de rolagem do app e dos modais ficaram finas e escuras, no tom do Painel (inclusive no Safari e no Firefox).

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0c0e14" />
     <meta name="description" content="Escritório virtual em pixel art que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo." />
@@ -34,6 +34,8 @@
     <style>
       /* Página do tamanho da tela; as camadas são fixas em inset 0 (como no wsat): o iOS ajusta a altura sozinho. */
       html, body { margin: 0; overscroll-behavior: none; background: #0c0e14; }
+      /* Como app: sem zoom por pinça nem por toque duplo (o mapa tem a própria câmera e não depende disso). */
+      html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
       /* O documento precisa ter altura de tela (como no wsat): com tudo fixo e o corpo vazio, o app da tela de início no iOS
          novo ficava com a área 62 pt mais curta que a tela e uma faixa morta embaixo da barra de baixo. */
       body { min-height: 100vh; }
