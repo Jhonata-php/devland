@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentInfo, TerminalEntry } from '../../../shared/types';
-import { chatAgents, chatRole } from './chats';
+import { chatAgents, chatRole, dropArrived, QUEUE_MAX_MS } from './chats';
 
 const agent = (id: string, kind: 'main' | 'sub', lastEventAt: number) => ({ id, kind, lastEventAt }) as AgentInfo;
 
@@ -31,5 +31,13 @@ describe('Conversas', () => {
     expect(chatRole(e({ kind: 'tool', tool: 'Bash', title: 'Bash(ls)' }))).toBe('tool');
     expect(chatRole(e({ kind: 'result', toolUseId: 't', text: 'x' }))).toBeNull();
     expect(chatRole(e({ kind: 'thinking' }))).toBeNull();
+  });
+});
+
+describe('Fila de mensagens', () => {
+  it('tira da fila o que a conversa já mostrou, uma vez por mensagem, e o que passou do prazo', () => {
+    const q = [{ text: 'faz o deploy', at: 0 }, { text: 'faz o deploy', at: 1 }, { text: 'e o  teste', at: 2 }, { text: 'velha', at: -QUEUE_MAX_MS }];
+    const left = dropArrived(q, ['faz o deploy', 'e o teste\n\nAnexo enviado pelo DevLand'], 10);
+    expect(left).toEqual([{ text: 'faz o deploy', at: 1 }]);
   });
 });

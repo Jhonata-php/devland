@@ -57,6 +57,8 @@ export interface ComposerOptions {
 
 export class MessageComposer {
   readonly el: HTMLElement;
+  /** Mensagem aceita (na fila da sessão ou entregue): a conversa mostra o card "Na fila" até ela aparecer. */
+  onSent?: (agentId: string, text: string) => void;
   /** Agente da caixa (ou a chave da conversa, no terminal do histórico). */
   private agentId = '';
   private mode: ComposerMode = { kind: 'off', text: '' };
@@ -412,6 +414,7 @@ export class MessageComposer {
         this.resize();
       }
       this.setState(agentId, { phase: 'delivered', at: Date.now() });
+      this.onSent?.(agentId, messageText(raw));
       return;
     }
     let r: { message: OutboxMessage } | { error: string };
@@ -443,6 +446,7 @@ export class MessageComposer {
     }
     const m = r.message;
     this.setState(agentId, { phase: m.status, id: m.id, error: m.error, at: Date.now() });
+    if (m.status !== 'failed') this.onSent?.(agentId, messageText(raw));
     if (!isSettled(m.status)) this.poll(agentId, m.id, Date.now());
   }
 

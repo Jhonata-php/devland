@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Mensagens na fila aparecem na conversa.** Mandou uma ou mais mensagens enquanto o agente trabalha? Cada uma aparece no fim da conversa como um card tracejado "Na fila (1 de 2) · entra quando o agente terminar", na ordem em que vão entrar, e some quando o agente a lê e ela vira mensagem de verdade.
 - **Uso das contas no topo.** Ao lado do **Buscar**, cada conta mostra o logo e duas barrinhas com o uso das 5 horas e da semana (verde, amarelo perto do limite, vermelho no fim); passar o mouse mostra os números e clicar abre a página Contas. Some em telas estreitas.
 - **Prévia ao vivo abre sozinha.** Ao abrir a Prévia, o DevLand sobe (ou reaproveita) o servidor do projeto e mostra o site na hora, sem digitar a porta nem clicar em "Rodar o projeto"; trocar o projeto na lista também roda o novo.
 - **Novo agente abre a conversa dele.** Ao começar um agente pelo botão **+ Novo agente**, assim que ele aparece a conversa nova abre sozinha (na página Conversas), em vez de você ter que procurá-lo.

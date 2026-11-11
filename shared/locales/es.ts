@@ -4119,4 +4119,9 @@ export const ES: Readonly<Record<string, string>> = {
   "{0}: {1}% das 5 horas · {2}% da semana": "{0}: {1}% de las 5 horas · {2}% de la semana",
   "5h": "5h",
   "sem.": "sem.",
+
+  // client/src/ui/chats.ts (mensagens na fila)
+  "Na fila ({0} de {1}) · entra quando o agente terminar": "En la cola ({0} de {1}) · entra cuando el agente termine",
+  "Na fila · entra quando o agente terminar": "En la cola · entra cuando el agente termine",
+  "Enviada · esperando a sessão ler": "Enviado · esperando que la sesión lo lea",
 };

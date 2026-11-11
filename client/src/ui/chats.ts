@@ -64,6 +64,27 @@ export function chatRole(e: TerminalEntry): 'me' | 'agent' | 'note' | 'tool' | n
   }
 }
 
+/** Mensagem mandada que ainda não apareceu na conversa (o agente ocupado só a lê quando termina o turno). */
+export interface Queued {
+  text: string;
+  at: number;
+}
+
+/** O card some quando a conversa mostra a mensagem, ou depois de 15 min sem aparecer. */
+export const QUEUE_MAX_MS = 15 * 60_000;
+const flat = (t: string) => t.replace(/\s+/g, ' ').trim();
+
+/** Tira da fila o que já chegou à conversa (a mensagem gravada pode vir com o aviso dos anexos colado no fim). */
+export function dropArrived(queue: readonly Queued[], userTexts: readonly string[], now: number): Queued[] {
+  const seen = userTexts.map(flat);
+  const left = [...queue];
+  for (const t of seen) {
+    const i = left.findIndex((q) => t.startsWith(flat(q.text)));
+    if (i >= 0) left.splice(i, 1);
+  }
+  return left.filter((q) => now - q.at < QUEUE_MAX_MS);
+}
+
 export class ChatsView implements UiComponent {
   readonly el: HTMLElement;
   private readonly listEl: HTMLElement;
@@ -89,6 +110,11 @@ export class ChatsView implements UiComponent {
   private readonly hooks: Omit<ChatToolsHooks, 'announce' | 'sendText'>;
   private readonly handoff: HTMLElement;
   private lastAgentText = '';
+  private readonly queueEl: HTMLElement;
+  /** Por agente: mensagens mandadas que a conversa ainda não mostra. */
+  private readonly queues = new Map<string, Queued[]>();
+  /** Mensagens do usuário que a conversa aberta já mostrou (desde o mandar). */
+  private userTexts: string[] = [];
 
   constructor(private ctx: UiContext, hooks: Omit<ChatToolsHooks, 'announce' | 'sendText'>) {
     this.hooks = hooks;
@@ -110,6 +136,14 @@ export class ChatsView implements UiComponent {
     this.handoff = h('div', { class: 'ui-chats__handoff', hidden: true });
     this.typing = h('div', { class: 'ui-chats__typing', hidden: true, attrs: { 'aria-hidden': 'true' } }, h('div', { class: 'ui-chats__typing-pill' }, h('i'), h('i'), h('i'), h('span', { text: tr('Trabalhando…') })));
     this.composer = new MessageComposer(ctx, 'terminal');
+    this.queueEl = h('div', { class: 'ui-chats__queue', hidden: true, attrs: { 'aria-live': 'polite' } });
+    this.composer.onSent = (id, text) => {
+      this.queues.set(id, [...(this.queues.get(id) ?? []), { text, at: Date.now() }]);
+      if (id === this.current) {
+        this.renderQueue();
+        this.scrollEnd(true);
+      }
+    };
     // Pedido de permissão (ou pergunta) do agente: aprovar ou negar sem sair da conversa.
     this.perm = new PermissionCard(ctx);
     this.perm.el.classList.add('ui-chats__perm');
@@ -126,6 +160,7 @@ export class ChatsView implements UiComponent {
       ),
       this.msgs,
       this.handoff,
+      this.queueEl,
       this.typing,
       this.note,
       this.perm.el,
@@ -175,6 +210,7 @@ export class ChatsView implements UiComponent {
     this.current = agentId;
     this.entries = [];
     this.seen.clear();
+    this.userTexts = [];
     this.msgs.replaceChildren();
     this.stick = true;
     this.connect(false);
@@ -202,6 +238,7 @@ export class ChatsView implements UiComponent {
       if (!init) return;
       this.entries = [];
       this.seen.clear();
+      this.userTexts = [];
       this.msgs.replaceChildren();
       this.lastAgentText = '';
       this.msgs.classList.remove('is-live');
@@ -243,6 +280,7 @@ export class ChatsView implements UiComponent {
       this.seen.add(e.id);
       this.entries.push(e);
       if (e.kind === 'assistant' && e.text.trim()) this.lastAgentText = e.text;
+      if (e.kind === 'user') this.userTexts.push(e.text);
       if (e.kind === 'tool') {
         this.addTool(frag, e.title);
         continue;
@@ -251,6 +289,7 @@ export class ChatsView implements UiComponent {
       if (node) frag.append(node);
     }
     this.msgs.append(frag);
+    this.renderQueue();
     while (this.msgs.childElementCount > MAX_ENTRIES) this.msgs.firstElementChild?.remove();
   }
 
@@ -312,6 +351,29 @@ export class ChatsView implements UiComponent {
     this.handoff.replaceChildren(h('span', { text: tr('Essa conversa é do projeto {0}, mas este agente só enxerga {1}.', [other.name, own.name]) }), btn);
   }
 
+  /** Cards "Na fila" das mensagens mandadas que a conversa ainda não mostra. */
+  private renderQueue(): void {
+    const id = this.current;
+    if (!id) return;
+    // ponytail: compara com as mensagens só da conversa aberta; a fila de outro agente se ajusta quando ela abrir.
+    const q = dropArrived(this.queues.get(id) ?? [], this.userTexts.slice(-50), Date.now());
+    if (q.length) this.queues.set(id, q);
+    else this.queues.delete(id);
+    const busy = this.ctx.store.liveSnapshot?.agents.find((a) => a.id === id)?.status === 'working';
+    const key = `${q.map((m) => m.at).join(',')}|${busy}`;
+    if (this.queueEl.dataset.key === key) return;
+    this.queueEl.dataset.key = key;
+    setHidden(this.queueEl, !q.length);
+    this.queueEl.replaceChildren(
+      ...q.map((m, i) => h('div', { class: 'ui-chats__row ui-chats__row--me' },
+        h('div', { class: 'ui-chats__queued' },
+          h('small', {}, h('i', { attrs: { 'aria-hidden': 'true' } }), busy
+            ? (q.length > 1 ? tr('Na fila ({0} de {1}) · entra quando o agente terminar', [i + 1, q.length]) : tr('Na fila · entra quando o agente terminar'))
+            : tr('Enviada · esperando a sessão ler')),
+          h('div', { class: 'ui-chats__body', text: m.text })))),
+    );
+  }
+
   private scrollEnd(force: boolean): void {
     if (!force && !this.stick) return;
     requestAnimationFrame(() => {
@@ -329,6 +391,7 @@ export class ChatsView implements UiComponent {
       const fr = a && roleOf(a, snap?.rooms);
       setText(this.sub, a ? `${statusLabel(a.status)} · ${snap?.rooms.find((r) => r.id === a.roomId)?.name ?? ''}${fr ? ` · ${ROLES[fr].icon} ${roleLabel(fr)}` : ''}` : tr('saiu do escritório'));
       setHidden(this.typing, a?.status !== 'working');
+      this.renderQueue();
       this.renderHandoff(a, snap?.rooms ?? []);
       this.tools.update(a, a ? snap?.rooms.find((r) => r.id === a.roomId)?.path : undefined);
       this.composer.render(a, a?.id ?? this.current);
