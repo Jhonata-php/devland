@@ -370,7 +370,7 @@ export class SpawnPanel {
         return b;
       }),
     );
-    const local = this.account === 'ollama';
+    const local = this.account === 'ollama' || this.account === 'codex';
     setHidden(this.modelLabel, local);
     setHidden(this.modelRow, local);
   }
@@ -401,14 +401,21 @@ export class SpawnPanel {
   /** Passo 1: conta do Claude ou IA local, em dois cartões. */
   private renderEngines(): void {
     const local = this.account === 'ollama';
+    const codex = this.account === 'codex';
     const card = (on: boolean, title: string, sub: string, pick: () => void, disabled = false) => {
       const b = h('button', { class: `ui-spawn__engine${on ? ' is-on' : ''}`, type: 'button', role: 'radio', attrs: { 'aria-checked': String(on), disabled }, on: { click: pick } }, h('b', { text: title }), h('small', { text: sub }));
       return b;
     };
     this.engineRow.replaceChildren(
-      card(!local, tr('Conta do Claude'), tr('Claude Code com a sua assinatura: o mais capaz para qualquer tarefa.'), () => { this.account = ''; this.renderAccounts(); }),
+      card(!local && !codex, tr('Conta do Claude'), tr('Claude Code com a sua assinatura: o mais capaz para qualquer tarefa.'), () => { this.account = ''; this.renderAccounts(); }),
+      ...(this.codexReady() ? [card(codex, tr('Codex'), tr('Codex com a sua conta do ChatGPT, aberto num terminal aqui no DevLand.'), () => { this.account = 'codex'; this.renderAccounts(); })] : []),
       card(local, tr('IA local'), this.localModel ? tr('Roda no seu servidor com {0}: sem gastar o plano, mais lento.', [this.localModel]) : tr('Ative a IA local e baixe um modelo na página IA local.'), () => { this.account = 'ollama'; this.renderAccounts(); }, !this.localModel),
     );
+  }
+
+  /** Dá para abrir o Codex: terminal interativo ligado e uma conta do Codex conectada. */
+  private codexReady(): boolean {
+    return !!this.ctx.terminals?.interactiveEnabled && (this.ctx.store.snapshot?.accounts ?? []).some((a) => a.provider === 'codex');
   }
 
   /** Modelo da conta "IA local" (do /api/ai, só admin); null = sem Ollama ou sem modelo baixado. */
@@ -427,14 +434,15 @@ export class SpawnPanel {
   private renderAccounts(): void {
     const list = (this.ctx.store.snapshot?.accounts ?? []).filter((a) => a.provider !== 'codex' && !a.configDir.endsWith('.claude-ollama'));
     if (this.account === 'ollama' && !this.localModel) this.account = '';
+    if (this.account === 'codex' && !this.codexReady()) this.account = '';
     this.renderEngines();
     this.renderModels();
     // Contas do Claude: só com mais de uma e com "Conta do Claude" escolhida.
-    const many = list.length > 1 && this.account !== 'ollama';
+    const many = list.length > 1 && this.account !== 'ollama' && this.account !== 'codex';
     setHidden(this.accountLabel, !many);
     setHidden(this.accountRow, !many);
     if (!many) {
-      if (this.account !== 'ollama') this.account = '';
+      if (this.account !== 'ollama' && this.account !== 'codex') this.account = '';
       return;
     }
     if (this.account && !list.some((a) => a.id === this.account)) this.account = '';
@@ -655,6 +663,26 @@ export class SpawnPanel {
     if (this.dictate.busy) return this.say(tr('Espere o ditado terminar.'), true);
     const folder = (this.typing ? this.folder.value : this.selected).trim();
     if (!folder) return this.say(tr('Escolha o projeto.'), true);
+    if (this.account === 'codex') {
+      if (this.repeat.checked) return this.say(tr('Agendar ainda não funciona com o Codex: use a conta do Claude.'), true);
+      if (this.files.length) return this.say(tr('Anexos ainda não vão para o Codex: tire-os ou use a conta do Claude.'), true);
+      this.busy = true;
+      this.submitBtn.disabled = true;
+      try {
+        this.say(tr('Abrindo o Codex…'));
+        await this.ctx.terminals!.newCodex(folder, this.prompt.value.trim() || undefined);
+        this.say('');
+        this.prompt.value = '';
+        writePref(folder);
+        this.hide();
+      } catch (err) {
+        this.say(tr('Não abriu: {0}', [(err as Error).message]), true);
+      } finally {
+        this.busy = false;
+        this.submitBtn.disabled = false;
+      }
+      return;
+    }
     if (this.repeat.checked) return this.schedule(folder);
     this.busy = true;
     this.submitBtn.disabled = true;

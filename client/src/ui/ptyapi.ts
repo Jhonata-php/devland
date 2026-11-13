@@ -32,6 +32,11 @@ export function createPty(cwd: string, account?: string): Promise<PtyInfo | unde
   return postPty<PtyInfo>('/api/pty', { cwd, account, ...SIZE });
 }
 
+/** Sessão nova do Codex na pasta (conta = a pasta do Codex; sem conta, a primeira), já com o primeiro pedido. */
+export function createCodexPty(cwd: string, prompt?: string, account?: string): Promise<PtyInfo | undefined> {
+  return postPty<PtyInfo>('/api/pty/codex', { cwd, ...(prompt ? { prompt } : {}), ...(account ? { account } : {}), ...SIZE });
+}
+
 /** Digita no terminal interativo (como se a pessoa teclasse). */
 export function sendPtyInput(id: string, data: string): Promise<unknown> {
   return postPty(`/api/pty/${encodeURIComponent(id)}/input`, { data });

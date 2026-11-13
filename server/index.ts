@@ -530,6 +530,8 @@ const ptys = spawnPty
   ? new PtyManager({
       spawn: spawnPty,
       claudeBin: claudeBin ?? 'claude',
+      codexBin: config.codex ? findExecutable('codex', process.env) : undefined,
+      codexAccounts: () => accounts.entriesOf('codex').map((a) => ({ id: a.id, dir: a.dir, isDefault: false })),
       accounts: () => accounts.entries().map((a) => ({ id: a.id, dir: a.dir, isDefault: isDefaultDir(a.dir, config.home) })),
       // Sessão nova sem conta pedida (Novo, Nova sessão, primeiro agente): a conta conectada com mais folga (o maior uso entre 5 h e
       // semana, o menor vence); sem números, a padrão. Uma conversa em andamento fica na conta dela.

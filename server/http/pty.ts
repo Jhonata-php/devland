@@ -93,6 +93,11 @@ export function createPtyRoutes(
       const body = (await readJson(req)) as Record<string, unknown>;
       return sendJson(res, 201, ptys.create({ cwd: body?.cwd, account: body?.account, cols: body?.cols, rows: body?.rows, model: body?.model }));
     }
+    if (rawId === 'codex') {
+      if (method !== 'POST') return notAllowed(res, 'POST');
+      const body = (await readJson(req)) as Record<string, unknown>;
+      return sendJson(res, 201, ptys.createCodex({ cwd: body?.cwd, account: body?.account, prompt: body?.prompt, cols: body?.cols, rows: body?.rows }));
+    }
     const id = decode(rawId);
     if (act === 'stream') {
       if (method !== 'GET') return notAllowed(res, 'GET');

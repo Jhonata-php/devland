@@ -28,6 +28,8 @@ export interface TerminalRouter {
   readonly interactiveEnabled: boolean;
   /** Sessão nova do Claude Code na pasta, aberta no terminal interativo. */
   newSession(cwd: string, account?: string): Promise<void>;
+  /** Sessão nova do Codex na pasta, aberta no terminal interativo, com o primeiro pedido já passado ao `codex`. */
+  newCodex(cwd: string, prompt?: string, account?: string): Promise<void>;
 }
 
 export type HelpSection = 'usage' | 'codex';

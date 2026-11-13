@@ -74,6 +74,10 @@ export interface PtyManagerOptions {
   /** Por que o recurso está desligado (quando `spawn` é null). */
   disabledReason?: string;
   claudeBin: string;
+  /** Executável do Codex (`codex`); ausente = sem o botão de abrir o Codex. */
+  codexBin?: string;
+  /** Contas do Codex (pasta = CODEX_HOME). */
+  codexAccounts?: () => PtyAccount[];
   accounts: () => PtyAccount[];
   /** Sessão nova sem conta pedida: id da conta com mais folga de uso (padrão: a conta padrão). */
   pickAccount?: (accounts: PtyAccount[]) => string | undefined;
@@ -231,6 +235,31 @@ export class PtyManager {
   /** Abre uma sessão nova do Claude Code na pasta (`cwd` absoluto), na conta pedida (ou na padrão). */
   create(p: { cwd: unknown; account?: unknown; cols?: unknown; rows?: unknown; model?: unknown }): PtyInfo {
     return this.spawn(this.plan(p, this.takeovers.size));
+  }
+
+  /**
+   * Abre o Codex (terminal interativo) na pasta, com o primeiro pedido já passado ao `codex`. Conta = pasta do Codex
+   * (CODEX_HOME); sem conta pedida, a primeira. O agente aparece no escritório pelos arquivos de sessão do Codex.
+   */
+  createCodex(p: { cwd: unknown; account?: unknown; prompt?: unknown; cols?: unknown; rows?: unknown }): PtyInfo {
+    if (!this.opts.spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
+    if (!this.opts.codexBin) throw new PtyError(503, tr('o Codex não está instalado neste servidor'));
+    if (typeof p.cwd !== 'string' || !isAbsolute(p.cwd)) throw new PtyError(400, tr('informe a pasta do projeto (caminho absoluto)'));
+    const cwd = resolve(p.cwd);
+    let isDir = false;
+    try {
+      isDir = statSync(cwd).isDirectory();
+    } catch {
+      // tratado abaixo
+    }
+    if (!isDir) throw new PtyError(400, tr('pasta não encontrada: {0}', [cwd]));
+    const list = this.opts.codexAccounts?.() ?? [];
+    const account = typeof p.account === 'string' && p.account ? list.find((a) => a.id === p.account) : list[0];
+    if (!account) throw new PtyError(400, tr('Conecte uma conta do Codex antes (Contas › Conectar conta).'));
+    const running = [...this.ptys.values()].filter((t) => t.info.exitedAt === undefined).length;
+    if (running + this.takeovers.size >= MAX_PTYS) throw new PtyError(429, tr('limite de {0} terminais abertos', [MAX_PTYS]));
+    const prompt = typeof p.prompt === 'string' && p.prompt.trim() && p.prompt.length <= 20_000 ? p.prompt : undefined;
+    return this.spawn({ cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30) }, { codex: true, ...(prompt ? { prompt } : {}) });
   }
 
   /** Retoma a conversa de uma sessão (`claude --resume`) na pasta e conta dela: o escritório volta a ver o agente. */
@@ -432,23 +461,24 @@ export class PtyManager {
     return { cwd, account, cols: clampInt(p.cols, 20, 400, 100), rows: clampInt(p.rows, 5, 200, 30), ...(isModelId(p.model) ? { model: p.model } : {}) };
   }
 
-  private spawn(plan: SpawnPlan, p: { resume?: string; from?: string; prompt?: string } = {}): PtyInfo {
+  private spawn(plan: SpawnPlan, p: { resume?: string; from?: string; prompt?: string; codex?: boolean } = {}): PtyInfo {
     const spawn = this.opts.spawn;
     if (!spawn) throw new PtyError(503, tr('terminal desligado: {0}', [this.opts.disabledReason ?? tr('indisponível')]));
     const { cwd, account, cols, rows, model } = plan;
     const env: NodeJS.ProcessEnv = { ...(this.opts.env ?? process.env), TERM: 'xterm-256color', COLORTERM: 'truecolor' };
     for (const k of INHERITED_SESSION_VARS) delete env[k];
-    if (account.isDefault) delete env.CLAUDE_CONFIG_DIR;
+    if (p.codex) env.CODEX_HOME = account.dir;
+    else if (account.isDefault) delete env.CLAUDE_CONFIG_DIR;
     else env.CLAUDE_CONFIG_DIR = account.dir;
 
     let proc: PtyProcess;
     try {
-      const args = [...(p.resume ? ['--resume', p.resume] : []), ...(model ? ['--model', model] : [])];
+      const args = p.codex ? [] : [...(p.resume ? ['--resume', p.resume] : []), ...(model ? ['--model', model] : [])];
       // Primeiro pedido já na abertura (mensagem para sessão sem o plugin); `--` para um texto que comece com "-".
       if (p.prompt) args.push('--', p.prompt);
-      proc = spawn(this.opts.claudeBin, args, { cwd, cols, rows, env });
+      proc = spawn(p.codex ? this.opts.codexBin! : this.opts.claudeBin, args, { cwd, cols, rows, env });
     } catch (err) {
-      throw new PtyError(500, tr('não consegui abrir o Claude Code: {0}', [errMsg(err)]));
+      throw new PtyError(500, tr('não consegui abrir o {0}: {1}', [p.codex ? 'Codex' : 'Claude Code', errMsg(err)]));
     }
     const id = `p${++this.seq}-${proc.pid}`;
     const info: PtyInfo = { id, pid: proc.pid, cwd, account: account.id, agentId: `${account.id}:${proc.pid}`, startedAt: this.now() };

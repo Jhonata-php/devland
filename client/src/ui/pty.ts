@@ -11,7 +11,7 @@ import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setHidden, setText } from './dom';
 import { ICONS } from './icons';
 import { maximizeButton, Movable } from './movable';
-import { closePty, createPty, sendPtyInput, stopAgent, takeoverAgent } from './ptyapi';
+import { closePty, createCodexPty, createPty, sendPtyInput, stopAgent, takeoverAgent } from './ptyapi';
 import type { PtyPane } from './ptypane';
 import { TermActions } from './termactions';
 import { TermTabs } from './termtabs';
@@ -34,6 +34,7 @@ export interface PtyControl {
   close(): void;
   takeover(agentId: string): Promise<void>;
   newSession(cwd: string, account?: string): Promise<string | undefined>;
+  newCodex(cwd: string, prompt?: string, account?: string): Promise<void>;
   stop(agentId: string): Promise<void>;
 }
 
@@ -155,6 +156,11 @@ export class PtyPanel implements UiComponent, PtyControl {
     // O Claude Code leva um instante para ler o teclado; o que chega antes fica na fila do terminal.
     if (firstInput) setTimeout(() => void sendPtyInput(p.id, firstInput).catch(() => undefined), 3000);
     return p.id;
+  }
+
+  async newCodex(cwd: string, prompt?: string, account?: string): Promise<void> {
+    const p = await createCodexPty(cwd, prompt, account);
+    if (p) this.show(p, true);
   }
 
   async stop(agentId: string): Promise<void> {
