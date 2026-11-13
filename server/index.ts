@@ -6,7 +6,7 @@ import { startPreviewHost } from './http/preview-host';
 import './env-compat';
 import { McpStore } from './accounts/mcp';
 import { LocalAi, LOCAL_ACCOUNT_DIR } from './ai/local';
-import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
+import { chownSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
 import { dirname, join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
@@ -210,6 +210,22 @@ const office = new Office({
 // ela mesma (accounts.setProviderAccounts). `codex` também recebe os eventos dos hooks do Codex (CodexLive).
 const claude = new ClaudeWatcher({ accounts, office, inDocker: config.inDocker });
 const agents = new SourceSet([claude]);
+// Cloud: a pasta do Codex (DEVLAND_CODEX_DIRS) só nasce quando alguém entra no Codex pela web, depois de o servidor já
+// ter iniciado; sem ela aqui, a fonte do Codex não existia e a conta conectada nunca aparecia em Contas. Cria a pasta
+// (do usuário dos agentes, que é quem roda o `codex login`) para a fonte já começar olhando para ela.
+if (config.remote?.cloud && config.codex) {
+  const who = agentRunAs();
+  for (const raw of (process.env.DEVLAND_CODEX_DIRS ?? '').split(',').map((d) => d.trim()).filter(Boolean)) {
+    try {
+      if (!existsSync(raw)) {
+        mkdirSync(raw, { recursive: true, mode: 0o700 });
+        if (who) chownSync(raw, who.uid, who.gid);
+      }
+    } catch {
+      // sem permissão: segue como antes (a conta aparece depois de reiniciar)
+    }
+  }
+}
 const codexDirs = config.codex ? discoverCodexDirs(process.env, config.home) : [];
 const codex = codexDirs.length ? new CodexSource({ accounts, office, dirs: codexDirs, env: process.env, home: config.home }) : undefined;
 if (codex) agents.add(codex);
