@@ -75,9 +75,16 @@ export class ConnectWizard {
     const run = ++this.polling;
     try {
       let job = await call<Job>('POST', '/api/cloud/connect', { provider: p });
+      // Redesenha só quando algo muda no pedido: redesenhar a cada consulta (1,5 s) recriava o campo do código e apagava o
+      // que a pessoa estava digitando ou colando.
+      const keyOf = (j: Job) => `${j.state}|${j.url ?? ''}|${j.code ?? ''}|${j.needsPaste}|${j.error ?? ''}`;
+      let shown = '';
       while (run === this.polling && (job.state === 'starting' || job.state === 'waiting')) {
         this.job = job;
-        this.draw();
+        if (keyOf(job) !== shown) {
+          shown = keyOf(job);
+          this.draw();
+        }
         await new Promise((r) => setTimeout(r, 1500));
         job = await call<Job>('GET', `/api/cloud/connect/${job.id}`);
       }
@@ -144,6 +151,9 @@ export class ConnectWizard {
           this.draw();
         }
       } } });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) send.click();
+      });
       return h('div', { class: 'cw-body' }, intro,
         h('ol', { class: 'cw-todo' },
           h('li', {}, h('b', { text: tr('Abra a página e entre na sua conta.') }), open),

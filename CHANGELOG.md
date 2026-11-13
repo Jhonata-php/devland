@@ -41,6 +41,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Conectar conta: o campo do código aceita digitar e colar.** A janela de conexão se redesenhava a cada consulta (1,5 s) enquanto esperava o login, o que recriava o campo e apagava o que se digitava ou colava, no celular e no computador. Agora ela só redesenha quando algo muda, e Enter confirma o código.
 - **Prévia ao vivo não pede mais para rodar nada na mão.** Se a pasta do projeto já tinha `node_modules` mas sem os programas (erro "tsx: not found", código 127), a Prévia parava com essa mensagem. Agora ela confere a pasta `.bin`, instala as dependências e, se o servidor ainda sair com "comando não encontrado", instala e tenta de novo uma vez.
 
 - **Celular: sem zoom e topo nítido.** A página não dá mais zoom por pinça nem por toque duplo (fica como um app) e a barra do topo, que deixava o escritório aparecer borrado por trás, agora é opaca.
