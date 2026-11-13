@@ -95,7 +95,7 @@ ENV NODE_ENV=production \
     DEVLAND_WHISPER_MODEL=/usr/local/share/whisper/ggml-base.bin \
     DISABLE_AUTOUPDATER=1
 
-EXPOSE 4748
+EXPOSE 4748 4749
 VOLUME ["/data", "/workspace", "/home/dev"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

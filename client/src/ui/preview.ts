@@ -236,7 +236,9 @@ export class PreviewPanel implements UiComponent {
       return;
     }
     try {
-      const { url } = await post<{ url: string }>('/api/preview', { port });
+      const { url, external } = await post<{ url: string; external?: boolean }>('/api/preview', { port });
+      // Domínio próprio da prévia (outra origem): o site pode usar cookie e localStorage, que apps de verdade precisam.
+      this.frame.setAttribute('sandbox', `allow-scripts allow-forms allow-popups allow-modals${external ? ' allow-same-origin' : ''}`);
       this.port = port;
       this.src = url;
       this.frame.src = url;

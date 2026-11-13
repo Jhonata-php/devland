@@ -27,6 +27,8 @@ export interface Preview {
   issue(port: number): string | undefined;
   /** O caminho é uma prévia com token válido? (o portão remoto deixa passar sem cookie.) */
   verify(pathname: string): boolean;
+  /** Porta de um token "porta/exp.mac" válido (domínio próprio da prévia, preview-host.ts); undefined se não vale. */
+  portOfToken(token: string): number | undefined;
   handle(req: IncomingMessage, res: ServerResponse, url: URL): boolean;
   /** Portas comuns com algo escutando agora. */
   detect(): Promise<number[]>;
@@ -102,6 +104,7 @@ export function createPreview(opts: { blockedPorts: () => number[]; now?: () => 
       return `${PREVIEW_PREFIX}${port}/${exp}.${mac(port, exp)}/`;
     },
     verify: (pathname) => !!parse(pathname),
+    portOfToken: (token) => (/^\d{1,5}\/\d{1,15}\.[0-9a-f]{32}$/.test(token) ? parse(`${PREVIEW_PREFIX}${token}/`)?.port : undefined),
     async detect() {
       const open = await Promise.all(
         COMMON_PORTS.filter((p) => allowed(p)).map(

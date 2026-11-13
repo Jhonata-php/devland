@@ -95,6 +95,8 @@ export interface ApiDeps {
   resumeWithMessage?: (agentId: string, text: string) => Promise<unknown>;
   /** Prévia ao vivo do site do projeto (POST /api/preview, GET /api/preview/ports; http/preview.ts). */
   preview?: Preview;
+  /** Endereço público do domínio próprio da prévia (DEVLAND_PREVIEW_URL, ex.: https://preview.devland.x.com); ausente = prévia pelo caminho /preview/ do DevLand. */
+  previewOrigin?: string;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
   spawnFolders?: () => Promise<SpawnFolder[]>;
   /** Anexos do "Novo agente" (POST /api/spawn/attachments; spawn/attachments.ts). */
@@ -589,9 +591,12 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         readJson(req)
           .then((body) => {
             const port = parsePort((body as { port?: unknown } | null)?.port);
-            const url = port === undefined ? undefined : preview.issue(port);
-            if (!url) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do DevLand)') });
-            sendJson(res, 200, { url });
+            const path = port === undefined ? undefined : preview.issue(port);
+            if (!path) return sendJson(res, 400, { error: tr('porta inválida (use de 1024 a 65535, que não seja a do DevLand)') });
+            // Com domínio próprio, o site abre na raiz dele (preview-host.ts); o token vai na URL só para gravar o cookie de lá.
+            const token = path.slice('/preview/'.length, -1);
+            const url = deps.previewOrigin ? `${deps.previewOrigin}/__devland/open?t=${encodeURIComponent(token)}` : path;
+            sendJson(res, 200, { url, external: !!deps.previewOrigin });
           })
           .catch((err) => fail(res, err));
       return true;

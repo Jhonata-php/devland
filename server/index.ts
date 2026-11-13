@@ -2,6 +2,7 @@
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
+import { startPreviewHost } from './http/preview-host';
 import './env-compat';
 import { McpStore } from './accounts/mcp';
 import { LocalAi, LOCAL_ACCOUNT_DIR } from './ai/local';
@@ -582,7 +583,20 @@ const ticker = setInterval(() => {
   }
 }, 250);
 
-const preview = createPreview({ blockedPorts: () => [config.port, config.remote?.port ?? 0] });
+// Prévia num domínio próprio (Cloud): DEVLAND_PREVIEW_URL = endereço público (https://preview.seu-dominio), servido pela
+// porta DEVLAND_PREVIEW_PORT (4749). Sem ela, a prévia segue pelo caminho /preview/ do próprio DevLand.
+const previewOrigin = (() => {
+  const raw = (process.env.DEVLAND_PREVIEW_URL ?? process.env.HABBLAUD_PREVIEW_URL ?? '').trim().replace(/\/+$/, '');
+  try {
+    const u = new URL(raw);
+    return /^https?:$/.test(u.protocol) && u.hostname ? u.origin : undefined;
+  } catch {
+    return undefined;
+  }
+})();
+const previewHostPort = Number(process.env.DEVLAND_PREVIEW_PORT ?? 4749);
+const preview = createPreview({ blockedPorts: () => [config.port, config.remote?.port ?? 0, previewHostPort] });
+if (previewOrigin) startPreviewHost({ port: previewHostPort, host: config.remote?.host ?? '0.0.0.0', preview, log: (m) => log.info(m) });
 // Rodar o projeto para a prévia: só pastas das salas do escritório (ou dentro de /workspace no Cloud).
 const devRunner = new DevRunner({
   allowed: (folder) => (cloud && (folder === WORKSPACE || folder.startsWith(`${WORKSPACE}/`)) && folder !== WORKSPACE) || hub.current().rooms.some((r) => r.path === folder),
@@ -591,6 +605,7 @@ process.once('exit', () => devRunner.stopAll());
 
 const api = createApiHandler({
   preview,
+  previewOrigin,
   renameRoom: (id, name) => {
     const path = office.roomPath(id);
     if (!path) return undefined;
