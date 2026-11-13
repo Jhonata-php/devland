@@ -224,6 +224,17 @@ async function postJson($: EngineInterface, port: number, path: string, body: st
 /** Uma mensagem para a sessão, como se você a tivesse digitado. Nunca lança. */
 async function submitOne($: EngineInterface, text: string): Promise<Submitted> {
   try {
+    // Claude Code 2.1.322+ recusa em prompt.submit um texto que começa com "/" (rodaria um comando como você):
+    // comandos ("/model x", "/clear") vão por $.command.run, primeiro sem a barra e, se não for aceito, com ela.
+    if (text.trimStart().startsWith('/')) {
+      const command = text.trimStart()
+      try {
+        await $.command.run({ command: command.slice(1) })
+      } catch {
+        await $.command.run({ command })
+      }
+      return { ok: true }
+    }
     const r = await $.prompt.submit({ text, asUser: true })
     if (typeof r?.drop === 'string') return { ok: false, error: reasonText(r.drop, 'um hook da sessão recusou a mensagem') }
     return { ok: true }
