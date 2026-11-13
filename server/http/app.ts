@@ -1081,7 +1081,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
         else
           deps.updates!
             .apply!()
-            .then((r) => sendJson(res, r.ok ? 200 : 502, r.ok ? { ok: true } : { error: r.error }))
+            .then((r) => sendJson(res, r.ok ? 200 : 422, r.ok ? { ok: true } : { error: r.error }))
             .catch((err) => fail(res, err));
       }
       return true;

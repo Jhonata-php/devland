@@ -190,7 +190,7 @@ export class AboutGroup {
     const field = (label: string, input: HTMLInputElement) => h('label', { class: 'ui-about__field' }, h('span', { class: 'ui-set__hint', text: label }), input);
     this.cfgUrl = h('input', { class: 'ui-rename__input', type: 'url', attrs: { placeholder: 'https://velix.suaempresa.com', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
     this.cfgToken = h('input', { class: 'ui-rename__input', type: 'password', attrs: { placeholder: 'vlx_…', autocomplete: 'off', spellcheck: 'false' } }) as HTMLInputElement;
-    this.cfgProject = h('input', { class: 'ui-rename__input', type: 'text', attrs: { value: 'habblaud', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
+    this.cfgProject = h('input', { class: 'ui-rename__input', type: 'text', attrs: { value: 'devland', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none' } }) as HTMLInputElement;
     this.cfgMsg = h('p', { class: 'ui-set__hint', role: 'status', hidden: true });
     this.cfg = h(
       'details',
