@@ -255,8 +255,6 @@ html .ui-toast--warn { --lvl: #f5b84a; }
 /* Janelas que abrem presas a um botão da barra do topo (escondida aqui): no centro da tela. */
 @media (min-width: 901px) {
   html.is-panel .ui-root .ui-popover:popover-open { position: fixed; inset: auto !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; max-height: min(86vh, 860px); margin: 0; }
-  /* Painel: avisos sempre no canto inferior direito da tela (a área livre do mapa não vale aqui e os empurrava para fora). */
-  html.is-panel .ui-root .ui-toasts { left: auto !important; right: 16px !important; bottom: 16px !important; width: min(344px, calc(100vw - 32px)) !important; }
 }
 /* Configurações no visual do painel: sem "$", sem bolinhas de janela, interruptor arredondado. */
 html .ui-root .ui-set__label::before { content: none; }
@@ -1222,3 +1220,7 @@ html.theme-light .ui-chats__file { border-color: rgba(0, 0, 0, 0.14); background
 .ui-chats__typing i:first-child::before { content: '✻'; }
 .ui-chats__typing span { margin-left: 8px; font-size: 13.5px; }
 @keyframes ui-chat-spin { to { transform: rotate(360deg); } }
+
+/* Painel (qualquer largura): avisos e pedidos de permissão sempre inteiros no canto inferior direito; a área livre do mapa não vale aqui e os empurrava para fora. */
+html.is-panel .ui-root .ui-toasts { left: auto !important; right: 12px !important; bottom: calc(12px + env(safe-area-inset-bottom)) !important; width: min(344px, calc(100vw - 24px)) !important; max-width: calc(100vw - 24px); box-sizing: border-box; }
+html.is-panel .ui-root .ui-toast { max-width: 100%; box-sizing: border-box; }
