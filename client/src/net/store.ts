@@ -202,7 +202,8 @@ export class OfficeStore {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       return { ok: false, error: body.error ?? '' };
     } catch {
-      return { ok: false, error: '' };
+      // Sem resposta: o Velix derrubou o app para reimplantar com a imagem nova, no meio do pedido. É o esperado.
+      return { ok: true };
     }
   }
 

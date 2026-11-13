@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **"Atualizar agora" sem falso erro.** No Cloud, o Velix reinicia o app no meio do pedido e a página mostrava "Não deu para atualizar: sem resposta do servidor". Agora a queda da conexão conta como reinício em andamento (o botão volta sozinho se nada mudar em 3 minutos).
 - **Painel: avisos e pedidos de permissão no canto, inteiros.** O canto dos avisos ("Responder", pedidos de permissão) fica sempre preso à direita e embaixo, em qualquer largura de tela (a regra anterior só valia acima de 900 px e, abaixo disso, o aviso saía cortado pela esquerda).
 - **Mensagens que começam com "/" voltam a ser entregues.** O Claude Code 2.1.322 passou a recusar `/comando` digitado como texto ("Não foi entregue: prompt.submit…"); o plugin `habblaud-mensagens` agora manda esses comandos (`/model …`, `/clear`) por `$.command.run`.
 - **Mensagens na fila aparecem na conversa.** Mandou uma ou mais mensagens enquanto o agente trabalha? Cada uma aparece no fim da conversa como um card tracejado "Na fila (1 de 2) · entra quando o agente terminar", na ordem em que vão entrar, e some quando o agente a lê e ela vira mensagem de verdade.

@@ -300,6 +300,12 @@ export class AboutGroup {
     if (!r.ok) {
       this.applying = false;
       this.applyError = tr('Não deu para atualizar: {0}', [r.error || tr('sem resposta do servidor')]);
+    } else {
+      // O DevLand reinicia e a página recarrega sozinha; se nada mudar em 3 min, volta o botão.
+      setTimeout(() => {
+        this.applying = false;
+        this.render();
+      }, 180_000);
     }
     this.render();
     this.ctx.invalidate();
