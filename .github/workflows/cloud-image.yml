@@ -28,7 +28,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       # Pacote só com o código novo (uma camada, sem manifesto de atestado): a atualização nativa do DevLand o baixa
       # anonimamente (a imagem é pública) em vez de depender do Velix. Mesma tag com o prefixo dist-.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.cloud
@@ -41,7 +41,7 @@ jobs:
           cache-from: type=gha
       # A imagem principal vai por ÚLTIMO: a tag da versão só aparece depois de o pacote dist- existir (senão a atualização
       # nativa encontrava a versão nova e levava 404 no pacote, ainda sendo publicado).
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.cloud
