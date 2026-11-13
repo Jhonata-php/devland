@@ -262,7 +262,7 @@ export class TimelapsePlayer implements UiComponent {
         this.status = 'empty';
         this.message = r.recording
           ? tr('Nada gravado ainda: o DevLand grava o escritório enquanto está ligado. Volte daqui a pouco.')
-          : tr('A gravação está desligada neste servidor (HABBLAUD_TIMELINE=0) e não há dias gravados.');
+          : tr('A gravação está desligada neste servidor (DEVLAND_TIMELINE=0) e não há dias gravados.');
         this.ctx.invalidate();
         return;
       }

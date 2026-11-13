@@ -177,12 +177,12 @@ export interface AgentInfo {
   /** Subagente rodando em segundo plano. */
   background?: boolean;
   /**
-   * Pedido de permissão que dá para responder pelo Habblaud (hook PermissionRequest; o mais antigo, se
+   * Pedido de permissão que dá para responder pelo DevLand (hook PermissionRequest; o mais antigo, se
    * houver vários). Enquanto existe, o agente aparece como 'waiting'. Ver PermissionRequestInfo.
    */
   permission?: PermissionRequestInfo;
   /**
-   * Dá para mandar mensagem a este agente pelo Habblaud (só principais): a sessão tem o plugin habblaud-mensagens
+   * Dá para mandar mensagem a este agente pelo DevLand (só principais): a sessão tem o plugin devland-mensagens
    * e perguntou pela caixa de entrada há pouco. Ver POST /api/messages.
    */
   canMessage?: boolean;
@@ -232,7 +232,7 @@ export interface RoomEffect {
  */
 export interface UpdateStatus {
   /**
-   * - off: verificação desligada (HABBLAUD_UPDATE_CHECK=0 ou package.json sem repositório no GitHub);
+   * - off: verificação desligada (DEVLAND_UPDATE_CHECK=0 ou package.json sem repositório no GitHub);
    * - pending: ainda não verificou;
    * - ok: verificou (com ou sem release publicada);
    * - error: a última tentativa falhou (sem internet, limite de consultas do GitHub...).
@@ -293,14 +293,14 @@ export interface AccountUsage {
   sevenDaySonnet?: UsageWindow;
   /**
    * Origem dos números (todas são arquivos locais gravados pela própria ferramenta):
-   * - 'statusline': capturado ao vivo e gravado em ~/.habblaud/usage/<conta>.json pelo mod do Habblaud
-   *   (mod/habblaud, recomendado) ou pelo scripts/statusline-tap.mjs (campo rate_limits do statusline);
+   * - 'statusline': capturado ao vivo e gravado em ~/.devland/usage/<conta>.json pelo mod do DevLand
+   *   (mod/devland, recomendado) ou pelo scripts/statusline-tap.mjs (campo rate_limits do statusline);
    * - 'cache': `cachedUsageUtilization` gravado pelo próprio Claude Code (atualiza quando alguém roda /usage);
    * - 'oauth': consulta ao serviço da Anthropic com o login da conta (Cloud; vale para conta sem sessão aberta);
    * - 'codex': `rate_limits` dos arquivos de sessão do Codex (só se renovam enquanto alguma sessão roda).
    */
   source: 'cache' | 'statusline' | 'codex' | 'oauth';
-  /** Quem gravou o arquivo ao vivo ('statusline'): o mod do Habblaud no Claude Code ou o tap de statusline. */
+  /** Quem gravou o arquivo ao vivo ('statusline'): o mod do DevLand no Claude Code ou o tap de statusline. */
   via?: 'mod' | 'tap';
   /**
    * Conta sem cota nem créditos para usar agora (Codex: `rate_limits.primary` nulo, ex.: créditos do workspace
@@ -345,7 +345,7 @@ export interface OfficeSnapshot {
   serverTime: number;
   rooms: RoomInfo[];
   agents: AgentInfo[];
-  /** Terminais interativos abertos pelo Habblaud (Claude Code rodando dentro do navegador). */
+  /** Terminais interativos abertos pelo DevLand (Claude Code rodando dentro do navegador). */
   ptys?: PtyInfo[];
   /** Contas do Claude detectadas (com uso de 5h/semanal quando disponível). */
   accounts: AccountInfo[];
@@ -360,12 +360,12 @@ export interface OfficeSnapshot {
      */
     build?: string;
     /**
-     * Terminal (GET /api/agents/:id/terminal) disponível: só quando o Habblaud não fica
+     * Terminal (GET /api/agents/:id/terminal) disponível: só quando o DevLand não fica
      * exposto além do próprio computador (bind local). Ausente/false = recurso desligado.
      */
     terminal?: boolean;
     /**
-     * Mensagens pelo escritório ligadas (POST /api/messages): a mesma trava do terminal e HABBLAUD_MENSAGENS sem
+     * Mensagens pelo escritório ligadas (POST /api/messages): a mesma trava do terminal e DEVLAND_MENSAGENS sem
      * desligar. Quem recebe agora diz AgentInfo.canMessage. Ausente/false = recurso desligado.
      */
     messages?: boolean;
@@ -391,7 +391,7 @@ export interface OfficeSnapshot {
 
 /**
  * O que ESTA página pode fazer (GET /api/access): a porta local libera tudo pelo Host local; a porta remota com login
- * (server/http/remote.ts) só o que HABBLAUD_REMOTE_ALLOW liberar. `local` = aberta pelo próprio computador (editar
+ * (server/http/remote.ts) só o que DEVLAND_REMOTE_ALLOW liberar. `local` = aberta pelo próprio computador (editar
  * personagem e renomear salas, que nunca valem pela porta remota).
  */
 export interface AccessInfo {
@@ -409,9 +409,9 @@ export interface AccessInfo {
    * com Host local. Ausente em servidores antigos.
    */
   world?: boolean;
-  /** Habblaud Cloud: quem está logado é admin (vê o link "Usuários"). Ausente fora do Cloud. */
+  /** DevLand Cloud: quem está logado é admin (vê o link "Usuários"). Ausente fora do Cloud. */
   admin?: boolean;
-  /** Habblaud Cloud: a página está na porta com login de uma instalação na nuvem. */
+  /** DevLand Cloud: a página está na porta com login de uma instalação na nuvem. */
   cloud?: boolean;
 }
 
@@ -459,13 +459,13 @@ export interface AgentDetail {
 // ------------------------------------------------------------------ mod do Claude Code
 
 /**
- * Resposta de GET /api/mod/summary: o mínimo que o mod do Claude Code (mod/habblaud) precisa para a linha
- * "precisa de você" embaixo do prompt e para o comando /habblaud. Só agentes reais (o demo fica de fora)
+ * Resposta de GET /api/mod/summary: o mínimo que o mod do Claude Code (mod/devland) precisa para a linha
+ * "precisa de você" embaixo do prompt e para o comando /devland. Só agentes reais (o demo fica de fora)
  * e presentes (sem quem já encerrou ou entregou); com `?session=` (e `?account=`), sem a própria sessão
  * de quem pergunta: o agente principal dela e os subagentes.
  */
 export interface ModSummary {
-  /** Versão do Habblaud em uso. */
+  /** Versão do DevLand em uso. */
   version: string;
   /** Agentes presentes e quantos estão trabalhando. */
   agents: number;
@@ -639,9 +639,9 @@ export interface PermissionSuggestionInfo {
 }
 
 /**
- * Pedido de permissão pendente que dá para responder pelo Habblaud: o hook PermissionRequest do Claude Code
- * (mod/habblaud-permissoes/hooks/permission-hook.mjs) o registra e fica esperando a decisão. Só existe com bind local (a mesma
- * trava do terminal) e com alguma página do Habblaud aberta.
+ * Pedido de permissão pendente que dá para responder pelo DevLand: o hook PermissionRequest do Claude Code
+ * (mod/devland-permissoes/hooks/permission-hook.mjs) o registra e fica esperando a decisão. Só existe com bind local (a mesma
+ * trava do terminal) e com alguma página do DevLand aberta.
  * No snapshot vai sem `input` (os argumentos completos só saem por GET /api/permissions/:id, com acesso
  * local); os pedidos fictícios do demo já vêm com ele.
  */
@@ -659,7 +659,7 @@ export interface PermissionRequestInfo {
   /** Argumentos (comando, diff, JSON...), mascarados e truncados. */
   input?: string;
   inputKind?: TerminalInputKind;
-  /** Pedido de um subagente que o Habblaud ainda não mostra: o tipo dele (ex.: "Explore"). */
+  /** Pedido de um subagente que o DevLand ainda não mostra: o tipo dele (ex.: "Explore"). */
   subagent?: string;
   /** Regras "sempre permitir" que podem ser aplicadas junto com a aprovação. */
   suggestions?: PermissionSuggestionInfo[];
@@ -732,7 +732,7 @@ export interface PtyStatus {
   reason?: string;
 }
 
-/** Terminal interativo aberto pelo Habblaud (node-pty no servidor, xterm.js no navegador). */
+/** Terminal interativo aberto pelo DevLand (node-pty no servidor, xterm.js no navegador). */
 export interface PtyInfo {
   id: string;
   /** PID do Claude Code: o agente correspondente é `${account}:${pid}` (= agentId). */
@@ -749,7 +749,7 @@ export interface PtyInfo {
   exitCode?: number;
 }
 
-/** Mensagem entregue ao plugin habblaud-mensagens (POST /api/mod/inbox). */
+/** Mensagem entregue ao plugin devland-mensagens (POST /api/mod/inbox). */
 export interface InboxMessage {
   id: string;
   /** O texto como foi digitado: o plugin o manda à sessão como se você o tivesse digitado. */

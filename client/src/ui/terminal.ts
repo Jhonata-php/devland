@@ -1,7 +1,7 @@
 // Terminal: janela flutuante sobre o escritório com a conversa de uma sessão (prompts, respostas, ferramentas e
 // resultados) no formato em que o Claude Code a mostra, ao vivo pelo stream SSE GET /api/agents/:id/terminal (`init`
 // substitui tudo; `append` acrescenta). O rodapé tem a caixa de mensagem (ui/composer.ts): com o plugin
-// habblaud-mensagens, o que você digita ali entra na sessão do agente principal como se fosse digitado no terminal.
+// devland-mensagens, o que você digita ali entra na sessão do agente principal como se fosse digitado no terminal.
 // Também mostra as sessões do histórico (ui/history.ts), pelo mesmo protocolo em
 // GET /api/sessions/:conta/:sessionId/terminal: o cabeçalho traz projeto, título e data, e o rodapé, "Sessão encerrada às …".
 // Busca (Ctrl/⌘+F ou a lupa), filtro e o botão de copiar de cada entrada vêm de ui/termtools.ts.
@@ -376,7 +376,7 @@ export function terminalFooter(agent: AgentInfo | undefined, agents: readonly Ag
     case 'waiting': {
       const text = agent.waitingFor ? tr('Esperando você: {0}', [agent.waitingFor]) : tr('Esperando você');
       if (agent.permission) return { kind: 'waiting', text, since: agent.statusSince };
-      // Sem o pedido no Habblaud (o hook já devolveu à sessão, a sessão abriu sem o plugin ou não havia página aberta
+      // Sem o pedido no DevLand (o hook já devolveu à sessão, a sessão abriu sem o plugin ou não havia página aberta
       // quando ele chegou): os botões não vêm, então diz onde responder.
       const hint =
         agent.provider === 'codex'
@@ -765,7 +765,7 @@ export class TerminalPanel implements UiComponent, TerminalControl {
     );
     this.el.addEventListener('keydown', (e) => this.onKey(e));
     // Arrastar pela barra solta a janela (ui/movable.ts).
-    this.movable = new Movable(this.el, bar, { key: 'habblaud.move.term', enabled: () => !ctx.isNarrow() });
+    this.movable = new Movable(this.el, bar, { key: 'devland.move.term', enabled: () => !ctx.isNarrow() });
     this.renderFilter();
     // Janela redimensionada: quem está no fim continua vendo o fim.
     if (typeof ResizeObserver === 'function') new ResizeObserver(() => this.follow && this.scrollToEnd()).observe(this.scroll);

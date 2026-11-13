@@ -65,7 +65,7 @@ async function serve(opts: { terminal?: boolean; extra?: (root: string) => Histo
   const history = new HistorySet([new SessionHistory({ accounts: () => accounts.entries(), openAgentOf: (acc, sid) => openMainAgent(office.list(), acc, sid) })]);
   if (opts.extra) history.add(opts.extra(tmp.dir));
   const api = createApiHandler({ office, hub, accounts, sources: () => [], version: 't', inDocker: false, terminal, terminals, sessions: history });
-  const guard = createRequestGuard({ allowedHosts: new Set(['habblaud.lan']) });
+  const guard = createRequestGuard({ allowedHosts: new Set(['devland.lan']) });
   const server = http.createServer((req, res) => {
     if (guard(req, res)) return;
     if (!api(req, res, new URL(req.url ?? '/', 'http://x'))) res.writeHead(404).end();
@@ -149,10 +149,10 @@ describe('histórico de sessões: trava', () => {
     }
   });
 
-  it('Host que não é local (IP da rede ou nome de HABBLAUD_ALLOWED_HOSTS): 403; localhost abre', async () => {
+  it('Host que não é local (IP da rede ou nome de DEVLAND_ALLOWED_HOSTS): 403; localhost abre', async () => {
     const env = await serve();
     try {
-      for (const host of [`192.168.0.10:${env.port}`, `habblaud.lan:${env.port}`]) {
+      for (const host of [`192.168.0.10:${env.port}`, `devland.lan:${env.port}`]) {
         for (const path of ['/api/sessions/recent', terminalRoute('.claude', SID)]) {
           const r = await request(env.base, path, { headers: { Host: host } });
           expect(r.status).toBe(403);

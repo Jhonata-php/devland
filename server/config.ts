@@ -23,37 +23,37 @@ export interface ServerConfig {
   home: string;
   /** Config dirs do Claude Code observados (um por conta). */
   claudeDirs: string[];
-  /** Onde o Habblaud guarda o próprio estado (nomes persistidos). */
+  /** Onde o DevLand guarda o próprio estado (nomes persistidos). */
   dataDir: string;
   /**
    * Pasta com o uso capturado pelo statusline do Claude Code (scripts/statusline-tap.mjs):
-   * HABBLAUD_USAGE_DIR ou ~/.habblaud/usage. No Docker, o docker-up monta essa pasta em /usage.
+   * DEVLAND_USAGE_DIR ou ~/.devland/usage. No Docker, o docker-up monta essa pasta em /usage.
    */
   usageDir: string;
-  /** Nomes extras aceitos no cabeçalho Host/Origin (HABBLAUD_ALLOWED_HOSTS); localhost e IPs sempre valem. */
+  /** Nomes extras aceitos no cabeçalho Host/Origin (DEVLAND_ALLOWED_HOSTS); localhost e IPs sempre valem. */
   allowedHosts: Set<string>;
   /**
-   * Terminal (GET /api/agents/:id/terminal) ligado: só com bind local, isto é, com o Habblaud acessível apenas
+   * Terminal (GET /api/agents/:id/terminal) ligado: só com bind local, isto é, com o DevLand acessível apenas
    * pelo próprio computador (ver terminalOffReason). É a trava de tudo o que mostra ou age sobre as sessões.
    */
   terminal: boolean;
   /**
-   * Mensagens pelo escritório (POST /api/messages e a caixa de entrada do plugin habblaud-mensagens) ligadas: a
-   * trava do terminal e HABBLAUD_MENSAGENS sem desligar (ver messagesOffReason).
+   * Mensagens pelo escritório (POST /api/messages e a caixa de entrada do plugin devland-mensagens) ligadas: a
+   * trava do terminal e DEVLAND_MENSAGENS sem desligar (ver messagesOffReason).
    */
   messages: boolean;
-  /** Grava a linha do tempo do escritório para o timelapse (<dataDir>/timeline); HABBLAUD_TIMELINE=0 desliga. */
+  /** Grava a linha do tempo do escritório para o timelapse (<dataDir>/timeline); DEVLAND_TIMELINE=0 desliga. */
   timeline: boolean;
   /** Raiz do projeto (onde fica o package.json); serve dist/client a partir daqui. */
   rootDir: string;
   version: string;
   /** Repositório no GitHub ("dono/nome", do campo `repository` do package.json) onde saem as versões novas. */
   repo?: string;
-  /** Cloud: tag da imagem em uso (HABBLAUD_CLOUD_VERSION, gravada pelo workflow); vira a versão mostrada e comparada. */
+  /** Cloud: tag da imagem em uso (DEVLAND_CLOUD_VERSION, gravada pelo workflow); vira a versão mostrada e comparada. */
   cloudVersion?: string;
-  /** Consulta o GitHub atrás de versão nova (server/updates/checker.ts); HABBLAUD_UPDATE_CHECK=0 desliga. */
+  /** Consulta o GitHub atrás de versão nova (server/updates/checker.ts); DEVLAND_UPDATE_CHECK=0 desliga. */
   updateCheck: boolean;
-  /** Observa as sessões do Codex (sources/codex/); HABBLAUD_CODEX=0 desliga. */
+  /** Observa as sessões do Codex (sources/codex/); DEVLAND_CODEX=0 desliga. */
   codex: boolean;
   /** Segunda porta, com login, para o celular na rede local (http/remote.ts); ausente = desligada. */
   remote?: RemoteConfig;
@@ -76,7 +76,7 @@ export interface WorldConfig {
   defaultUrl?: true;
   /**
    * `--dev` ou HABBLAUD_WORLD_DEV=1: aceita também `http://` e `ws://` para 127.0.0.1 e host.docker.internal (servidor do
-   * mundo local; do container do Habblaud, o host é host.docker.internal).
+   * mundo local; do container do DevLand, o host é host.docker.internal).
    */
   dev: boolean;
   /** Por que HABBLAUD_WORLD_URL foi recusada (vai para o log ao iniciar). */
@@ -95,7 +95,7 @@ export function findRoot(from: string): string {
     if (existsSync(pkg)) {
       try {
         const name = (JSON.parse(readFileSync(pkg, 'utf8')) as { name?: unknown }).name;
-        if (name === 'devland' || name === 'habblaud') return dir;
+        if (name === 'devland' || name === 'devland') return dir;
       } catch {
         // package.json ilegível: continua subindo
       }
@@ -121,7 +121,7 @@ function readPackage(rootDir: string): { version: string; repo?: string } {
 }
 
 export function detectDocker(env: NodeJS.ProcessEnv = process.env): boolean {
-  if (env.HABBLAUD_IN_DOCKER !== undefined) return isTruthy(env.HABBLAUD_IN_DOCKER);
+  if (env.DEVLAND_IN_DOCKER !== undefined) return isTruthy(env.DEVLAND_IN_DOCKER);
   return existsSync('/.dockerenv');
 }
 
@@ -146,33 +146,33 @@ export function isLoopbackBind(value: string | undefined): boolean {
 
 /**
  * Por que o terminal fica desligado (undefined = ligado). Os transcripts têm a conversa inteira, então ele
- * só liga quando o Habblaud não fica exposto além do próprio computador:
- * - Node: o HABBLAUD_HOST precisa ser loopback;
+ * só liga quando o DevLand não fica exposto além do próprio computador:
+ * - Node: o DEVLAND_HOST precisa ser loopback;
  * - Docker: o processo sempre escuta em 0.0.0.0 dentro do container e quem decide a exposição é a porta
- *   publicada no host, HABBLAUD_BIND (o docker-compose.yml repassa o mesmo valor ao container). Ausente
+ *   publicada no host, DEVLAND_BIND (o docker-compose.yml repassa o mesmo valor ao container). Ausente
  *   ou vazia = desligado: sem ela não dá para saber se a porta está exposta.
- * HABBLAUD_TERMINAL com qualquer valor que não seja "ligado" (0, false, off...) desliga; não existe forma
+ * DEVLAND_TERMINAL com qualquer valor que não seja "ligado" (0, false, off...) desliga; não existe forma
  * de ligar com a porta exposta.
  */
 export function terminalOffReason(env: NodeJS.ProcessEnv, host: string, inDocker: boolean): string | undefined {
-  const flag = env.HABBLAUD_TERMINAL?.trim();
-  if (flag && !isTruthy(flag)) return `HABBLAUD_TERMINAL=${flag}`;
+  const flag = env.DEVLAND_TERMINAL?.trim();
+  if (flag && !isTruthy(flag)) return `DEVLAND_TERMINAL=${flag}`;
   if (inDocker) {
-    const bind = env.HABBLAUD_BIND?.trim();
-    if (!bind) return tr('HABBLAUD_BIND não chegou ao container, então a porta pode estar exposta na rede');
-    return isLoopbackBind(bind) ? undefined : tr('a porta está exposta na rede: HABBLAUD_BIND={0}', [bind]);
+    const bind = env.DEVLAND_BIND?.trim();
+    if (!bind) return tr('DEVLAND_BIND não chegou ao container, então a porta pode estar exposta na rede');
+    return isLoopbackBind(bind) ? undefined : tr('a porta está exposta na rede: DEVLAND_BIND={0}', [bind]);
   }
-  return isLoopbackBind(host) ? undefined : tr('a porta está exposta na rede: HABBLAUD_HOST={0}', [host]);
+  return isLoopbackBind(host) ? undefined : tr('a porta está exposta na rede: DEVLAND_HOST={0}', [host]);
 }
 
 /**
  * Por que as mensagens pelo escritório ficam desligadas (undefined = ligadas). Elas entram na sessão como se você
- * as tivesse digitado, então seguem a trava do terminal; HABBLAUD_MENSAGENS com qualquer valor que não seja
+ * as tivesse digitado, então seguem a trava do terminal; DEVLAND_MENSAGENS com qualquer valor que não seja
  * "ligado" (0, false, off, no...) desliga só elas.
  */
 export function messagesOffReason(env: NodeJS.ProcessEnv, host: string, inDocker: boolean): string | undefined {
-  const flag = env.HABBLAUD_MENSAGENS?.trim();
-  if (flag && !isTruthy(flag)) return `HABBLAUD_MENSAGENS=${flag}`;
+  const flag = env.DEVLAND_MENSAGENS?.trim();
+  if (flag && !isTruthy(flag)) return `DEVLAND_MENSAGENS=${flag}`;
   const terminal = terminalOffReason(env, host, inDocker);
   return terminal ? tr('mesma trava do terminal: {0}', [terminal]) : undefined;
 }
@@ -231,34 +231,34 @@ export function worldSocketUrl(base: string): string {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] = process.argv): ServerConfig {
   const home = env.HOME || homedir();
   const inDocker = detectDocker(env);
-  const port = Number.parseInt(env.HABBLAUD_PORT ?? '', 10);
+  const port = Number.parseInt(env.DEVLAND_PORT ?? '', 10);
   const rootDir = findRoot(dirname(fileURLToPath(import.meta.url)));
-  const host = env.HABBLAUD_HOST?.trim() || '127.0.0.1';
+  const host = env.DEVLAND_HOST?.trim() || '127.0.0.1';
   const pkg = readPackage(rootDir);
   // Cloud: a versão é a da imagem (cloud-v0.3.5 → 0.3.5), que o workflow grava ao construir.
-  const cloudVersion = isTruthy(env.HABBLAUD_CLOUD) ? cloudVersionOf(env.HABBLAUD_CLOUD_VERSION) : undefined;
+  const cloudVersion = isTruthy(env.DEVLAND_CLOUD) ? cloudVersionOf(env.DEVLAND_CLOUD_VERSION) : undefined;
   const remote = parseRemoteConfig(env, inDocker);
   return {
     port: Number.isFinite(port) && port > 0 && port < 65536 ? port : 4747,
     host,
     dev: argv.includes('--dev'),
-    demo: isTruthy(env.HABBLAUD_DEMO),
+    demo: isTruthy(env.DEVLAND_DEMO),
     inDocker,
     home,
     claudeDirs: discoverClaudeDirs(env, home),
-    dataDir: resolve(env.HABBLAUD_DATA_DIR?.trim() || (inDocker ? '/data' : join(home, '.habblaud'))),
-    usageDir: resolve(env.HABBLAUD_USAGE_DIR?.trim() || join(home, '.habblaud', 'usage')),
-    allowedHosts: parseAllowedHosts(env.HABBLAUD_ALLOWED_HOSTS),
+    dataDir: resolve(env.DEVLAND_DATA_DIR?.trim() || (inDocker ? '/data' : join(home, '.devland'))),
+    usageDir: resolve(env.DEVLAND_USAGE_DIR?.trim() || join(home, '.devland', 'usage')),
+    allowedHosts: parseAllowedHosts(env.DEVLAND_ALLOWED_HOSTS),
     terminal: terminalOffReason(env, host, inDocker) === undefined,
     messages: messagesOffReason(env, host, inDocker) === undefined,
-    timeline: !env.HABBLAUD_TIMELINE?.trim() || isTruthy(env.HABBLAUD_TIMELINE),
+    timeline: !env.DEVLAND_TIMELINE?.trim() || isTruthy(env.DEVLAND_TIMELINE),
     rootDir,
     version: cloudVersion ?? pkg.version,
     repo: cloudVersion ? CLOUD_IMAGE : pkg.repo,
     cloudVersion,
     // Cloud sem versão da imagem (build local): não consulta as releases do projeto original.
-    updateCheck: (!env.HABBLAUD_UPDATE_CHECK?.trim() || isTruthy(env.HABBLAUD_UPDATE_CHECK)) && !(isTruthy(env.HABBLAUD_CLOUD) && !cloudVersion),
-    codex: !env.HABBLAUD_CODEX?.trim() || isTruthy(env.HABBLAUD_CODEX),
+    updateCheck: (!env.DEVLAND_UPDATE_CHECK?.trim() || isTruthy(env.DEVLAND_UPDATE_CHECK)) && !(isTruthy(env.DEVLAND_CLOUD) && !cloudVersion),
+    codex: !env.DEVLAND_CODEX?.trim() || isTruthy(env.DEVLAND_CODEX),
     remote: remote.config,
     remoteWarning: remote.warning,
     world: parseWorldConfig(env, argv),

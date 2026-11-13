@@ -8,7 +8,7 @@ import { tr } from '../../../shared/i18n';
 
 /** Dica para quem tem o recurso ligado, mas a sessão do agente não está com o plugin conectado. */
 export const CLOUD_PLUGIN_HINT = tr('Esta conversa começou antes do plugin de mensagens. Abra uma nova (aba Novo) para responder por aqui.');
-export const PLUGIN_HINT = tr('Para mandar mensagens daqui: npm run mod:install (plugin habblaud-mensagens)');
+export const PLUGIN_HINT = tr('Para mandar mensagens daqui: npm run mod:install (plugin devland-mensagens)');
 /** A mesma dica para um agente do Codex sem entregador (no modo Node o próprio servidor entrega). */
 export const CODEX_BRIDGE_HINT = tr('Para mandar mensagens ao Codex: com o DevLand no Docker, deixe npm run codex:bridge rodando; no modo Node funciona sozinho');
 
@@ -27,7 +27,7 @@ export interface ComposerEnv {
   local: boolean;
   /** Timelapse: o escritório mostrado é o do momento reproduzido. */
   replaying: boolean;
-  /** Habblaud Cloud: o plugin é instalado sozinho; só sessões abertas antes dele não o têm. */
+  /** DevLand Cloud: o plugin é instalado sozinho; só sessões abertas antes dele não o têm. */
   cloud?: boolean;
   /** Terminal interativo liberado aqui: sessão do Claude sem o plugin recebe a mensagem retomando a sessão. */
   resume?: boolean;

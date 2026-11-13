@@ -1,6 +1,6 @@
-// Hook PermissionRequest (mod/habblaud-permissoes/hooks/permission-hook.mjs) rodado como processo de verdade contra o servidor
+// Hook PermissionRequest (mod/devland-permissoes/hooks/permission-hook.mjs) rodado como processo de verdade contra o servidor
 // de teste: stdin JSON → saída esperada (aprovar, recusar, "sempre permitir", terminal, responder as perguntas
-// do AskUserQuestion), saída rápida e sem decisão quando o Habblaud está fora do ar, desligado ou sem páginas
+// do AskUserQuestion), saída rápida e sem decisão quando o DevLand está fora do ar, desligado ou sem páginas
 // abertas, e o tempo limite.
 // Os processos são assíncronos (spawn): o servidor roda neste mesmo processo.
 import { spawn } from 'node:child_process';
@@ -13,7 +13,7 @@ import { hookJson, MAIN, servePermissions, type PermissionServer } from './permi
 
 setQuiet(true);
 
-const HOOK = resolve(__dirname, '../../mod/habblaud-permissoes/hooks/permission-hook.mjs');
+const HOOK = resolve(__dirname, '../../mod/devland-permissoes/hooks/permission-hook.mjs');
 
 /** Funções exportadas pelo hook (JavaScript puro, sem tipos). */
 interface HookModule {
@@ -73,7 +73,7 @@ async function pendingId(s: PermissionServer): Promise<string> {
   throw new Error('o hook não registrou o pedido');
 }
 
-/** Porta livre sem ninguém escutando (Habblaud "fora do ar"). */
+/** Porta livre sem ninguém escutando (DevLand "fora do ar"). */
 async function deadPort(): Promise<number> {
   const s = createServer();
   await new Promise<void>((ok) => s.listen(0, '127.0.0.1', ok));
@@ -110,7 +110,7 @@ describe('permission-hook.mjs (processo)', () => {
 
   it('recusar com motivo (e interromper): decisão deny com a mensagem para o agente', async () => {
     srv = await servePermissions();
-    const run = runHook(JSON.stringify(hookJson()), [], { HABBLAUD_PORT: String(srv.port) });
+    const run = runHook(JSON.stringify(hookJson()), [], { DEVLAND_PORT: String(srv.port) });
     srv.registry!.decide(await pendingId(srv), { behavior: 'deny', message: 'use pnpm', interrupt: true });
     const r = await run;
     expect(r.code).toBe(0);
@@ -196,7 +196,7 @@ describe('permission-hook.mjs (funções)', () => {
   it('parseOptions: argumentos, ambiente e limites', () => {
     expect(parseOptions([], {})).toEqual({ port: 4747, timeoutMs: 300_000 });
     expect(parseOptions(['--port', '4851', '--timeout', '60'], {})).toEqual({ port: 4851, timeoutMs: 60_000 });
-    expect(parseOptions([], { HABBLAUD_PORT: '4848', HABBLAUD_PERMISSION_TIMEOUT: '1' })).toEqual({ port: 4848, timeoutMs: 5_000 });
+    expect(parseOptions([], { DEVLAND_PORT: '4848', DEVLAND_PERMISSION_TIMEOUT: '1' })).toEqual({ port: 4848, timeoutMs: 5_000 });
     expect(parseOptions(['--port', 'x', '--timeout', '99999'], {})).toEqual({ port: 4747, timeoutMs: 86_400_000 });
   });
 

@@ -1,11 +1,11 @@
 // Prévia ao vivo do site que o agente está construindo: um proxy SÓ de leitura (GET/HEAD) para um servidor de
-// desenvolvimento em 127.0.0.1:<porta>, mostrado num iframe do Habblaud.
+// desenvolvimento em 127.0.0.1:<porta>, mostrado num iframe do DevLand.
 //
 // Segurança:
 // - quem pede o endereço (POST /api/preview, ver app.ts) já passou pela trava "terminal" (local ou usuário do Cloud com
 //   a permissão); o endereço leva um token assinado (porta + validade), então o iframe não depende do cookie de login
-//   (o iframe é "sandbox": origem opaca, sem cookie nem acesso à API do Habblaud);
-// - só 127.0.0.1, só portas altas (>= 1024) e nunca as do próprio Habblaud;
+//   (o iframe é "sandbox": origem opaca, sem cookie nem acesso à API do DevLand);
+// - só 127.0.0.1, só portas altas (>= 1024) e nunca as do próprio DevLand;
 // - a resposta perde Set-Cookie e os cabeçalhos de CSP/frame do projeto e ganha CSP sandbox, nosniff e no-referrer;
 // - ponytail: o HTML/JS/CSS tem os caminhos absolutos ("/src/x.js") reescritos por regex para o prefixo da prévia; dá
 //   para Vite/estáticos/SSR comuns, mas não é um parser (WebSocket do HMR não passa; a página recarrega sozinha).
@@ -88,7 +88,7 @@ export function createPreview(opts: { blockedPorts: () => number[]; now?: () => 
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
       'X-Frame-Options': 'SAMEORIGIN',
-      // sandbox = origem opaca: o site da prévia não lê cookie nem chama a API do Habblaud.
+      // sandbox = origem opaca: o site da prévia não lê cookie nem chama a API do DevLand.
       'Content-Security-Policy': "sandbox allow-scripts allow-forms allow-popups allow-modals; frame-ancestors 'self'",
     };
     for (const [k, v] of Object.entries(extra)) if (v !== undefined) out[k] = v;
@@ -142,7 +142,7 @@ export function createPreview(opts: { blockedPorts: () => number[]; now?: () => 
           path: p.rest + url.search,
           method,
           timeout: UPSTREAM_MS,
-          // Sem cookie nem Authorization do Habblaud; identity para dar para reescrever o corpo.
+          // Sem cookie nem Authorization do DevLand; identity para dar para reescrever o corpo.
           headers: { host: `localhost:${p.port}`, accept: h.accept ?? '*/*', 'accept-language': h['accept-language'] ?? '', 'accept-encoding': 'identity', 'user-agent': h['user-agent'] ?? '' },
         },
         (r) => {

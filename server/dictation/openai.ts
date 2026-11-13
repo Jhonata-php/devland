@@ -1,6 +1,6 @@
 // Ditado pela API de transcrição da OpenAI (Whisper na nuvem): para o Cloud, onde não há Whisper local. Só liga com a
-// chave configurada (OPENAI_API_KEY ou HABBLAUD_OPENAI_API_KEY): o áudio vai para a OpenAI, então é opt-in explícito.
-// Modelo: HABBLAUD_DICTATION_MODEL (padrão whisper-1, que devolve o idioma reconhecido).
+// chave configurada (OPENAI_API_KEY ou DEVLAND_OPENAI_API_KEY): o áudio vai para a OpenAI, então é opt-in explícito.
+// Modelo: DEVLAND_DICTATION_MODEL (padrão whisper-1, que devolve o idioma reconhecido).
 import type { Transcriber } from './whisper';
 
 const ENDPOINT = 'https://api.openai.com/v1/audio/transcriptions';
@@ -10,7 +10,7 @@ const TIMEOUT_MS = 120_000;
 const LANGS: Record<string, string> = { portuguese: 'pt', english: 'en', spanish: 'es', french: 'fr' };
 
 export function openAIKeyFromEnv(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  return (env.HABBLAUD_OPENAI_API_KEY ?? env.OPENAI_API_KEY)?.trim() || undefined;
+  return (env.DEVLAND_OPENAI_API_KEY ?? env.OPENAI_API_KEY)?.trim() || undefined;
 }
 
 /** Extensão do arquivo pelo tipo gravado (a API escolhe o decodificador pelo nome). */

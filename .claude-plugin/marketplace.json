@@ -1,28 +1,28 @@
 {
-  "name": "habblaud",
+  "name": "devland",
   "owner": {
     "name": "Márcio Junior",
     "url": "https://github.com/marmottajr"
   },
-  "description": "Plugins do Habblaud, o escritório virtual em pixel art das suas sessões do Claude Code.",
+  "description": "Plugins do DevLand, o escritório virtual em pixel art das suas sessões do Claude Code.",
   "version": "1.0.4",
   "plugins": [
     {
-      "name": "habblaud",
-      "source": "./mod/habblaud",
-      "description": "Mod do Habblaud: uso do plano (5h e semanal) para o escritório, aviso embaixo do prompt quando outra sessão precisa de você e o comando /habblaud e a skill de abrir a prévia ao vivo.",
+      "name": "devland",
+      "source": "./mod/devland",
+      "description": "Mod do DevLand: uso do plano (5h e semanal) para o escritório, aviso embaixo do prompt quando outra sessão precisa de você e o comando /devland e a skill de abrir a prévia ao vivo.",
       "category": "productivity"
     },
     {
-      "name": "habblaud-permissoes",
-      "source": "./mod/habblaud-permissoes",
-      "description": "Aprovar ou recusar pelo Habblaud os pedidos de permissão do Claude Code e responder as perguntas do agente (hook PermissionRequest).",
+      "name": "devland-permissoes",
+      "source": "./mod/devland-permissoes",
+      "description": "Aprovar ou recusar pelo DevLand os pedidos de permissão do Claude Code e responder as perguntas do agente (hook PermissionRequest).",
       "category": "productivity"
     },
     {
-      "name": "habblaud-mensagens",
-      "source": "./mod/habblaud-mensagens",
-      "description": "Mandar mensagens pelo Habblaud: o que você digita no escritório entra na sessão como se você tivesse digitado no terminal.",
+      "name": "devland-mensagens",
+      "source": "./mod/devland-mensagens",
+      "description": "Mandar mensagens pelo DevLand: o que você digita no escritório entra na sessão como se você tivesse digitado no terminal.",
       "category": "productivity"
     }
   ]

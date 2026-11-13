@@ -1,4 +1,4 @@
-// Pedidos de aprovação do Codex (hook PermissionRequest de mod/habblaud-codex/hook.mjs): título, resumo e argumentos
+// Pedidos de aprovação do Codex (hook PermissionRequest de mod/devland-codex/hook.mjs): título, resumo e argumentos
 // pelos nomes de ferramenta que o Codex manda no hook (0.162):
 // - Bash: {command, description?}. O acesso à rede também chega como Bash, com description "network-access <alvo>";
 // - apply_patch: {command: <o patch>} ("*** Begin Patch", "*** Update File: <caminho>", linhas -/+): vai como diff;

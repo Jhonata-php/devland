@@ -7,7 +7,7 @@ describe('arquivos das entregas', () => {
     expect(fileType('/a/b.pdf')?.kind).toBe('pdf');
     expect(fileType('/a/b.json')).toBeUndefined();
     expect(pathProblem('/Users/a/p/relatorio.pdf')).toBeUndefined();
-    for (const bad of ['/Users/a/.ssh/x.png', '/Users/a/p/.env.png', '/Users/a/p/secret-plan.pdf', '/Users/a/p/server.key', '/Users/a/.aws/c.txt', '/Users/a/.habblaud/remote-tls/ca.pdf', 'rel.png', '/a/../b.png', '/a/b.sh', '/a/id_ed25519']) {
+    for (const bad of ['/Users/a/.ssh/x.png', '/Users/a/p/.env.png', '/Users/a/p/secret-plan.pdf', '/Users/a/p/server.key', '/Users/a/.aws/c.txt', '/Users/a/.devland/remote-tls/ca.pdf', 'rel.png', '/a/../b.png', '/a/b.sh', '/a/id_ed25519']) {
       expect(pathProblem(bad), bad).toBeDefined();
     }
   });
@@ -23,11 +23,11 @@ describe('arquivos das entregas', () => {
 
   it('insideKnownFolder: só pastas de projeto que alguma conta conhece, as temporárias e os anexos', () => {
     const known = new Set(['/h/.claude/projects/-Users-ana-loja', '/h/.claude-2/projects/-Users-ana-x-y']);
-    const opts = { accountDirs: ['/h/.claude', '/h/.claude-2'], roots: ['/tmp', '/h/.habblaud/attachments'], exists: (p: string) => known.has(p) };
+    const opts = { accountDirs: ['/h/.claude', '/h/.claude-2'], roots: ['/tmp', '/h/.devland/attachments'], exists: (p: string) => known.has(p) };
     expect(insideKnownFolder('/Users/ana/loja/docs/print.png', opts)).toBe(true);
     expect(insideKnownFolder('/Users/ana/x-y/a.pdf', opts)).toBe(true);
     expect(insideKnownFolder('/tmp/claude/scratch/tela.png', opts)).toBe(true);
-    expect(insideKnownFolder('/h/.habblaud/attachments/20261013-ab/foto.jpg', opts)).toBe(true);
+    expect(insideKnownFolder('/h/.devland/attachments/20261013-ab/foto.jpg', opts)).toBe(true);
     // Fora dos projetos: o resto da pasta pessoal, outra pasta de projeto que ninguém usou e o próprio "/Users".
     expect(insideKnownFolder('/Users/ana/Documents/extrato.pdf', opts)).toBe(false);
     expect(insideKnownFolder('/Users/ana/lojas/a.png', opts)).toBe(false);

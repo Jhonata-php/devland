@@ -44,16 +44,16 @@ function onPath(name: string, env: NodeJS.ProcessEnv): string | undefined {
 /** Acha o whisper-cli, o ffmpeg e o melhor modelo multilíngue; undefined (com o motivo) se faltar algum. */
 export function findWhisper(env: NodeJS.ProcessEnv = process.env, exists: (p: string) => boolean = existsSync): WhisperSetup | { missing: string } {
   const home = env.HOME || homedir();
-  const bin = env.HABBLAUD_WHISPER_BIN?.trim() || ['/opt/homebrew/bin/whisper-cli', '/usr/local/bin/whisper-cli'].find(exists) || onPath('whisper-cli', env);
+  const bin = env.DEVLAND_WHISPER_BIN?.trim() || ['/opt/homebrew/bin/whisper-cli', '/usr/local/bin/whisper-cli'].find(exists) || onPath('whisper-cli', env);
   if (!bin || !exists(bin)) return { missing: 'whisper-cli (brew install whisper-cpp)' };
-  const ffmpeg = env.HABBLAUD_FFMPEG_BIN?.trim() || ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'].find(exists) || onPath('ffmpeg', env);
+  const ffmpeg = env.DEVLAND_FFMPEG_BIN?.trim() || ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'].find(exists) || onPath('ffmpeg', env);
   if (!ffmpeg || !exists(ffmpeg)) return { missing: 'ffmpeg (brew install ffmpeg)' };
   const dirs = [join(home, '.local', 'share', 'whisper'), join(home, '.whisper'), '/opt/homebrew/share/whisper-cpp', '/usr/local/share/whisper-cpp'];
   const model =
-    env.HABBLAUD_WHISPER_MODEL?.trim() ||
+    env.DEVLAND_WHISPER_MODEL?.trim() ||
     MODELS.flatMap((m) => dirs.map((d) => join(d, m))).find(exists);
   if (!model || !exists(model)) return { missing: tr('um modelo multilíngue do Whisper (ggml-small.bin ou ggml-base.bin em ~/.local/share/whisper)') };
-  const langs = (env.HABBLAUD_DICTATION_LANGS ?? '')
+  const langs = (env.DEVLAND_DICTATION_LANGS ?? '')
     .split(',')
     .map((l) => l.trim().toLowerCase())
     .filter((l) => /^[a-z]{2,3}$/.test(l));
@@ -85,7 +85,7 @@ export function parseWhisperJson(raw: string): Transcript {
 /** Transcritor com o whisper-cli; a pasta temporária some no fim, com ou sem erro. */
 export function createWhisperTranscriber(setup: WhisperSetup, timeoutMs = TRANSCRIBE_TIMEOUT_MS): Transcriber {
   return async (audio) => {
-    const dir = mkdtempSync(join(tmpdir(), 'habblaud-dictation-'));
+    const dir = mkdtempSync(join(tmpdir(), 'devland-dictation-'));
     try {
       const input = join(dir, 'audio.in');
       const wav = join(dir, 'audio.wav');

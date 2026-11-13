@@ -26,15 +26,15 @@ const OPTS = { port: 4747, timeoutS: DEFAULT_TIMEOUT_S };
 const SH = posixShell();
 
 describe('hooks-install.ts (funções puras)', () => {
-  const entry = hookEntry(hookCommand('node', '/repo/habblaud/mod/habblaud-permissoes/hooks/permission-hook.mjs', OPTS), OPTS);
+  const entry = hookEntry(hookCommand('node', '/repo/devland/mod/devland-permissoes/hooks/permission-hook.mjs', OPTS), OPTS);
 
   it('comando e entrada do hook: opções só quando diferentes do padrão; tempo limite com folga', () => {
-    expect(hookCommand('node', '/r/mod/habblaud-permissoes/hooks/permission-hook.mjs', OPTS)).toBe('node "/r/mod/habblaud-permissoes/hooks/permission-hook.mjs"');
+    expect(hookCommand('node', '/r/mod/devland-permissoes/hooks/permission-hook.mjs', OPTS)).toBe('node "/r/mod/devland-permissoes/hooks/permission-hook.mjs"');
     expect(hookCommand('/opt/homebrew/bin/node', '/r/x/permission-hook.mjs', { port: 4851, timeoutS: 120 })).toBe('/opt/homebrew/bin/node "/r/x/permission-hook.mjs" --port 4851 --timeout 120');
     expect(hookCommand('/caminho com espaço/node', "/r/$x/permission-hook.mjs", OPTS)).toBe(`"/caminho com espaço/node" '/r/$x/permission-hook.mjs'`);
     expect(entry).toEqual({
       type: 'command',
-      command: 'node "/repo/habblaud/mod/habblaud-permissoes/hooks/permission-hook.mjs"',
+      command: 'node "/repo/devland/mod/devland-permissoes/hooks/permission-hook.mjs"',
       timeout: DEFAULT_TIMEOUT_S + 30,
       statusMessage: STATUS_MESSAGE,
     });
@@ -60,18 +60,18 @@ describe('hooks-install.ts (funções puras)', () => {
     expect(list).toEqual([other, { matcher: '*', hooks: [moved] }]);
   });
 
-  it('o script mora no plugin habblaud-permissoes; o caminho antigo (scripts/, até a 0.2) e o novo são "nossos"', () => {
-    expect(HOOK_SCRIPT.endsWith(join('mod', 'habblaud-permissoes', 'hooks', 'permission-hook.mjs'))).toBe(true);
+  it('o script mora no plugin devland-permissoes; o caminho antigo (scripts/, até a 0.2) e o novo são "nossos"', () => {
+    expect(HOOK_SCRIPT.endsWith(join('mod', 'devland-permissoes', 'hooks', 'permission-hook.mjs'))).toBe(true);
     expect(existsSync(HOOK_SCRIPT)).toBe(true);
     // O caminho antigo virou um atalho para o novo (instalações de antes da 0.3 seguem funcionando).
     expect(existsSync(LEGACY_HOOK_SCRIPT)).toBe(true);
-    const legacy = hookEntry(hookCommand('node', '/repo/habblaud/scripts/permission-hook.mjs', OPTS), OPTS);
+    const legacy = hookEntry(hookCommand('node', '/repo/devland/scripts/permission-hook.mjs', OPTS), OPTS);
     expect(isOurHook(legacy)).toBe(true);
     expect(isOurHook(entry)).toBe(true);
     expect(isOurHook({ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/permission-hook.mjs"' })).toBe(true);
     expect(isOurHook({ type: 'command', command: 'meu-hook' })).toBe(false);
-    expect(scriptPathOf(String(legacy.command))).toBe('/repo/habblaud/scripts/permission-hook.mjs');
-    expect(scriptPathOf(String(entry.command))).toBe('/repo/habblaud/mod/habblaud-permissoes/hooks/permission-hook.mjs');
+    expect(scriptPathOf(String(legacy.command))).toBe('/repo/devland/scripts/permission-hook.mjs');
+    expect(scriptPathOf(String(entry.command))).toBe('/repo/devland/mod/devland-permissoes/hooks/permission-hook.mjs');
     // Instalação antiga: install troca pelo caminho novo (sem duplicar) e uninstall tira.
     const old = { hooks: { PermissionRequest: [{ matcher: '*', hooks: [legacy] }] } };
     const upd = planInstall(old, entry);
@@ -119,7 +119,7 @@ describe('hooks-install.ts (funções puras)', () => {
   it('parseArgs', () => {
     expect(parseArgs(['install'], {})).toEqual({ command: 'install', dryRun: false, nodeCmd: undefined, port: 4747, timeoutS: 300 });
     expect(parseArgs(['status', '--port', '4851', '--timeout', '60', '--dry-run'], {})).toMatchObject({ command: 'status', port: 4851, timeoutS: 60, dryRun: true });
-    expect(parseArgs(['install'], { HABBLAUD_PORT: '4848' })).toMatchObject({ port: 4848 });
+    expect(parseArgs(['install'], { DEVLAND_PORT: '4848' })).toMatchObject({ port: 4848 });
     expect(parseArgs(['--help'], {})).toBe('help');
     expect(() => parseArgs([], {})).toThrow(/install, uninstall ou status/);
     expect(() => parseArgs(['install', '--timeout', '2'], {})).toThrow(/--timeout/);
@@ -156,7 +156,7 @@ describe('hooks-install.ts (arquivos, HOME falso)', () => {
     const c = read('.claude');
     expect(c).toEqual({ ...original, hooks: { ...original.hooks, PermissionRequest: [{ matcher: '*', hooks: [expected] }] } });
     if (HAS_POSIX_MODES) expect(statSync(join(home, '.claude', 'settings.json')).mode & 0o777).toBe(0o644);
-    expect(JSON.parse(readFileSync(join(home, '.claude', 'settings.json.habblaud-backup-20261008-093000'), 'utf8'))).toEqual(original);
+    expect(JSON.parse(readFileSync(join(home, '.claude', 'settings.json.devland-backup-20261008-093000'), 'utf8'))).toEqual(original);
     // Conta sem settings.json: cria um só com o hook (sem backup, não havia nada).
     expect(read('.claude-conta2')).toEqual({ hooks: { PermissionRequest: [{ matcher: '*', hooks: [expected] }] } });
     expect(readdirSync(join(home, '.claude-conta2')).some((f) => f.includes('backup'))).toBe(false);

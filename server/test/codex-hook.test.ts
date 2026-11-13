@@ -1,7 +1,7 @@
-// Hook do Codex (mod/habblaud-codex/hook.mjs) rodado como processo de verdade contra o servidor de teste (rotas de
+// Hook do Codex (mod/devland-codex/hook.mjs) rodado como processo de verdade contra o servidor de teste (rotas de
 // verdade e uma fonte do Codex falsa): eventos de observação (sem saída), a conta pelo CODEX_HOME, pelo
-// transcript_path ou ~/.codex, a configuração em ~/.habblaud/codex-hook.json, e o PermissionRequest (aprovar, recusar,
-// terminal, tempo esgotado, Habblaud fora do ar). HOME e CODEX_HOME sempre em pastas temporárias; stdin sintético.
+// transcript_path ou ~/.codex, a configuração em ~/.devland/codex-hook.json, e o PermissionRequest (aprovar, recusar,
+// terminal, tempo esgotado, DevLand fora do ar). HOME e CODEX_HOME sempre em pastas temporárias; stdin sintético.
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -14,7 +14,7 @@ import { CODEX_MAIN, CODEX_THREAD, servePermissions, type PermissionServer } fro
 
 setQuiet(true);
 
-const HOOK = resolve(__dirname, '../../mod/habblaud-codex/hook.mjs');
+const HOOK = resolve(__dirname, '../../mod/devland-codex/hook.mjs');
 
 /** Funções exportadas pelo hook (JavaScript puro, sem tipos). */
 interface HookModule {
@@ -62,10 +62,10 @@ afterEach(async () => {
   tmp.cleanup();
 });
 
-/** ~/.habblaud/codex-hook.json no HOME falso. */
+/** ~/.devland/codex-hook.json no HOME falso. */
 function writeConfig(cfg: Record<string, unknown>): void {
-  mkdirSync(join(home, '.habblaud'), { recursive: true });
-  writeFileSync(join(home, '.habblaud', 'codex-hook.json'), JSON.stringify(cfg));
+  mkdirSync(join(home, '.devland'), { recursive: true });
+  writeFileSync(join(home, '.devland', 'codex-hook.json'), JSON.stringify(cfg));
 }
 
 function runHook(stdin: string, env: NodeJS.ProcessEnv = {}): Promise<HookRun> {
@@ -180,9 +180,9 @@ describe('hook.mjs do Codex (processo)', () => {
     expect(r).toMatchObject({ code: 0, stdout: '' });
   });
 
-  it('HABBLAUD_PORT vale como reserva quando o arquivo não tem a porta', async () => {
+  it('DEVLAND_PORT vale como reserva quando o arquivo não tem a porta', async () => {
     srv = await servePermissions({ codex: true, codexLive: live });
-    const run = runHook(JSON.stringify(permission()), { CODEX_HOME: codexHome, HABBLAUD_PORT: String(srv.port) });
+    const run = runHook(JSON.stringify(permission()), { CODEX_HOME: codexHome, DEVLAND_PORT: String(srv.port) });
     srv.registry!.decide(await pendingId(srv), { behavior: 'allow' });
     expect(JSON.parse((await run).stdout).hookSpecificOutput.decision).toEqual({ behavior: 'allow' });
   });
@@ -223,16 +223,16 @@ describe('hook.mjs do Codex (processo)', () => {
 });
 
 describe('hook.mjs do Codex (funções)', () => {
-  it('readConfig: arquivo, reserva HABBLAUD_PORT, padrões e limites da espera', () => {
+  it('readConfig: arquivo, reserva DEVLAND_PORT, padrões e limites da espera', () => {
     expect(hook.readConfig({ HOME: home })).toEqual({ port: 4747, waitMs: 25_000 });
-    expect(hook.readConfig({ HOME: home, HABBLAUD_PORT: '4851' })).toEqual({ port: 4851, waitMs: 25_000 });
+    expect(hook.readConfig({ HOME: home, DEVLAND_PORT: '4851' })).toEqual({ port: 4851, waitMs: 25_000 });
     writeConfig({ port: 4900, permissionTimeoutS: 60 });
-    expect(hook.readConfig({ HOME: home, HABBLAUD_PORT: '4851' })).toEqual({ port: 4900, waitMs: 60_000 });
+    expect(hook.readConfig({ HOME: home, DEVLAND_PORT: '4851' })).toEqual({ port: 4900, waitMs: 60_000 });
     writeConfig({ port: 'x', permissionTimeoutS: 1 });
     expect(hook.readConfig({ HOME: home })).toEqual({ port: 4747, waitMs: 5_000 });
     writeConfig({ permissionTimeoutS: 999 });
     expect(hook.readConfig({ HOME: home })).toEqual({ port: 4747, waitMs: 120_000 });
-    writeFileSync(join(home, '.habblaud', 'codex-hook.json'), '{ quebrado');
+    writeFileSync(join(home, '.devland', 'codex-hook.json'), '{ quebrado');
     expect(hook.readConfig({ HOME: home })).toEqual({ port: 4747, waitMs: 25_000 });
   });
 

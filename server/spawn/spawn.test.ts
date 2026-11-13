@@ -39,7 +39,7 @@ describe('novo agente: pedido e link', () => {
     const url = spawnUrl({ folder: '/Users/a/meu proj', prompt: 'rode os testes & conte' });
     expect(url.startsWith('claude://code/new?')).toBe(true);
     const q = new URL(url).searchParams;
-    expect([q.get('folder'), q.get('q'), q.get('source')]).toEqual(['/Users/a/meu proj', 'rode os testes & conte', 'habblaud']);
+    expect([q.get('folder'), q.get('q'), q.get('source')]).toEqual(['/Users/a/meu proj', 'rode os testes & conte', 'devland']);
     expect(url).not.toContain('+');
     expect(new URL(spawnUrl({ folder: '/a', prompt: '  ' })).searchParams.has('q')).toBe(false);
   });
@@ -179,7 +179,7 @@ describe('novo agente em segundo plano (claude --bg)', () => {
     chmodSync(bin, 0o755);
     writeFileSync(join(dir, 'trusted'), '');
     expect(runnableClaudeBin({ PATH: `/nao/existe:${dir}` })).toBe(bin);
-    expect(runnableClaudeBin({ HABBLAUD_CLAUDE_BIN: join(dir, 'nada'), PATH: dir })).toBeUndefined();
+    expect(runnableClaudeBin({ DEVLAND_CLAUDE_BIN: join(dir, 'nada'), PATH: dir })).toBeUndefined();
     const run = createCliRunner(bin);
     expect(await run({ folder: dir, prompt: 'faça $(rm -rf x) && y' })).toEqual({ ok: true, id: '7eacc670' });
     const args = readFileSync(join(dir, 'args'), 'utf8').trim().split('\n');

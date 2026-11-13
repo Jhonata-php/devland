@@ -1,4 +1,4 @@
-// Habblaud Cloud: conectar contas pela web (Claude Code, Codex e GitHub), sem terminal à vista.
+// DevLand Cloud: conectar contas pela web (Claude Code, Codex e GitHub), sem terminal à vista.
 //
 // Cada "Conectar" roda o login oficial da ferramenta num terminal escondido (node-pty, como o usuário dos agentes) e
 // lê da saída o que a pessoa precisa: o link (e o código, no Codex e no GitHub). No Claude, a Anthropic mostra um

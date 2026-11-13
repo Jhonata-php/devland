@@ -71,7 +71,7 @@ describe('detecção de contas', () => {
     const extra = join(home, 'outra');
     mkdirSync(extra);
     expect(discoverClaudeDirs({ CLAUDE_CONFIG_DIR: extra }, home)).toContain(extra);
-    expect(discoverClaudeDirs({ HABBLAUD_CLAUDE_DIRS: ' /x/a , ~/b ' }, home)).toEqual([resolve('/x/a'), join(home, 'b')]);
+    expect(discoverClaudeDirs({ DEVLAND_CLAUDE_DIRS: ' /x/a , ~/b ' }, home)).toEqual([resolve('/x/a'), join(home, 'b')]);
   });
 
   it('pasta do Codex (CODEX_HOME) não vira conta do Claude Code, por nenhum caminho', () => {
@@ -105,12 +105,12 @@ describe('detecção de contas', () => {
 
     expect(discoverClaudeDirs({}, home)).toEqual([join(home, '.claude'), join(home, '.claude-conta2'), misto]);
     expect(codexDirsRefused({}, home)).toEqual([disfarcado]);
-    // CLAUDE_CONFIG_DIR e HABBLAUD_CLAUDE_DIRS apontando para o Codex: fora (o resto da lista segue igual).
+    // CLAUDE_CONFIG_DIR e DEVLAND_CLAUDE_DIRS apontando para o Codex: fora (o resto da lista segue igual).
     expect(discoverClaudeDirs({ CLAUDE_CONFIG_DIR: codex }, home)).not.toContain(codex);
     expect(codexDirsRefused({ CLAUDE_CONFIG_DIR: codex }, home)).toEqual([disfarcado, codex]);
-    expect(discoverClaudeDirs({ HABBLAUD_CLAUDE_DIRS: `~/.claude,~/.codex,/x/a` }, home)).toEqual([join(home, '.claude'), resolve('/x/a')]);
-    expect(codexDirsRefused({ HABBLAUD_CLAUDE_DIRS: `~/.claude,~/.codex,/x/a` }, home)).toEqual([codex]);
-    const env = { HABBLAUD_ACCOUNTS: JSON.stringify([{ id: '.codex', mountDir: codex }]) };
+    expect(discoverClaudeDirs({ DEVLAND_CLAUDE_DIRS: `~/.claude,~/.codex,/x/a` }, home)).toEqual([join(home, '.claude'), resolve('/x/a')]);
+    expect(codexDirsRefused({ DEVLAND_CLAUDE_DIRS: `~/.claude,~/.codex,/x/a` }, home)).toEqual([codex]);
+    const env = { DEVLAND_ACCOUNTS: JSON.stringify([{ id: '.codex', mountDir: codex }]) };
     expect(discoverClaudeDirs(env, home)).not.toContain(codex);
   });
 
@@ -146,9 +146,9 @@ describe('detecção de contas', () => {
     expect(JSON.stringify(accs)).not.toContain('nao-pode-vazar');
   });
 
-  it('HABBLAUD_ACCOUNTS (Docker) sobrepõe metadados casando por id ou mountDir', () => {
+  it('DEVLAND_ACCOUNTS (Docker) sobrepõe metadados casando por id ou mountDir', () => {
     const env = {
-      HABBLAUD_ACCOUNTS: JSON.stringify([
+      DEVLAND_ACCOUNTS: JSON.stringify([
         { id: '.claude', configDir: '/Users/x/.claude', mountDir: join(home, '.claude'), short: 'C', email: 'host@x.com', plan: 'Max', color: '#000000' },
         { mountDir: join(home, '.claude-conta2'), configDir: '/Users/x/.claude-conta2', short: 'D', name: 'Pessoal', cachedUsage: { fetchedAtMs: 5 } },
       ]),

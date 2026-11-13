@@ -1,5 +1,5 @@
 {
-  "name": "habblaud-mensagens",
+  "name": "devland-mensagens",
   "displayName": "DevLand: mensagens pelo escritório",
   "version": "1.0.4",
   "description": "Leva para a sessão do Claude Code as mensagens que você digita no DevLand (painel do agente ou terminal), como se você as tivesse digitado no terminal.",
@@ -11,7 +11,7 @@
   "repository": "https://github.com/marmottajr/habblaud",
   "license": "MIT",
   "keywords": [
-    "habblaud",
+    "devland",
     "escritorio",
     "mensagens",
     "prompt"

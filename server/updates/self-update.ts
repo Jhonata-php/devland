@@ -1,4 +1,4 @@
-// Habblaud Cloud: atualização nativa, sem Velix. Baixa o pacote de código da versão nova (ghcr.io/<imagem>:dist-cloud-v<versão>,
+// DevLand Cloud: atualização nativa, sem Velix. Baixa o pacote de código da versão nova (ghcr.io/<imagem>:dist-cloud-v<versão>,
 // publicado pelo workflow, imagem pública: sem token), confere o conteúdo (sha256 da camada e deps.hash igual ao da imagem em
 // uso) e guarda em <dados>/app/<versão>. O entrypoint do container (scripts/cloud-entrypoint.sh) passa a rodar esse código
 // no próximo início, com volta automática à imagem se ele não ficar de pé; o servidor só precisa reiniciar.

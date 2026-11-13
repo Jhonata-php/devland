@@ -72,7 +72,7 @@ export interface CitySceneOptions {
   options: () => WorldOptions;
   /** Margem coberta pela barra do topo (px CSS). */
   topInset: () => number;
-  /** Versão do Habblaud (o escritório da visita leva em `meta.version`). */
+  /** Versão do DevLand (o escritório da visita leva em `meta.version`). */
   version?: () => string;
 }
 

@@ -1,7 +1,8 @@
-// Servidor do Habblaud: observa as sessões abertas do Claude Code (todas as contas),
+// Servidor do DevLand: observa as sessões abertas do Claude Code (todas as contas),
 // mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
+import './env-compat';
 import { McpStore } from './accounts/mcp';
 import { LocalAi, LOCAL_ACCOUNT_DIR } from './ai/local';
 import { chownSync, existsSync, rmSync, statSync } from 'node:fs';
@@ -90,7 +91,7 @@ import { WorldViewer } from './world/viewer';
 const config = loadConfig();
 const startedAt = Date.now();
 
-// Nome antigo (CodeTown, até a 0.3.2): leva ~/.codetown para ~/.habblaud antes de ler qualquer estado e avisa
+// Nome antigo (CodeTown, até a 0.3.2): leva ~/.codetown para ~/.devland antes de ler qualquer estado e avisa
 // das variáveis CODETOWN_* que não valem mais. No Docker, quem migra é o docker:up.
 if (!config.inDocker) {
   const r = migrateLegacyStateDir(config.home);
@@ -108,9 +109,9 @@ roomAliases.load();
 
 // Office, contas e fontes de agentes se referenciam (avisos de mudança / fontes): ligação tardia.
 const late: { connect?: ConnectService; office?: Office; agents?: SourceSet; permissions?: PermissionRegistry; messages?: MessageRegistry; ptys?: PtyManager; ptyOff?: string } = {};
-// Versão nova: consulta a release mais recente no GitHub a cada 6 h (HABBLAUD_UPDATE_CHECK=0 desliga).
-// Cloud (imagem com HABBLAUD_CLOUD_VERSION): a versão mais recente vem das tags da imagem no GHCR e o admin atualiza
-// por um botão que pede ao Velix para reimplantar (HABBLAUD_VELIX_URL/TOKEN/PROJECT; sem elas, só avisa).
+// Versão nova: consulta a release mais recente no GitHub a cada 6 h (DEVLAND_UPDATE_CHECK=0 desliga).
+// Cloud (imagem com DEVLAND_CLOUD_VERSION): a versão mais recente vem das tags da imagem no GHCR e o admin atualiza
+// por um botão que pede ao Velix para reimplantar (DEVLAND_VELIX_URL/TOKEN/PROJECT; sem elas, só avisa).
 const velixFile = join(config.dataDir, 'velix.json');
 let velix = config.cloudVersion ? (velixTargetFromEnv(process.env) ?? loadVelixFile(velixFile)) : undefined;
 const updates = new UpdateChecker({
@@ -204,20 +205,20 @@ const office = new Office({
   world: () => world?.meta() ?? { enabled: false, configured: false, state: 'off' },
 });
 // Fontes de agentes, uma por ferramenta (sources/source.ts): a do Claude Code e, depois dela, a do Codex (quando há
-// pastas do Codex; HABBLAUD_CODEX=0 desliga), com o histórico dela no HistorySet abaixo e as contas registradas por
+// pastas do Codex; DEVLAND_CODEX=0 desliga), com o histórico dela no HistorySet abaixo e as contas registradas por
 // ela mesma (accounts.setProviderAccounts). `codex` também recebe os eventos dos hooks do Codex (CodexLive).
 const claude = new ClaudeWatcher({ accounts, office, inDocker: config.inDocker });
 const agents = new SourceSet([claude]);
 const codexDirs = config.codex ? discoverCodexDirs(process.env, config.home) : [];
 const codex = codexDirs.length ? new CodexSource({ accounts, office, dirs: codexDirs, env: process.env, home: config.home }) : undefined;
 if (codex) agents.add(codex);
-// Eventos dos hooks do Codex (POST /api/codex/events, mod/habblaud-codex/hook.mjs): vão para a fonte do Codex ao vivo
-// (CodexLive); sem ela (nenhuma pasta do Codex ou HABBLAUD_CODEX=0) a rota responde {ok: false}.
+// Eventos dos hooks do Codex (POST /api/codex/events, mod/devland-codex/hook.mjs): vão para a fonte do Codex ao vivo
+// (CodexLive); sem ela (nenhuma pasta do Codex ou DEVLAND_CODEX=0) a rota responde {ok: false}.
 const codexLive: CodexLive | undefined = codex;
 late.office = office;
 late.agents = agents;
 // Página que pode responder pelo escritório: Host local na porta local; na remota, só com permissions liberado.
-// Porta remota com login: sessões e, no Habblaud Cloud (HABBLAUD_CLOUD=1), os usuários de <dataDir>/users.json.
+// Porta remota com login: sessões e, no DevLand Cloud (DEVLAND_CLOUD=1), os usuários de <dataDir>/users.json.
 const cloudStore = config.remote?.cloud ? new UserStore(join(config.dataDir, 'users.json')) : undefined;
 const remoteSessions = config.remote
   ? new RemoteSessions(
@@ -236,17 +237,17 @@ const cloud = cloudStore && remoteSessions ? createCloud({
       secure: viaHttps,
       mailer: mailerFromEnv(),
       warn: (m) => log.warnOnce(`reset-mail:${m}`, m),
-      setupCode: process.env.HABBLAUD_SETUP_CODE?.trim() || undefined,
+      setupCode: process.env.DEVLAND_SETUP_CODE?.trim() || undefined,
       connect: () => late.connect,
       claudeDirs: () => config.claudeDirs,
     }) : undefined;
-/** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou HABBLAUD_REMOTE_ALLOW. */
+/** O que a requisição remota pode fazer: a lista do usuário (Cloud) ou DEVLAND_REMOTE_ALLOW. */
 const remoteAllows = (req: http.IncomingMessage, f: RemoteFeature): boolean => (cloud ? cloud.allows(req, f) : !!config.remote?.allow.has(f));
 const hub = new Hub(office, {
   canAnswer: (req) => (isRemoteRequest(req) ? remoteAllows(req, 'permissions') : isLoopbackHost(req.headers.host)),
 });
-// Notificações push (push/service.ts): no Cloud e no acesso remoto, para avisar o celular mesmo com o Habblaud fechado.
-const push = cloud || config.remote ? new PushService({ dir: join(config.dataDir, 'push'), subject: process.env.HABBLAUD_PUSH_SUBJECT?.trim() || `mailto:push@${[...config.allowedHosts].find((h) => h.includes('.')) ?? 'devland.example.com'}` }) : undefined;
+// Notificações push (push/service.ts): no Cloud e no acesso remoto, para avisar o celular mesmo com o DevLand fechado.
+const push = cloud || config.remote ? new PushService({ dir: join(config.dataDir, 'push'), subject: process.env.DEVLAND_PUSH_SUBJECT?.trim() || `mailto:push@${[...config.allowedHosts].find((h) => h.includes('.')) ?? 'devland.example.com'}` }) : undefined;
 if (push) {
   push.load();
   hub.onNotice((n) => {
@@ -382,14 +383,14 @@ const permissions = config.terminal
     })
   : undefined;
 late.permissions = permissions;
-// Mensagens pelo escritório (plugin habblaud-mensagens): entram na sessão como se você as tivesse digitado, então
-// seguem a mesma trava (e HABBLAUD_MENSAGENS=0 desliga só elas). Ao Codex vão por `codex queue` (messages/codex.ts):
-// fora do Docker o próprio servidor roda o comando (HABBLAUD_CODEX_BIN ou `codex` do PATH); no Docker, o auxiliar do
+// Mensagens pelo escritório (plugin devland-mensagens): entram na sessão como se você as tivesse digitado, então
+// seguem a mesma trava (e DEVLAND_MENSAGENS=0 desliga só elas). Ao Codex vão por `codex queue` (messages/codex.ts):
+// fora do Docker o próprio servidor roda o comando (DEVLAND_CODEX_BIN ou `codex` do PATH); no Docker, o auxiliar do
 // host (npm run codex:bridge).
 const codexBin = config.messages && !config.inDocker ? findCodexBin(process.env) : undefined;
 // Terminal interativo e Novo agente: os dois rodam o Claude Code neste computador, então pedem a mesma liberação,
-// HABBLAUD_PTY=1 (aceita os mesmos valores do HABBLAUD_TERMINAL).
-const ptyFlag = process.env.HABBLAUD_PTY?.trim();
+// DEVLAND_PTY=1 (aceita os mesmos valores do DEVLAND_TERMINAL).
+const ptyFlag = process.env.DEVLAND_PTY?.trim();
 const ptyOptIn = isTruthy(ptyFlag);
 // Novo agente pelo escritório (sessão do Claude Code em segundo plano, ou a tela do app do Claude preenchida): a
 // liberação acima mais a trava das mensagens. No Docker, quem roda é o auxiliar do host (npm run codex:bridge).
@@ -408,10 +409,10 @@ const attachments = spawnOn ? new AttachmentStore() : undefined;
 function saveAttachments(id: string, files: readonly Attachment[]): string[] {
   const who = agentRunAs();
   if (!who) return writeAttachments(attachmentsRoot(), id, files);
-  const root = join(who.home, '.habblaud', 'attachments');
+  const root = join(who.home, '.devland', 'attachments');
   const paths = writeAttachments(root, id, files);
   if (!paths.length) return paths; // sem anexos nada foi criado: não há o que entregar ao usuário dos agentes
-  for (const p of [join(who.home, '.habblaud'), root, ...new Set(paths.map((f) => dirname(f))), ...paths]) chownSync(p, who.uid, who.gid);
+  for (const p of [join(who.home, '.devland'), root, ...new Set(paths.map((f) => dirname(f))), ...paths]) chownSync(p, who.uid, who.gid);
   return paths;
 }
 const spawnBin = config.inDocker ? undefined : runnableClaudeBin(process.env);
@@ -443,7 +444,7 @@ const dictation = config.messages
       whisper && !('missing' in whisper)
         ? { transcriber: createWhisperTranscriber(whisper) }
         : openAIKey
-          ? { transcriber: createOpenAITranscriber(openAIKey, process.env.HABBLAUD_DICTATION_MODEL?.trim() || 'whisper-1') }
+          ? { transcriber: createOpenAITranscriber(openAIKey, process.env.DEVLAND_DICTATION_MODEL?.trim() || 'whisper-1') }
           : {},
     )
   : undefined;
@@ -460,9 +461,9 @@ const messages = config.messages
   : undefined;
 late.messages = messages;
 
-// Terminal interativo (abrir/assumir sessões e encerrar agentes): opt-in com HABBLAUD_PTY=1, só com bind local, fora
+// Terminal interativo (abrir/assumir sessões e encerrar agentes): opt-in com DEVLAND_PTY=1, só com bind local, fora
 // do Docker, com node-pty e o executável do claude no PATH.
-const claudeBinSetting = process.env.HABBLAUD_CLAUDE_BIN?.trim();
+const claudeBinSetting = process.env.DEVLAND_CLAUDE_BIN?.trim();
 const claudeBin = claudeBinFrom();
 // Loja de plugins (Configurações): instala nas contas do Claude Code pelo CLI; rotas só para admin ou o próprio computador.
 const pluginStore = claudeBin ? new PluginStore(claudeBin, () => accounts.entriesOf('claude').map((a) => a.dir)) : undefined;
@@ -493,11 +494,11 @@ if (schedules && spawn) {
 let spawnPty: SpawnPty | null = null;
 let ptyScreen: ScreenFactory | undefined;
 let ptyOff: string | undefined;
-if (!ptyOptIn) ptyOff = ptyFlag ? tr('desligado por HABBLAUD_PTY={0}', [ptyFlag]) : tr('desligado (ligue com HABBLAUD_PTY=1)');
+if (!ptyOptIn) ptyOff = ptyFlag ? tr('desligado por DEVLAND_PTY={0}', [ptyFlag]) : tr('desligado (ligue com DEVLAND_PTY=1)');
 else if (config.inDocker) ptyOff = tr('indisponível no Docker (rode com npm start)');
 else if (!config.terminal) ptyOff = tr('mesma trava do terminal ({0})', [terminalOffReason(process.env, config.host, config.inDocker)]);
-else if (!claudeBin) ptyOff = claudeBinSetting ? tr('HABBLAUD_CLAUDE_BIN não encontrado no PATH ({0})', [claudeBinSetting]) : tr('executável "claude" não encontrado no PATH (defina HABBLAUD_CLAUDE_BIN)');
-else if (!isExecutableFile(claudeBin)) ptyOff = tr('o executável do Claude Code não roda: {0} (confira o HABBLAUD_CLAUDE_BIN)', [claudeBin]);
+else if (!claudeBin) ptyOff = claudeBinSetting ? tr('DEVLAND_CLAUDE_BIN não encontrado no PATH ({0})', [claudeBinSetting]) : tr('executável "claude" não encontrado no PATH (defina DEVLAND_CLAUDE_BIN)');
+else if (!isExecutableFile(claudeBin)) ptyOff = tr('o executável do Claude Code não roda: {0} (confira o DEVLAND_CLAUDE_BIN)', [claudeBin]);
 else {
   const loaded = await loadPty();
   spawnPty = loaded.spawn;
@@ -526,7 +527,7 @@ const ptys = spawnPty
   : undefined;
 late.ptys = ptys;
 late.ptyOff = ptyOff;
-// Habblaud Cloud: conectar contas pela web roda os logins num terminal escondido, como o usuário dos agentes.
+// DevLand Cloud: conectar contas pela web roda os logins num terminal escondido, como o usuário dos agentes.
 const agentUser = agentRunAs();
 // Cloud: o tap de uso (cartões de 5 h e semana) entra sozinho no statusLine de cada conta do Claude Code.
 const usageTapPath = join(config.rootDir, 'scripts', 'statusline-tap.mjs');
@@ -539,7 +540,7 @@ if (cloud) {
   setTimeout(pollUsage, 5_000).unref();
   setInterval(pollUsage, 180_000).unref();
 }
-// Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do Habblaud na imagem).
+// Cloud: mensagens e permissões pelo escritório dependem de plugins do Claude Code (marketplace = a pasta do DevLand na imagem).
 const pluginsReady: Promise<void> = cloud && agentUser && claudeBin ? ensureDevLandPlugins(config.claudeDirs, claudeBin, config.rootDir) : Promise.resolve();
 if (cloud && spawnPty && claudeBin && agentUser) {
   late.connect = new ConnectService({
@@ -609,7 +610,7 @@ const api = createApiHandler({
   timeline: createTimelineHandler({ dir: timelineDir, recording: !!timeline }),
   permissions: permissions ? createPermissionRoutes(permissions) : undefined,
   messages: messages ? createMessageRoutes(messages, attachments && { store: attachments, save: saveAttachments }) : undefined,
-  // Habblaud Cloud: o terminal interativo também pela porta com login, para quem tem a permissão "terminal".
+  // DevLand Cloud: o terminal interativo também pela porta com login, para quem tem a permissão "terminal".
   pty: ptys ? createPtyRoutes(ptys, cloud ? (req) => isRemoteRequest(req) && remoteAllows(req, 'terminal') : undefined) : undefined,
   spawn,
   schedules,
@@ -688,7 +689,7 @@ server.on('request', (req, res) => {
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {
-  if (err.code === 'EADDRINUSE') log.error(tr('A porta {0} já está em uso (defina HABBLAUD_PORT para usar outra).', [config.port]));
+  if (err.code === 'EADDRINUSE') log.error(tr('A porta {0} já está em uso (defina DEVLAND_PORT para usar outra).', [config.port]));
   else log.error(tr('Erro no servidor HTTP: {0}', [errMsg(err)]));
   process.exit(1);
 });
@@ -738,10 +739,10 @@ if (config.remote) {
       return;
     }
     const allow = [...remote.allow].join(', ') || tr('só ver');
-    const where = config.inDocker ? tr('publicada pelo HABBLAUD_REMOTE_BIND') : remote.host;
-    const scheme = remote.tls ? 'HTTPS' : tr('HTTP SEM criptografia (HABBLAUD_REMOTE_INSECURE_HTTP)');
+    const where = config.inDocker ? tr('publicada pelo DEVLAND_REMOTE_BIND') : remote.host;
+    const scheme = remote.tls ? 'HTTPS' : tr('HTTP SEM criptografia (DEVLAND_REMOTE_INSECURE_HTTP)');
     log.info(tr('   Acesso remoto: ligado na porta {0} ({1}), {2}, com login; libera: {3}.', [remote.port, where, scheme, allow]));
-    if (remote.allow.has('spawn') && !spawn) log.warn(tr('   Acesso remoto: "spawn" liberado, mas o Novo agente está desligado (ligue com HABBLAUD_PTY=1).'));
+    if (remote.allow.has('spawn') && !spawn) log.warn(tr('   Acesso remoto: "spawn" liberado, mas o Novo agente está desligado (ligue com DEVLAND_PTY=1).'));
   });
 } else if (config.remoteWarning) {
   log.warn(`   ${config.remoteWarning}.`);
@@ -751,7 +752,7 @@ server.listen(config.port, config.host, () => {
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
   log.info(tr('🏢 DevLand {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
   const list = accounts.entries();
-  if (!list.length) log.warn(tr('Nenhuma pasta do Claude Code encontrada (defina HABBLAUD_CLAUDE_DIRS).'));
+  if (!list.length) log.warn(tr('Nenhuma pasta do Claude Code encontrada (defina DEVLAND_CLAUDE_DIRS).'));
   for (const dir of codexDirsRefused(process.env, config.home)) {
     log.warn(tr('{0} é uma pasta do Codex, não do Claude Code: fica fora das contas do Claude Code.', [dir]));
   }
@@ -768,7 +769,7 @@ server.listen(config.port, config.host, () => {
       log.info(tr('   Conta {0} do Codex ({1}): uso: {2} · {3}', [a.detected.short, a.id, accounts.usageView(a.id).status, a.detected.configDir]));
     }
   } else {
-    log.info(tr('   Codex: {0}.', [config.codex ? tr('nenhuma pasta do Codex encontrada (defina HABBLAUD_CODEX_DIRS)') : tr('desligado (HABBLAUD_CODEX=0)')]));
+    log.info(tr('   Codex: {0}.', [config.codex ? tr('nenhuma pasta do Codex encontrada (defina DEVLAND_CODEX_DIRS)') : tr('desligado (DEVLAND_CODEX=0)')]));
   }
   if (office.isDemo()) log.info(tr('   Modo demonstração ligado (agentes simulados misturados aos reais).'));
   if (config.terminal) log.info(tr('   Terminal: ligado (acesso só local).'));
@@ -776,18 +777,18 @@ server.listen(config.port, config.host, () => {
   log.info(ptys ? tr('   Terminal interativo: ligado ({0}).', [claudeBin]) : tr('   Terminal interativo: {0}.', [ptyOff ?? tr('desligado')]));
   log.info(
     !spawn
-      ? tr('   Novo agente: desligado ({0}).', [!ptyOptIn ? tr('ligue com HABBLAUD_PTY=1') : tr('mesma trava das mensagens')])
+      ? tr('   Novo agente: desligado ({0}).', [!ptyOptIn ? tr('ligue com DEVLAND_PTY=1') : tr('mesma trava das mensagens')])
       : config.inDocker
         ? tr('   Novo agente: ligado, pelo auxiliar do host (deixe npm run codex:bridge rodando no computador).')
         : spawnBin
           ? tr('   Novo agente: ligado ({0} --bg; pasta ainda não confiável abre no app do Claude).', [spawnBin])
           : tr('   Novo agente: ligado, só pelo app do Claude (claude não encontrado no PATH).'),
   );
-  log.info(timeline ? tr('   Linha do tempo (timelapse): gravando em {0}.', [timelineDir]) : tr('   Linha do tempo (timelapse): gravação desligada (HABBLAUD_TIMELINE).'));
+  log.info(timeline ? tr('   Linha do tempo (timelapse): gravando em {0}.', [timelineDir]) : tr('   Linha do tempo (timelapse): gravação desligada (DEVLAND_TIMELINE).'));
   log.info(tr('   Responder pelo escritório: {0}.', [config.terminal ? tr('ligado (precisa do mod: npm run mod:install; ou do hook antigo: npm run hooks:install)') : tr('desligado (mesma trava do terminal)')]));
   log.info(
     config.messages
-      ? tr('   Mensagens pelo escritório: ligadas (precisa do plugin habblaud-mensagens: npm run mod:install).')
+      ? tr('   Mensagens pelo escritório: ligadas (precisa do plugin devland-mensagens: npm run mod:install).')
       : tr('   Mensagens pelo escritório: desligadas ({0}).', [messagesOffReason(process.env, config.host, config.inDocker)]),
   );
   if (config.messages) {
@@ -796,7 +797,7 @@ server.listen(config.port, config.host, () => {
         ? tr('   Mensagens ao Codex: pelo codex queue ({0}).', [codexBin])
         : config.inDocker
           ? tr('   Mensagens ao Codex: pelo auxiliar do host (deixe npm run codex:bridge rodando no Mac).')
-          : tr('   Mensagens ao Codex: sem o binário do Codex (codex no PATH ou HABBLAUD_CODEX_BIN); o auxiliar npm run codex:bridge também serve.'),
+          : tr('   Mensagens ao Codex: sem o binário do Codex (codex no PATH ou DEVLAND_CODEX_BIN); o auxiliar npm run codex:bridge também serve.'),
     );
   }
   if (config.world.warning) log.warn(`   ${config.world.warning}.`);
@@ -814,9 +815,9 @@ server.listen(config.port, config.host, () => {
   log.info(
     updates.enabled
       ? config.cloudVersion
-        ? tr('   Versão nova: verificando as tags de ghcr.io/{0} a cada 6 h{1}.', [config.repo, velix ? tr(' (botão Atualizar ligado ao Velix)') : tr(' (sem HABBLAUD_VELIX_*: só avisa)')])
+        ? tr('   Versão nova: verificando as tags de ghcr.io/{0} a cada 6 h{1}.', [config.repo, velix ? tr(' (botão Atualizar ligado ao Velix)') : tr(' (sem DEVLAND_VELIX_*: só avisa)')])
         : tr('   Versão nova: verificando as releases de github.com/{0} a cada 6 h.', [config.repo])
-      : tr('   Versão nova: verificação desligada ({0}).', [config.repo ? 'HABBLAUD_UPDATE_CHECK' : tr('package.json sem repositório no GitHub')]),
+      : tr('   Versão nova: verificação desligada ({0}).', [config.repo ? 'DEVLAND_UPDATE_CHECK' : tr('package.json sem repositório no GitHub')]),
   );
 });
 
@@ -875,12 +876,12 @@ if (cloud && agentUser && ptys) {
   );
   const liveBootAt = Date.now();
   // Primeiro agente automático: DESLIGADO por padrão (criava um agente avulso em /workspace a cada reimplantação, e as pessoas
-  // reclamavam do agente "novo" a cada abertura). HABBLAUD_AUTO_AGENT=1 liga: com o escritório vazio ao subir, abre um agente
+  // reclamavam do agente "novo" a cada abertura). DEVLAND_AUTO_AGENT=1 liga: com o escritório vazio ao subir, abre um agente
   // em /workspace, como o botão "Abrir terminal". Só com uma conta do Claude conectada.
   void pluginsReady.then(() =>
     setTimeout(() => {
       // Se havia conversas para retomar, elas já estão voltando: o primeiro agente avulso só nasce com o escritório mesmo vazio.
-      if (process.env.HABBLAUD_AUTO_AGENT !== '1' || liveNow().length > 0 || wasLive.length > 0) return;
+      if (process.env.DEVLAND_AUTO_AGENT !== '1' || liveNow().length > 0 || wasLive.length > 0) return;
       if (!config.claudeDirs.some((d) => existsSync(join(d, '.credentials.json')))) return;
       try {
         ptys.create({ cwd: '/workspace' });

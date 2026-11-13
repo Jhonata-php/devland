@@ -38,34 +38,34 @@ const CREDS = { user: 'ana', password: PASSWORD };
 const TLS_FILES = (p: string) => p.endsWith('server.key') || p.endsWith('server.crt');
 
 describe('parseRemoteConfig', () => {
-  const base = { HABBLAUD_REMOTE_USER: 'ana', HABBLAUD_REMOTE_PASSWORD_HASH: HASH_TEXT };
+  const base = { DEVLAND_REMOTE_USER: 'ana', DEVLAND_REMOTE_PASSWORD_HASH: HASH_TEXT };
   it('fica desligado sem as variáveis', () => {
     expect(parseRemoteConfig({}, false)).toEqual({});
   });
   it('recusa senha em texto puro e hash ausente ou inválido', () => {
-    expect(parseRemoteConfig({ HABBLAUD_REMOTE_USER: 'a', HABBLAUD_REMOTE_PASSWORD: '12345678' }, false).warning).toMatch(/texto puro/);
-    expect(parseRemoteConfig({ HABBLAUD_REMOTE_USER: 'a' }, false).warning).toMatch(/remote:setup/);
-    expect(parseRemoteConfig({ HABBLAUD_REMOTE_USER: 'a', HABBLAUD_REMOTE_PASSWORD_HASH: 'scrypt:1:2' }, false, TLS_FILES).warning).toMatch(/inválido/);
+    expect(parseRemoteConfig({ DEVLAND_REMOTE_USER: 'a', DEVLAND_REMOTE_PASSWORD: '12345678' }, false).warning).toMatch(/texto puro/);
+    expect(parseRemoteConfig({ DEVLAND_REMOTE_USER: 'a' }, false).warning).toMatch(/remote:setup/);
+    expect(parseRemoteConfig({ DEVLAND_REMOTE_USER: 'a', DEVLAND_REMOTE_PASSWORD_HASH: 'scrypt:1:2' }, false, TLS_FILES).warning).toMatch(/inválido/);
   });
-  it('exige HTTPS: sem certificado não sobe, a menos de HABBLAUD_REMOTE_INSECURE_HTTP=1', () => {
+  it('exige HTTPS: sem certificado não sobe, a menos de DEVLAND_REMOTE_INSECURE_HTTP=1', () => {
     expect(parseRemoteConfig(base, false, () => false).warning).toMatch(/HTTPS é obrigatório/);
-    const insecure = parseRemoteConfig({ ...base, HABBLAUD_REMOTE_INSECURE_HTTP: '1' }, false, () => false).config;
+    const insecure = parseRemoteConfig({ ...base, DEVLAND_REMOTE_INSECURE_HTTP: '1' }, false, () => false).config;
     expect(insecure?.tls).toBeUndefined();
   });
   it('liga com padrões: porta 4748, só permissões, certificado da pasta padrão', () => {
     const { config } = parseRemoteConfig({ ...base, HOME: '/h' }, false, TLS_FILES);
     expect(config).toMatchObject({ port: 4748, host: '0.0.0.0', user: 'ana' });
-    expect(config?.tls?.certFile).toBe('/h/.habblaud/remote-tls/server/server.crt');
+    expect(config?.tls?.certFile).toBe('/h/.devland/remote-tls/server/server.crt');
     expect([...config!.allow]).toEqual(['permissions']);
   });
   it('no Docker ignora porta e host (o container escuta sempre em 0.0.0.0:4748) e lê o certificado de /remote-tls', () => {
-    const env = { ...base, HABBLAUD_REMOTE_PORT: '9999', HABBLAUD_REMOTE_HOST: '10.0.0.1' };
+    const env = { ...base, DEVLAND_REMOTE_PORT: '9999', DEVLAND_REMOTE_HOST: '10.0.0.1' };
     const docker = parseRemoteConfig(env, true, TLS_FILES).config;
     expect(docker).toMatchObject({ port: 4748, host: '0.0.0.0' });
     expect(docker?.tls?.dir).toBe('/remote-tls');
     expect(parseRemoteConfig(env, false, TLS_FILES).config).toMatchObject({ port: 9999, host: '10.0.0.1' });
   });
-  it('HABBLAUD_REMOTE_ALLOW: lista, ignora nomes desconhecidos, "none" = só ver', () => {
+  it('DEVLAND_REMOTE_ALLOW: lista, ignora nomes desconhecidos, "none" = só ver', () => {
     expect([...parseAllow('messages, Terminal, bogus')]).toEqual(['messages', 'terminal']);
     expect([...parseAllow('none')]).toEqual([]);
     expect([...parseAllow('')]).toEqual(['permissions']);
@@ -154,7 +154,7 @@ describe('LoginThrottle', () => {
 
 describe('readCookie', () => {
   it('acha o cookie pelo nome', () => {
-    expect(readCookie('a=1; habblaud_remote=v1.x.y; b=2', COOKIE)).toBe('v1.x.y');
+    expect(readCookie('a=1; devland_remote=v1.x.y; b=2', COOKIE)).toBe('v1.x.y');
     expect(readCookie(undefined, COOKIE)).toBeUndefined();
   });
 });
@@ -498,13 +498,13 @@ describe('porta remota', () => {
     ] as const) {
       const r = await request(h.remoteBase, path, { method: 'POST', headers, body });
       expect(r.status, path).toBe(403);
-      expect(JSON.parse(r.body).error).toMatch(/HABBLAUD_REMOTE_ALLOW/);
+      expect(JSON.parse(r.body).error).toMatch(/DEVLAND_REMOTE_ALLOW/);
     }
     expect((await request(h.remoteBase, '/api/agents/x/terminal', { headers })).status).toBe(403);
     expect((await request(h.remoteBase, '/api/sessions/recent', { headers })).status).toBe(403);
   });
 
-  it('HABBLAUD_REMOTE_ALLOW=messages libera mensagens e "none" tira até as permissões', async () => {
+  it('DEVLAND_REMOTE_ALLOW=messages libera mensagens e "none" tira até as permissões', async () => {
     const withMessages = await start(['messages']);
     const c1 = await login(withMessages.remoteBase);
     expect((await request(withMessages.remoteBase, '/api/messages', { method: 'POST', headers: { Cookie: c1 }, body: {} })).status).toBe(200);

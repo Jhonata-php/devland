@@ -130,7 +130,7 @@ export class EmptyState implements UiComponent {
   readonly el: HTMLElement;
   private hint: HTMLElement;
   private demoBtn: HTMLButtonElement;
-  /** Habblaud Cloud: o servidor é a máquina; o primeiro agente começa por aqui. */
+  /** DevLand Cloud: o servidor é a máquina; o primeiro agente começa por aqui. */
   private cloudRow: HTMLElement;
   private termBtn: HTMLButtonElement;
   private busy = false;
@@ -139,7 +139,7 @@ export class EmptyState implements UiComponent {
 
   constructor(
     private ctx: UiContext,
-    /** Abre o Claude Code num terminal interativo (Habblaud Cloud); ausente/false = sem o botão. */
+    /** Abre o Claude Code num terminal interativo (DevLand Cloud); ausente/false = sem o botão. */
     private terminal?: { enabled: boolean; open(cwd: string): Promise<void> },
   ) {
     const art = h('div', { class: 'ui-empty__art', attrs: { 'aria-hidden': 'true' } });

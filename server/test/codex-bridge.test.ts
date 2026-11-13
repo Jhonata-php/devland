@@ -60,7 +60,7 @@ async function serve(enabled = true): Promise<{ base: string; port: number; offi
   registry?.start();
   const accounts = new AccountsService({ dirs: [], home: tmp.dir, env: {}, onChange: () => {} });
   const api = createApiHandler({ office, hub, accounts, sources: () => [], version: 't', inDocker: true, terminal: true, messages: registry ? createMessageRoutes(registry) : undefined });
-  const guard = createRequestGuard({ allowedHosts: new Set(['habblaud.lan']) });
+  const guard = createRequestGuard({ allowedHosts: new Set(['devland.lan']) });
   const server = http.createServer((req, res) => {
     if (guard(req, res)) return;
     if (!api(req, res, new URL(req.url ?? '/', 'http://x'))) res.writeHead(404).end();
@@ -84,7 +84,7 @@ describe('rotas do auxiliar do Codex', () => {
     expect((await request(s.base, '/api/codex/bridge/poll', { method: 'POST', body: {} })).status).toBe(403);
     await close!();
     s = await serve();
-    expect((await request(s.base, '/api/codex/bridge/poll', { method: 'POST', headers: { Host: 'habblaud.lan' }, body: {} })).status).toBe(403);
+    expect((await request(s.base, '/api/codex/bridge/poll', { method: 'POST', headers: { Host: 'devland.lan' }, body: {} })).status).toBe(403);
     expect((await request(s.base, '/api/codex/bridge/ack')).status).toBe(405);
     expect((await request(s.base, '/api/codex/bridge/poll', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{}' })).status).toBe(415);
     expect((await request(s.base, '/api/codex/bridge/ack', { method: 'POST', body: { results: 'x' } })).status).toBe(400);
@@ -160,7 +160,7 @@ describe('rotas do auxiliar do Codex', () => {
   it('parseArgs', () => {
     expect(parseArgs([], {})).toEqual({ port: 4747, once: false });
     expect(parseArgs(['--port', '4851', '--once'], {})).toEqual({ port: 4851, once: true });
-    expect(parseArgs([], { HABBLAUD_PORT: '4848' })).toEqual({ port: 4848, once: false });
+    expect(parseArgs([], { DEVLAND_PORT: '4848' })).toEqual({ port: 4848, once: false });
     expect(parseArgs(['-h'], {})).toBe('help');
     expect(() => parseArgs(['--port', 'x'], {})).toThrow(/--port/);
     expect(() => parseArgs(['--xyz'], {})).toThrow(/desconhecida/);

@@ -44,7 +44,7 @@ export function start(): void {
   }
 
   // Facilita a depuração pelo console do navegador.
-  Object.assign(window, { habblaud: { store, world, city } });
+  Object.assign(window, { devland: { store, world, city } });
 }
 
 /**

@@ -1,5 +1,5 @@
 // Web Push sem dependências: criptografia do conteúdo (RFC 8291, aes128gcm) e identificação do servidor (VAPID, RFC 8292), só
-// com node:crypto. É o que permite avisar o celular mesmo com o Habblaud fechado (iPhone: app na Tela de Início, iOS 16.4+).
+// com node:crypto. É o que permite avisar o celular mesmo com o DevLand fechado (iPhone: app na Tela de Início, iOS 16.4+).
 import { createCipheriv, createECDH, createPrivateKey, hkdfSync, randomBytes, sign } from 'node:crypto';
 
 const b64u = (b: Buffer): string => b.toString('base64url');

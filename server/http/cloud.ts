@@ -1,4 +1,4 @@
-// Habblaud Cloud (HABBLAUD_CLOUD=1): telas e API de usuários da porta remota (http/remote.ts).
+// DevLand Cloud (DEVLAND_CLOUD=1): telas e API de usuários da porta remota (http/remote.ts).
 //
 // Sem login: /setup (criar o admin, com o código de instalação que sai no log) e /convite/<token> (aceitar convite).
 // Com login: /admin (só admin) e /api/cloud/*. Quem pode o quê no escritório: `allows(req, feature)`, pela lista do
@@ -40,7 +40,7 @@ export interface CloudDeps {
   throttle?: LoginThrottle;
   /** Conectar contas pela web (Claude, Codex, GitHub); ausente = recurso desligado. */
   connect?: () => ConnectService | undefined;
-  /** Código de instalação: HABBLAUD_SETUP_CODE (a loja do Velix sorteia e mostra em "Credenciais") ou aleatório. */
+  /** Código de instalação: DEVLAND_SETUP_CODE (a loja do Velix sorteia e mostra em "Credenciais") ou aleatório. */
   setupCode?: string;
 }
 

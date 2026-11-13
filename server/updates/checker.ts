@@ -94,7 +94,7 @@ export const APPLY_WINDOW_MS = 15 * 60_000;
 export interface UpdateCheckerOptions {
   /** Cloud: de onde vem a versão mais recente (padrão: releases do GitHub). */
   source?: LatestSource;
-  /** Cloud: atualiza o próprio Habblaud (pede ao Velix); ausente = sem botão. */
+  /** Cloud: atualiza o próprio DevLand (pede ao Velix); ausente = sem botão. */
   apply?: () => Promise<{ ok: true } | { ok: false; error: string; needsImage?: true }>;
   /** Cloud: a conexão com o Velix já foi configurada (a tela mostra o botão ou o formulário). */
   canApply?: () => boolean;
@@ -104,7 +104,7 @@ export interface UpdateCheckerOptions {
   current: string;
   /** "dono/nome"; ausente = verificação desligada. */
   repo?: string;
-  /** HABBLAUD_UPDATE_CHECK=0 desliga. */
+  /** DEVLAND_UPDATE_CHECK=0 desliga. */
   enabled: boolean;
   /** Onde guardar o último resultado; null = só em memória (testes). */
   file: string | null;
@@ -303,7 +303,7 @@ export class UpdateChecker {
     }
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
-      'User-Agent': `habblaud/${this.opts.current}`,
+      'User-Agent': `devland/${this.opts.current}`,
       'X-GitHub-Api-Version': '2022-11-28',
     };
     if (this.cache?.etag) headers['If-None-Match'] = this.cache.etag;

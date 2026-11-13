@@ -1,24 +1,24 @@
 #!/usr/bin/env node
-// Hook PermissionRequest do Habblaud: deixa aprovar ou recusar pelo escritório os pedidos de permissão
+// Hook PermissionRequest do DevLand: deixa aprovar ou recusar pelo escritório os pedidos de permissão
 // do Claude Code ("Do you want to…") e responder as perguntas do AskUserQuestion. Chega à sessão de um
 // destes jeitos (este arquivo é a fonte única dos dois):
 //
-// - plugin `habblaud-permissoes` do marketplace do repositório (Claude Code 2.1.287+): o hooks.json ao
-//   lado roda `node "${CLAUDE_PLUGIN_ROOT}/hooks/permission-hook.mjs"`, com a porta vinda de HABBLAUD_PORT.
+// - plugin `devland-permissoes` do marketplace do repositório (Claude Code 2.1.287+): o hooks.json ao
+//   lado roda `node "${CLAUDE_PLUGIN_ROOT}/hooks/permission-hook.mjs"`, com a porta vinda de DEVLAND_PORT.
 //   O Claude Code copia SÓ a pasta do plugin para o cache de plugins: por isso nada de imports fora de
 //   `node:*` aqui;
 // - `npm run hooks:install` (versões anteriores), que grava em cada <conta>/settings.json:
 //
-//   node /caminho/do/habblaud/mod/habblaud-permissoes/hooks/permission-hook.mjs [--port 4747] [--timeout 300]
+//   node /caminho/do/devland/mod/devland-permissoes/hooks/permission-hook.mjs [--port 4747] [--timeout 300]
 //
 // O Claude Code mostra o diálogo no terminal e roda este hook AO MESMO TEMPO (vale o que responder
 // primeiro); em subagentes em segundo plano o diálogo só aparece depois que o hook termina. O hook:
 // 1. lê do stdin o JSON do pedido (session_id, tool_name, tool_input, permission_suggestions...);
-// 2. manda para POST http://127.0.0.1:<porta>/api/permissions. Se o Habblaud não responder, recusar
+// 2. manda para POST http://127.0.0.1:<porta>/api/permissions. Se o DevLand não responder, recusar
 //    (recurso desligado) ou disser que não há página aberta ou que não conhece a sessão, sai na hora,
 //    sem decidir: o terminal segue normal;
 // 3. senão, espera a decisão em GET /api/permissions/:id/wait (respostas de até 25 s, em laço) até o
-//    tempo limite (padrão 5 min: --timeout <s> ou HABBLAUD_PERMISSION_TIMEOUT);
+//    tempo limite (padrão 5 min: --timeout <s> ou DEVLAND_PERMISSION_TIMEOUT);
 // 4. aprovado/recusado: imprime a decisão (hookSpecificOutput.decision). Pergunta respondida: aprova
 //    a chamada com a entrada ORIGINAL mais `answers` ({texto da pergunta: rótulos escolhidos}, como a
 //    documentação dos hooks manda responder o AskUserQuestion); a página escolhe por posição e os textos
@@ -26,7 +26,7 @@
 //    vale o que você responder no terminal.
 //
 // Regras: Node puro (22+), sem dependências; nunca trava nem quebra a sessão (todo erro = sair sem
-// decidir). Só fala com 127.0.0.1. HABBLAUD_HOOK_DEBUG=1 escreve o que acontece no stderr.
+// decidir). Só fala com 127.0.0.1. DEVLAND_HOOK_DEBUG=1 escreve o que acontece no stderr.
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -36,27 +36,27 @@ const MIN_TIMEOUT_S = 5;
 const MAX_TIMEOUT_S = 86_400;
 /** Espera máxima de cada long-poll (o servidor responde "pending" e o hook pergunta de novo). */
 const WAIT_S = 25;
-/** Registrar o pedido: se o Habblaud não responder nisso, ele está fora do ar (ou travado). */
+/** Registrar o pedido: se o DevLand não responder nisso, ele está fora do ar (ou travado). */
 const REGISTER_TIMEOUT_MS = 2_000;
 const STDIN_TIMEOUT_MS = 5_000;
 const MAX_STDIN = 8 * 1024 * 1024;
-/** Textos dos argumentos mandados ao Habblaud (o servidor só mostra uma prévia). */
+/** Textos dos argumentos mandados ao DevLand (o servidor só mostra uma prévia). */
 const MAX_STRING = 8_000;
 /** Corpo do pedido (o servidor recusa acima de 256 KB). */
 const MAX_BODY = 200_000;
 /** Ferramenta das perguntas ao usuário: a resposta é uma escolha (decisão `answer`), não aprovar/recusar. */
 const ASK_TOOL = 'AskUserQuestion';
 
-const debug = process.env.HABBLAUD_HOOK_DEBUG === '1' ? (msg) => process.stderr.write(`[habblaud-hook] ${msg}\n`) : () => {};
+const debug = process.env.DEVLAND_HOOK_DEBUG === '1' ? (msg) => process.stderr.write(`[devland-hook] ${msg}\n`) : () => {};
 
-/** Porta e tempo limite: argumentos (--port, --timeout) ou ambiente (HABBLAUD_PORT, HABBLAUD_PERMISSION_TIMEOUT). */
+/** Porta e tempo limite: argumentos (--port, --timeout) ou ambiente (DEVLAND_PORT, DEVLAND_PERMISSION_TIMEOUT). */
 export function parseOptions(argv, env = process.env) {
   const arg = (name) => {
     const i = argv.indexOf(`--${name}`);
     return i >= 0 ? argv[i + 1] : undefined;
   };
-  const port = Number.parseInt(arg('port') ?? env.HABBLAUD_PORT ?? '', 10);
-  const timeout = Number(arg('timeout') ?? env.HABBLAUD_PERMISSION_TIMEOUT ?? '');
+  const port = Number.parseInt(arg('port') ?? env.DEVLAND_PORT ?? '', 10);
+  const timeout = Number(arg('timeout') ?? env.DEVLAND_PERMISSION_TIMEOUT ?? '');
   return {
     port: Number.isInteger(port) && port > 0 && port < 65_536 ? port : DEFAULT_PORT,
     timeoutMs: (Number.isFinite(timeout) && timeout > 0 ? Math.min(MAX_TIMEOUT_S, Math.max(MIN_TIMEOUT_S, timeout)) : DEFAULT_TIMEOUT_S) * 1_000,
@@ -74,7 +74,7 @@ export function trimInput(v, max = MAX_STRING, depth = 0) {
 }
 
 /**
- * Corpo mandado ao Habblaud: só o que ele usa (nada de transcript_path nem do resto do stdin). Se ainda
+ * Corpo mandado ao DevLand: só o que ele usa (nada de transcript_path nem do resto do stdin). Se ainda
  * ficar grande (muitas edições de uma vez), os textos são cortados mais curtos.
  */
 export function requestBody(input, timeoutMs) {
@@ -93,7 +93,7 @@ const text = (v) => typeof v === 'string' && v.trim() !== '';
 
 /**
  * `answers` do AskUserQuestion ({texto ORIGINAL da pergunta: rótulos ORIGINAIS das opções escolhidas, na ordem
- * delas, e o texto livre no fim, juntos com ", "}) a partir das respostas por posição vindas do Habblaud.
+ * delas, e o texto livre no fim, juntos com ", "}) a partir das respostas por posição vindas do DevLand.
  * undefined = não dá para responder (sai sem decidir e vale o terminal): entrada sem `questions`, pergunta
  * sem resposta ou respondida duas vezes, posição inválida, sem multiSelect mais de uma escolha, perguntas
  * com o mesmo texto.
@@ -118,13 +118,13 @@ export function answersFor(answers, toolInput) {
     if (!parts.length || (q.multiSelect !== true && parts.length > 1)) return undefined;
     out[q.question] = parts.join(', ');
   }
-  // Toda pergunta de verdade precisa de resposta (as inválidas o Habblaud nem mostrou).
+  // Toda pergunta de verdade precisa de resposta (as inválidas o DevLand nem mostrou).
   if (questions.some((q, i) => q && typeof q === 'object' && text(q.question) && !done.has(i))) return undefined;
   return out;
 }
 
 /**
- * Saída do hook para uma decisão do Habblaud (undefined = sair sem decidir). Uma regra "sempre permitir"
+ * Saída do hook para uma decisão do DevLand (undefined = sair sem decidir). Uma regra "sempre permitir"
  * escolhida na página volta só como a POSIÇÃO: aplica-se a sugestão original que o Claude Code mandou.
  * Pergunta (AskUserQuestion): só `answer` aprova (sem `answers` a chamada não teria resposta); recusar vale.
  */
@@ -173,7 +173,7 @@ function readStdin() {
   });
 }
 
-/** Requisição ao Habblaud local; null = fora do ar, tempo esgotado ou resposta ilegível. */
+/** Requisição ao DevLand local; null = fora do ar, tempo esgotado ou resposta ilegível. */
 async function call(base, method, path, body, timeoutMs) {
   try {
     const res = await fetch(`${base}${path}`, {

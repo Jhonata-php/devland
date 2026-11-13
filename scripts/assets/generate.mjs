@@ -1,4 +1,4 @@
-// Gerador de imagens via OpenRouter para os assets do Habblaud.
+// Gerador de imagens via OpenRouter para os assets do DevLand.
 //
 // Uso (a partir da raiz do projeto, com OPENROUTER_KEY exportada):
 //   node scripts/assets/generate.mjs models                 lista os modelos com saída de imagem

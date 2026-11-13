@@ -1,4 +1,4 @@
-// Habblaud Cloud: cada agente é um processo do Claude Code, e a cada reimplantação o container reinicia e todos morrem
+// DevLand Cloud: cada agente é um processo do Claude Code, e a cada reimplantação o container reinicia e todos morrem
 // (e saem do escritório). Para não perder o trabalho de vista, o servidor guarda quem estava ativo (conta, sessão e pasta) e,
 // ao subir, retoma cada conversa com `claude --resume` (pty/manager.ts: resume). Quem foi encerrado de propósito não volta:
 // o arquivo reflete só o que estava vivo na última foto, tirada a cada poucos segundos e congelada ao encerrar o servidor.

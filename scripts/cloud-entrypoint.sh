@@ -1,10 +1,10 @@
 #!/bin/sh
-# Habblaud Cloud (Dockerfile.cloud): acerta os donos dos volumes antes de subir o servidor. Volume novo nasce com
+# DevLand Cloud (Dockerfile.cloud): acerta os donos dos volumes antes de subir o servidor. Volume novo nasce com
 # dono root; /workspace e /home/dev são do usuário dos agentes, /data só do servidor.
 set -eu
 chown dev:dev /workspace /home/dev
-mkdir -p /home/dev/.claude/projects /home/dev/.codex /home/dev/.habblaud/usage
-chown dev:dev /home/dev/.claude /home/dev/.claude/projects /home/dev/.codex /home/dev/.habblaud /home/dev/.habblaud/usage
+mkdir -p /home/dev/.claude/projects /home/dev/.codex /home/dev/.devland/usage
+chown dev:dev /home/dev/.claude /home/dev/.claude/projects /home/dev/.codex /home/dev/.devland /home/dev/.devland/usage
 chown root:root /data
 chmod 700 /data
 
@@ -21,13 +21,13 @@ fi
 if [ -f "$APPDIR/current" ]; then
   v=$(cat "$APPDIR/current" 2>/dev/null || true)
   case "$v" in ""|*[!0-9A-Za-z.-]*) v="" ;; esac
-  imgv=${HABBLAUD_CLOUD_VERSION#cloud-v}
+  imgv=${DEVLAND_CLOUD_VERSION#cloud-v}
   if [ -n "$v" ] && [ -f "$APPDIR/$v/dist/server/index.js" ] && [ ! -f "$APPDIR/bad-$v" ] \
      && [ "$v" != "$imgv" ] && [ "$(printf '%s\n%s\n' "$v" "$imgv" | sort -V | tail -n 1)" = "$v" ] \
      && [ -f /app/deps.hash ] && cmp -s /app/deps.hash "$APPDIR/$v/deps.hash"; then
     ln -sfn /app/node_modules "$APPDIR/$v/node_modules"
     echo "$v" > "$APPDIR/booting"
-    export HABBLAUD_CLOUD_VERSION="cloud-v$v"
+    export DEVLAND_CLOUD_VERSION="cloud-v$v"
     cd "$APPDIR/$v"
     exec "$@"
   fi

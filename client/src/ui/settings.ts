@@ -107,7 +107,7 @@ export class SettingsPopover implements UiComponent {
   private gitOn = false;
   private gitLoaded = false;
   private testHint: HTMLElement;
-  /** Habblaud Cloud: quem está logado e o atalho para as contas conectadas. */
+  /** DevLand Cloud: quem está logado e o atalho para as contas conectadas. */
   private profileRow: HTMLElement;
   private profileText: HTMLElement;
   private emailBtn: HTMLButtonElement;
@@ -193,7 +193,7 @@ export class SettingsPopover implements UiComponent {
       (v) => pickLanguage(v),
     );
     this.language.row.append(
-      h('span', { class: 'ui-set__hint', text: tr('Os textos das atividades vêm do servidor: seguem HABBLAUD_LANG ou o idioma do sistema onde o DevLand roda (o inglês, só com HABBLAUD_LANG=en).') }),
+      h('span', { class: 'ui-set__hint', text: tr('Os textos das atividades vêm do servidor: seguem DEVLAND_LANG ou o idioma do sistema onde o DevLand roda (o inglês, só com DEVLAND_LANG=en).') }),
     );
 
     this.demoGroup = h(

@@ -310,7 +310,7 @@ export const ICONS = {
 
 export type IconKey = keyof typeof ICONS;
 
-/** Marca do Habblaud em pixels (usada quando /assets/brand/logo-mark.png não existe): prédio com janelas acesas. */
+/** Marca do DevLand em pixels (usada quando /assets/brand/logo-mark.png não existe): prédio com janelas acesas. */
 export const FALLBACK_MARK = pixelIcon(
   [
     '.....######.....',
@@ -333,7 +333,7 @@ export const FALLBACK_MARK = pixelIcon(
 );
 
 /**
- * Logotipo "Habblaud" em pixels, com a mesma fonte bitmap da placa da marca (assets/brand/signage.png, gerada por
+ * Logotipo "DevLand" em pixels, com a mesma fonte bitmap da placa da marca (assets/brand/signage.png, gerada por
  * scripts/assets/pixelart.py): a Pixelify Sans não fica nítida nesse tamanho.
  * c = "Hab" (creme), t = "blaud" (âmbar), s = sombra de 1 px.
  */

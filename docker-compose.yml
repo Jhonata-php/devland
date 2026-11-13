@@ -1,13 +1,13 @@
-# Habblaud no Docker local.
+# DevLand no Docker local.
 #
 # Suba com `npm run docker:up`: o script detecta as contas do Claude Code no host e gera o
 # docker-compose.override.yml (fora do controle de versão) com:
 #   - montagens SOMENTE LEITURA de <conta>/projects e <conta>/sessions em /claude/<conta>/...
-#     (nunca a pasta inteira da conta: lá ficam credenciais e configurações) e de ~/.habblaud/usage
+#     (nunca a pasta inteira da conta: lá ficam credenciais e configurações) e de ~/.devland/usage
 #     (uso de 5h/semanal capturado pelo tap de statusline) em /usage;
 #   - do Codex, SOMENTE <pasta>/sessions, <pasta>/archived_sessions e <pasta>/thread-writer-locks em
 #     /codex/<conta>/... (nunca auth.json, config.toml, history.jsonl, logs nem os bancos SQLite);
-#   - HABBLAUD_CLAUDE_DIRS, HABBLAUD_CODEX_DIRS, HABBLAUD_ACCOUNTS e HABBLAUD_USAGE_DIR.
+#   - DEVLAND_CLAUDE_DIRS, DEVLAND_CODEX_DIRS, DEVLAND_ACCOUNTS e DEVLAND_USAGE_DIR.
 # O Compose mescla o override automaticamente em qualquer `docker compose ...` rodado nesta pasta.
 name: habblaud
 
@@ -18,35 +18,35 @@ services:
     container_name: habblaud
     restart: unless-stopped
     # Os transcripts são sensíveis: por padrão a porta é publicada SÓ na interface local do host
-    # (HABBLAUD_BIND=0.0.0.0 no .env libera a rede local; veja o README).
+    # (DEVLAND_BIND=0.0.0.0 no .env libera a rede local; veja o README).
     ports:
-      - "${HABBLAUD_BIND:-127.0.0.1}:${HABBLAUD_PORT:-4747}:4747"
+      - "${DEVLAND_BIND:-127.0.0.1}:${DEVLAND_PORT:-4747}:4747"
       # A porta do acesso pelo celular (com login) só é publicada depois do npm run remote:setup: quem a junta é o
       # docker-compose.override.yml que o docker:up gera.
     volumes:
       - habblaud-data:/data
     # Opções que podem vir do .env (ou do ambiente) para dentro do container.
     environment:
-      HABBLAUD_ALLOWED_HOSTS: ${HABBLAUD_ALLOWED_HOSTS:-}
-      HABBLAUD_DEMO: ${HABBLAUD_DEMO:-}
+      DEVLAND_ALLOWED_HOSTS: ${DEVLAND_ALLOWED_HOSTS:-}
+      DEVLAND_DEMO: ${DEVLAND_DEMO:-}
       # O mesmo valor da porta publicada acima: o terminal (e o que age sobre as sessões) só liga com bind local.
-      HABBLAUD_BIND: ${HABBLAUD_BIND:-127.0.0.1}
-      HABBLAUD_TERMINAL: ${HABBLAUD_TERMINAL:-}
+      DEVLAND_BIND: ${DEVLAND_BIND:-127.0.0.1}
+      DEVLAND_TERMINAL: ${DEVLAND_TERMINAL:-}
       # 0 desliga as mensagens pelo escritório (mandar mensagens aos agentes pela página e pelo terminal).
-      HABBLAUD_MENSAGENS: ${HABBLAUD_MENSAGENS:-}
+      DEVLAND_MENSAGENS: ${DEVLAND_MENSAGENS:-}
       # 0 desliga a verificação de versão nova (consulta às releases no GitHub a cada 6 h).
-      HABBLAUD_UPDATE_CHECK: ${HABBLAUD_UPDATE_CHECK:-}
-      HABBLAUD_LANG: ${HABBLAUD_LANG:-}
+      DEVLAND_UPDATE_CHECK: ${DEVLAND_UPDATE_CHECK:-}
+      DEVLAND_LANG: ${DEVLAND_LANG:-}
       # 0 desliga as sessões do Codex no escritório.
-      HABBLAUD_CODEX: ${HABBLAUD_CODEX:-}
+      DEVLAND_CODEX: ${DEVLAND_CODEX:-}
       # 1 liga o Novo agente pelo escritório (no Docker, quem começa a sessão é o auxiliar do host, npm run
       # codex:bridge; o terminal interativo em si não roda no container).
-      HABBLAUD_PTY: ${HABBLAUD_PTY:-}
+      DEVLAND_PTY: ${DEVLAND_PTY:-}
       # Acesso remoto com login (server/http/remote.ts).
-      HABBLAUD_REMOTE_USER: ${HABBLAUD_REMOTE_USER:-}
-      HABBLAUD_REMOTE_PASSWORD_HASH: ${HABBLAUD_REMOTE_PASSWORD_HASH:-}
-      HABBLAUD_REMOTE_ALLOW: ${HABBLAUD_REMOTE_ALLOW:-}
-      HABBLAUD_REMOTE_INSECURE_HTTP: ${HABBLAUD_REMOTE_INSECURE_HTTP:-}
+      DEVLAND_REMOTE_USER: ${DEVLAND_REMOTE_USER:-}
+      DEVLAND_REMOTE_PASSWORD_HASH: ${DEVLAND_REMOTE_PASSWORD_HASH:-}
+      DEVLAND_REMOTE_ALLOW: ${DEVLAND_REMOTE_ALLOW:-}
+      DEVLAND_REMOTE_INSECURE_HTTP: ${DEVLAND_REMOTE_INSECURE_HTTP:-}
       # Habblaud World (ligado por padrão: server.habblaud.com; nada sai antes de criar a conta). HABBLAUD_WORLD=0 desliga tudo.
       HABBLAUD_WORLD: ${HABBLAUD_WORLD:-}
       HABBLAUD_WORLD_URL: ${HABBLAUD_WORLD_URL:-}

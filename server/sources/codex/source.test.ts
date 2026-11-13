@@ -514,7 +514,7 @@ describe('fonte do Codex: eventos de hook', () => {
     const ctx = setup({
       names: ['.codex', '.codex-b'],
       env: (dirs) => ({
-        HABBLAUD_ACCOUNTS: JSON.stringify([
+        DEVLAND_ACCOUNTS: JSON.stringify([
           { id: '.codex', provider: 'codex', configDir: '/Users/host/.codex', mountDir: dirs[0], short: 'CX', name: 'Codex CX', color: '#111111' },
           { id: '.codex-b', provider: 'codex', configDir: '/Users/host/.codex-b', mountDir: dirs[1], short: 'CB', name: 'Codex CB', color: '#222222' },
         ]),
@@ -600,7 +600,7 @@ describe('fonte do Codex: contas', () => {
 
 describe('scanPrefix do Codex', () => {
   it('ignora linha acima do teto e lê as vizinhas', async () => {
-    const dir = join(tmpdir(), `habblaud-codex-prefix-${process.pid}`);
+    const dir = join(tmpdir(), `devland-codex-prefix-${process.pid}`);
     mkdirSync(dir, { recursive: true });
     const warn = vi.spyOn(log, 'warnOnce').mockImplementation(() => {});
     try {

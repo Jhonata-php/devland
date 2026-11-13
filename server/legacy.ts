@@ -1,4 +1,4 @@
-// Migração do nome antigo do projeto (CodeTown, até a 0.3.2) para Habblaud. O que ainda precisa conhecer o
+// Migração do nome antigo do projeto (CodeTown, até a 0.3.2) para DevLand. O que ainda precisa conhecer o
 // nome antigo fica aqui, para sair de uma vez quando ninguém mais vier de uma instalação da 0.3.
 import { existsSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -7,7 +7,7 @@ import { tr } from '../shared/i18n';
 /** Nome antigo em minúsculas: pasta de estado, plugins, marketplace, projeto e volume do Docker. */
 export const LEGACY_NAME = 'codetown';
 const LEGACY_ENV_PREFIX = 'CODETOWN_';
-const ENV_PREFIX = 'HABBLAUD_';
+const ENV_PREFIX = 'DEVLAND_';
 
 /** Variáveis do nome antigo (CODETOWN_*) presentes em `keys`, com o nome novo de cada uma. */
 export function legacyEnvVars(keys: Iterable<string>): Array<{ from: string; to: string }> {
@@ -64,13 +64,22 @@ function mergeInto(from: string, to: string, moved: string[], rel: string): void
 }
 
 /**
- * Leva o estado de ~/.codetown para ~/.habblaud (uso capturado pelo mod/tap e, fora do Docker, nomes, linha do
+ * Leva o estado de ~/.codetown para ~/.devland (uso capturado pelo mod/tap e, fora do Docker, nomes, linha do
  * tempo e estatísticas). Sem a pasta nova, é um rename; se ela já existe (o mod gravou o uso antes), move o que
  * falta lá e o que for mais recente. Devolve o que foi movido (vazio = nada a fazer) e nunca lança.
  */
-export function migrateLegacyStateDir(home: string): { moved: string[]; error?: string } {
-  const from = join(home, `.${LEGACY_NAME}`);
-  const to = join(home, '.habblaud');
+export function migrateLegacyStateDir(home: string): { moved: string[]; error?: string; from?: string } {
+  // ponytail: o mais antigo primeiro; um só costuma existir.
+  for (const name of [LEGACY_NAME, 'habblaud']) {
+    const r = migrateOne(home, name);
+    if (r.moved.length || r.error) return { ...r, from: name };
+  }
+  return { moved: [] };
+}
+
+function migrateOne(home: string, name: string): { moved: string[]; error?: string } {
+  const from = join(home, `.${name}`);
+  const to = join(home, '.devland');
   const moved: string[] = [];
   if (!isDir(from)) return { moved };
   try {
@@ -86,8 +95,9 @@ export function migrateLegacyStateDir(home: string): { moved: string[]; error?: 
 }
 
 /** Frase curta para o log de quem migrou (undefined se nada mudou). */
-export function describeStateMigration(r: { moved: string[]; error?: string }): string | undefined {
-  if (r.error) return tr('não consegui levar ~/.{0} para ~/.habblaud ({1}); mova a pasta à mão.', [LEGACY_NAME, r.error]);
+export function describeStateMigration(r: { moved: string[]; error?: string; from?: string }): string | undefined {
+  const old = r.from ?? LEGACY_NAME;
+  if (r.error) return tr('não consegui levar ~/.{0} para ~/.devland ({1}); mova a pasta à mão.', [old, r.error]);
   if (!r.moved.length) return undefined;
-  return r.moved[0] === '.' ? tr('~/.{0} (nome antigo) agora é ~/.habblaud.', [LEGACY_NAME]) : tr('de ~/.{0} (nome antigo) para ~/.habblaud: {1}.', [LEGACY_NAME, r.moved.join(', ')]);
+  return r.moved[0] === '.' ? tr('~/.{0} (nome antigo) agora é ~/.devland.', [old]) : tr('de ~/.{0} (nome antigo) para ~/.devland: {1}.', [old, r.moved.join(', ')]);
 }

@@ -1,7 +1,7 @@
-// Instala (ou remove) o mod do Habblaud no Claude Code de cada conta. Roda no HOST, com tsx:
+// Instala (ou remove) o mod do DevLand no Claude Code de cada conta. Roda no HOST, com tsx:
 //
-//   npm run mod:install      # marketplace "habblaud" (esta pasta) + plugins habblaud, habblaud-permissoes e
-//                            # habblaud-mensagens
+//   npm run mod:install      # marketplace "devland" (esta pasta) + plugins devland, devland-permissoes e
+//                            # devland-mensagens
 //   npm run mod:uninstall    # tira os três plugins e o marketplace de cada conta
 //   npm run mod:status       # por conta: marketplace, plugins (e versões) e restos do jeito antigo
 //   (opções: --sem-permissoes, --sem-mensagens, --conta <pasta>, --dry-run, --claude <comando>)
@@ -16,7 +16,7 @@
 // novas (ou /reload-plugins) já rodam o código novo; o `claude plugin update` acerta a versão registrada (o
 // `npm run docker:up` faz isso sozinho para quem já instalou).
 //
-// Mensagens pelo escritório (habblaud-mensagens, o plugin que digita na sessão em seu nome): vai junto por padrão;
+// Mensagens pelo escritório (devland-mensagens, o plugin que digita na sessão em seu nome): vai junto por padrão;
 // com --sem-mensagens fica de fora, e um já instalado continua (como o de permissões com --sem-permissoes). O
 // docker:up nunca o instala sozinho: numa conta com o mod e sem ele, só dá a dica de rodar o mod:install.
 //
@@ -26,8 +26,8 @@
 // o uso nem dois respondendo o mesmo pedido. Com --sem-permissoes, o hook antigo fica como está.
 //
 // Nome antigo (CodeTown, até a 0.3.2): o install tira os plugins codetown e codetown-permissoes e o marketplace
-// codetown (esta mesma pasta, com o nome que o manifesto não tem mais) ANTES de adicionar o habblaud, e leva
-// ~/.codetown para ~/.habblaud. O uninstall também os tira, o status os mostra e o docker:up só avisa.
+// codetown (esta mesma pasta, com o nome que o manifesto não tem mais) ANTES de adicionar o devland, e leva
+// ~/.codetown para ~/.devland. O uninstall também os tira, o status os mostra e o docker:up só avisa.
 //
 // Status (e o plano de cada conta): vem de `claude plugin list --json` e `claude plugin marketplace list --json`,
 // saídas documentadas que já resolvem escopo, ligado/desligado e CLAUDE_CODE_PLUGIN_CACHE_DIR. Os arquivos
@@ -57,14 +57,14 @@ import { tr } from '../shared/i18n';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Nome do marketplace em .claude-plugin/marketplace.json (contrato com mod/). */
-export const MARKETPLACE = 'habblaud';
-/** O mod: uso do plano, aviso de "precisa de você" no terminal e /habblaud. */
-export const MOD_PLUGIN = `habblaud@${MARKETPLACE}`;
+export const MARKETPLACE = 'devland';
+/** O mod: uso do plano, aviso de "precisa de você" no terminal e /devland. */
+export const MOD_PLUGIN = `devland@${MARKETPLACE}`;
 /** O settings hook PermissionRequest de responder pelo escritório, empacotado como plugin. */
-export const PERMISSIONS_PLUGIN = `habblaud-permissoes@${MARKETPLACE}`;
-/** Mandar mensagens pelo escritório: leva para a sessão, como suas, as mensagens digitadas no Habblaud. */
-export const MESSAGES_PLUGIN = `habblaud-mensagens@${MARKETPLACE}`;
-/** Os plugins do Habblaud, na ordem da saída (status, remoção, atualização). */
+export const PERMISSIONS_PLUGIN = `devland-permissoes@${MARKETPLACE}`;
+/** Mandar mensagens pelo escritório: leva para a sessão, como suas, as mensagens digitadas no DevLand. */
+export const MESSAGES_PLUGIN = `devland-mensagens@${MARKETPLACE}`;
+/** Os plugins do DevLand, na ordem da saída (status, remoção, atualização). */
 export const PLUGINS = [MOD_PLUGIN, PERMISSIONS_PLUGIN, MESSAGES_PLUGIN] as const;
 /** Marketplace do nome antigo (CodeTown, até a 0.3.2): a mesma pasta, registrada com o nome que ela tinha. */
 export const LEGACY_MARKETPLACE = LEGACY_NAME;
@@ -77,7 +77,7 @@ const SCOPE = 'user';
 /** Tempo máximo de cada chamada ao CLI (o add/update de um diretório local leva poucos segundos). */
 const CLI_TIMEOUT_MS = 120_000;
 
-const USAGE = tr('Uso: npm run mod:<install|uninstall|status> [-- opções]\n\n  install     instala o mod do DevLand no Claude Code de cada conta (marketplace desta pasta + plugins)\n              e tira o que ele substitui: o tap de statusline e o hook de permissão antigos e o mod do\n              nome antigo (codetown)\n  uninstall   tira os plugins e o marketplace do DevLand de cada conta (e os do nome antigo, se sobraram)\n  status      mostra, por conta, o marketplace, os plugins (e versões) e o que sobrou do jeito antigo\n\nOpções:\n  --sem-permissoes   não instala o plugin de responder permissões pelo escritório (e mantém o hook antigo)\n  --sem-mensagens    não instala o plugin de mandar mensagens pelo escritório (um já instalado continua)\n  --conta <pasta>    só esta conta (ex.: --conta ~/.claude-conta2); pode repetir\n  --dry-run          mostra o que faria, sem instalar nem gravar nada\n  --claude <cmd>     comando do Claude Code (padrão: claude, do PATH)\n  -h, --help         mostra esta ajuda\n\nPrecisa do Claude Code {0} ou mais novo. Em versões anteriores, use o jeito antigo:\nnpm run usage:install (uso ao vivo) e npm run hooks:install (responder permissões); mandar mensagens pelo\nescritório só existe com o mod.\n\nContas: as mesmas do servidor (~/.claude* com projects/ ou sessions/, CLAUDE_CONFIG_DIR ou\nHABBLAUD_CLAUDE_DIRS). Uso capturado em HABBLAUD_USAGE_DIR (padrão ~/.habblaud/usage).', [MIN_CLAUDE_VERSION]);
+const USAGE = tr('Uso: npm run mod:<install|uninstall|status> [-- opções]\n\n  install     instala o mod do DevLand no Claude Code de cada conta (marketplace desta pasta + plugins)\n              e tira o que ele substitui: o tap de statusline e o hook de permissão antigos e o mod do\n              nome antigo (codetown)\n  uninstall   tira os plugins e o marketplace do DevLand de cada conta (e os do nome antigo, se sobraram)\n  status      mostra, por conta, o marketplace, os plugins (e versões) e o que sobrou do jeito antigo\n\nOpções:\n  --sem-permissoes   não instala o plugin de responder permissões pelo escritório (e mantém o hook antigo)\n  --sem-mensagens    não instala o plugin de mandar mensagens pelo escritório (um já instalado continua)\n  --conta <pasta>    só esta conta (ex.: --conta ~/.claude-conta2); pode repetir\n  --dry-run          mostra o que faria, sem instalar nem gravar nada\n  --claude <cmd>     comando do Claude Code (padrão: claude, do PATH)\n  -h, --help         mostra esta ajuda\n\nPrecisa do Claude Code {0} ou mais novo. Em versões anteriores, use o jeito antigo:\nnpm run usage:install (uso ao vivo) e npm run hooks:install (responder permissões); mandar mensagens pelo\nescritório só existe com o mod.\n\nContas: as mesmas do servidor (~/.claude* com projects/ ou sessions/, CLAUDE_CONFIG_DIR ou\nDEVLAND_CLAUDE_DIRS). Uso capturado em DEVLAND_USAGE_DIR (padrão ~/.devland/usage).', [MIN_CLAUDE_VERSION]);
 
 // ---------------------------------------------------------------------------------------------
 // O CLI do Claude Code (injetável: os testes nunca chamam o de verdade)
@@ -234,7 +234,7 @@ export function parseMarketplaceList(stdout: string): MarketplaceInfo[] | undefi
   return out;
 }
 
-/** O que uma conta tem do Habblaud no Claude Code. */
+/** O que uma conta tem do DevLand no Claude Code. */
 export interface AccountState {
   marketplace?: MarketplaceInfo;
   /** O marketplace do nome antigo (codetown), se ainda estiver registrado. */
@@ -266,7 +266,7 @@ export function legacySummary(state: AccountState, where?: (m: MarketplaceInfo) 
 /** Uma chamada ao CLI, com a frase que conta o que ela faz. */
 export interface CliStep {
   args: string[];
-  /** "habblaud: instalado" (vira ✓, ~ ou ✗ na saída). */
+  /** "devland: instalado" (vira ✓, ~ ou ✗ na saída). */
   message: string;
   /** Plugin que depende deste passo (falhou = não conta como instalado). */
   plugin?: string;
@@ -343,7 +343,7 @@ function legacySteps(state: AccountState): CliStep[] {
 export function planInstall(state: AccountState, o: PlanOptions): InstallPlan {
   const same = o.sameDir ?? sameDir;
   const plan: InstallPlan = { items: [], notes: [], plugins: [] };
-  // O marketplace codetown aponta para esta mesma pasta: ele sai antes de o habblaud entrar, para nunca ficarem
+  // O marketplace codetown aponta para esta mesma pasta: ele sai antes de o devland entrar, para nunca ficarem
   // dois nomes registrados para a mesma pasta (um deles que o manifesto não tem mais).
   plan.items.push(...legacySteps(state));
   const m = state.marketplace;
@@ -352,7 +352,7 @@ export function planInstall(state: AccountState, o: PlanOptions): InstallPlan {
   } else if (m.path && same(m.path, o.root)) {
     plan.items.push({ args: ['plugin', 'marketplace', 'update', MARKETPLACE], message: tr('marketplace {0}: catálogo relido desta pasta', [MARKETPLACE]) });
   } else {
-    // Outra pasta (o Habblaud mudou de lugar) ou outra origem: o add com a mesma chave só troca a origem e
+    // Outra pasta (o DevLand mudou de lugar) ou outra origem: o add com a mesma chave só troca a origem e
     // mantém os plugins instalados.
     plan.items.push({
       args: ['plugin', 'marketplace', 'add', o.root],
@@ -485,7 +485,7 @@ export const MESSAGES_HINT = tr('rode npm run mod:install para mandar mensagens 
 
 export function planUpdate(state: AccountState, o: { root: string; version: string; sameDir?: (a: string, b: string) => boolean }): UpdatePlan {
   const same = o.sameDir ?? sameDir;
-  // Nome antigo: a troca (tirar o codetown, instalar o habblaud) é do mod:install; aqui só o aviso. Um aviso conta
+  // Nome antigo: a troca (tirar o codetown, instalar o devland) é do mod:install; aqui só o aviso. Um aviso conta
   // como "instalado", então a dica de instalar do zero não aparece para quem já usava o mod.
   const legacy = legacySummary(state);
   if (legacy) return { action: 'warn', message: tr('ainda com o nome antigo ({0}); o docker:up não troca sozinho: rode npm run mod:install', [legacy]) };
@@ -544,7 +544,7 @@ export function describeStatus(state: AccountState, settings: Settings, o: { roo
     }
   }
   const legacy = legacySummary(state, (lm) => (lm.path && same(lm.path, o.root) ? tr('esta pasta') : lm.path ? tildify(lm.path, o.home) : (lm.source ?? '?')));
-  if (legacy) lines.push(tr('! nome antigo ainda registrado: {0}; npm run mod:install troca pelo habblaud', [legacy]));
+  if (legacy) lines.push(tr('! nome antigo ainda registrado: {0}; npm run mod:install troca pelo devland', [legacy]));
   const sl = rec(settings.statusLine);
   const hook = installedHook(settings);
   const modOn = !!userInstall(state, MOD_PLUGIN);
@@ -593,11 +593,11 @@ export interface RunContext {
   version: string;
   claude: ClaudeRunner;
   out: (line: string) => void;
-  /** Consulta o /api/health do Habblaud no status (testes injetam um falso). */
+  /** Consulta o /api/health do DevLand no status (testes injetam um falso). */
   health?: (port: number) => Promise<HealthInfo | undefined>;
 }
 
-/** O que o status usa do /api/health (`messages` só existe a partir do Habblaud com mensagens pelo escritório). */
+/** O que o status usa do /api/health (`messages` só existe a partir do DevLand com mensagens pelo escritório). */
 export interface HealthInfo {
   permissions?: boolean;
   messages?: boolean;
@@ -615,9 +615,9 @@ async function fetchHealth(port: number): Promise<HealthInfo | undefined> {
   }
 }
 
-/** Porta do Habblaud (HABBLAUD_PORT ou a padrão). */
-function habblaudPort(env: NodeJS.ProcessEnv): number {
-  const p = Number.parseInt(env.HABBLAUD_PORT ?? '', 10);
+/** Porta do DevLand (DEVLAND_PORT ou a padrão). */
+function devlandPort(env: NodeJS.ProcessEnv): number {
+  const p = Number.parseInt(env.DEVLAND_PORT ?? '', 10);
   return Number.isInteger(p) && p > 0 && p < 65_536 ? p : DEFAULT_PORT;
 }
 
@@ -700,7 +700,7 @@ export async function run(opts: RunOptions, ctx: RunContext): Promise<number> {
   const { env, home, out } = ctx;
   const dirs = accountDirs(opts, env, home);
   if (!dirs.length) {
-    out(tr('Nenhuma conta do Claude Code encontrada (~/.claude* com projects/ ou sessions/). Use --conta <pasta> ou HABBLAUD_CLAUDE_DIRS.'));
+    out(tr('Nenhuma conta do Claude Code encontrada (~/.claude* com projects/ ou sessions/). Use --conta <pasta> ou DEVLAND_CLAUDE_DIRS.'));
     return 1;
   }
   const manifest = join(ctx.root, '.claude-plugin', 'marketplace.json');
@@ -731,12 +731,12 @@ export async function run(opts: RunOptions, ctx: RunContext): Promise<number> {
     out(tr('Claude Code {0}{1} · DevLand {2} em {3}', [cliVersion ?? tr('(versão desconhecida)'), cliVersion && !versionAtLeast(cliVersion, MIN_CLAUDE_VERSION) ? tr(' — o mod precisa do {0}+', [MIN_CLAUDE_VERSION]) : '', ctx.version, tildify(ctx.root, home)]));
   }
 
-  // Nome antigo: ~/.codetown vira ~/.habblaud antes de criar (ou usar) a pasta do uso.
+  // Nome antigo: ~/.codetown vira ~/.devland antes de criar (ou usar) a pasta do uso.
   if (opts.command === 'install') {
     const moved = migrateLegacyState(home, opts.dryRun);
     if (moved) out(moved);
   }
-  // O mod grava o uso em ~/.habblaud/usage, mas não cria a pasta (o docker:up também a monta no container).
+  // O mod grava o uso em ~/.devland/usage, mas não cria a pasta (o docker:up também a monta no container).
   if (opts.command === 'install' && !opts.dryRun) {
     const usageDir = usageDirOf(env, home);
     try {
@@ -863,19 +863,19 @@ export async function run(opts: RunOptions, ctx: RunContext): Promise<number> {
     out(tr('Para voltar ao jeito antigo (Claude Code anterior ao 2.1.287): npm run usage:install e npm run hooks:install'));
   }
   if (opts.command === 'status') {
-    // O mod e os plugins só falam com o Habblaud local: diz se ele está lá para responder.
-    const port = habblaudPort(env);
+    // O mod e os plugins só falam com o DevLand local: diz se ele está lá para responder.
+    const port = devlandPort(env);
     const health = await (ctx.health ?? fetchHealth)(port);
     const at = tr('DevLand em http://127.0.0.1:{0}', [port]);
     if (!health) out(tr('{0}: fora do ar (o mod segue gravando o uso; os pedidos de permissão ficam só no terminal).', [at]));
     else if (health.permissions) out(tr('{0}: no ar e respondendo pedidos de permissão (com alguma página aberta).', [at]));
-    else out(tr('{0}: no ar, mas responder pelo escritório está desligado (porta exposta na rede ou HABBLAUD_TERMINAL=0).', [at]));
-    // Um Habblaud de antes das mensagens não diz nada sobre elas.
+    else out(tr('{0}: no ar, mas responder pelo escritório está desligado (porta exposta na rede ou DEVLAND_TERMINAL=0).', [at]));
+    // Um DevLand de antes das mensagens não diz nada sobre elas.
     if (health && typeof health.messages === 'boolean') {
       out(
         health.messages
           ? tr('Mensagens pelo escritório: ligadas (chegam às sessões abertas com o plugin {0}).', [shortName(MESSAGES_PLUGIN)])
-          : tr('Mensagens pelo escritório: desligadas no DevLand (porta exposta na rede, HABBLAUD_TERMINAL=0 ou HABBLAUD_MENSAGENS=0).'),
+          : tr('Mensagens pelo escritório: desligadas no DevLand (porta exposta na rede, DEVLAND_TERMINAL=0 ou DEVLAND_MENSAGENS=0).'),
       );
     }
   }

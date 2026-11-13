@@ -1,6 +1,6 @@
-// Habblaud Cloud: os agentes (claude, codex) rodam com outro usuário do Linux, sem acesso a /data (usuários, segredo
-// das sessões). Ligado por HABBLAUD_AGENT_UID + HABBLAUD_AGENT_GID (o Dockerfile.cloud cria o usuário "dev"); exige
-// o servidor como root no container. Sem as duas variáveis, tudo roda como o próprio servidor (o Habblaud no Mac).
+// DevLand Cloud: os agentes (claude, codex) rodam com outro usuário do Linux, sem acesso a /data (usuários, segredo
+// das sessões). Ligado por DEVLAND_AGENT_UID + DEVLAND_AGENT_GID (o Dockerfile.cloud cria o usuário "dev"); exige
+// o servidor como root no container. Sem as duas variáveis, tudo roda como o próprio servidor (o DevLand no Mac).
 import { userInfo } from 'node:os';
 
 export interface RunAs {
@@ -11,11 +11,11 @@ export interface RunAs {
 }
 
 export function agentRunAs(env: NodeJS.ProcessEnv = process.env): RunAs | undefined {
-  const uid = Number.parseInt(env.HABBLAUD_AGENT_UID ?? '', 10);
-  const gid = Number.parseInt(env.HABBLAUD_AGENT_GID ?? '', 10);
+  const uid = Number.parseInt(env.DEVLAND_AGENT_UID ?? '', 10);
+  const gid = Number.parseInt(env.DEVLAND_AGENT_GID ?? '', 10);
   if (!Number.isInteger(uid) || !Number.isInteger(gid) || uid <= 0 || gid <= 0) return undefined;
-  let user = env.HABBLAUD_AGENT_USER?.trim() || 'dev';
-  let home = env.HABBLAUD_AGENT_HOME?.trim() || `/home/${user}`;
+  let user = env.DEVLAND_AGENT_USER?.trim() || 'dev';
+  let home = env.DEVLAND_AGENT_HOME?.trim() || `/home/${user}`;
   try {
     const info = userInfo({ encoding: 'utf8' });
     if (info.uid === uid) ({ username: user, homedir: home } = info);

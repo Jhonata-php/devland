@@ -66,7 +66,7 @@ export class AccountsService {
     this.refreshStatusline();
   }
 
-  /** Habblaud Cloud: conta do Claude conectada pela web (cloud/connect.ts) entra sem reiniciar. */
+  /** DevLand Cloud: conta do Claude conectada pela web (cloud/connect.ts) entra sem reiniciar. */
   addDir(dir: string): void {
     if (this.opts.dirs.includes(dir)) return this.refresh();
     this.opts.dirs = [...this.opts.dirs, dir];

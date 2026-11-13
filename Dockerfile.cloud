@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 #
-# Habblaud Cloud: o container É a máquina de desenvolvimento. Os projetos ficam em /workspace, o Claude Code e o
+# DevLand Cloud: o container É a máquina de desenvolvimento. Os projetos ficam em /workspace, o Claude Code e o
 # Codex rodam aqui dentro (terminais e agentes abertos pelo navegador, com login) e o escritório mostra o que eles
 # fazem. Diferente do Dockerfile (que só observa as sessões do computador por montagens somente leitura).
 #
 # Usuários do Linux:
-#   root  roda o servidor do Habblaud (dono de /data: usuários, segredo das sessões);
+#   root  roda o servidor do DevLand (dono de /data: usuários, segredo das sessões);
 #   dev   roda os agentes (claude, codex, git...), sem acesso a /data (spawn/runas.ts).
 
 FROM node:24-bookworm AS builder
@@ -66,33 +66,33 @@ COPY scripts/statusline-tap.mjs ./scripts/statusline-tap.mjs
 # Marketplace dos plugins do Claude Code (mensagens e permissões pelo escritório): o servidor os instala por conta.
 COPY .claude-plugin ./.claude-plugin
 COPY mod ./mod
-COPY scripts/cloud-entrypoint.sh /usr/local/bin/habblaud-cloud-entrypoint
+COPY scripts/cloud-entrypoint.sh /usr/local/bin/devland-cloud-entrypoint
 COPY --from=whisper /out/whisper-cli /usr/local/bin/whisper-cli
 COPY --from=whisper /out/ggml-base.bin /usr/local/share/whisper/ggml-base.bin
 
-# HABBLAUD_CLOUD_VERSION: a tag desta imagem (o workflow passa cloud-v0.3.5); o servidor compara com as tags mais novas no
-# GHCR e o admin atualiza por "Atualizar agora" (pede ao Velix; precisa de HABBLAUD_VELIX_URL, _TOKEN e _PROJECT).
+# DEVLAND_CLOUD_VERSION: a tag desta imagem (o workflow passa cloud-v0.3.5); o servidor compara com as tags mais novas no
+# GHCR e o admin atualiza por "Atualizar agora" (pede ao Velix; precisa de DEVLAND_VELIX_URL, _TOKEN e _PROJECT).
 # A 4747 (sem login) só no loopback do container; a 4748 (com login) é a que o proxy alcança. HOME=/home/dev também
 # para o servidor: as contas do Claude são as pastas ~/.claude* do dev (as conectadas pela web incluídas).
 ARG CLOUD_VERSION=dev
 ENV NODE_ENV=production \
-    HABBLAUD_IN_DOCKER=0 \
-    HABBLAUD_CLOUD=1 \
-    HABBLAUD_HOST=127.0.0.1 \
-    HABBLAUD_PORT=4747 \
-    HABBLAUD_REMOTE_HOST=0.0.0.0 \
-    HABBLAUD_DATA_DIR=/data \
-    HABBLAUD_PTY=1 \
+    DEVLAND_IN_DOCKER=0 \
+    DEVLAND_CLOUD=1 \
+    DEVLAND_HOST=127.0.0.1 \
+    DEVLAND_PORT=4747 \
+    DEVLAND_REMOTE_HOST=0.0.0.0 \
+    DEVLAND_DATA_DIR=/data \
+    DEVLAND_PTY=1 \
     HABBLAUD_WORLD=0 \
-    HABBLAUD_AGENT_UID=1001 \
-    HABBLAUD_AGENT_GID=1001 \
-    HABBLAUD_AGENT_USER=dev \
-    HABBLAUD_AGENT_HOME=/home/dev \
+    DEVLAND_AGENT_UID=1001 \
+    DEVLAND_AGENT_GID=1001 \
+    DEVLAND_AGENT_USER=dev \
+    DEVLAND_AGENT_HOME=/home/dev \
     HOME=/home/dev \
-    HABBLAUD_CODEX_DIRS=/home/dev/.codex \
-    HABBLAUD_USAGE_DIR=/home/dev/.habblaud/usage \
-    HABBLAUD_CLOUD_VERSION=${CLOUD_VERSION} \
-    HABBLAUD_WHISPER_MODEL=/usr/local/share/whisper/ggml-base.bin \
+    DEVLAND_CODEX_DIRS=/home/dev/.codex \
+    DEVLAND_USAGE_DIR=/home/dev/.devland/usage \
+    DEVLAND_CLOUD_VERSION=${CLOUD_VERSION} \
+    DEVLAND_WHISPER_MODEL=/usr/local/share/whisper/ggml-base.bin \
     DISABLE_AUTOUPDATER=1
 
 EXPOSE 4748
@@ -101,5 +101,5 @@ VOLUME ["/data", "/workspace", "/home/dev"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:4747/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 
-ENTRYPOINT ["tini", "--", "habblaud-cloud-entrypoint"]
+ENTRYPOINT ["tini", "--", "devland-cloud-entrypoint"]
 CMD ["node", "dist/server/index.js"]

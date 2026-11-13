@@ -24,7 +24,7 @@ const POLL_MS = 700;
  * 50 s; server/spawn/spawn.ts), para nunca dizer "não confirmou" de algo que ainda vai abrir.
  */
 const WAIT_MS = 90_000;
-const LAST_FOLDER_KEY = 'habblaud.spawn.folder';
+const LAST_FOLDER_KEY = 'devland.spawn.folder';
 
 interface SpawnInfo {
   id: string;
@@ -174,7 +174,7 @@ export class SpawnPanel {
   private readonly backBtn: HTMLButtonElement;
   private readonly nextBtn: HTMLButtonElement;
   private readonly engineRow: HTMLElement;
-  /** Função do agente ('' = sem função: o Habblaud deduz pelos arquivos e pelo projeto). */
+  /** Função do agente ('' = sem função: o DevLand deduz pelos arquivos e pelo projeto). */
   private role: RoleId | '' = '';
   /** Modelo do Claude (vazio = o padrão da conta); some com a IA local, que usa o modelo dela. */
   private model: ModelId | '' = '';

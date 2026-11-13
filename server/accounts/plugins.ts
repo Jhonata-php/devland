@@ -1,17 +1,17 @@
-// Habblaud Cloud: ninguém roda `npm run mod:install` dentro do container, então o servidor instala sozinho, em cada conta
-// do Claude Code, os plugins que ligam o escritório à sessão: habblaud-mensagens (digitar na sessão pelo escritório) e
-// habblaud-permissoes (responder pedidos de permissão). O marketplace é a própria pasta do Habblaud na imagem
+// DevLand Cloud: ninguém roda `npm run mod:install` dentro do container, então o servidor instala sozinho, em cada conta
+// do Claude Code, os plugins que ligam o escritório à sessão: devland-mensagens (digitar na sessão pelo escritório) e
+// devland-permissoes (responder pedidos de permissão). O marketplace é a própria pasta do DevLand na imagem
 // (.claude-plugin/marketplace.json + mod/), pelo CLI do Claude Code com o CLAUDE_CONFIG_DIR da conta, como o mod:install.
-// O mod de uso (habblaud) também entra: o captador de statusline (usage-tap.ts) continua como reforço. Sessões que já estavam abertas
+// O mod de uso (devland) também entra: o captador de statusline (usage-tap.ts) continua como reforço. Sessões que já estavam abertas
 // só carregam os plugins ao reiniciar; as novas já vêm com eles.
 import { execFile } from 'node:child_process';
 import { agentRunAs, runAsOptions } from '../spawn/runas';
 import { errMsg, log } from '../log';
 import { tr } from '../../shared/i18n';
 
-const MARKETPLACE = 'habblaud';
-// habblaud (o mod de uso): grava o uso a cada turno de qualquer sessão, inclusive a de segundo plano.
-const PLUGINS = ['habblaud', 'habblaud-mensagens', 'habblaud-permissoes'];
+const MARKETPLACE = 'devland';
+// devland (o mod de uso): grava o uso a cada turno de qualquer sessão, inclusive a de segundo plano.
+const PLUGINS = ['devland', 'devland-mensagens', 'devland-permissoes'];
 const TIMEOUT_MS = 120_000;
 
 /** Roda o CLI do Claude Code na conta (CLAUDE_CONFIG_DIR), como o usuário dos agentes no Cloud. */

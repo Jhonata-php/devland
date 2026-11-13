@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { audioFileName, createOpenAITranscriber, openAIKeyFromEnv } from './openai';
 
 describe('ditado pela OpenAI', () => {
-  it('chave do ambiente (HABBLAUD_ vale mais)', () => {
+  it('chave do ambiente (DEVLAND_ vale mais)', () => {
     expect(openAIKeyFromEnv({ OPENAI_API_KEY: ' a ' })).toBe('a');
-    expect(openAIKeyFromEnv({ OPENAI_API_KEY: 'a', HABBLAUD_OPENAI_API_KEY: 'b' })).toBe('b');
+    expect(openAIKeyFromEnv({ OPENAI_API_KEY: 'a', DEVLAND_OPENAI_API_KEY: 'b' })).toBe('b');
     expect(openAIKeyFromEnv({})).toBeUndefined();
   });
   it('nome do arquivo pelo tipo gravado', () => {

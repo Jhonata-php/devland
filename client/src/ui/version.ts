@@ -1,4 +1,4 @@
-// Versão do Habblaud: o número na barra superior, o selo "Nova versão" quando o GitHub tem uma release mais
+// Versão do DevLand: o número na barra superior, o selo "Nova versão" quando o GitHub tem uma release mais
 // nova (quem consulta é o servidor, server/updates/checker.ts), o aviso único por versão e a seção "Sobre"
 // das configurações (estado da verificação, "Verificar agora", novidades e como atualizar).
 import type { Notice, OfficeSnapshot, UpdateStatus } from '../../../shared/types';
@@ -12,7 +12,7 @@ import { access } from '../net/access';
 import { tr } from '../../../shared/i18n';
 
 /** Última versão nova já avisada neste navegador (o aviso sai uma vez por versão). */
-export const UPDATE_SEEN_KEY = 'habblaud:update-seen';
+export const UPDATE_SEEN_KEY = 'devland:update-seen';
 
 export const VERSION_ICONS = {
   up: pixelIcon(['...##...', '..####..', '.######.', '########', '..####..', '..####..', '..####..', '..####..']),
@@ -41,7 +41,7 @@ export function updateStatusLine(version: string, s: UpdateStatus | undefined, n
       return {
         tone: 'off',
         text: s.repo
-          ? tr('Verificação de versão nova desligada (HABBLAUD_UPDATE_CHECK=0).')
+          ? tr('Verificação de versão nova desligada (DEVLAND_UPDATE_CHECK=0).')
           : tr('Verificação de versão nova desligada: o package.json não aponta um repositório no GitHub.'),
       };
     case 'pending':

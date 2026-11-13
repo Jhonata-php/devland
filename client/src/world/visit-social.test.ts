@@ -11,7 +11,7 @@ describe('carimbo de hoje', () => {
     expect(stampedToday(JSON.stringify({ day, stampId: 'texto livre' }), day)).toBeNull();
     expect(stampedToday('{', day)).toBeNull();
     expect(stampedToday(null, day)).toBeNull();
-    expect(stampKey('b1')).toBe('habblaud:world-stamp:b1');
+    expect(stampKey('b1')).toBe('devland:world-stamp:b1');
   });
 });
 

@@ -90,7 +90,7 @@ describe('UpdateChecker', () => {
     expect(c.status()).toMatchObject({ state: 'pending', available: false });
     const s = await c.check();
     expect(f.calls[0].url).toBe(`https://api.github.com/repos/${REPO}/releases/latest`);
-    expect(f.calls[0].headers['User-Agent']).toBe('habblaud/0.2.0');
+    expect(f.calls[0].headers['User-Agent']).toBe('devland/0.2.0');
     expect(s).toEqual({
       state: 'ok',
       repo: REPO,

@@ -62,7 +62,7 @@ export class BottomNav implements UiComponent {
     this.agents.el.classList.toggle('is-active', chats && !pop);
     this.settings.el.classList.toggle('is-active', pop);
     this.agents.el.setAttribute('aria-pressed', String(chats));
-    // Habblaud Cloud: a aba Contas só existe na instalação em nuvem (as contas são da instalação).
+    // DevLand Cloud: a aba Contas só existe na instalação em nuvem (as contas são da instalação).
     setHidden(this.accounts.el, !access().cloud);
     this.el.classList.toggle('has-accounts', !!access().cloud);
     const waiting = computeCounters(this.ctx.store.liveSnapshot).waiting;

@@ -119,7 +119,7 @@ export class TopBar implements UiComponent {
     }
 
     this.usage = new UsageCards(ctx);
-    // Habblaud Cloud: conectar contas (Claude, Codex, GitHub) numa página própria, no lugar dos cartões sem uso.
+    // DevLand Cloud: conectar contas (Claude, Codex, GitHub) numa página própria, no lugar dos cartões sem uso.
     this.accountsLink = h('a', { class: 'ui-btn ui-btn-accounts', text: tr('+ Contas'), hidden: true, attrs: { href: '/contas', title: tr('Conectar contas do Claude, do Codex e do GitHub') }, on: { click: accountsClick(ctx.root) } });
 
     this.sidebarBtn = iconButton(ICONS.sidebar, tr('Painel lateral ( [ )'), () => ctx.togglePanel('sidebar'), 'ui-btn-sidebar');

@@ -1,7 +1,7 @@
 // Responder pelo escritório: cartão do pedido de permissão na gaveta do agente (Aprovar, Recusar com
 // motivo, "sempre permitir" e Responder no terminal) ou das perguntas do AskUserQuestion (opções, "Outro" e
 // Responder), e os atalhos que levam até ele (aviso, contador da barra superior e tecla P). O pedido chega
-// pelo hook PermissionRequest (mod/habblaud-permissoes/hooks/permission-hook.mjs); o diálogo continua no
+// pelo hook PermissionRequest (mod/devland-permissoes/hooks/permission-hook.mjs); o diálogo continua no
 // terminal e vale o que for respondido primeiro.
 // Pedido do Codex (`provider: 'codex'`): o hook dele só espera alguns segundos e o terminal só mostra a aprovação
 // depois que você responder aqui ou o prazo acabar; não há "sempre permitir" nem "interromper", e recusar pede um
@@ -17,7 +17,7 @@ import { diffLineKind, moreLabel, previewText, showToolInput, splitToolTitle } f
 import { tr } from '../../../shared/i18n';
 
 /** Evento (em ctx.root) que pede para o cartão de um agente aparecer: rolar até ele e receber o foco. */
-export const PERMISSION_FOCUS_EVENT = 'habblaud:permission-focus';
+export const PERMISSION_FOCUS_EVENT = 'devland:permission-focus';
 const PREVIEW_LINES = 12;
 const MESSAGE_MAX = 1_000;
 

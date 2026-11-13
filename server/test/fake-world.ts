@@ -1,6 +1,6 @@
 // Servidor do Habblaud World de mentira, para os testes do lado local (server/world/): as rotas REST do contrato da
 // Fase 1, em memória, com um ALTCHA de verdade (pequeno) e o registro de cada requisição recebida; e o WebSocket
-// (`/v1/socket`, fase 2) feito à mão sobre o `upgrade` do http (RFC 6455, só texto, sem extensões: o Habblaud não tem
+// (`/v1/socket`, fase 2) feito à mão sobre o `upgrade` do http (RFC 6455, só texto, sem extensões: o DevLand não tem
 // o pacote `ws`), que responde ao `hello` como o servidor de verdade, confirma cada `uplink` e responde ao `ping`.
 // Fase 3: depois do DELETE /v1/me/building, os pacotes são recusados com `left` até o POST /v1/me/building/join; a
 // cidade (view, move...) é só registrada em `messages`: os testes mandam a área e os jogadores com `conn.send`.

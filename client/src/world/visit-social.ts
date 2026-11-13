@@ -28,7 +28,7 @@ export function utcDay(now: number): string {
 
 /** Chave do carimbo de hoje deste navegador num prédio. */
 export function stampKey(buildingId: string): string {
-  return `habblaud:world-stamp:${buildingId}`;
+  return `devland:world-stamp:${buildingId}`;
 }
 
 /** O carimbo que este navegador deixou hoje no prédio (ou null), lido do que foi gravado. */

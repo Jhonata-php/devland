@@ -1,16 +1,16 @@
-// Mensagens pelo escritório (Claude Code 2.1.287+): leva para a sessão o que você digita no Habblaud (no painel
+// Mensagens pelo escritório (Claude Code 2.1.287+): leva para a sessão o que você digita no DevLand (no painel
 // do agente ou no terminal da tecla T), como se você tivesse digitado no terminal.
 //
 // O que faz, e `claude plugin validate` lista exatamente o que o módulo chama (a saída está no mod/README.md):
 //
 // 1. A cada 2 s, só onde a sessão desenha (`$.session.surfaces()` vazia = `claude -p`/SDK: nada a fazer) ou numa
 //    sessão do app desktop (CLAUDE_CODE_ENTRYPOINT=claude-desktop: SDK por baixo, sem superfície fora da tela), pergunta
-//    ao Habblaud local se há mensagens para ela: POST http://127.0.0.1:<HABBLAUD_PORT ou 4747>/api/mod/inbox com
+//    ao DevLand local se há mensagens para ela: POST http://127.0.0.1:<DEVLAND_PORT ou 4747>/api/mod/inbox com
 //    {session, account}. A pergunta também marca a presença da sessão: é ela que acende, no escritório, a caixa de
 //    mensagem deste agente. Fora do ar, ou respondendo qualquer coisa que não seja 2xx (403 = mensagens desligadas
-//    no Habblaud; 404 = uma versão sem a rota), passa a perguntar a cada 30 s até ele voltar.
+//    no DevLand; 404 = uma versão sem a rota), passa a perguntar a cada 30 s até ele voltar.
 // 2. Cada mensagem, na ordem, vai para a sessão por `$.prompt.submit({ text, asUser: true })`: o modelo a lê como
-//    sua, sem o "The habblaud-mensagens plugin sent a message" (o registro da sessão ainda nomeia o plugin). O
+//    sua, sem o "The devland-mensagens plugin sent a message" (o registro da sessão ainda nomeia o plugin). O
 //    texto vai exatamente como chegou. `{drop}` (um hook recusou) ou exceção = falha, com o motivo.
 //    Com a sessão no meio de um turno, o Claude Code guarda o prompt até ela ficar livre e a chamada pode demorar a
 //    voltar: a espera por mensagem é de no máximo 2 s. Passou disso, a mensagem está na fila da sessão e conta
@@ -19,27 +19,27 @@
 //    sessão ocupada. O preço: um hook que recuse a mensagem depois desses 2 s não chega ao escritório.
 // 3. Um único POST /api/mod/inbox/ack com {session, results: [{id, ok, error?}]}. Sem mensagens, sem ack.
 //
-// Por que um plugin à parte do mod `habblaud`: aquele só observa (uso do plano, aviso embaixo do prompt,
-// /habblaud) e nunca muda o que a sessão faz. Este age: digita na sessão em seu nome. Separado, dá para ficar sem
+// Por que um plugin à parte do mod `devland`: aquele só observa (uso do plano, aviso embaixo do prompt,
+// /devland) e nunca muda o que a sessão faz. Este age: digita na sessão em seu nome. Separado, dá para ficar sem
 // ele (npm run mod:install -- --sem-mensagens) e a análise estática de cada um continua curta.
 //
 // Regras: nenhum hook lança (um hook que lança é pulado, mas o que ele deixou pela metade fica): cada passo tem seu
-// try/catch e falha = silêncio. Uma rodada por vez (um Habblaud lento não acumula perguntas). Nada de $.process,
+// try/catch e falha = silêncio. Uma rodada por vez (um DevLand lento não acumula perguntas). Nada de $.process,
 // $.model, $.fs, leitura da conversa nem decisão de ferramenta; a rede é só 127.0.0.1. O estado fica em variáveis
 // do módulo: um hot reload recomeça do zero (uma mensagem buscada e não confirmada falha no servidor em 30 s).
 // O Claude Code pode carregar o plugin de uma cópia só dele: os ajudantes de caminho são cópias dos de
-// mod/habblaud/hooks/register.ts, não importações.
+// mod/devland/hooks/register.ts, não importações.
 //
 // Análise estática do Claude Code: cada chamada é escrita por extenso ($.noun.método), o nome do evento é
 // sempre uma string literal e `$` só é passado para funções declaradas no topo deste arquivo.
 import type { EngineInterface, HttpResponse, Register } from 'claude-code'
 
-/** Porta padrão do Habblaud (a mesma do servidor, do mod e do docker-compose). */
+/** Porta padrão do DevLand (a mesma do servidor, do mod e do docker-compose). */
 export const DEFAULT_PORT = 4747
-/** Intervalo das perguntas ao Habblaud; fora do ar, recua para o segundo até ele voltar. */
+/** Intervalo das perguntas ao DevLand; fora do ar, recua para o segundo até ele voltar. */
 export const POLL_MS = 2_000
 export const OFFLINE_POLL_MS = 30_000
-/** Quanto esperar o Habblaud local responder (`$.http.fetch` não aceita AbortSignal: a corrida é com um timer). */
+/** Quanto esperar o DevLand local responder (`$.http.fetch` não aceita AbortSignal: a corrida é com um timer). */
 export const FETCH_TIMEOUT_MS = 2_000
 /** Quanto esperar `$.prompt.submit` voltar antes de dar a mensagem como na fila da sessão. */
 export const SUBMIT_WAIT_MS = 2_000
@@ -73,12 +73,12 @@ interface ModEnv {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Funções puras (testadas em tests/habblaud-mensagens.test.ts)
+// Funções puras (testadas em tests/devland-mensagens.test.ts)
 // ---------------------------------------------------------------------------------------------
 
 /**
  * Normaliza um caminho (barras repetidas, `.`, `..` e a barra do fim): o ambiente do mod não tem node:path. Cópia
- * de mod/habblaud: caminhos do Windows (com drive ou UNC) saem com `/` e o drive conta como raiz; nos outros, `\`
+ * de mod/devland: caminhos do Windows (com drive ou UNC) saem com `/` e o drive conta como raiz; nos outros, `\`
  * é parte do nome.
  */
 export function normalizePath(p: string): string {
@@ -174,17 +174,17 @@ export function reasonText(raw: unknown, fallback: string): string {
 let env: ModEnv | undefined
 let timer: { cancel: () => void } | undefined
 let timerMs = 0
-/** Uma rodada por vez: um Habblaud lento ou uma sessão ocupada não empilham rodadas. */
+/** Uma rodada por vez: um DevLand lento ou uma sessão ocupada não empilham rodadas. */
 let polling = false
 
 /** O ambiente da sessão, lido uma vez por carga (cada nome escrito por extenso, como a análise exige). */
 async function readEnv($: EngineInterface): Promise<ModEnv> {
   if (env) return env
-  // No Windows, HOME só existe se alguém o definir: vale o USERPROFILE (a mesma ordem do mod habblaud).
+  // No Windows, HOME só existe se alguém o definir: vale o USERPROFILE (a mesma ordem do mod devland).
   const home = (await $.env.get('HOME'))?.trim() || (await $.env.get('USERPROFILE'))?.trim() || undefined
   const configDir = configDirOf(await $.env.get('CLAUDE_CONFIG_DIR'), home)
   const next: ModEnv = {
-    port: portOf(await $.env.get('HABBLAUD_PORT')),
+    port: portOf(await $.env.get('DEVLAND_PORT')),
     desktop: (await $.env.get('CLAUDE_CODE_ENTRYPOINT'))?.trim() === 'claude-desktop',
   }
   const accountId = configDir ? accountIdOf(configDir) : undefined
@@ -206,7 +206,7 @@ async function waitAtMost<T>($: EngineInterface, promise: Promise<T>, ms: number
   }
 }
 
-/** POST de um JSON ao Habblaud local com prazo de 2 s: a resposta, ou undefined (fora do ar, travado). Nunca lança. */
+/** POST de um JSON ao DevLand local com prazo de 2 s: a resposta, ou undefined (fora do ar, travado). Nunca lança. */
 async function postJson($: EngineInterface, port: number, path: string, body: string): Promise<HttpResponse | undefined> {
   try {
     const request = $.http.fetch(`http://127.0.0.1:${port}${path}`, {
@@ -268,7 +268,7 @@ async function deliver($: EngineInterface, messages: readonly InboxMessage[]): P
   return results
 }
 
-/** (Re)agenda as rodadas: 2 s com o Habblaud no ar, 30 s fora do ar. */
+/** (Re)agenda as rodadas: 2 s com o DevLand no ar, 30 s fora do ar. */
 function schedule($: EngineInterface, ms: number): void {
   if (timer && timerMs === ms) return
   timer?.cancel()

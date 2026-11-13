@@ -1,6 +1,6 @@
 // Testes do plugin de mensagens, rodados pelo próprio Claude Code: `claude plugin test` dentro de
-// mod/habblaud-mensagens (sem sessão, sem login, sem rede). Os stubs respondem no lugar do Claude Code e do
-// Habblaud: env, relógio (mock.clock), $.session.id, $.session.surfaces, $.http.fetch (as duas rotas do
+// mod/devland-mensagens (sem sessão, sem login, sem rede). Os stubs respondem no lugar do Claude Code e do
+// DevLand: env, relógio (mock.clock), $.session.id, $.session.surfaces, $.http.fetch (as duas rotas do
 // servidor) e o prompt.submit de baixo (a sessão: aceita, um hook recusa, a chamada lança ou fica presa).
 import type { HttpResponse, On } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
@@ -12,7 +12,7 @@ const INBOX_URL = `http://127.0.0.1:${PORT}/api/mod/inbox`
 const ACK_URL = `${INBOX_URL}/ack`
 const JSON_HEADERS = { 'content-type': 'application/json', accept: 'application/json' }
 
-/** Resposta do Habblaud ao inbox: mensagens, 'offline' (conexão recusada), 'hang' (não responde) ou um HTTP cru. */
+/** Resposta do DevLand ao inbox: mensagens, 'offline' (conexão recusada), 'hang' (não responde) ou um HTTP cru. */
 type Answer = InboxMessage[] | 'offline' | 'hang' | { status: number; text: string }
 /** O que a sessão faz com um prompt: entra, um hook recusa, a chamada lança, ou fica presa (sessão ocupada). */
 type Fate = 'ok' | 'drop' | 'throw' | 'hang'
@@ -47,7 +47,7 @@ function batches(...list: Answer[]): () => Answer {
 /** Registra todos os stubs (antes da primeira chamada em $, como o kit exige) e devolve o que foi capturado. */
 function world(on: On, w: World = {}) {
   const clock = mock.clock(on, { now: NOW })
-  mock.env(on, w.env ?? { HOME: '/home/fulano', CLAUDE_CONFIG_DIR: '~/.claude-conta2', HABBLAUD_PORT: PORT })
+  mock.env(on, w.env ?? { HOME: '/home/fulano', CLAUDE_CONFIG_DIR: '~/.claude-conta2', DEVLAND_PORT: PORT })
   const sent: Sent[] = []
   const submits: Array<{ text: string; origin: unknown }> = []
   on('session.start', ($, e) => ({ cwd: e.cwd }))
@@ -112,7 +112,7 @@ describe('rodadas', () => {
     await $.session.start(START)
     await w.clock.advance(2_000)
     expect(w.texts()).toEqual(['roda os testes', typed])
-    expect(w.submits[0]?.origin).toEqual({ kind: 'plugin', name: 'habblaud-mensagens', asUser: true })
+    expect(w.submits[0]?.origin).toEqual({ kind: 'plugin', name: 'devland-mensagens', asUser: true })
     expect(w.acks()).toEqual([{ url: ACK_URL, method: 'POST', headers: JSON_HEADERS, body: { session: 'sess-1', results: [{ id: 'm1', ok: true }, { id: 'm2', ok: true }] } }])
     await w.clock.advance(2_000)
     expect(w.sent.map((s) => s.url)).toEqual([INBOX_URL, ACK_URL, INBOX_URL])
@@ -247,7 +247,7 @@ describe('rodadas', () => {
   })
 
   test('sessão do app desktop fora da tela (SDK sem superfície): pergunta mesmo assim', async ($, on) => {
-    const w = world(on, { surfaces: [], env: { HOME: '/home/fulano', CLAUDE_CODE_ENTRYPOINT: 'claude-desktop', HABBLAUD_PORT: PORT } })
+    const w = world(on, { surfaces: [], env: { HOME: '/home/fulano', CLAUDE_CODE_ENTRYPOINT: 'claude-desktop', DEVLAND_PORT: PORT } })
     await $.session.start({ cwd: '/work', surface: null, isInteractive: false })
     await w.clock.advance(2_000)
     expect(w.inboxes().length).toBe(1)
@@ -296,7 +296,7 @@ describe('funções puras', () => {
     expect(long.endsWith('…')).toBe(true)
   })
 
-  test('conta e porta como o mod habblaud calcula (também no Windows)', () => {
+  test('conta e porta como o mod devland calcula (também no Windows)', () => {
     expect(normalizePath('/a//b/./c/../d/')).toBe('/a/b/d')
     expect(configDirOf(' ~/.claude-conta2 , /x', '/home/f')).toBe('/home/f/.claude-conta2')
     expect(configDirOf(undefined, '/home/f/')).toBe('/home/f/.claude')

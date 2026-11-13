@@ -1,14 +1,14 @@
 // Prévia ao vivo: janela com um "navegador" (iframe) que mostra o site do projeto em desenvolvimento. O servidor
 // (server/http/preview.ts) faz o proxy autenticado de 127.0.0.1:<porta> e entrega um endereço com token; aqui só se
 // escolhe a porta (detectada entre as comuns ou digitada) e se recarrega sozinho quando um agente do projeto mexe
-// num arquivo. O iframe é "sandbox" (origem opaca): o site da prévia não alcança a API do Habblaud.
+// num arquivo. O iframe é "sandbox" (origem opaca): o site da prévia não alcança a API do DevLand.
 import { tr } from '../../../shared/i18n';
 import { access } from '../net/access';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setHidden, setText } from './dom';
 import { ICONS } from './icons';
 
-const PORT_KEY = 'habblaud.preview.port';
+const PORT_KEY = 'devland.preview.port';
 const RELOAD_DEBOUNCE_MS = 1_200;
 /** O token dura 1 h no servidor; renova antes. */
 const RENEW_MS = 50 * 60_000;

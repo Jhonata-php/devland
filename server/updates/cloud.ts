@@ -1,4 +1,4 @@
-// Habblaud Cloud: atualizar por dentro do app. A versão em uso vem da imagem (HABBLAUD_CLOUD_VERSION, a tag cloud-v*
+// DevLand Cloud: atualizar por dentro do app. A versão em uso vem da imagem (DEVLAND_CLOUD_VERSION, a tag cloud-v*
 // que o workflow grava ao construir); a mais recente, da lista de tags da imagem no GHCR (pública, sem token); e o
 // botão "Atualizar agora" pede ao Velix para reimplantar o projeto (o container não troca a própria imagem), pela API
 // MCP do Velix com um token de API (POST <VELIX_URL>/api/mcp, ferramenta redeploy_project).
@@ -39,15 +39,15 @@ export interface VelixTarget {
   url: string;
   /** Token de API do Velix (escopo "write"). */
   token: string;
-  /** Id, slug ou nome do projeto do Habblaud no Velix. */
+  /** Id, slug ou nome do projeto do DevLand no Velix. */
   project: string;
 }
 
-/** Variáveis HABBLAUD_VELIX_URL, HABBLAUD_VELIX_TOKEN e HABBLAUD_VELIX_PROJECT (as três, ou nada). */
+/** Variáveis DEVLAND_VELIX_URL, DEVLAND_VELIX_TOKEN e DEVLAND_VELIX_PROJECT (as três, ou nada). */
 export function velixTargetFromEnv(env: NodeJS.ProcessEnv): VelixTarget | undefined {
-  const url = env.HABBLAUD_VELIX_URL?.trim().replace(/\/+$/, '');
-  const token = env.HABBLAUD_VELIX_TOKEN?.trim();
-  const project = env.HABBLAUD_VELIX_PROJECT?.trim();
+  const url = env.DEVLAND_VELIX_URL?.trim().replace(/\/+$/, '');
+  const token = env.DEVLAND_VELIX_TOKEN?.trim();
+  const project = env.DEVLAND_VELIX_PROJECT?.trim();
   if (!url || !token || !project) return undefined;
   // O token vai no cabeçalho: só https (ou o próprio computador, nos testes).
   if (!/^https:\/\//.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url)) return undefined;
@@ -58,7 +58,7 @@ export function velixTargetFromEnv(env: NodeJS.ProcessEnv): VelixTarget | undefi
 export function parseVelixTarget(raw: unknown): VelixTarget | { error: string } {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
-  const t = velixTargetFromEnv({ HABBLAUD_VELIX_URL: str(r.url), HABBLAUD_VELIX_TOKEN: str(r.token), HABBLAUD_VELIX_PROJECT: str(r.project) });
+  const t = velixTargetFromEnv({ DEVLAND_VELIX_URL: str(r.url), DEVLAND_VELIX_TOKEN: str(r.token), DEVLAND_VELIX_PROJECT: str(r.project) });
   if (!t) return { error: tr('preencha o endereço do Velix (com https://), o token e o projeto') };
   if (t.token.length > 512 || t.project.length > 120) return { error: tr('token ou projeto grande demais') };
   return t;

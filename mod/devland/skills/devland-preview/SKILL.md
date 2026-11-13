@@ -16,7 +16,7 @@ para abrir a prévia na porta do servidor de desenvolvimento.
    minutos na primeira vez; você não precisa subir o servidor nem usar navegador:
 
 ```bash
-curl -s -X POST "http://127.0.0.1:${HABBLAUD_PORT:-4747}/api/preview/open" \
+curl -s -X POST "http://127.0.0.1:${DEVLAND_PORT:-4747}/api/preview/open" \
   -H 'Content-Type: application/json' -d "{\"folder\":\"$PWD\"}"
 ```
 

@@ -95,12 +95,12 @@ export class PtyPanel implements UiComponent, PtyControl {
     this.el = h('section', { class: 'ui-term ui-pty', role: 'dialog', hidden: true, attrs: { 'aria-label': tr('Terminal') } }, bar, this.tabs.el, this.screen, this.away);
     // Teclas digitadas no terminal são do Claude Code, não dos atalhos do escritório.
     this.el.addEventListener('keydown', (e) => e.stopPropagation());
-    this.movable = new Movable(this.el, bar, { key: 'habblaud.move.term', enabled: () => !ctx.isNarrow(), onMove: () => this.pane?.refit(true) });
+    this.movable = new Movable(this.el, bar, { key: 'devland.move.term', enabled: () => !ctx.isNarrow(), onMove: () => this.pane?.refit(true) });
     this.el.addEventListener('keyup', (e) => e.stopPropagation());
   }
 
   get enabled(): boolean {
-    // Pela porta com login (Habblaud Cloud), só com a permissão "terminal".
+    // Pela porta com login (DevLand Cloud), só com a permissão "terminal".
     return !!this.ctx.store.snapshot?.meta.pty?.enabled && !this.ctx.store.replaying && (!access().remote || access().terminal);
   }
 

@@ -7,7 +7,7 @@
 //   POST /api/agents/:id/takeover      assume a sessão: encerra lá e retoma aqui
 // Quem controla um terminal destes executa comandos na máquina: só conexões do próprio computador, com Host
 // local e (quando o navegador manda) Origin da mesma origem. A borda (http/guard.ts) já exige JSON nos POST.
-// Exceção: o Habblaud Cloud, em que o container É a máquina; lá vale a porta com login (já conferiu Host e Origin)
+// Exceção: o DevLand Cloud, em que o container É a máquina; lá vale a porta com login (já conferiu Host e Origin)
 // para quem tem a permissão "terminal" (`remoteOk`).
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { PtyError, type PtyManager } from '../pty/manager';

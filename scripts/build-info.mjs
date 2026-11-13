@@ -1,11 +1,11 @@
-// Grava dist/build.json com o commit do Habblaud e se a cópia estava modificada (`npm run build:server` chama). O
+// Grava dist/build.json com o commit do DevLand e se a cópia estava modificada (`npm run build:server` chama). O
 // server/build.ts lê o arquivo (readBuildInfo), e o `hello` do Habblaud World manda {commit, dirty} para o servidor
 // saber se é uma release oficial (shared/world/protocol.ts, BuildInfo).
 //
 // - commit: `git rev-parse HEAD`; sem git (pasta baixada como .zip, build do Docker, que não leva o .git) = "unknown".
 // - dirty: algum arquivo VERSIONADO modificado (`git status --porcelain --untracked-files=no`). Arquivos fora do git
 //   (.env, node_modules como link simbólico, rascunhos) não contam: o build só leva o que o código versionado importa.
-// - HABBLAUD_BUILD_COMMIT e HABBLAUD_BUILD_DIRTY (1/true) substituem a leitura do git (para builds sem o .git).
+// - DEVLAND_BUILD_COMMIT e DEVLAND_BUILD_DIRTY (1/true) substituem a leitura do git (para builds sem o .git).
 //
 // Uso direto: node scripts/build-info.mjs [arquivo]   (padrão: dist/build.json, a partir da pasta atual)
 import { execFileSync } from 'node:child_process';
@@ -17,8 +17,8 @@ const COMMIT_RE = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
 
 /** {commit, dirty} da pasta `cwd`. */
 export function gitBuildInfo(cwd = process.cwd(), env = process.env) {
-  const fromEnv = env.HABBLAUD_BUILD_COMMIT?.trim().toLowerCase();
-  if (fromEnv) return { commit: COMMIT_RE.test(fromEnv) ? fromEnv : 'unknown', dirty: /^(1|true)$/i.test(env.HABBLAUD_BUILD_DIRTY?.trim() ?? '') };
+  const fromEnv = env.DEVLAND_BUILD_COMMIT?.trim().toLowerCase();
+  if (fromEnv) return { commit: COMMIT_RE.test(fromEnv) ? fromEnv : 'unknown', dirty: /^(1|true)$/i.test(env.DEVLAND_BUILD_DIRTY?.trim() ?? '') };
   const git = (args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 10_000 }).trim();
   try {
     const commit = git(['rev-parse', 'HEAD']);

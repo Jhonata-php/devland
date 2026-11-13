@@ -43,9 +43,9 @@ describe('i18n', () => {
     expect(tr('{0} e {1}', ['um'])).toBe('um e {1}');
   });
 
-  it('servidor: HABBLAUD_LANG vale para qualquer idioma; do sistema, o inglês não conta', () => {
-    expect(serverLocale({ HABBLAUD_LANG: 'en' }, 'pt-BR')).toBe('en');
-    expect(serverLocale({ HABBLAUD_LANG: 'es-MX', LANG: 'fr_FR.UTF-8' })).toBe('es');
+  it('servidor: DEVLAND_LANG vale para qualquer idioma; do sistema, o inglês não conta', () => {
+    expect(serverLocale({ DEVLAND_LANG: 'en' }, 'pt-BR')).toBe('en');
+    expect(serverLocale({ DEVLAND_LANG: 'es-MX', LANG: 'fr_FR.UTF-8' })).toBe('es');
     // Mac com LANG em inglês e o container sem LANG (Intl en-US): o escritório fica em português.
     expect(serverLocale({ LANG: 'en_US.UTF-8' }, 'en-US')).toBe('pt-BR');
     expect(serverLocale({}, 'en-US')).toBe('pt-BR');

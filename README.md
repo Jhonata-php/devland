@@ -136,7 +136,7 @@ shrinks on its own.
 
 ```bash
 git clone https://github.com/marmottajr/habblaud.git
-cd habblaud
+cd devland
 npm install
 ```
 
@@ -178,15 +178,15 @@ Claude Code) and installs it in each account, through `claude plugin` itself, fr
 
 - each account's **5-hour and weekly usage** shows up live in DevLand;
 - the terminal shows a line when **another session needs you** (permission or answer);
-- the **`/habblaud`** command becomes available in Claude Code;
+- the **`/devland`** command becomes available in Claude Code;
 - you can **approve or deny permission requests from the office** ("Do you want to…") and **answer the agent's
-  questions**, with the `habblaud-permissoes` plugin (see [Answering from the office](#answering-from-the-office));
+  questions**, with the `devland-permissoes` plugin (see [Answering from the office](#answering-from-the-office));
 - you can **send messages** to the agent from the office, as if you were typing in its terminal, with the
-  `habblaud-mensagens` plugin (see [Sending messages](#sending-messages)).
+  `devland-mensagens` plugin (see [Sending messages](#sending-messages)).
 
 It requires **Claude Code 2.1.287 or newer** (`claude --version`). The mod runs inside each session, with your
 permissions, and only accesses what is listed in [`mod/README.md`](mod/README.md); to check without running anything,
-`claude plugin validate mod/habblaud` shows the events it handles and the calls it makes. Sessions that are already open
+`claude plugin validate mod/devland` shows the events it handles and the calls it makes. Sessions that are already open
 load the mod with `/reload-plugins` (or when reopened). If the account had the old setup (below), `mod:install` removes the
 tap and the hook from `settings.json` (with a backup), because the mod does the same thing. Check with `npm run mod:status`; to
 undo: `npm run mod:uninstall`.
@@ -233,12 +233,12 @@ also keep `npm run codex:bridge` running on the Mac (see [Codex](#codex)).
 By default DevLand only accepts connections from the computer it runs on. To open it on your phone (on the same Wi-Fi), with Docker:
 
 ```bash
-printf 'HABBLAUD_BIND=0.0.0.0\n' > .env
+printf 'DEVLAND_BIND=0.0.0.0\n' > .env
 npm run docker:up -- --no-build
 ```
 
 Then open `http://<ip-do-computador>:4747` on your phone (on macOS: `ipconfig getifaddr en0`; if it comes back empty,
-`ipconfig getifaddr en1`). In Node mode, use `HABBLAUD_HOST=0.0.0.0 npm start`.
+`ipconfig getifaddr en1`). In Node mode, use `DEVLAND_HOST=0.0.0.0 npm start`.
 
 > ⚠️ With this, any device on the network can see the agents' activity (commands, files, session titles). Use it
 > only on trusted networks. The [terminal](#terminal) (and with it, answering and sending messages from the office) stays
@@ -257,7 +257,7 @@ npm run docker:up
 ```
 
 `remote:setup` writes only the password **hash** (scrypt) to `.env`, creates a local CA and the server certificate in
-`~/.habblaud/remote-tls`, and leaves a service announcing `<nome>.local` on the network (mDNS; LaunchAgent on macOS,
+`~/.devland/remote-tls`, and leaves a service announcing `<nome>.local` on the network (mDNS; LaunchAgent on macOS,
 systemd on Linux). Open `https://<nome>.local` on your phone (with `:4748` if port 443 was taken). The first time,
 accept the warning, tap **Install the DevLand certificate** and trust it (iPhone: Settings › Profile Downloaded ›
 Install, then Settings › General › About › Certificate Trust Settings; Android: Security › Encryption & credentials ›
@@ -268,7 +268,7 @@ Install a certificate › CA certificate), checking the fingerprint the setup sh
   address creates a new CA (install the certificate on the phone again). The CA key never goes into the container.
 - **Own address** (e.g. `meuclaude.home`): goes into the certificate, but the phone only finds it with an entry in the
   router's DNS pointing to the computer's IP. `<nome>.local` works without configuring anything.
-- **What the phone can do:** by default, approve and deny permission requests. `HABBLAUD_REMOTE_ALLOW` in `.env`
+- **What the phone can do:** by default, approve and deny permission requests. `DEVLAND_REMOTE_ALLOW` in `.env`
   accepts `permissions`, `messages`, `terminal` and `spawn`, separated by commas, or `none` (view only). The
   interactive terminal never works from the phone.
 - **Deliveries** (phone, with `terminal` allowed): the box button in the top bar lists what each agent finished, with
@@ -276,17 +276,17 @@ Install a certificate › CA certificate), checking the fingerprint the setup sh
 - **New agent** (the **+** button): starts a Claude Code session in the background on the computer (`claude --bg`, in
   the chosen folder), which shows up in the office and receives messages and permission requests through DevLand. In
   a folder Claude Code doesn't trust yet, it opens the Claude app's new-session screen filled in, and you press Enter
-  there. **It comes turned off:** it needs `HABBLAUD_PTY=1` (the same opt-in as the
+  there. **It comes turned off:** it needs `DEVLAND_PTY=1` (the same opt-in as the
   [interactive terminal](#interactive-terminal-take-over-new-session-and-end); in Docker, put it in `.env` and keep
-  `npm run codex:bridge` running on the computer) and, from the phone, `spawn` in `HABBLAUD_REMOTE_ALLOW` too.
+  `npm run codex:bridge` running on the computer) and, from the phone, `spawn` in `DEVLAND_REMOTE_ALLOW` too.
 - **Dictation** (in New agent and in the message box): needs `whisper-cli` and `ffmpeg` (`brew install whisper-cpp
   ffmpeg`) and a multilingual model in `~/.local/share/whisper/` (`ggml-small.bin` gets more right than
   `ggml-base.bin`; the `.en` ones only understand English). Without them, the Dictate button doesn't show up. The
-  voice never leaves the computer. `HABBLAUD_WHISPER_BIN`, `HABBLAUD_FFMPEG_BIN`, `HABBLAUD_WHISPER_MODEL` and
-  `HABBLAUD_DICTATION_LANGS` (default `pt,en`) adjust it.
+  voice never leaves the computer. `DEVLAND_WHISPER_BIN`, `DEVLAND_FFMPEG_BIN`, `DEVLAND_WHISPER_MODEL` and
+  `DEVLAND_DICTATION_LANGS` (default `pt,en`) adjust it.
 - **Away from home (Tailscale):** with Tailscale on the computer and on the phone, `tailscale serve --bg --https=443
   https+insecure://127.0.0.1:443` publishes the remote port (with login) only to your devices, with a valid
-  certificate at `https://<computador>.<tailnet>.ts.net`; add that name to `HABBLAUD_ALLOWED_HOSTS`. Always point it at
+  certificate at `https://<computador>.<tailnet>.ts.net`; add that name to `DEVLAND_ALLOWED_HOSTS`. Always point it at
   the remote port, never at 4747 (which has no login).
 - **Session:** 30 days; changing the password (running the setup again) ends all of them, and **Settings › Phone
   access › Sign out** ends the one on that device. After 5 wrong passwords in a row, each new attempt waits from 1 s up to 5 min.
@@ -294,9 +294,9 @@ Install a certificate › CA certificate), checking the fingerprint the setup sh
   expiring, with the same CA (the phone keeps trusting it); the server swaps the certificate without restarting.
 - **Turn off:** `npm run remote:setup -- --off` and `npm run docker:up`.
 
-Without HTTPS the remote port doesn't start; `HABBLAUD_REMOTE_INSECURE_HTTP=1` forces plain HTTP (password and cookie
-in the clear on the network). In Node mode: `HABBLAUD_REMOTE_PORT` and `HABBLAUD_REMOTE_HOST` (default
-`0.0.0.0:4748`) and `HABBLAUD_REMOTE_TLS_DIR` (default `~/.habblaud/remote-tls/server`).
+Without HTTPS the remote port doesn't start; `DEVLAND_REMOTE_INSECURE_HTTP=1` forces plain HTTP (password and cookie
+in the clear on the network). In Node mode: `DEVLAND_REMOTE_PORT` and `DEVLAND_REMOTE_HOST` (default
+`0.0.0.0:4748`) and `DEVLAND_REMOTE_TLS_DIR` (default `~/.devland/remote-tls/server`).
 
 ### Updating
 
@@ -318,7 +318,7 @@ npm run docker:up        # ou: npm run build && npm start (e depois npm run mod:
 
 `docker:up` also updates the mod in the accounts where it's already installed (it never installs it on its own) and tells you:
 "Mod updated to 0.3.0 on Account D; open sessions: /reload-plugins". In Node mode, run `npm run mod:install`
-after updating. To skip checking GitHub, use `HABBLAUD_UPDATE_CHECK=0` (in `.env`, for Docker).
+after updating. To skip checking GitHub, use `DEVLAND_UPDATE_CHECK=0` (in `.env`, for Docker).
 
 #### Coming from CodeTown
 
@@ -326,7 +326,7 @@ DevLand was called **CodeTown** up to 0.3.2. After `git pull`, run once:
 
 ```bash
 npm install
-npm run mod:install      # troca o marketplace e os plugins codetown pelos habblaud, em cada conta
+npm run mod:install      # troca o marketplace e os plugins codetown pelos devland, em cada conta
 npm run docker:up        # tira o container codetown e copia os dados do volume antigo para o novo
 ```
 
@@ -334,9 +334,9 @@ npm run docker:up        # tira o container codetown e copia os dados do volume 
   `mod/codetown*` folders were renamed). `docker:up` warns you, but doesn't switch it on its own.
 - **Docker:** the old volume (`codetown_codetown-data`) is left untouched. After checking that the characters' names
   came over, delete it with `docker volume rm codetown_codetown-data`, and the old image with `docker image rm codetown:local`.
-- **Local folder:** `~/.codetown` becomes `~/.habblaud` on its own (in the server, in `docker:up` and in `mod:install`).
+- **Local folder:** `~/.codetown` becomes `~/.devland` on its own (in the server, in `docker:up` and in `mod:install`).
 - **Browser:** preferences and coins move to the new keys the first time the page opens.
-- **Variables:** the `CODETOWN_*` ones no longer work; rename them to `HABBLAUD_*` in `.env` (e.g. `HABBLAUD_BIND`). The
+- **Variables:** the `CODETOWN_*` ones no longer work; rename them to `DEVLAND_*` in `.env` (e.g. `DEVLAND_BIND`). The
   server and `docker:up` warn you when they find an old one.
 - **Repository:** it's now `github.com/marmottajr/habblaud` (GitHub redirects the old address). To fix your
   clone: `git remote set-url origin https://github.com/marmottajr/habblaud.git`. The local folder can keep its
@@ -351,14 +351,14 @@ npm run codex:uninstall                     # tira os hooks do DevLand do Codex 
 npm run docker:down                         # para o container
 docker volume rm habblaud_habblaud-data     # apaga os dados do container (nomes, salas, linha do tempo e estatísticas)
 docker image rm habblaud:local              # apaga a imagem
-rm -rf ~/.habblaud                          # apaga os dados locais (uso capturado, nomes, salas, linha do tempo e estatísticas)
+rm -rf ~/.devland                          # apaga os dados locais (uso capturado, nomes, salas, linha do tempo e estatísticas)
 ```
 
 Then just delete the project folder — run `mod:uninstall` **first**, or the accounts' Claude Code will start
 complaining about the missing marketplace. If you used the old way, also run `npm run usage:uninstall` (restores the
 original statusline) and `npm run hooks:uninstall` (removes the permission hook); without them, the accounts' statusline starts
 showing an error (and the hook, failing silently). `mod:install`, which removes the old tap and hook, and the old installers and
-uninstallers leave `settings.json.habblaud-backup-<data>` copies in each account's folder (e.g.
+uninstallers leave `settings.json.devland-backup-<data>` copies in each account's folder (e.g.
 `~/.claude/`); delete them if you no longer need them.
 
 ## How to use
@@ -422,9 +422,9 @@ activities and animations. The day/night cycle is still a separate option.
 
 The interface is in **Portuguese, English, Spanish and French**. It follows the browser's language; in
 **Settings › Language** you can pin one (the choice is saved in this browser). The texts the server builds
-(activities, notices, terminal, logs and the install scripts) follow `HABBLAUD_LANG` and, without it, the
+(activities, notices, terminal, logs and the install scripts) follow `DEVLAND_LANG` and, without it, the
 system language, except English: many machines and every container come in English by default, even for people who use another language.
-For the server in English, set `HABBLAUD_LANG=en` (in Docker, in `.env`). Any text without a translation shows up in
+For the server in English, set `DEVLAND_LANG=en` (in Docker, in `.env`). Any text without a translation shows up in
 Portuguese.
 
 ### Day, night and sounds
@@ -464,12 +464,12 @@ is busy, it goes in when the agent finishes what it's doing. Subagents and sessi
 
 Since the terminal (and the history) shows the whole conversation, it only exists when DevLand is reachable **only from the
 computer it runs on** (the default), and it only opens through `http://localhost` or `http://127.0.0.1`. With the port open to the network
-(`HABBLAUD_BIND=0.0.0.0` or `HABBLAUD_HOST=0.0.0.0`), it stays off. Details in
+(`DEVLAND_BIND=0.0.0.0` or `DEVLAND_HOST=0.0.0.0`), it stays off. Details in
 [Privacy and security](#privacy-and-security).
 
 ### Interactive terminal (take over, new session and end)
 
-With `HABBLAUD_PTY=1` and running with `npm start` (outside Docker), each main agent's terminal window is
+With `DEVLAND_PTY=1` and running with `npm start` (outside Docker), each main agent's terminal window is
 interactive: the drawer's **Open terminal** button, the shortcut next to each agent in the side list or the `T` key
 open the same window, with tabs for the other agents in the same project.
 
@@ -482,8 +482,8 @@ open the same window, with tabs for the other agents in the same project.
 
 Taking over and ending ask for a second click; closing the window doesn't end the session. The window (and the agent's
 drawer) can be dragged by its bar and resized from the corner; double-clicking the bar puts it back in place.
-**It comes turned off:** turn it on with `HABBLAUD_PTY=1` (first read the warning in [Privacy and security](#privacy-and-security)).
-It uses `node-pty`, `@xterm/headless` (optional dependencies) and the `claude` on your PATH (`HABBLAUD_CLAUDE_BIN` for
+**It comes turned off:** turn it on with `DEVLAND_PTY=1` (first read the warning in [Privacy and security](#privacy-and-security)).
+It uses `node-pty`, `@xterm/headless` (optional dependencies) and the `claude` on your PATH (`DEVLAND_CLAUDE_BIN` for
 another one); it only accepts requests from the computer it runs on. On startup, DevLand opens a test terminal: if `node-pty` or
 `claude` don't work, the feature stays off and the log says why. **Restarting DevLand ends the sessions
 it opened.**
@@ -499,8 +499,8 @@ jump there) and **Back to live**. Meanwhile, the office takes on a light sepia t
 feed keeps showing what's happening now.
 
 The server records the timeline **from the moment it's turned on** (the past can't be rebuilt):
-summaries of what the office shows, without conversations, in `~/.habblaud/timeline/` (in Docker, in the data volume), with
-a size limit per day and the last **7 days** kept. To not record: `HABBLAUD_TIMELINE=0`. Details in
+summaries of what the office shows, without conversations, in `~/.devland/timeline/` (in Docker, in the data volume), with
+a size limit per day and the last **7 days** kept. To not record: `DEVLAND_TIMELINE=0`. Details in
 [`server/README.md`](server/README.md#linha-do-tempo-timelapse).
 
 The characters walk faster in the replay, but at high speeds anyone who stays only briefly in the office barely
@@ -529,7 +529,7 @@ terminal** leaves the question there. The answer reaches the agent as if you had
 - The request goes through a Claude Code `PermissionRequest` hook (the plugin's, or the old way's), which only diverts it
   when there's **some DevLand page open** on this computer; with DevLand stopped or no page open, it
   exits right away and the terminal carries on as usual.
-- With no answer from the office within 5 minutes (up to 24 h with `HABBLAUD_PERMISSION_TIMEOUT=86400` in the `env`
+- With no answer from the office within 5 minutes (up to 24 h with `DEVLAND_PERMISSION_TIMEOUT=86400` in the `env`
   of `settings.json`), the request goes back to being answerable only in the terminal (the plugin's options are in
   [`mod/README.md`](mod/README.md); in the old way, `npm run hooks:install -- --timeout 120` changes the time and
   `--port`, the port). For **background subagents**, Claude Code only shows the dialog in the terminal after the
@@ -556,9 +556,9 @@ and waits for the next request, give a new instruction or correct its course, wi
 - The plugin runs inside each session and only talks to DevLand at `127.0.0.1`. Without it (or in a session opened before
   the install: use `/reload-plugins`), an install hint shows up in place of the box. Subagents don't receive
   messages.
-- It works under the same safeguard as the terminal (local access only) and can be turned off with `HABBLAUD_MENSAGENS=0`.
+- It works under the same safeguard as the terminal (local access only) and can be turned off with `DEVLAND_MENSAGENS=0`.
   Read the warning in [Privacy and security](#privacy-and-security).
-  From the [phone with login](#phone-with-login-and-https-approving-requests), only with `messages` in `HABBLAUD_REMOTE_ALLOW`.
+  From the [phone with login](#phone-with-login-and-https-approving-requests), only with `messages` in `DEVLAND_REMOTE_ALLOW`.
 - In demo mode, the made-up agents also receive messages (pretend ones).
 
 ### Editing the character
@@ -574,8 +574,8 @@ agent's details and click the pencil next to the name (**Edit character**). In t
   at the same time in the same room, the second one gets a random character.
 - **Back to random:** undoes the choice.
 
-The choice is stored in `~/.habblaud/names.json` and goes away after 60 days without the project being used. The editor has the same safeguard as the
-terminal: the pencil only shows up with the terminal on (without `HABBLAUD_TERMINAL=0`) and local access, that
+The choice is stored in `~/.devland/names.json` and goes away after 60 days without the project being used. The editor has the same safeguard as the
+terminal: the pencil only shows up with the terminal on (without `DEVLAND_TERMINAL=0`) and local access, that
 is, with DevLand reachable only from the computer it runs on and opened through `http://localhost`.
 
 ### Codex
@@ -606,7 +606,7 @@ Codex account chip is hollow and carries the **CODEX** tag.
 - **When the session leaves the office:** the Codex CLI runs sessions on a background server, which keeps them
   loaded for up to a minute after they go idle with no one watching; that's why the character may take a
   little while to leave after you close the terminal.
-- ChatGPT cloud conversations (with no file on the computer) don't show up. `HABBLAUD_CODEX=0` turns Codex off.
+- ChatGPT cloud conversations (with no file on the computer) don't show up. `DEVLAND_CODEX=0` turns Codex off.
 
 ### GitHub in the office
 
@@ -627,7 +627,7 @@ calls in the transcripts (`gh pr create`, `gh pr merge`, `git push`, `gh run wat
   </tr>
 </table>
 
-Each event also creates a notice ("🎉 Danilo opened PR #12 in habblaud", "🚨 CI failed in habblaud (feat/x)") and goes
+Each event also creates a notice ("🎉 Danilo opened PR #12 in devland", "🚨 CI failed in devland (feat/x)") and goes
 into the feed. Only what happens live livens up the room: whatever was already in the transcripts when DevLand opened only goes to the
 history. With "reduce motion" turned on in the system, nothing flashes or spins. In demo mode, made-up PRs, merges and CI runs
 show up from time to time.
@@ -652,7 +652,7 @@ Want to see the office full without having any sessions open?
 - Add **`?mock=1`** to the URL (e.g. http://localhost:4747/?mock=1) to simulate everything in the browser, without your
   real sessions. Parameters: `&speed=3` speeds up time and `&sessions=6` changes the number of simulated sessions.
 - Or turn it on from the interface — **View demo** (when the office is empty) or **Settings › Demo
-  mode** — which puts made-up agents alongside the real ones. With `npm run demo` (or `HABBLAUD_DEMO=1` in the
+  mode** — which puts made-up agents alongside the real ones. With `npm run demo` (or `DEVLAND_DEMO=1` in the
   Docker `.env`), this mode starts already on.
 
 ## Accounts and usage (5-hour and weekly)
@@ -678,7 +678,7 @@ becomes **Account C** and **Account D**. Only shortcuts of up to 3 letters count
 
 **Where the numbers come from.** The recommended way is the DevLand mod (`npm run mod:install`, Claude Code 2.1.287+):
 inside each session, it receives the plan limits from Claude Code itself and stores only the 5-hour and weekly
-percentages (and when they reset) in `~/.habblaud/usage/<conta>.json`. The numbers arrive after each account's next
+percentages (and when they reset) in `~/.devland/usage/<conta>.json`. The numbers arrive after each account's next
 reply. Check with `npm run mod:status`. On earlier versions of Claude Code, the statusline tap
 (`npm run usage:install`) does the same through the statusline command, in the same file.
 
@@ -688,7 +688,7 @@ reply. Check with `npm run mod:status`. On earlier versions of Claude Code, the 
 - `usage:install` (the old way) changes, in `<conta>/settings.json`, **only** the `statusLine.command` field: the
   original command (e.g. `npx -y ccstatusline`) now runs through `node "<pasta do DevLand>/scripts/statusline-tap.mjs" --
   <comando original>` (on Windows, the original command runs in Git Bash, as Claude Code would run it). A copy of the
-  file first goes to `settings.json.habblaud-backup-<data>`. If the account had no statusline, one is created that only
+  file first goes to `settings.json.devland-backup-<data>`. If the account had no statusline, one is created that only
   captures usage. `npm run usage:install -- --dry-run` shows what would change without writing anything.
 - The tap passes the same JSON on to your statusline (output and exit code are still its own) and writes **only**
   `{accountId, configDir, fetchedAt, five_hour, seven_day}` — no prompts, costs or project paths. Any
@@ -712,31 +712,31 @@ Everything works without configuring anything. If you need to adjust something, 
 
 | Variable | Default | What for |
 | --- | --- | --- |
-| `HABBLAUD_PORT` | `4747` | HTTP port (in Docker, the port published on the host). |
-| `HABBLAUD_HOST` | `127.0.0.1` | Server interface in Node mode. Anything other than `127.0.0.1`/`localhost` turns off the terminal (and answering and sending messages from the office). |
-| `HABBLAUD_BIND` | `127.0.0.1` | Docker only (in `.env`): where the port is published. `0.0.0.0` opens it to the local network (and turns off the terminal and anything that acts on the sessions). |
-| `HABBLAUD_CLAUDE_DIRS` | automatic detection | Account folders, comma-separated (e.g. `/caminho/conta1,/caminho/conta2`). |
-| `HABBLAUD_DATA_DIR` | `~/.habblaud` | Where DevLand keeps its own data (character and room names, the timelapse timeline and the My day stats). |
-| `HABBLAUD_TIMELINE` | on | `0` turns off timeline recording (the days already recorded stay in the timelapse). In Docker it's always on. |
-| `HABBLAUD_USAGE_DIR` | `~/.habblaud/usage` | Where the mod (or the statusline tap) writes usage. |
-| `HABBLAUD_DEMO` | off | `1` turns on demo mode at startup. |
-| `HABBLAUD_ALLOWED_HOSTS` | — | Extra names accepted in the address (e.g. `meu-mac.local`), besides `localhost` and IPs. |
-| `HABBLAUD_TERMINAL` | on (local access only) | `0` turns off the terminal, answering and sending messages from the office, and the character editor. With the port exposed they're already off, with no way to turn them on. |
-| `HABBLAUD_PTY` | off | `1` turns on the interactive terminal (open, take over and end Claude Code sessions from the office; local access only and outside Docker) and **New agent** (also in Docker, through `npm run codex:bridge`). Read the warning in [Privacy and security](#privacy-and-security). |
-| `HABBLAUD_CLAUDE_BIN` | `claude` from PATH | The Claude Code executable that the interactive terminal and New agent run. |
-| `HABBLAUD_REMOTE_ALLOW` | `permissions` | What the [phone with login](#phone-with-login-and-https-approving-requests) can do: `permissions`, `messages`, `terminal`, `spawn` (comma-separated) or `none`. The other `HABBLAUD_REMOTE_*` are written by `npm run remote:setup`. |
-| `HABBLAUD_MENSAGENS` | on (with the terminal) | `0` turns off only messages from the office (the box in the terminal and in the agent's details). |
-| `HABBLAUD_CODEX` | on | `0` turns off Codex in the office. |
-| `HABBLAUD_CODEX_DIRS` | automatic detection | Codex folders, comma-separated (instead of `~/.codex*` and `CODEX_HOME`). |
-| `HABBLAUD_CODEX_BIN` | `codex` from PATH (on Windows, `codex.exe`) | The Codex binary that delivers the messages (`codex queue`), in Node mode or in `npm run codex:bridge`. |
-| `HABBLAUD_UPDATE_CHECK` | on | `0` turns off the new-version check (a request to the repository's releases on GitHub every 6 h). |
-| `HABBLAUD_LANG` | system language (except English), otherwise `pt-BR` | Language of the texts the server builds (activities, notices, logs): `pt-BR`, `en`, `es` or `fr`. The interface follows the browser or the choice in Settings › Language. See [Languages](#languages). |
-| `HABBLAUD_ACCOUNTS` | — | JSON to customize name, letter or color, matched by the account folder name. E.g. `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
+| `DEVLAND_PORT` | `4747` | HTTP port (in Docker, the port published on the host). |
+| `DEVLAND_HOST` | `127.0.0.1` | Server interface in Node mode. Anything other than `127.0.0.1`/`localhost` turns off the terminal (and answering and sending messages from the office). |
+| `DEVLAND_BIND` | `127.0.0.1` | Docker only (in `.env`): where the port is published. `0.0.0.0` opens it to the local network (and turns off the terminal and anything that acts on the sessions). |
+| `DEVLAND_CLAUDE_DIRS` | automatic detection | Account folders, comma-separated (e.g. `/caminho/conta1,/caminho/conta2`). |
+| `DEVLAND_DATA_DIR` | `~/.devland` | Where DevLand keeps its own data (character and room names, the timelapse timeline and the My day stats). |
+| `DEVLAND_TIMELINE` | on | `0` turns off timeline recording (the days already recorded stay in the timelapse). In Docker it's always on. |
+| `DEVLAND_USAGE_DIR` | `~/.devland/usage` | Where the mod (or the statusline tap) writes usage. |
+| `DEVLAND_DEMO` | off | `1` turns on demo mode at startup. |
+| `DEVLAND_ALLOWED_HOSTS` | — | Extra names accepted in the address (e.g. `meu-mac.local`), besides `localhost` and IPs. |
+| `DEVLAND_TERMINAL` | on (local access only) | `0` turns off the terminal, answering and sending messages from the office, and the character editor. With the port exposed they're already off, with no way to turn them on. |
+| `DEVLAND_PTY` | off | `1` turns on the interactive terminal (open, take over and end Claude Code sessions from the office; local access only and outside Docker) and **New agent** (also in Docker, through `npm run codex:bridge`). Read the warning in [Privacy and security](#privacy-and-security). |
+| `DEVLAND_CLAUDE_BIN` | `claude` from PATH | The Claude Code executable that the interactive terminal and New agent run. |
+| `DEVLAND_REMOTE_ALLOW` | `permissions` | What the [phone with login](#phone-with-login-and-https-approving-requests) can do: `permissions`, `messages`, `terminal`, `spawn` (comma-separated) or `none`. The other `DEVLAND_REMOTE_*` are written by `npm run remote:setup`. |
+| `DEVLAND_MENSAGENS` | on (with the terminal) | `0` turns off only messages from the office (the box in the terminal and in the agent's details). |
+| `DEVLAND_CODEX` | on | `0` turns off Codex in the office. |
+| `DEVLAND_CODEX_DIRS` | automatic detection | Codex folders, comma-separated (instead of `~/.codex*` and `CODEX_HOME`). |
+| `DEVLAND_CODEX_BIN` | `codex` from PATH (on Windows, `codex.exe`) | The Codex binary that delivers the messages (`codex queue`), in Node mode or in `npm run codex:bridge`. |
+| `DEVLAND_UPDATE_CHECK` | on | `0` turns off the new-version check (a request to the repository's releases on GitHub every 6 h). |
+| `DEVLAND_LANG` | system language (except English), otherwise `pt-BR` | Language of the texts the server builds (activities, notices, logs): `pt-BR`, `en`, `es` or `fr`. The interface follows the browser or the choice in Settings › Language. See [Languages](#languages). |
+| `DEVLAND_ACCOUNTS` | — | JSON to customize name, letter or color, matched by the account folder name. E.g. `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
 
-**In Docker**, `HABBLAUD_PORT`, `HABBLAUD_BIND`, `HABBLAUD_ALLOWED_HOSTS`, `HABBLAUD_DEMO`, `HABBLAUD_TERMINAL`,
-`HABBLAUD_MENSAGENS`, `HABBLAUD_CODEX`, `HABBLAUD_UPDATE_CHECK`, `HABBLAUD_LANG`, `HABBLAUD_PTY`, the `HABBLAUD_WORLD*` and the
-`HABBLAUD_REMOTE_*` apply (in `.env` or in the environment), as do `HABBLAUD_CLAUDE_DIRS`, `HABBLAUD_CODEX_DIRS`, `HABBLAUD_USAGE_DIR` and
-`HABBLAUD_ACCOUNTS` (read by `docker:up` on the host); the rest are fixed inside the container. Options: `npm run docker:up -- --no-build` (starts without rebuilding),
+**In Docker**, `DEVLAND_PORT`, `DEVLAND_BIND`, `DEVLAND_ALLOWED_HOSTS`, `DEVLAND_DEMO`, `DEVLAND_TERMINAL`,
+`DEVLAND_MENSAGENS`, `DEVLAND_CODEX`, `DEVLAND_UPDATE_CHECK`, `DEVLAND_LANG`, `DEVLAND_PTY`, the `HABBLAUD_WORLD*` and the
+`DEVLAND_REMOTE_*` apply (in `.env` or in the environment), as do `DEVLAND_CLAUDE_DIRS`, `DEVLAND_CODEX_DIRS`, `DEVLAND_USAGE_DIR` and
+`DEVLAND_ACCOUNTS` (read by `docker:up` on the host); the rest are fixed inside the container. Options: `npm run docker:up -- --no-build` (starts without rebuilding),
 `npm run docker:down` (stops) and `npm run docker:logs` (follows the logs).
 
 ## Habblaud World
@@ -748,7 +748,7 @@ through a waiting list.
 
 **How to configure it.** The variables below (in `.env` or in the environment) are optional: without them, DevLand
 points at the official server. The section shows up in the **Habblaud World** window (the city button in the top bar) and only works from this computer (never through the phone port); the
-account stays only here, in `~/.habblaud/world.json` (permission 600; in Docker, in the `/data` volume).
+account stays only here, in `~/.devland/world.json` (permission 600; in Docker, in the `/data` volume).
 
 | Variable | Default | What for |
 | --- | --- | --- |
@@ -899,7 +899,7 @@ mod/      o mod do DevLand e os plugins de permissões e de mensagens (plugins d
 | `POST /api/rooms/rename` | `{"id": sala, "name": nome}` renames the room (empty goes back to the folder name); the name is stored in `rooms.json`, in the data folder. Local access only. |
 | `GET /api/mod/summary` | For the Claude Code mod: version, how many agents, how many are working and who needs you (without the demo and, with `?account=&session=`, without its own session). |
 | `/api/permissions…` | Answering from the office: the permission hook registers the request (permission or question) and waits; the page fetches the details and decides or answers. Local access only. |
-| `/api/messages…` and `/api/mod/inbox…` | Sending messages: the page puts the message in the queue and follows its delivery; the `habblaud-mensagens` plugin fetches it, delivers it to the session and confirms. Local access only. |
+| `/api/messages…` and `/api/mod/inbox…` | Sending messages: the page puts the message in the queue and follows its delivery; the `devland-mensagens` plugin fetches it, delivers it to the session and confirms. Local access only. |
 | `POST /api/codex/events` | Events from the Codex hooks (session opened, tool, approval, end of turn). Local access only. |
 | `/api/codex/bridge/poll` and `/ack` | `npm run codex:bridge` fetches the messages for Codex and confirms delivery. Local access only. |
 
@@ -914,9 +914,9 @@ More server details in [`server/README.md`](server/README.md).
 | --- | --- | --- |
 | `<conta>/sessions/` | `/claude/<conta>/sessions` (read-only) | Open sessions and their status. |
 | `<conta>/projects/` | `/claude/<conta>/projects` (read-only) | Transcripts of the sessions and subagents. |
-| `~/.habblaud/usage/` | `/usage` (read-only) | Usage captured by the mod (or by the statusline tap). |
+| `~/.devland/usage/` | `/usage` (read-only) | Usage captured by the mod (or by the statusline tap). |
 | `habblaud-data` volume | `/data` | DevLand's own data (character names, the timelapse timeline and the My day stats). |
-| `~/.habblaud/remote-tls/server/` | `/remote-tls` (read-only) | Only after `npm run remote:setup`: the server certificate and key of the [phone with login](#phone-with-login-and-https-approving-requests) (never the CA key). |
+| `~/.devland/remote-tls/server/` | `/remote-tls` (read-only) | Only after `npm run remote:setup`: the server certificate and key of the [phone with login](#phone-with-login-and-https-approving-requests) (never the CA key). |
 
 The account folder is **never** mounted whole (credentials and settings live there). The container runs as an unprivileged
 user, with a read-only file system, no extra capabilities and with `no-new-privileges`. The accounts'
@@ -932,17 +932,17 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   way, `npm run usage:install` / `usage:uninstall` changes only the `statusLine.command` in `settings.json` and
   `npm run hooks:install` / `hooks:uninstall`, only the `hooks.PermissionRequest` list — always with a backup first.
 - **The mod:** runs inside each Claude Code session, with your permissions (like every mod), and only does what is
-  listed in [`mod/README.md`](mod/README.md) — `claude plugin validate mod/habblaud` shows the events and the calls,
+  listed in [`mod/README.md`](mod/README.md) — `claude plugin validate mod/devland` shows the events and the calls,
   without running anything. It only writes the 5-hour and weekly usage percentages (and when they reset) to
-  `~/.habblaud/usage/<conta>.json`; for the "needs you" line and `/habblaud`, it only talks to DevLand at
+  `~/.devland/usage/<conta>.json`; for the "needs you" line and `/devland`, it only talks to DevLand at
   `127.0.0.1`. It doesn't read the conversation, doesn't call the model and doesn't send anything off the computer. It's loaded from this
   folder: whatever is in it (including after a `git pull`) is what runs. The messages plugin
-  (`habblaud-mensagens`) is separate precisely because it acts: it types into the session what you sent from the office.
+  (`devland-mensagens`) is separate precisely because it acts: it types into the session what you sent from the office.
 - **Local only, by default:** the server only accepts connections from the computer it runs on; opening it to the local network is optional.
   There's no telemetry. The only external call is the new-version check: every 6 hours, an anonymous request,
   with no token, to the public GitHub API (`api.github.com/repos/marmottajr/habblaud/releases/latest`). It doesn't send anything
   about your sessions; GitHub only sees your IP and the version in use, which goes in the `User-Agent`.
-  `HABBLAUD_UPDATE_CHECK=0` turns off the request.
+  `DEVLAND_UPDATE_CHECK=0` turns off the request.
   [Habblaud World](#habblaud-world) (on by default) only sends something to the world server after you create an
   account and sign in, and only what is listed in [what leaves your computer](docs/world/privacidade.md) (in Portuguese);
   `HABBLAUD_WORLD=0` turns it all off.
@@ -954,18 +954,18 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
 - **Protected against malicious sites:** the server refuses addresses that aren't `localhost`/IP (DNS rebinding) and
   `POST` requests coming from other origins (CSRF), and doesn't let the page be embedded in other sites.
 - **Local-only terminal:** the full conversation of the sessions (and the history of the ended sessions, with their
-  titles) only leaves the server with DevLand reachable only from the computer it runs on (`HABBLAUD_HOST` local in Node;
-  `HABBLAUD_BIND` local in Docker) — there's no way to
+  titles) only leaves the server with DevLand reachable only from the computer it runs on (`DEVLAND_HOST` local in Node;
+  `DEVLAND_BIND` local in Docker) — there's no way to
   turn it on with the port exposed — and each request has to come through `localhost`/`127.0.0.1`: network IPs and names from
-  `HABBLAUD_ALLOWED_HOSTS` (proxies, tunnels) are refused. Secrets are masked and long texts truncated before
-  they reach the browser; in demo mode, the conversation is made up. `HABBLAUD_TERMINAL=0` turns it off for good.
-  The one exception is the [phone with login](#phone-with-login-and-https-approving-requests), and only with `terminal` in `HABBLAUD_REMOTE_ALLOW`.
+  `DEVLAND_ALLOWED_HOSTS` (proxies, tunnels) are refused. Secrets are masked and long texts truncated before
+  they reach the browser; in demo mode, the conversation is made up. `DEVLAND_TERMINAL=0` turns it off for good.
+  The one exception is the [phone with login](#phone-with-login-and-https-approving-requests), and only with `terminal` in `DEVLAND_REMOTE_ALLOW`.
 - **Timelapse timeline:** only the summaries that already show up on screen (one-line activity, status, titles,
-  account usage, with no emails, full commands or conversations), written to `~/.habblaud/timeline/` and deleted after
-  7 days. `HABBLAUD_TIMELINE=0` turns off recording.
+  account usage, with no emails, full commands or conversations), written to `~/.devland/timeline/` and deleted after
+  7 days. `DEVLAND_TIMELINE=0` turns off recording.
 - **Answering from the office, local only:** approving or denying acts on the sessions, so it follows the same safeguard as the
   terminal (local bind, local `Host`, no proxies or tunnels) and only exists with the permission hook (the one from the
-  `habblaud-permissoes` plugin or the old way's) installed by you. Answers require JSON and a local origin (a site
+  `devland-permissoes` plugin or the old way's) installed by you. Answers require JSON and a local origin (a site
   open in the browser can't send them), the hook only talks to `127.0.0.1` and, when in doubt — DevLand down,
   an error, a timeout — it exits without deciding: the terminal decides. The full command or the diff only leaves the server for
   whoever opened the page from the computer it runs on. "Always allow" only applies a rule that Claude Code itself suggested
@@ -978,10 +978,10 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
   so a site open in the browser can't send one), but **any program on this machine** that talks to
   `http://localhost:4747` — including an agent running a command — can leave a message for another session
   that has the plugin. If that doesn't work for you (shared computer, agents running unsupervised), don't
-  install the plugin (`npm run mod:install -- --sem-mensagens`) or turn it off with `HABBLAUD_MENSAGENS=0`. The text of the
+  install the plugin (`npm run mod:install -- --sem-mensagens`) or turn it off with `DEVLAND_MENSAGENS=0`. The text of the
   messages isn't saved: it disappears from the server as soon as it's delivered.
-  From the [phone with login](#phone-with-login-and-https-approving-requests), only with `messages` in `HABBLAUD_REMOTE_ALLOW`.
-- **Interactive terminal, opt-in — and with a warning:** with `HABBLAUD_PTY=1`, the office opens Claude Code in
+  From the [phone with login](#phone-with-login-and-https-approving-requests), only with `messages` in `DEVLAND_REMOTE_ALLOW`.
+- **Interactive terminal, opt-in — and with a warning:** with `DEVLAND_PTY=1`, the office opens Claude Code in
   any folder, types into it (including `!comando`, which runs in the shell) and ends or takes over sessions open in other
   terminals. It follows the same safeguard as the terminal (local bind, local `Host`, no proxies or tunnels) and each request
   has to come from the computer it runs on, with a local origin (a site open in the browser can't send one). Even so,
@@ -992,25 +992,25 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
 - **Phone with login, opt-in:** only exists after `npm run remote:setup`. A second port with HTTPS (a local CA that only
   signs `.local` names, `localhost`, your own address and private IPs), a username and a password (only the scrypt
   hash is stored); the session is an `HttpOnly`, `SameSite=Strict`, `Secure` cookie signed with HMAC. On that port,
-  what is allowed comes from `HABBLAUD_REMOTE_ALLOW` (by default, only answering permission requests), never from the
+  what is allowed comes from `DEVLAND_REMOTE_ALLOW` (by default, only answering permission requests), never from the
   Host header; the routes of the hooks, the plugins and the host helper, the interactive terminal, the character editor
   and renaming rooms never work through it. Whoever has the password gets what you allowed: choose a strong one and
-  allow only what you need. The CA key stays in `~/.habblaud/remote-tls/ca` and never goes into the container.
-- **New agent, opt-in:** with `HABBLAUD_PTY=1`, the office starts Claude Code sessions with the request you wrote, in
+  allow only what you need. The CA key stays in `~/.devland/remote-tls/ca` and never goes into the container.
+- **New agent, opt-in:** with `DEVLAND_PTY=1`, the office starts Claude Code sessions with the request you wrote, in
   the folder you choose — the same warning as the interactive terminal applies. Attachments are written to
-  `~/.habblaud/attachments/` (folder 700, files 600). In Docker, whoever starts the sessions is the host helper
+  `~/.devland/attachments/` (folder 700, files 600). In Docker, whoever starts the sessions is the host helper
   (`npm run codex:bridge`), which also reads the delivery files only from known project folders (the ones Claude Code
   has in `<conta>/projects`), the temporary folder and the attachments.
 - **Character editor, local only:** saving or going back to random changes the office and writes to `names.json`, so it
   follows the same safeguard as the terminal (local bind, local `Host`, no proxies or tunnels): without it, the pencil doesn't show up
-  and the server answers `403`. Changes require JSON and a local origin. `HABBLAUD_TERMINAL=0` turns it off too.
+  and the server answers `403`. Changes require JSON and a local origin. `DEVLAND_TERMINAL=0` turns it off too.
 - **My day stats:** only aggregate numbers (time per status, counts, tokens, cost) with project,
-  account and agent names, kept in `HABBLAUD_DATA_DIR/stats/` for 30 days — nothing from the conversation.
+  account and agent names, kept in `DEVLAND_DATA_DIR/stats/` for 30 days — nothing from the conversation.
 - **Codex:** DevLand only reads the conversations (`sessions/`, `archived_sessions/`) and the locks of the open sessions
   (`thread-writer-locks/`); in Docker, only those three folders are mounted, read-only. It never reads `auth.json`,
   `config.toml`, the shell environment (`shell_snapshots/`), the prompt history, the logs or the Codex databases, and doesn't
   show the ChatGPT account ids. `npm run codex:install` only adds groups to `hooks.json` (with a backup; those from
-  other apps stay where they are) and writes `~/.habblaud/codex-hook.json`; approving the hooks is always up to you, in
+  other apps stay where they are) and writes `~/.devland/codex-hook.json`; approving the hooks is always up to you, in
   `/hooks`. The hooks only talk to `127.0.0.1`. Messages to Codex carry the same warning as those to Claude Code: any
   program on this machine that talks to DevLand can leave a message in a session's queue.
 - **What shows up on screen:** activity summaries (tool, file, command or query), session titles,
@@ -1027,9 +1027,9 @@ metadata (letter, email, organization) is read on the host by `docker:up` and pa
 | `npm run build` / `npm start` | Builds and runs the production version. |
 | `npm test` | Tests (Vitest). |
 | `npm run typecheck` | Type checking for the client, the server and the scripts. |
-| `claude plugin test mod/habblaud` | Mod tests (no session, account or network); same for `mod/habblaud-mensagens`. |
-| `claude plugin validate .` | Validates the marketplace (`.claude-plugin/marketplace.json`); with `mod/habblaud`, `mod/habblaud-permissoes` or `mod/habblaud-mensagens`, validates the plugin and lists the mod's events and calls. |
-| `claude --plugin-dir mod/habblaud` | Opens a session with the mod from this folder, without installing it (edit and run `/reload-plugins`). |
+| `claude plugin test mod/devland` | Mod tests (no session, account or network); same for `mod/devland-mensagens`. |
+| `claude plugin validate .` | Validates the marketplace (`.claude-plugin/marketplace.json`); with `mod/devland`, `mod/devland-permissoes` or `mod/devland-mensagens`, validates the plugin and lists the mod's events and calls. |
+| `claude --plugin-dir mod/devland` | Opens a session with the mod from this folder, without installing it (edit and run `/reload-plugins`). |
 | `npm run mod:status` | Shows, per account, the marketplace, the plugins and the installed versions. |
 | `npm run demo:timeline` | Generates a made-up timeline (demo mode simulator) for the timelapse. |
 | `npm run release` | Publishes the `package.json` version on GitHub (tag and release with the notes from `CHANGELOG.md`). |
@@ -1038,7 +1038,7 @@ To take screenshots without opening your browser, `scripts/shot.mjs` uses an iso
 The first time, download the browser (just once): `npx playwright-core install chromium-headless-shell`.
 
 ```bash
-node scripts/shot.mjs 'http://localhost:4747/?mock=1&speed=3' /tmp/habblaud.png --size 1400x900 --wait 4000
+node scripts/shot.mjs 'http://localhost:4747/?mock=1&speed=3' /tmp/devland.png --size 1400x900 --wait 4000
 ```
 
 In the browser console, `habblaud.world.debug` has tools for testing scenes (e.g.
@@ -1046,17 +1046,17 @@ In the browser console, `habblaud.world.debug` has tools for testing scenes (e.g
 
 **Timelapse with made-up data only** (e.g. to record a GIF): `npm run demo:timeline` runs the demo mode
 simulator offline and records a whole day (by default, yesterday from 9 a.m. to 7 p.m., with a busy morning, a quieter lunch and a
-peak in the afternoon) in `<tmp>/habblaud-demo/timeline/`. Then start a DevLand that only reads that folder and doesn't show your
+peak in the afternoon) in `<tmp>/devland-demo/timeline/`. Then start a DevLand that only reads that folder and doesn't show your
 sessions, and open the Timelapse:
 
 ```bash
-npm run demo:timeline -- --data-dir /tmp/habblaud-demo        # opções: --date, --start 8:30, --hours, --sessions, --seed
-mkdir -p /tmp/habblaud-demo/vazio
-HABBLAUD_DATA_DIR=/tmp/habblaud-demo HABBLAUD_TIMELINE=0 HABBLAUD_CLAUDE_DIRS=/tmp/habblaud-demo/vazio \
-  HABBLAUD_PORT=4848 npm start                                 # depois de npm run build; abra http://localhost:4848
+npm run demo:timeline -- --data-dir /tmp/devland-demo        # opções: --date, --start 8:30, --hours, --sessions, --seed
+mkdir -p /tmp/devland-demo/vazio
+DEVLAND_DATA_DIR=/tmp/devland-demo DEVLAND_TIMELINE=0 DEVLAND_CLAUDE_DIRS=/tmp/devland-demo/vazio \
+  DEVLAND_PORT=4848 npm start                                 # depois de npm run build; abra http://localhost:4848
 ```
 
-`HABBLAUD_TIMELINE=0` avoids writing to that folder; with recording on, days older than 7 days are deleted.
+`DEVLAND_TIMELINE=0` avoids writing to that folder; with recording on, days older than 7 days are deleted.
 
 **Publishing a version:** every version has its own section in [`CHANGELOG.md`](CHANGELOG.md), with what went in. While
 working, note the changes under "Não lançado" (Unreleased). To release:
@@ -1075,7 +1075,7 @@ working, note the changes under "Não lançado" (Unreleased). To release:
 
 Only **open** Claude Code sessions show up. Check whether there's one running and whether the account was detected at
 `http://localhost:4747/api/health`. If the account folders are somewhere else, use
-`HABBLAUD_CLAUDE_DIRS=/caminho/conta1,/caminho/conta2`.
+`DEVLAND_CLAUDE_DIRS=/caminho/conta1,/caminho/conta2`.
 
 </details>
 
@@ -1095,7 +1095,7 @@ of the percentage means the window has reset since the last collection.
 Run `npm run mod:status`: it shows the Claude Code version (the mod needs 2.1.287 or newer) and, per account,
 whether the marketplace points to this folder and whether the plugins are installed and enabled. In a session opened before the
 install, run `/reload-plugins`; `/plugin` shows, below the tabs, the loaded mods (e.g.
-`1 mod active · habblaud`). Mods don't run with `"disableAllHooks": true` in the account's `settings.json` or with
+`1 mod active · devland`). Mods don't run with `"disableAllHooks": true` in the account's `settings.json` or with
 `claude --safe-mode`.
 
 </details>
@@ -1104,7 +1104,7 @@ install, run `/reload-plugins`; `/plugin` shows, below the tabs, the loaded mods
 <summary><b>"Port 4747 is already in use"</b></summary>
 
 Another DevLand (Node or Docker) is already running. Stop it (`npm run docker:down`, or Ctrl+C in the
-`npm start` terminal) or use another port: `HABBLAUD_PORT=4848 npm run docker:up` (Docker) or `HABBLAUD_PORT=4848 npm start`
+`npm start` terminal) or use another port: `DEVLAND_PORT=4848 npm run docker:up` (Docker) or `DEVLAND_PORT=4848 npm start`
 (Node).
 
 </details>
@@ -1112,9 +1112,9 @@ Another DevLand (Node or Docker) is already running. Stop it (`npm run docker:do
 <details>
 <summary><b>It doesn't open on my phone</b></summary>
 
-Check that you created `.env` with `HABBLAUD_BIND=0.0.0.0` and recreated the container (`npm run docker:up -- --no-build`), that
+Check that you created `.env` with `DEVLAND_BIND=0.0.0.0` and recreated the container (`npm run docker:up -- --no-build`), that
 the phone is on the same Wi-Fi and that the computer's firewall allows connections on port 4747. By IP it works right away;
-to open it by a name (e.g. `meu-mac.local`), add `HABBLAUD_ALLOWED_HOSTS=meu-mac.local` (in Docker, in the same
+to open it by a name (e.g. `meu-mac.local`), add `DEVLAND_ALLOWED_HOSTS=meu-mac.local` (in Docker, in the same
 `.env`).
 
 </details>
@@ -1123,8 +1123,8 @@ to open it by a name (e.g. `meu-mac.local`), add `HABBLAUD_ALLOWED_HOSTS=meu-mac
 <summary><b>The terminal doesn't open</b></summary>
 
 The terminal only exists with DevLand reachable only from the computer it runs on. Check that `.env` doesn't have
-`HABBLAUD_BIND=0.0.0.0` (or, in Node mode, that you didn't use `HABBLAUD_HOST=0.0.0.0`) or `HABBLAUD_TERMINAL=0`, and open it through
-`http://localhost:4747` (through the network IP or a name from `HABBLAUD_ALLOWED_HOSTS` it's refused). In Docker, a container
+`DEVLAND_BIND=0.0.0.0` (or, in Node mode, that you didn't use `DEVLAND_HOST=0.0.0.0`) or `DEVLAND_TERMINAL=0`, and open it through
+`http://localhost:4747` (through the network IP or a name from `DEVLAND_ALLOWED_HOSTS` it's refused). In Docker, a container
 created before this feature needs to be recreated: `npm run docker:up`. The startup log (`npm run docker:logs`)
 says whether the terminal is on and, if it isn't, why.
 
@@ -1133,7 +1133,7 @@ says whether the terminal is on and, if it isn't, why.
 <details>
 <summary><b>The permission request (or the question) doesn't show up in the office</b></summary>
 
-Run `npm run mod:status`: it says, per account, whether the `habblaud-permissoes` plugin is installed and enabled (and whether
+Run `npm run mod:status`: it says, per account, whether the `devland-permissoes` plugin is installed and enabled (and whether
 the old hook was left alongside it, which would make two of them answer) and whether DevLand is handling requests. In the old way,
 `npm run hooks:status` says whether the hook is installed and pointing to this folder. The request is only diverted with some
 DevLand page opened through `http://localhost` (or `127.0.0.1`) and with the terminal on (same safeguard). Sessions
@@ -1147,7 +1147,7 @@ must be from 0.6.0 or newer: run `npm run mod:install` after updating.
 <summary><b>Codex doesn't show up in the office (or shows up with a delay)</b></summary>
 
 The startup log (`npm run docker:logs`) says how many Codex accounts DevLand found; if it's none, point to the
-folder with `HABBLAUD_CODEX_DIRS` (and run `npm run docker:up` again: in Docker, only the folders that existed at
+folder with `DEVLAND_CODEX_DIRS` (and run `npm run docker:up` again: in Docker, only the folders that existed at
 `docker:up` are mounted). Without the hooks, Codex shows up through its files, which are only written after each step:
 run `npm run codex:install`, **approve the hooks in `/hooks` in Codex** and check with `npm run codex:status`. Codex runs
 the hooks through the login shell, which may have an old Node; `codex:install` picks a Node 22+ and tells you which one (or use
@@ -1159,10 +1159,10 @@ say which folder it's in (it only creates the session lock), and without the fol
 <details>
 <summary><b>The message box doesn't show up (or stays queued)</b></summary>
 
-The box only shows up for main agents whose session has the `habblaud-mensagens` plugin connected: run
+The box only shows up for main agents whose session has the `devland-mensagens` plugin connected: run
 `npm run mod:status` (it says, per account, whether the plugin is installed and whether DevLand has messages turned on) and, in
 sessions opened before the install, `/reload-plugins`. Without the plugin, the agent's details show the install
-hint. Messages follow the terminal's safeguard and `HABBLAUD_MENSAGENS=0` turns them off; the startup log
+hint. Messages follow the terminal's safeguard and `DEVLAND_MENSAGENS=0` turns them off; the startup log
 (`npm run docker:logs`) says whether they're on and, if they aren't, why. A message that stays **queued** and fails
 with "the session didn't fetch the message" means the session stopped asking DevLand (it closed, or the plugin was
 turned off).

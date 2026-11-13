@@ -40,9 +40,9 @@ function fakeSmtp(): Promise<{ port: number; got: string[] }> {
 }
 
 describe('smtp', () => {
-  it('lê a configuração do ambiente (HABBLAUD_ vale mais que o genérico; sem host = desligado)', () => {
+  it('lê a configuração do ambiente (DEVLAND_ vale mais que o genérico; sem host = desligado)', () => {
     expect(mailConfigFromEnv({})).toBeUndefined();
-    expect(mailConfigFromEnv({ SMTP_HOST: 'smtp.x.com', SMTP_USER: 'a@x.com', SMTP_PASS: 'p', HABBLAUD_SMTP_PORT: '465' })).toEqual({
+    expect(mailConfigFromEnv({ SMTP_HOST: 'smtp.x.com', SMTP_USER: 'a@x.com', SMTP_PASS: 'p', DEVLAND_SMTP_PORT: '465' })).toEqual({
       host: 'smtp.x.com', port: 465, user: 'a@x.com', pass: 'p', from: 'a@x.com', secure: true,
     });
     expect(mailConfigFromEnv({ SMTP_HOST: 'h', SMTP_PORT: '587' })).toBeUndefined(); // sem remetente

@@ -3,7 +3,7 @@
 // - número velho nunca passa por atual: janela que já renovou depois da leitura mostra "—" e "renovada";
 //   números antigos ficam acinzentados com a idade ("há 6 d") no cabeçalho ou, no celular, um selo no chip;
 // - o reinício vem com verbo implícito no ícone ↻ e contagem regressiva quando falta menos de um dia;
-// - conta sem números diz "sem dados de uso" e oferece "Como ativar" (mod do Habblaud, recomendado).
+// - conta sem números diz "sem dados de uso" e oferece "Como ativar" (mod do DevLand, recomendado).
 // Conta do Codex: os números vêm dos arquivos de sessão dele, que só se renovam enquanto alguma sessão roda; por isso
 // a idade ("há 12 min") fica sempre à mostra. Sem cota nem créditos ("sem cota") nunca vira 0%. Não há o que
 // instalar para o uso: "Como funciona" abre a ajuda na seção do Codex. Sem Opus/Sonnet nem e-mail (só o plano).
@@ -25,7 +25,7 @@ export const SOURCE_LABEL: Record<NonNullable<AccountInfo['usage']>['source'], s
   oauth: tr('consulta à Anthropic com o login da conta'),
 };
 
-/** Origem para mostrar: o arquivo ao vivo pode ter sido gravado pelo mod do Habblaud ou pelo tap. */
+/** Origem para mostrar: o arquivo ao vivo pode ter sido gravado pelo mod do DevLand ou pelo tap. */
 export function sourceLabel(u: NonNullable<AccountInfo['usage']>): string {
   if (u.source === 'statusline' && u.via === 'mod') return tr('ao vivo (mod do DevLand)');
   return SOURCE_LABEL[u.source] ?? u.source;
@@ -224,7 +224,7 @@ export class UsageCards {
   }
 
   render(): void {
-    // No Habblaud Cloud, só o Codex sem números fica de fora do topo (nenhuma conta conectada: conectar é em "+ Contas"); uma conta
+    // No DevLand Cloud, só o Codex sem números fica de fora do topo (nenhuma conta conectada: conectar é em "+ Contas"); uma conta
     // do Claude conectada aparece sempre, mesmo antes de ter números (eles chegam quando uma sessão dela trabalha).
     const all = this.ctx.store.snapshot?.accounts ?? [];
     const accounts = access().cloud ? all.filter((a) => a.usageStatus !== 'disabled' || !isCodex(a)) : all;

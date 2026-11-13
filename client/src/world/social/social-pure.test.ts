@@ -155,7 +155,7 @@ describe('carteira', () => {
     office.ensure(ana, T0);
     office.credit('ana', 7, '💬', 'Pedido atendido', T0);
     office.save(T0);
-    const officeRaw = st.data.get('habblaud.wallets.v1');
+    const officeRaw = st.data.get('devland.wallets.v1');
     expect(officeRaw).toBeDefined();
     // o Sim da visita carrega tudo, mas só grava a chave da visita
     const visit = new Wallets(st);
@@ -168,9 +168,9 @@ describe('carteira', () => {
     // enquanto isso, o escritório ganhou mais (em outra instância): a visita não regrava a cópia velha por cima
     office.credit('ana', 3, '💬', 'Pedido atendido', T0 + 1);
     office.save(T0 + 1);
-    const officeNow = st.data.get('habblaud.wallets.v1');
+    const officeNow = st.data.get('devland.wallets.v1');
     visit.save(T0 + 2);
-    expect(st.data.get('habblaud.wallets.v1')).toBe(officeNow);
+    expect(st.data.get('devland.wallets.v1')).toBe(officeNow);
     expect(officeNow).not.toBe(officeRaw);
     expect(officeNow).not.toContain('world:');
     const world = JSON.parse(st.data.get(WORLD_STORAGE_KEY)!) as { wallets: Record<string, unknown> };
@@ -200,7 +200,7 @@ describe('carteira', () => {
   it('cada chave só com a sua economia: id do escritório na chave da visita (e o contrário) é ignorado', () => {
     const st = memStorage();
     const entry = { name: 'X', coins: 50, earned: 50, wins: 0, losses: 0, vs: {}, paid: [], ledger: [], createdAt: T0, seenAt: T0 };
-    st.setItem('habblaud.wallets.v1', JSON.stringify({ v: 1, wallets: { 'world:a_1': entry, ana: entry } }));
+    st.setItem('devland.wallets.v1', JSON.stringify({ v: 1, wallets: { 'world:a_1': entry, ana: entry } }));
     st.setItem(WORLD_STORAGE_KEY, JSON.stringify({ v: 1, wallets: { bia: entry, 'world:a_2': entry } }));
     const w = new Wallets(st);
     expect([w.coins('ana'), w.coins('world:a_2'), w.coins('world:a_1'), w.coins('bia')]).toEqual([50, 50, 0, 0]);

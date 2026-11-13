@@ -1,4 +1,4 @@
-// Instala (ou remove) o tap de statusline do Habblaud em cada conta do Claude Code. Roda no HOST, com tsx:
+// Instala (ou remove) o tap de statusline do DevLand em cada conta do Claude Code. Roda no HOST, com tsx:
 //
 //   npm run usage:install     # envolve o statusLine.command de cada conta com o tap (backup antes)
 //   npm run usage:uninstall   # devolve o comando original
@@ -6,13 +6,13 @@
 //   (opções: --dry-run mostra o que mudaria sem gravar nada; --node <caminho> escolhe o node)
 //
 // O tap (scripts/statusline-tap.mjs) recebe do Claude Code o mesmo JSON que o statusline já recebe
-// e guarda só os percentuais de uso de 5h/semana em ~/.habblaud/usage/<conta>.json, repassando tudo
-// ao statusline original. Assim o Habblaud mostra o uso ao vivo sem ler credenciais.
+// e guarda só os percentuais de uso de 5h/semana em ~/.devland/usage/<conta>.json, repassando tudo
+// ao statusline original. Assim o DevLand mostra o uso ao vivo sem ler credenciais.
 //
 // Em <conta>/settings.json só o campo statusLine.command muda (os demais campos e chaves ficam como
-// estão); antes de gravar, uma cópia vai para settings.json.habblaud-backup-<data>.
+// estão); antes de gravar, uma cópia vai para settings.json.devland-backup-<data>.
 //
-// Nome antigo (CodeTown, até a 0.3.2): o install leva ~/.codetown para ~/.habblaud antes de tudo, para o uso
+// Nome antigo (CodeTown, até a 0.3.2): o install leva ~/.codetown para ~/.devland antes de tudo, para o uso
 // já capturado seguir valendo.
 import { accessSync, chmodSync, constants, existsSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -38,7 +38,7 @@ Opções:
   -h, --help       mostra esta ajuda
 
 Contas: as mesmas do servidor (~/.claude* com projects/ ou sessions/, CLAUDE_CONFIG_DIR ou
-HABBLAUD_CLAUDE_DIRS). Uso capturado em HABBLAUD_USAGE_DIR (padrão ~/.habblaud/usage).`);
+DEVLAND_CLAUDE_DIRS). Uso capturado em DEVLAND_USAGE_DIR (padrão ~/.devland/usage).`);
 
 // ---------------------------------------------------------------------------------------------
 // Funções puras (testadas em server/test/statusline-install.test.ts)
@@ -271,7 +271,7 @@ export function readSettings(file: string): { settings: Settings; raw?: string }
 export function writeSettings(file: string, settings: Settings, raw: string | undefined, now: Date): string | undefined {
   let mode = 0o600;
   if (raw !== undefined) mode = statSync(file).mode & 0o777;
-  const tmp = `${file}.habblaud-tmp-${process.pid}`;
+  const tmp = `${file}.devland-tmp-${process.pid}`;
   writeFileSync(tmp, `${JSON.stringify(settings, null, 2)}\n`, { mode });
   chmodSync(tmp, mode);
   // Relê agora: o backup é o que o rename substitui. Se mudou desde a leitura, aborta (sem merge).
@@ -290,23 +290,23 @@ export function writeSettings(file: string, settings: Settings, raw: string | un
   }
   let backup: string | undefined;
   if (current !== undefined) {
-    backup = `${file}.habblaud-backup-${stamp(now)}`;
-    for (let i = 2; existsSync(backup); i++) backup = `${file}.habblaud-backup-${stamp(now)}-${i}`;
+    backup = `${file}.devland-backup-${stamp(now)}`;
+    for (let i = 2; existsSync(backup); i++) backup = `${file}.devland-backup-${stamp(now)}-${i}`;
     writeFileSync(backup, current, { mode: 0o600 });
   }
   renameSync(tmp, file);
   return backup;
 }
 
-/** Pasta do uso capturado (HABBLAUD_USAGE_DIR ou ~/.habblaud/usage); também usada pelo mod-install. */
+/** Pasta do uso capturado (DEVLAND_USAGE_DIR ou ~/.devland/usage); também usada pelo mod-install. */
 export function usageDirOf(env: NodeJS.ProcessEnv, home: string): string {
-  const d = env.HABBLAUD_USAGE_DIR?.trim();
-  return d ? resolve(d.replace(/^~(?=\/|$)/, home)) : join(home, '.habblaud', 'usage');
+  const d = env.DEVLAND_USAGE_DIR?.trim();
+  return d ? resolve(d.replace(/^~(?=\/|$)/, home)) : join(home, '.devland', 'usage');
 }
 
 /**
- * Leva ~/.codetown (nome antigo) para ~/.habblaud antes de criar ou usar a pasta do uso; também usada pelo
- * mod-install. Vale mesmo com HABBLAUD_USAGE_DIR em outro lugar (lá também ficam nomes e estatísticas, fora do
+ * Leva ~/.codetown (nome antigo) para ~/.devland antes de criar ou usar a pasta do uso; também usada pelo
+ * mod-install. Vale mesmo com DEVLAND_USAGE_DIR em outro lugar (lá também ficam nomes e estatísticas, fora do
  * Docker). Devolve a linha para a saída (undefined = nada a fazer); na simulação, só diz o que faria.
  */
 export function migrateLegacyState(home: string, dryRun: boolean): string | undefined {
@@ -317,7 +317,7 @@ export function migrateLegacyState(home: string, dryRun: boolean): string | unde
     } catch {
       legacy = false;
     }
-    return legacy ? tr('~ ~/.{0} (nome antigo) vai para ~/.habblaud (simulação: nada movido)', [LEGACY_NAME]) : undefined;
+    return legacy ? tr('~ ~/.{0} (nome antigo) vai para ~/.devland (simulação: nada movido)', [LEGACY_NAME]) : undefined;
   }
   const r = migrateLegacyStateDir(home);
   const msg = describeStateMigration(r);
@@ -342,11 +342,11 @@ export function run(opts: RunOptions, ctx: RunContext): number {
   const { env, home, out } = ctx;
   const dirs = discoverClaudeDirs(env, home);
   if (!dirs.length) {
-    out(tr('Nenhuma conta do Claude Code encontrada (~/.claude* com projects/ ou sessions/). Use HABBLAUD_CLAUDE_DIRS se estiverem em outro lugar.'));
+    out(tr('Nenhuma conta do Claude Code encontrada (~/.claude* com projects/ ou sessions/). Use DEVLAND_CLAUDE_DIRS se estiverem em outro lugar.'));
     return 1;
   }
   const nodeCmd = opts.nodeCmd ?? detectNodeCommand(env, home);
-  // Nome antigo: o tap agora grava em ~/.habblaud/usage; o que estava em ~/.codetown vai junto.
+  // Nome antigo: o tap agora grava em ~/.devland/usage; o que estava em ~/.codetown vai junto.
   if (opts.command === 'install') {
     const moved = migrateLegacyState(home, opts.dryRun);
     if (moved) out(moved);

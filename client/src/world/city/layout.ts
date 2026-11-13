@@ -408,7 +408,7 @@ export function plazaDecor(): Decor[] {
   ] as const) {
     out.push({ kind: 'lamp', x: X(lx) + 8, y: Y(ly) + 10, seed: lx * 3 + ly });
   }
-  // o totem do Habblaud ao lado do ponto de nascimento
+  // o totem do DevLand ao lado do ponto de nascimento
   out.push({ kind: 'totem', x: X(SPAWN.x - 3) + 8, y: Y(SPAWN.y) + 4, seed: 2 });
   out.push({ kind: 'planter', x: X(SPAWN.x + 3) + 8, y: Y(SPAWN.y) + 6, seed: 9, small: true });
   return out;

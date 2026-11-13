@@ -6,15 +6,15 @@
 // chegou, nunca o cabeçalho Host (que um cliente da rede imita à vontade).
 //
 // Configuração (escrita por `npm run remote:setup`, scripts/remote-setup.ts):
-//   HABBLAUD_REMOTE_USER + HABBLAUD_REMOTE_PASSWORD_HASH  ligam a porta (o hash é scrypt, ver remote/password.ts;
+//   DEVLAND_REMOTE_USER + DEVLAND_REMOTE_PASSWORD_HASH  ligam a porta (o hash é scrypt, ver remote/password.ts;
 //                                                         senha em texto puro não é aceita)
-//   HABBLAUD_REMOTE_ALLOW   o que a sessão remota pode fazer além de ver: permissions, messages, terminal ("none" = só
+//   DEVLAND_REMOTE_ALLOW   o que a sessão remota pode fazer além de ver: permissions, messages, terminal ("none" = só
 //                           ver). Padrão: permissions.
-//   HABBLAUD_REMOTE_TLS_DIR pasta com server.key, server.crt (e ca.crt, servido em /remote/ca.crt). Padrão:
-//                           /remote-tls no Docker, ~/.habblaud/remote-tls/server no Node. Sem certificado a porta não
-//                           sobe, a menos que HABBLAUD_REMOTE_INSECURE_HTTP=1 (HTTP puro: senha e cookie à vista na rede).
-//   HABBLAUD_REMOTE_PORT / HABBLAUD_REMOTE_HOST  só no Node (padrão 0.0.0.0:4748); no Docker o container escuta sempre
-//                           em 0.0.0.0:4748 e quem decide a exposição é a porta publicada (HABBLAUD_REMOTE_BIND).
+//   DEVLAND_REMOTE_TLS_DIR pasta com server.key, server.crt (e ca.crt, servido em /remote/ca.crt). Padrão:
+//                           /remote-tls no Docker, ~/.devland/remote-tls/server no Node. Sem certificado a porta não
+//                           sobe, a menos que DEVLAND_REMOTE_INSECURE_HTTP=1 (HTTP puro: senha e cookie à vista na rede).
+//   DEVLAND_REMOTE_PORT / DEVLAND_REMOTE_HOST  só no Node (padrão 0.0.0.0:4748); no Docker o container escuta sempre
+//                           em 0.0.0.0:4748 e quem decide a exposição é a porta publicada (DEVLAND_REMOTE_BIND).
 //
 // Sessão: cookie HttpOnly + SameSite=Strict (+ Secure com HTTPS) assinado com HMAC; chave = segredo aleatório em
 // <dataDir>/remote-secret misturado com usuário e hash da senha: trocar a senha derruba todas as sessões.
@@ -45,22 +45,22 @@ export interface RemoteConfig {
   port: number;
   host: string;
   user: string;
-  /** Ausente no Habblaud Cloud (os usuários ficam em <dataDir>/users.json). */
+  /** Ausente no DevLand Cloud (os usuários ficam em <dataDir>/users.json). */
   passwordHash?: PasswordHash;
   /** Texto do hash como veio do ambiente (entra na chave das sessões). */
   passwordHashText: string;
   allow: ReadonlySet<RemoteFeature>;
-  /** Ausente = HTTP puro (só com HABBLAUD_REMOTE_INSECURE_HTTP=1, ou no Habblaud Cloud, com o TLS no proxy). */
+  /** Ausente = HTTP puro (só com DEVLAND_REMOTE_INSECURE_HTTP=1, ou no DevLand Cloud, com o TLS no proxy). */
   tls?: RemoteTls;
   /**
-   * HABBLAUD_CLOUD=1: vários usuários (http/cloud.ts), HTTP atrás do proxy (Traefik), cookie Secure pelo
+   * DEVLAND_CLOUD=1: vários usuários (http/cloud.ts), HTTP atrás do proxy (Traefik), cookie Secure pelo
    * X-Forwarded-Proto. `allow` vira o teto; o que vale é a lista de cada usuário.
    */
   cloud?: true;
 }
 
 export const DEFAULT_REMOTE_PORT = 4748;
-export const COOKIE = 'habblaud_remote';
+export const COOKIE = 'devland_remote';
 export const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 /** Depois de quanto tempo um token em uso é trocado por um novo (janela deslizante, RemoteSessions.renew). */
 const RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -72,8 +72,8 @@ function truthy(v: string | undefined): boolean {
 }
 
 export function defaultTlsDir(env: NodeJS.ProcessEnv, inDocker: boolean): string {
-  if (env.HABBLAUD_REMOTE_TLS_DIR?.trim()) return env.HABBLAUD_REMOTE_TLS_DIR.trim();
-  return inDocker ? '/remote-tls' : join(env.HOME || homedir(), '.habblaud', 'remote-tls', 'server');
+  if (env.DEVLAND_REMOTE_TLS_DIR?.trim()) return env.DEVLAND_REMOTE_TLS_DIR.trim();
+  return inDocker ? '/remote-tls' : join(env.HOME || homedir(), '.devland', 'remote-tls', 'server');
 }
 
 /** Liga o acesso remoto a partir do ambiente. `warning` explica por que ficou desligado quando parece intencional. */
@@ -82,30 +82,30 @@ export function parseRemoteConfig(
   inDocker: boolean,
   exists: (path: string) => boolean = existsSync,
 ): { config?: RemoteConfig; warning?: string } {
-  if (truthy(env.HABBLAUD_CLOUD)) {
+  if (truthy(env.DEVLAND_CLOUD)) {
     // No container a porta é sempre a 4748; quem a expõe é o proxy, nunca uma porta publicada sem ele.
-    const port = inDocker ? DEFAULT_REMOTE_PORT : Number.parseInt(env.HABBLAUD_REMOTE_PORT ?? '', 10) || DEFAULT_REMOTE_PORT;
-    const host = inDocker ? '0.0.0.0' : env.HABBLAUD_REMOTE_HOST?.trim() || '127.0.0.1';
+    const port = inDocker ? DEFAULT_REMOTE_PORT : Number.parseInt(env.DEVLAND_REMOTE_PORT ?? '', 10) || DEFAULT_REMOTE_PORT;
+    const host = inDocker ? '0.0.0.0' : env.DEVLAND_REMOTE_HOST?.trim() || '127.0.0.1';
     return { config: { port, host, user: '', passwordHashText: '', allow: new Set(FEATURES), cloud: true } };
   }
-  const user = env.HABBLAUD_REMOTE_USER?.trim() ?? '';
-  const hashText = env.HABBLAUD_REMOTE_PASSWORD_HASH?.trim() ?? '';
-  const plain = env.HABBLAUD_REMOTE_PASSWORD ?? '';
+  const user = env.DEVLAND_REMOTE_USER?.trim() ?? '';
+  const hashText = env.DEVLAND_REMOTE_PASSWORD_HASH?.trim() ?? '';
+  const plain = env.DEVLAND_REMOTE_PASSWORD ?? '';
   if (!user && !hashText && !plain) return {};
-  if (plain && !hashText) return { warning: tr('acesso remoto desligado: senha em texto puro (HABBLAUD_REMOTE_PASSWORD) não é aceita; rode npm run remote:setup') };
-  if (!user || !hashText) return { warning: tr('acesso remoto desligado: faltam HABBLAUD_REMOTE_USER e HABBLAUD_REMOTE_PASSWORD_HASH; rode npm run remote:setup') };
+  if (plain && !hashText) return { warning: tr('acesso remoto desligado: senha em texto puro (DEVLAND_REMOTE_PASSWORD) não é aceita; rode npm run remote:setup') };
+  if (!user || !hashText) return { warning: tr('acesso remoto desligado: faltam DEVLAND_REMOTE_USER e DEVLAND_REMOTE_PASSWORD_HASH; rode npm run remote:setup') };
   const passwordHash = parsePasswordHash(hashText);
-  if (!passwordHash) return { warning: tr('acesso remoto desligado: HABBLAUD_REMOTE_PASSWORD_HASH inválido; rode npm run remote:setup') };
+  if (!passwordHash) return { warning: tr('acesso remoto desligado: DEVLAND_REMOTE_PASSWORD_HASH inválido; rode npm run remote:setup') };
   const dir = defaultTlsDir(env, inDocker);
   const tls: RemoteTls = { dir, keyFile: join(dir, 'server.key'), certFile: join(dir, 'server.crt'), caFile: join(dir, 'ca.crt') };
   const hasTls = exists(tls.keyFile) && exists(tls.certFile);
-  const insecure = truthy(env.HABBLAUD_REMOTE_INSECURE_HTTP);
+  const insecure = truthy(env.DEVLAND_REMOTE_INSECURE_HTTP);
   if (!hasTls && !insecure) return { warning: tr('acesso remoto desligado: sem certificado em {0} (HTTPS é obrigatório); rode npm run remote:setup', [dir]) };
-  const rawPort = Number.parseInt(env.HABBLAUD_REMOTE_PORT ?? '', 10);
+  const rawPort = Number.parseInt(env.DEVLAND_REMOTE_PORT ?? '', 10);
   const port = inDocker ? DEFAULT_REMOTE_PORT : Number.isInteger(rawPort) && rawPort > 0 && rawPort < 65536 ? rawPort : DEFAULT_REMOTE_PORT;
-  const host = inDocker ? '0.0.0.0' : env.HABBLAUD_REMOTE_HOST?.trim() || '0.0.0.0';
+  const host = inDocker ? '0.0.0.0' : env.DEVLAND_REMOTE_HOST?.trim() || '0.0.0.0';
   return {
-    config: { port, host, user, passwordHash, passwordHashText: hashText, allow: parseAllow(env.HABBLAUD_REMOTE_ALLOW), tls: hasTls ? tls : undefined },
+    config: { port, host, user, passwordHash, passwordHashText: hashText, allow: parseAllow(env.DEVLAND_REMOTE_ALLOW), tls: hasTls ? tls : undefined },
   };
 }
 
@@ -154,7 +154,7 @@ export class RemoteSessions {
     /** Onde a lista de tokens encerrados sobrevive a reinícios (ausente = só em memória). */
     private readonly revokedFile?: string,
     /**
-     * Habblaud Cloud: material da chave de cada usuário (id, época, hash da senha); undefined = usuário não existe mais.
+     * DevLand Cloud: material da chave de cada usuário (id, época, hash da senha); undefined = usuário não existe mais.
      * Com ele, os tokens levam o id (`v2.<id>.<validade>.<assinatura>`).
      */
     private readonly userKey?: (uid: string) => string | undefined,
@@ -173,7 +173,7 @@ export class RemoteSessions {
     return createHmac('sha256', key).update(payload, 'utf8').digest('base64url');
   }
 
-  /** Token novo (de 30 dias); com `uid`, do usuário (Habblaud Cloud). */
+  /** Token novo (de 30 dias); com `uid`, do usuário (DevLand Cloud). */
   issue(uid?: string): { token: string; maxAgeS: number } {
     const exp = this.now() + SESSION_MS;
     const payload = uid === undefined ? `v1.${exp}` : `v2.${uid}.${exp}`;
@@ -353,7 +353,7 @@ export function isRemoteRequest(req: IncomingMessage): boolean {
   return remoteRequests.has(req);
 }
 
-/** Habblaud Cloud: id do usuário que fez a requisição (porta remota, já autenticada). */
+/** DevLand Cloud: id do usuário que fez a requisição (porta remota, já autenticada). */
 const remoteUsers = new WeakMap<IncomingMessage, string>();
 
 export function remoteUserOf(req: IncomingMessage): string | undefined {
@@ -441,7 +441,7 @@ export const PAGE_STYLE = `<style>
 
 export function loginPage(opts: { caDownload: boolean; intro?: string; forgot?: boolean }): string {
   const ca = opts.caDownload
-    ? `<p class="help">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="habblaud-ca.crt">${esc(tr('Instale o certificado do DevLand'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
+    ? `<p class="help">${esc(tr('Primeira vez neste celular?'))} <a href="${CA_PATH}" download="devland-ca.crt">${esc(tr('Instale o certificado do DevLand'))}</a> ${esc(tr('para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).'))}</p>`
     : '';
   const card = `
 <h1>${esc(tr('Bem-vindo de volta'))}</h1>
@@ -487,7 +487,7 @@ ${ca}`;
   return authPage({ title: `${BRAND} · ${tr('entrar')}`, card, script });
 }
 
-/** `frameable`: só o próprio Habblaud pode embutir (as páginas do Cloud abrem em janela dentro do escritório). */
+/** `frameable`: só o próprio DevLand pode embutir (as páginas do Cloud abrem em janela dentro do escritório). */
 export function sendHtml(res: ServerResponse, html: string, frameable = false): void {
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
@@ -515,7 +515,7 @@ export function loginCookies(token: string, maxAgeS: number, remember: boolean, 
     : [cookieHeader(token, null, secure), cookieHeader('', 0, secure, KEEP_COOKIE)];
 }
 
-/** Habblaud Cloud (HABBLAUD_CLOUD=1): login pelos usuários de <dataDir>/users.json (http/cloud.ts). */
+/** DevLand Cloud (DEVLAND_CLOUD=1): login pelos usuários de <dataDir>/users.json (http/cloud.ts). */
 export interface CloudGate {
   /** Id do usuário quando nome e senha conferem. */
   login(name: string, password: string): Promise<string | undefined>;
@@ -645,7 +645,7 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
         const pem = readFileSync(deps.caFile!);
         res.writeHead(200, {
           'Content-Type': 'application/x-x509-ca-cert',
-          'Content-Disposition': 'attachment; filename="habblaud-ca.crt"',
+          'Content-Disposition': 'attachment; filename="devland-ca.crt"',
           'Content-Length': pem.length,
           'Cache-Control': 'no-store',
           'X-Content-Type-Options': 'nosniff',

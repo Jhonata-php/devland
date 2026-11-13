@@ -26,10 +26,10 @@ import {
 } from '../../scripts/codex-install';
 import { posixShell, tempDir } from './fixtures';
 
-const CMD = hookCommand('/repo/habblaud/mod/habblaud-codex/hook.mjs');
+const CMD = hookCommand('/repo/devland/mod/devland-codex/hook.mjs');
 const SH = posixShell();
 
-/** hooks.json (sintético) com grupos de outro app em alguns eventos, inclusive um que o Habblaud não usa. */
+/** hooks.json (sintético) com grupos de outro app em alguns eventos, inclusive um que o DevLand não usa. */
 const ORCA = {
   description: 'Hooks de outro app',
   hooks: {
@@ -43,16 +43,16 @@ const orcaAt = (file: { hooks?: Record<string, unknown[]> }, event: string, i: n
 
 describe('codex-install.ts (funções puras)', () => {
   it('comando sem opções e handlers fixos: observação em segundo plano, SessionEnd síncrono, PermissionRequest com a espera', () => {
-    expect(CMD).toBe('node "/repo/habblaud/mod/habblaud-codex/hook.mjs"');
+    expect(CMD).toBe('node "/repo/devland/mod/devland-codex/hook.mjs"');
     expect(handlerFor('PreToolUse', CMD, 25)).toEqual({ type: 'command', command: CMD, async: true, timeout: 5 });
     expect(handlerFor('SessionEnd', CMD, 25)).toEqual({ type: 'command', command: CMD, timeout: 1 });
     expect(handlerFor('PermissionRequest', CMD, 25)).toEqual({ type: 'command', command: CMD, timeout: 35, statusMessage: STATUS_MESSAGE });
     expect(STATUS_MESSAGE).toBe('Aguardando resposta no DevLand…');
     expect(isOurHandler({ command: CMD })).toBe(true);
-    expect(isOurHandler({ command: 'node "C:\\x\\habblaud-codex\\hook.mjs"' })).toBe(true);
+    expect(isOurHandler({ command: 'node "C:\\x\\devland-codex\\hook.mjs"' })).toBe(true);
     expect(isOurHandler({ command: 'orca-hook perm' })).toBe(false);
-    expect(scriptPathOf(CMD)).toBe('/repo/habblaud/mod/habblaud-codex/hook.mjs');
-    expect(scriptPathOf("node '/a/it'\\''s/habblaud-codex/hook.mjs'")).toBe("/a/it's/habblaud-codex/hook.mjs");
+    expect(scriptPathOf(CMD)).toBe('/repo/devland/mod/devland-codex/hook.mjs');
+    expect(scriptPathOf("node '/a/it'\\''s/devland-codex/hook.mjs'")).toBe("/a/it's/devland-codex/hook.mjs");
   });
 
   it('install: acrescenta no FIM de cada evento, sem matcher; grupos alheios e o resto do arquivo intactos; idempotente', () => {
@@ -71,18 +71,18 @@ describe('codex-install.ts (funções puras)', () => {
     }
     expect(p.approve.sort()).toEqual([...EVENTS].sort());
     expect(planInstall(next, CMD, 25)).toEqual({ action: 'none', message: 'já instalado' });
-    expect(installState(next, CMD, 25)).toEqual({ ok: [...EVENTS], outdated: [], missing: [], paths: ['/repo/habblaud/mod/habblaud-codex/hook.mjs'] });
+    expect(installState(next, CMD, 25)).toEqual({ ok: [...EVENTS], outdated: [], missing: [], paths: ['/repo/devland/mod/devland-codex/hook.mjs'] });
   });
 
   it('atualizar (outra espera, outro caminho): troca o handler NO MESMO lugar, mesmo com um grupo alheio acrescentado depois', () => {
     const first = planInstall(ORCA, CMD, 25);
     if (first.action !== 'install') throw new Error('esperado install');
     const installed = first.file as { hooks: Record<string, unknown[]> };
-    // Outro app acrescenta um grupo DEPOIS do do Habblaud.
+    // Outro app acrescenta um grupo DEPOIS do do DevLand.
     const later = { hooks: [{ type: 'command', command: 'orca-hook depois' }] };
     installed.hooks.PermissionRequest = [...installed.hooks.PermissionRequest, later];
     const before = JSON.parse(JSON.stringify(installed));
-    const upd = planInstall(installed, hookCommand('/novo/lugar/mod/habblaud-codex/hook.mjs'), 60);
+    const upd = planInstall(installed, hookCommand('/novo/lugar/mod/devland-codex/hook.mjs'), 60);
     expect(upd.action).toBe('install');
     if (upd.action !== 'install') return;
     const next = upd.file as { hooks: Record<string, unknown[]> };
@@ -93,7 +93,7 @@ describe('codex-install.ts (funções puras)', () => {
         if (!isOurHandler(g.hooks[0])) expect(next.hooks[event][i], `${event}[${i}]`).toEqual(g);
       });
     }
-    expect(next.hooks.PermissionRequest[2]).toEqual({ hooks: [handlerFor('PermissionRequest', hookCommand('/novo/lugar/mod/habblaud-codex/hook.mjs'), 60)] });
+    expect(next.hooks.PermissionRequest[2]).toEqual({ hooks: [handlerFor('PermissionRequest', hookCommand('/novo/lugar/mod/devland-codex/hook.mjs'), 60)] });
     expect(next.hooks.PermissionRequest[3]).toEqual(later);
     expect(installState(installed, CMD, 60)).toMatchObject({ outdated: ['PermissionRequest'], missing: [] });
   });
@@ -107,7 +107,7 @@ describe('codex-install.ts (funções puras)', () => {
     const u = planUninstall(withLater);
     expect(u.action === 'uninstall' && u.shifted).toEqual(['Stop']);
     expect(planUninstall(ORCA)).toEqual({ action: 'none', message: 'não estava instalado' });
-    // Arquivo que só tinha o Habblaud: volta a {}.
+    // Arquivo que só tinha o DevLand: volta a {}.
     const only = planInstall({}, CMD, 25);
     expect(only.action === 'install' && planUninstall(only.file)).toMatchObject({ action: 'uninstall', file: {} });
   });
@@ -124,7 +124,7 @@ describe('codex-install.ts (funções puras)', () => {
   it('parseArgs', () => {
     expect(parseArgs(['install'], {})).toEqual({ command: 'install', dryRun: false, account: undefined, port: 4747, waitS: DEFAULT_WAIT_S });
     expect(parseArgs(['status', '--port', '4851', '--espera', '60', '--conta', '.codex', '--dry-run'], {})).toEqual({ command: 'status', dryRun: true, account: '.codex', port: 4851, waitS: 60 });
-    expect(parseArgs(['install'], { HABBLAUD_PORT: '4848' })).toMatchObject({ port: 4848 });
+    expect(parseArgs(['install'], { DEVLAND_PORT: '4848' })).toMatchObject({ port: 4848 });
     expect(parseArgs(['--help'], {})).toBe('help');
     expect(() => parseArgs([], {})).toThrow(/install, uninstall ou status/);
     expect(() => parseArgs(['install', '--espera', '4'], {})).toThrow(/--espera/);
@@ -145,8 +145,8 @@ describe('codex-install.ts (funções puras)', () => {
     expect(chooseNode(probe, ['/opt/homebrew/bin/node'])).toEqual({ login: 'v22.12.0' });
     // Nenhum 22+: `node` mesmo (o instalador avisa).
     expect(chooseNode(() => undefined, ['/x/node'])).toEqual({ login: undefined });
-    expect(hookCommand('/repo/mod/habblaud-codex/hook.mjs', '/opt/homebrew/bin/node')).toBe('"/opt/homebrew/bin/node" "/repo/mod/habblaud-codex/hook.mjs"');
-    expect(scriptPathOf('"/opt/homebrew/bin/node" "/repo/mod/habblaud-codex/hook.mjs"')).toBe('/repo/mod/habblaud-codex/hook.mjs');
+    expect(hookCommand('/repo/mod/devland-codex/hook.mjs', '/opt/homebrew/bin/node')).toBe('"/opt/homebrew/bin/node" "/repo/mod/devland-codex/hook.mjs"');
+    expect(scriptPathOf('"/opt/homebrew/bin/node" "/repo/mod/devland-codex/hook.mjs"')).toBe('/repo/mod/devland-codex/hook.mjs');
   });
 });
 
@@ -177,7 +177,7 @@ describe('codex-install.ts (arquivos, HOME falso)', () => {
   const read = (acc: string) => JSON.parse(readFileSync(join(home, acc, 'hooks.json'), 'utf8'));
   const cmd = hookCommand(HOOK_SCRIPT);
 
-  it('descobre ~/.codex* do Codex (e CODEX_HOME); HABBLAUD_CODEX_DIRS substitui e recusa pasta do Claude Code', () => {
+  it('descobre ~/.codex* do Codex (e CODEX_HOME); DEVLAND_CODEX_DIRS substitui e recusa pasta do Claude Code', () => {
     expect(discoverCodexHomes({}, home).dirs).toEqual([join(home, '.codex'), join(home, '.codex-trabalho')]);
     const extra = join(tmp.dir, 'outra-conta');
     mkdirSync(extra);
@@ -185,20 +185,20 @@ describe('codex-install.ts (arquivos, HOME falso)', () => {
     expect(discoverCodexHomes({ CODEX_HOME: extra }, home).dirs).toEqual([join(home, '.codex'), join(home, '.codex-trabalho')]);
     mkdirSync(join(extra, 'thread-writer-locks'));
     expect(discoverCodexHomes({ CODEX_HOME: extra }, home).dirs).toEqual([extra, join(home, '.codex'), join(home, '.codex-trabalho')]);
-    expect(discoverCodexHomes({ HABBLAUD_CODEX_DIRS: `${extra}, ~/.claude, /nao/existe` }, home)).toEqual({ dirs: [extra], refused: [join(home, '.claude')] });
+    expect(discoverCodexHomes({ DEVLAND_CODEX_DIRS: `${extra}, ~/.claude, /nao/existe` }, home)).toEqual({ dirs: [extra], refused: [join(home, '.claude')] });
   });
 
-  it('install: backup, grupos alheios intactos, config.toml intocado, ~/.habblaud/codex-hook.json gravado; de novo = nada a fazer', async () => {
+  it('install: backup, grupos alheios intactos, config.toml intocado, ~/.devland/codex-hook.json gravado; de novo = nada a fazer', async () => {
     expect(await exec('install', { port: 4851, waitS: 40 })).toBe(0);
     const c = read('.codex');
     for (const [event, list] of Object.entries(ORCA.hooks)) list.forEach((g, i) => expect(c.hooks[event][i]).toEqual(g));
     expect(c.hooks.PermissionRequest[2]).toEqual({ hooks: [handlerFor('PermissionRequest', cmd, 40)] });
     expect(read('.codex-trabalho').hooks.SessionStart).toEqual([{ hooks: [handlerFor('SessionStart', cmd, 40)] }]);
-    expect(JSON.parse(readFileSync(join(home, '.codex', 'hooks.json.habblaud-backup-20261009-093000'), 'utf8'))).toEqual(ORCA);
+    expect(JSON.parse(readFileSync(join(home, '.codex', 'hooks.json.devland-backup-20261009-093000'), 'utf8'))).toEqual(ORCA);
     expect(readFileSync(join(home, '.codex', 'config.toml'), 'utf8')).toBe(configToml);
     expect(existsSync(join(home, '.codex-trabalho', 'config.toml'))).toBe(false);
     expect(existsSync(join(home, '.claude', 'hooks.json'))).toBe(false);
-    expect(JSON.parse(readFileSync(join(home, '.habblaud', 'codex-hook.json'), 'utf8'))).toEqual({ port: 4851, permissionTimeoutS: 40 });
+    expect(JSON.parse(readFileSync(join(home, '.devland', 'codex-hook.json'), 'utf8'))).toEqual({ port: 4851, permissionTimeoutS: 40 });
     const text = out.join('\n');
     expect(text).toContain('abra o Codex e aprove os hooks do DevLand em /hooks');
     expect(text).not.toMatch(/trusted_hash/);
@@ -215,7 +215,7 @@ describe('codex-install.ts (arquivos, HOME falso)', () => {
     await exec('install', { dryRun: true });
     expect(readFileSync(join(home, '.codex', 'hooks.json'), 'utf8')).toBe(before);
     expect(existsSync(join(home, '.codex-trabalho', 'hooks.json'))).toBe(false);
-    expect(existsSync(join(home, '.habblaud', 'codex-hook.json'))).toBe(false);
+    expect(existsSync(join(home, '.devland', 'codex-hook.json'))).toBe(false);
     expect(out.join('\n')).toContain('simulação');
 
     out = [];

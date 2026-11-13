@@ -32,7 +32,7 @@ export const ACCOUNT_COLORS = ['#f08a3c', '#4aa8e8', '#5cc97b', '#a77bf3', '#f06
 
 const RC_FILES = ['.zshrc', '.bashrc', '.zprofile', '.bash_profile'];
 
-/** Override vindo de HABBLAUD_ACCOUNTS (o host passa os metadados prontos para o container). */
+/** Override vindo de DEVLAND_ACCOUNTS (o host passa os metadados prontos para o container). */
 export interface AccountOverride {
   id?: string;
   /** Ferramenta da conta; ausente = 'claude'. As do Codex ficam fora da descoberta das contas do Claude Code. */
@@ -146,9 +146,9 @@ function claudeOverrides(raw: string | undefined): AccountOverride[] {
 }
 
 /**
- * Config dirs observados. HABBLAUD_CLAUDE_DIRS (lista separada por vírgula) substitui tudo;
+ * Config dirs observados. DEVLAND_CLAUDE_DIRS (lista separada por vírgula) substitui tudo;
  * senão: diretórios `$HOME/.claude*` com `projects/` ou `sessions/`, mais CLAUDE_CONFIG_DIR
- * (também aceita lista) e os `mountDir` de HABBLAUD_ACCOUNTS que existirem.
+ * (também aceita lista) e os `mountDir` de DEVLAND_ACCOUNTS que existirem.
  * Em todos os caminhos, pastas do Codex ficam de fora (isCodexHome; ver codexDirsRefused).
  * Ordem estável: a conta padrão primeiro, depois alfabética.
  */
@@ -157,8 +157,8 @@ export function discoverClaudeDirs(env: NodeJS.ProcessEnv = process.env, home: s
 }
 
 /**
- * Pastas que a descoberta das contas do Claude Code encontrou (ou recebeu de HABBLAUD_CLAUDE_DIRS,
- * CLAUDE_CONFIG_DIR ou HABBLAUD_ACCOUNTS) e recusou por serem do Codex: para avisar quem as listou.
+ * Pastas que a descoberta das contas do Claude Code encontrou (ou recebeu de DEVLAND_CLAUDE_DIRS,
+ * CLAUDE_CONFIG_DIR ou DEVLAND_ACCOUNTS) e recusou por serem do Codex: para avisar quem as listou.
  */
 export function codexDirsRefused(env: NodeJS.ProcessEnv = process.env, home: string = env.HOME || homedir()): string[] {
   return scanClaudeDirs(env, home).codex;
@@ -174,7 +174,7 @@ function scanClaudeDirs(env: NodeJS.ProcessEnv, home: string): { dirs: string[];
   };
   const unique = (list: string[]) => [...new Set(list)];
 
-  const override = splitList(env.HABBLAUD_CLAUDE_DIRS);
+  const override = splitList(env.DEVLAND_CLAUDE_DIRS);
   if (override.length) {
     const dirs = unique(override.map((p) => expandHome(p, home)));
     return { dirs: dirs.filter(notCodex), codex };
@@ -195,7 +195,7 @@ function scanClaudeDirs(env: NodeJS.ProcessEnv, home: string): { dirs: string[];
     const abs = expandHome(p, home);
     if (isDir(abs) && notCodex(abs)) found.push(abs);
   }
-  for (const o of claudeOverrides(env.HABBLAUD_ACCOUNTS)) {
+  for (const o of claudeOverrides(env.DEVLAND_ACCOUNTS)) {
     if (typeof o.mountDir !== 'string') continue;
     if (hasClaudeLayout(o.mountDir) && notCodex(o.mountDir)) found.push(expandHome(o.mountDir, home));
   }
@@ -344,12 +344,12 @@ export function accountIds(dirs: string[]): string[] {
 
 /**
  * Uma conta por config dir, NA MESMA ORDEM de `dirs`.
- * `configDir` é o caminho para exibição (no Docker, o do host, vindo de HABBLAUD_ACCOUNTS).
+ * `configDir` é o caminho para exibição (no Docker, o do host, vindo de DEVLAND_ACCOUNTS).
  */
 export function detectAccounts(dirs: string[], opts: { home?: string; env?: NodeJS.ProcessEnv } = {}): DetectedAccount[] {
   const env = opts.env ?? process.env;
   const home = opts.home ?? (env.HOME || homedir());
-  const overrides = claudeOverrides(env.HABBLAUD_ACCOUNTS);
+  const overrides = claudeOverrides(env.DEVLAND_ACCOUNTS);
   const shortcuts = shortcutsByDir(readShellAliases(home), home);
   const ids = accountIds(dirs);
 

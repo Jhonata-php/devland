@@ -1,6 +1,6 @@
 // Novo agente pelo escritório. Do jeito que roda sozinho: uma sessão em segundo plano do Claude Code
 // (`claude --bg -n <nome> -- <pedido>`, na pasta escolhida), que começa na hora, aparece no escritório como qualquer
-// sessão e recebe mensagens e pedidos de permissão pelo Habblaud (`claude attach <id>` abre no terminal do Mac).
+// sessão e recebe mensagens e pedidos de permissão pelo DevLand (`claude attach <id>` abre no terminal do Mac).
 // O Claude Code só faz isso numa pasta que já é confiável para ele (o aviso de confiança foi aceito no terminal); se
 // a pasta não é, ou o `claude` não está aqui, cai no link `claude://code/new?folder=<pasta>&q=<pedido>` (o do "New
 // Claude Code Session Here" do Finder), que abre a tela de sessão nova do app preenchida: aí ela começa quando a
@@ -8,7 +8,7 @@
 // - modo Node: o próprio servidor;
 // - Docker: o auxiliar do host (scripts/codex-bridge.ts, npm run codex:bridge) busca os pedidos em
 //   POST /api/host/spawn/poll, confere a pasta, roda e confirma em POST /api/host/spawn/ack.
-// Anexos (spawn/attachments.ts): quem roda grava os arquivos em ~/.habblaud/attachments/ e põe os caminhos no fim
+// Anexos (spawn/attachments.ts): quem roda grava os arquivos em ~/.devland/attachments/ e põe os caminhos no fim
 // do pedido. Sem shell (execFile), com prazo, e o pedido vai depois de `--` (nunca vira opção nem subcomando).
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
 import { execFile } from 'node:child_process';
@@ -108,11 +108,11 @@ export function spawnUrl(req: SpawnRequest): string {
   const q = new URLSearchParams();
   q.set('folder', req.folder);
   if (req.prompt.trim()) q.set('q', req.prompt);
-  q.set('source', 'habblaud');
+  q.set('source', 'devland');
   return `claude://code/new?${q.toString().replace(/\+/g, '%20')}`;
 }
 
-/** Nome da sessão em segundo plano: "Habblaud: " + começo da 1ª linha do pedido ("Habblaud [front]: " com função). */
+/** Nome da sessão em segundo plano: "DevLand: " + começo da 1ª linha do pedido ("DevLand [front]: " com função). */
 export function sessionName(prompt: string, role?: RoleId): string {
   const line = prompt.split('\n').map((l) => l.trim()).find(Boolean) ?? '';
   const cut = line.length > NAME_MAX ? `${line.slice(0, NAME_MAX - 1)}…` : line;
@@ -236,7 +236,7 @@ export interface SpawnServiceOptions {
   folderProblem?: (folder: string) => string | undefined;
   /** Anexos enviados antes do pedido (POST /api/spawn/attachments); ausente = pedidos sem anexos. */
   attachments?: AttachmentStore;
-  /** Modo direto: grava os anexos e devolve os caminhos (padrão: ~/.habblaud/attachments/). */
+  /** Modo direto: grava os anexos e devolve os caminhos (padrão: ~/.devland/attachments/). */
   writeFiles?: (spawnId: string, files: readonly Attachment[]) => string[];
   now?: () => number;
   newId?: () => string;

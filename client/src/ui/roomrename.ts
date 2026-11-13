@@ -10,8 +10,8 @@ import { tr } from '../../../shared/i18n';
 const NAME_MAX = 40;
 
 /**
- * Dá para renomear esta sala daqui? O servidor recusa as de demonstração, quem não abriu o Habblaud pelo próprio
- * computador e o Habblaud exposto na rede (sem a trava do terminal); no modo mock e no timelapse não há servidor para
+ * Dá para renomear esta sala daqui? O servidor recusa as de demonstração, quem não abriu o DevLand pelo próprio
+ * computador e o DevLand exposto na rede (sem a trava do terminal); no modo mock e no timelapse não há servidor para
  * gravar.
  */
 export function canRenameRoom(ctx: UiContext, roomId: string): boolean {
@@ -96,7 +96,7 @@ export class RoomRenamer {
       if (this.roomId === id) this.close();
       this.ctx.announce(name ? tr('Sala renomeada para {0}.', [name]) : tr('A sala voltou ao nome da pasta.'));
     } catch (err) {
-      // fica aberto com o motivo (ex.: sala de demonstração, Habblaud aberto por outro endereço)
+      // fica aberto com o motivo (ex.: sala de demonstração, DevLand aberto por outro endereço)
       setText(this.hint, tr('Não deu: {0}', [(err as Error).message]));
       this.hint.classList.add('is-error');
     }

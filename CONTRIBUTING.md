@@ -43,11 +43,11 @@ npm run build
 Se a mudança alterar um plugin do Claude Code, valide também o plugin afetado:
 
 ```sh
-claude plugin validate mod/habblaud
-claude plugin test mod/habblaud
+claude plugin validate mod/devland
+claude plugin test mod/devland
 ```
 
-Use o caminho do plugin alterado (`mod/habblaud-permissoes` ou `mod/habblaud-mensagens`) quando for o caso.
+Use o caminho do plugin alterado (`mod/devland-permissoes` ou `mod/devland-mensagens`) quando for o caso.
 
 ## Abrir um pull request
 

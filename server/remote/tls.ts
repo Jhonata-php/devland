@@ -2,7 +2,7 @@
 // servidor assinado por ela. O celular confia na CA uma vez (instalando o ca.crt) e daí em diante a conexão é
 // cifrada e sem aviso. Gerado com o `openssl` do sistema (macOS, Linux e o Ubuntu do WSL já trazem).
 //
-// Pastas (padrão ~/.habblaud/remote-tls, permissão 700):
+// Pastas (padrão ~/.devland/remote-tls, permissão 700):
 //   ca/ca.key, ca/ca.crt            a CA: a chave NUNCA sai daqui (não vai para o container)
 //   ca/constraints.json             os nomes que a CA pode assinar (ver abaixo)
 //   server/server.key, server.crt   o certificado do servidor (o docker-up monta SÓ esta pasta, somente leitura)
@@ -198,7 +198,7 @@ export function ensureCa(paths: TlsPaths, label: string, run: Run = spawnSync, d
   ensureDir(paths.base, 0o700);
   ensureDir(paths.caDir, 0o700);
   const dns = caDomains(domains);
-  const work = join(tmpdir(), `habblaud-ca-${randomBytes(6).toString('hex')}`);
+  const work = join(tmpdir(), `devland-ca-${randomBytes(6).toString('hex')}`);
   mkdirSync(work, { mode: 0o700 });
   try {
     const cnf = join(work, 'ca.cnf');
@@ -237,7 +237,7 @@ export function ensureCa(paths: TlsPaths, label: string, run: Run = spawnSync, d
 export function issueServerCert(paths: TlsPaths, targets: CertTargets, run: Run = spawnSync): void {
   if (!existsSync(paths.caKey) || !existsSync(paths.caCert)) throw new Error(tr('a CA local não existe: rode npm run remote:setup'));
   ensureDir(paths.serverDir, 0o755);
-  const work = join(tmpdir(), `habblaud-cert-${randomBytes(6).toString('hex')}`);
+  const work = join(tmpdir(), `devland-cert-${randomBytes(6).toString('hex')}`);
   mkdirSync(work, { mode: 0o700 });
   try {
     const key = join(work, 'server.key');
@@ -300,7 +300,7 @@ export function ensureServerCert(paths: TlsPaths, wanted: CertTargets = defaultT
     rmSync(paths.caDir, { recursive: true, force: true });
     rmSync(paths.serverDir, { recursive: true, force: true });
   }
-  const createdCa = ensureCa(paths, targets.dns.find((d) => d.endsWith('.local')) ?? 'habblaud', run, ownDomains(targets));
+  const createdCa = ensureCa(paths, targets.dns.find((d) => d.endsWith('.local')) ?? 'devland', run, ownDomains(targets));
   const status = serverCertStatus(paths, targets);
   if (!opts.force && !createdCa && status.ok) return { createdCa, issued: false, targets };
   issueServerCert(paths, targets, run);
@@ -316,9 +316,9 @@ export function caFingerprint(paths: TlsPaths): string | undefined {
   }
 }
 
-/** Pasta das chaves do acesso remoto (~/.habblaud/remote-tls). */
+/** Pasta das chaves do acesso remoto (~/.devland/remote-tls). */
 export function remoteTlsBase(home: string): string {
-  return join(home, '.habblaud', 'remote-tls');
+  return join(home, '.devland', 'remote-tls');
 }
 
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;

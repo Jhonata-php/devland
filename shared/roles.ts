@@ -17,7 +17,7 @@ export const ROLES: Record<RoleId, { label: string; icon: string; color: string 
 
 export const isRoleId = (v: unknown): v is RoleId => typeof v === 'string' && (ROLE_IDS as readonly string[]).includes(v);
 
-/** Etiqueta no começo do nome da sessão: "Habblaud [front]: pedido". */
+/** Etiqueta no começo do nome da sessão: "DevLand [front]: pedido". */
 export function roleFromTitle(title: string | undefined): RoleId | undefined {
   const m = /^\S+ \[([a-z]+)\]/.exec(title ?? '');
   return m && isRoleId(m[1]) ? m[1] : undefined;

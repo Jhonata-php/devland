@@ -34,7 +34,7 @@ export interface WorldGate {
   remote: boolean;
   /** Página aberta pelo próprio computador (Host local). */
   local: boolean;
-  /** meta.terminal: o Habblaud só é acessível pelo próprio computador (a trava das ações da conta). */
+  /** meta.terminal: o DevLand só é acessível pelo próprio computador (a trava das ações da conta). */
   terminal: boolean;
   /** Modo demonstração com o FakeWorldApi: sem servidor, nenhuma trava vale. */
   fake: boolean;
@@ -58,13 +58,13 @@ export function hasCharacter(meta: WorldMeta | undefined): boolean {
 }
 
 /** Chave do cartão de convite antigo (até a 0.11): só o valor `never` ("Não mostrar de novo") continua valendo. */
-export const INVITE_SEEN_KEY = 'habblaud:world-invite-seen';
+export const INVITE_SEEN_KEY = 'devland:world-invite-seen';
 /** Popup de lançamento: JSON `{shown, last}` (quantas vezes apareceu e quando foi a última, em ms) ou `never`. */
-export const LAUNCH_KEY = 'habblaud:world-launch';
+export const LAUNCH_KEY = 'devland:world-launch';
 /** Popup "Você está na lista de espera": `1` depois de aparecer. */
-export const WAITLIST_SEEN_KEY = 'habblaud:world-waitlist-seen';
+export const WAITLIST_SEEN_KEY = 'devland:world-waitlist-seen';
 /** Popup "Acesso liberado!": `1` depois de aparecer. */
-export const APPROVED_SEEN_KEY = 'habblaud:world-approved-seen';
+export const APPROVED_SEEN_KEY = 'devland:world-approved-seen';
 
 /** "Agora não": o popup de lançamento volta depois de 3 dias... */
 export const LAUNCH_RETURN_MS = 3 * 24 * 60 * 60 * 1000;
@@ -561,7 +561,7 @@ export function worldErrorText(raw: WorldErrorCode | string, action: WorldAction
 /**
  * Estado do cartão "Seu prédio" (conta aprovada). Sem personagem o prédio não entra no mundo; fora do mundo ("Sair do
  * mundo") e pausado valem mais do que a conexão (nos dois nenhum pacote sobe); depois, uma parada pedida pelo servidor do
- * mundo (`stopped`, com o motivo); sem conexão aberta, o Habblaud está conectando ou tentando de novo.
+ * mundo (`stopped`, com o motivo); sem conexão aberta, o DevLand está conectando ou tentando de novo.
  */
 export type BuildingState = 'connected' | 'reconnecting' | 'paused' | 'stopped' | 'left' | 'no_player';
 
@@ -778,7 +778,7 @@ function buildingViewBase(b: WorldBuildingStatus | undefined, hasPlayer: boolean
     case 'reconnecting': {
       const connected = state === 'connected';
       const first = !b?.lastUplinkAt;
-      // Sem conexão e o mundo em manutenção (503 `maintenance`): o Habblaud tenta de novo com espera.
+      // Sem conexão e o mundo em manutenção (503 `maintenance`): o DevLand tenta de novo com espera.
       const maintenance = !connected && !!opts.maintenance;
       return {
         state,

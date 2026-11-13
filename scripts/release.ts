@@ -1,5 +1,5 @@
 // Publica a versão do package.json no GitHub: confere se o CHANGELOG.md tem a seção dela, cria a tag vX.Y.Z e a
-// release com o texto dessa seção como notas (é o que o Habblaud abre em Configurações › Sobre › Ver o que mudou).
+// release com o texto dessa seção como notas (é o que o DevLand abre em Configurações › Sobre › Ver o que mudou).
 //   npm run release                -> publica (precisa do gh autenticado)
 //   npm run release -- --dry-run   -> só confere e mostra as notas
 // Antes: suba a versão no package.json (npm version minor --no-git-tag-version), escreva a seção no CHANGELOG.md e
@@ -116,7 +116,7 @@ function main(argv: string[]): void {
     return;
   }
 
-  const dir = mkdtempSync(join(tmpdir(), 'habblaud-release-'));
+  const dir = mkdtempSync(join(tmpdir(), 'devland-release-'));
   try {
     const file = join(dir, 'notas.md');
     writeFileSync(file, `${notes}\n`);

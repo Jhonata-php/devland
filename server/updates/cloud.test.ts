@@ -21,15 +21,15 @@ describe('Cloud: versão da imagem e atualização por dentro do app', () => {
   });
 
   it('velixTargetFromEnv exige as três variáveis e https', () => {
-    const ok = { HABBLAUD_VELIX_URL: 'https://velix.exemplo.com/', HABBLAUD_VELIX_TOKEN: 'vlx_x', HABBLAUD_VELIX_PROJECT: 'habblaud' };
-    expect(velixTargetFromEnv(ok)).toEqual({ url: 'https://velix.exemplo.com', token: 'vlx_x', project: 'habblaud' });
-    expect(velixTargetFromEnv({ ...ok, HABBLAUD_VELIX_TOKEN: '' })).toBeUndefined();
-    expect(velixTargetFromEnv({ ...ok, HABBLAUD_VELIX_URL: 'http://velix.exemplo.com' })).toBeUndefined();
+    const ok = { DEVLAND_VELIX_URL: 'https://velix.exemplo.com/', DEVLAND_VELIX_TOKEN: 'vlx_x', DEVLAND_VELIX_PROJECT: 'devland' };
+    expect(velixTargetFromEnv(ok)).toEqual({ url: 'https://velix.exemplo.com', token: 'vlx_x', project: 'devland' });
+    expect(velixTargetFromEnv({ ...ok, DEVLAND_VELIX_TOKEN: '' })).toBeUndefined();
+    expect(velixTargetFromEnv({ ...ok, DEVLAND_VELIX_URL: 'http://velix.exemplo.com' })).toBeUndefined();
   });
 
   it('velixRedeploy chama redeploy_project com o token e traduz as falhas', async () => {
     let seen: { url: string; auth: string; body: { params: { name: string; arguments: { project: string } } } } | undefined;
-    const target = { url: 'https://v.exemplo.com', token: 'vlx_x', project: 'habblaud' };
+    const target = { url: 'https://v.exemplo.com', token: 'vlx_x', project: 'devland' };
     const good = (async (url: string, init: RequestInit) => {
       seen = { url, auth: (init.headers as Record<string, string>).Authorization, body: JSON.parse(String(init.body)) };
       return json({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: '{}' }] } });
@@ -37,7 +37,7 @@ describe('Cloud: versão da imagem e atualização por dentro do app', () => {
     expect(await velixRedeploy(target, good)).toEqual({ ok: true });
     expect(seen?.url).toBe('https://v.exemplo.com/api/mcp');
     expect(seen?.auth).toBe('Bearer vlx_x');
-    expect(seen?.body.params).toEqual({ name: 'redeploy_project', arguments: { project: 'habblaud' } });
+    expect(seen?.body.params).toEqual({ name: 'redeploy_project', arguments: { project: 'devland' } });
     expect((await velixRedeploy(target, (async () => json({}, 401)) as unknown as typeof fetch)).ok).toBe(false);
     const toolError = (async () => json({ result: { isError: true, content: [{ text: 'Projeto não encontrado' }] } })) as unknown as typeof fetch;
     expect(await velixRedeploy(target, toolError)).toEqual({ ok: false, error: 'Projeto não encontrado' });

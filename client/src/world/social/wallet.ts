@@ -17,9 +17,9 @@ export const DELIVERY_REWARD = 15;
 /** Pedido do usuário atendido (fim de turno). */
 export const TURN_REWARD = 5;
 
-const STORAGE_KEY = 'habblaud.wallets.v1';
+const STORAGE_KEY = 'devland.wallets.v1';
 /** Carteiras da visita a um prédio do mundo (ids `world:`). */
-export const WORLD_STORAGE_KEY = 'habblaud:world-wallet';
+export const WORLD_STORAGE_KEY = 'devland:world-wallet';
 const LEDGER_MAX = 12;
 const PAID_MAX = 300;
 /** Carteiras de agentes que não aparecem há mais que isso são esquecidas. */

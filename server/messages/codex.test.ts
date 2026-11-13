@@ -1,5 +1,5 @@
 // Mensagens ao Codex: o `codex queue` (binário falso que imita as saídas reais; nunca o Codex de verdade), o binário
-// pelo HABBLAUD_CODEX_BIN ou PATH, e o registro com o entregador do Codex — modo Node (o servidor roda o comando, uma
+// pelo DEVLAND_CODEX_BIN ou PATH, e o registro com o entregador do Codex — modo Node (o servidor roda o comando, uma
 // mensagem por vez por agente) e o auxiliar do host (rodada/confirmação), canMessage, prazos e a separação da caixa de
 // entrada do plugin do Claude Code. Relógio injetado; dados sintéticos.
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -76,9 +76,9 @@ describe('codex queue (binário falso)', () => {
     expect(firstLine('')).toBeUndefined();
   });
 
-  it('findCodexBin: HABBLAUD_CODEX_BIN (se for executável) ou codex no PATH', () => {
-    expect(findCodexBin({ HABBLAUD_CODEX_BIN: bin, PATH: '' })).toBe(bin);
-    expect(findCodexBin({ HABBLAUD_CODEX_BIN: join(tmp.dir, 'nada'), PATH: tmp.dir })).toBeUndefined();
+  it('findCodexBin: DEVLAND_CODEX_BIN (se for executável) ou codex no PATH', () => {
+    expect(findCodexBin({ DEVLAND_CODEX_BIN: bin, PATH: '' })).toBe(bin);
+    expect(findCodexBin({ DEVLAND_CODEX_BIN: join(tmp.dir, 'nada'), PATH: tmp.dir })).toBeUndefined();
     expect(findCodexBin({ PATH: ['/nao/existe', 'relativo', tmp.dir].join(delimiter) })).toBe(bin);
     expect(findCodexBin({ PATH: '/nao/existe' })).toBeUndefined();
   });

@@ -179,7 +179,7 @@ describe('DevLand Cloud', () => {
 describe('máquina no container (Cloud)', () => {
   it('terminal pela porta com login só com remoteOk; sem ele, só o próprio computador', async () => {
     const { ptyRequestProblem } = await import('./pty');
-    const remoteReq = { socket: { remoteAddress: '172.18.0.5' }, headers: { host: 'habblaud.needbr.com' } } as unknown as http.IncomingMessage;
+    const remoteReq = { socket: { remoteAddress: '172.18.0.5' }, headers: { host: 'devland.needbr.com' } } as unknown as http.IncomingMessage;
     expect(ptyRequestProblem(remoteReq)).not.toBeNull();
     expect(ptyRequestProblem(remoteReq, () => false)).not.toBeNull();
     expect(ptyRequestProblem(remoteReq, () => true)).toBeNull();
@@ -188,7 +188,7 @@ describe('máquina no container (Cloud)', () => {
   it('agentes rodam como o usuário dev quando configurado', async () => {
     const { agentRunAs, runAsOptions } = await import('../spawn/runas');
     expect(agentRunAs({})).toBeUndefined();
-    const runAs = agentRunAs({ HABBLAUD_AGENT_UID: '1001', HABBLAUD_AGENT_GID: '1001', HABBLAUD_AGENT_USER: 'dev', HABBLAUD_AGENT_HOME: '/home/dev' });
+    const runAs = agentRunAs({ DEVLAND_AGENT_UID: '1001', DEVLAND_AGENT_GID: '1001', DEVLAND_AGENT_USER: 'dev', DEVLAND_AGENT_HOME: '/home/dev' });
     const o = runAsOptions({ PATH: '/bin', HOME: '/root' }, runAs);
     expect(o).toMatchObject({ uid: 1001, gid: 1001, env: { PATH: '/bin', HOME: '/home/dev', USER: 'dev' } });
     expect(runAsOptions({ HOME: '/root' }, undefined)).toEqual({ env: { HOME: '/root' } });

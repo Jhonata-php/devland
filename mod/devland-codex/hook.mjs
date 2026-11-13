@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// Hook do Habblaud para o OpenAI Codex (CLI `codex` e o app desktop, que gravam no mesmo CODEX_HOME): mostra no
+// Hook do DevLand para o OpenAI Codex (CLI `codex` e o app desktop, que gravam no mesmo CODEX_HOME): mostra no
 // escritório o que as sessões do Codex fazem e deixa aprovar ou recusar pelo escritório os pedidos de aprovação
 // (PermissionRequest). `npm run codex:install` acrescenta em <CODEX_HOME>/hooks.json, no FIM da lista de cada evento,
 // um grupo que roda:
 //
-//   node "/caminho/do/habblaud/mod/habblaud-codex/hook.mjs"
+//   node "/caminho/do/devland/mod/devland-codex/hook.mjs"
 //
 // O comando nunca leva opções: o Codex guarda a confiança de cada hook (aprovada por você em /hooks) num hash que
-// inclui o comando. Porta e espera ficam em ~/.habblaud/codex-hook.json ({port, permissionTimeoutS}, gravado pelo
-// instalador); HABBLAUD_PORT vale como reserva (o ambiente do hook é o do processo que subiu o daemon do Codex, então
+// inclui o comando. Porta e espera ficam em ~/.devland/codex-hook.json ({port, permissionTimeoutS}, gravado pelo
+// instalador); DEVLAND_PORT vale como reserva (o ambiente do hook é o do processo que subiu o daemon do Codex, então
 // variáveis exportadas no seu shell nem sempre chegam aqui).
 //
 // O hook:
@@ -17,7 +17,7 @@
 //    a conta (basename do CODEX_HOME, como o servidor calcula) e o caminho do CODEX_HOME;
 // 3. só no PermissionRequest: registra o pedido em POST /api/permissions (provider "codex") e espera a decisão em
 //    GET /api/permissions/:id/wait até a espera do arquivo (padrão 25 s, entre 5 e 120). Aprovado: imprime a decisão
-//    allow; recusado: deny com o motivo. Qualquer outra coisa ("responder no terminal", tempo esgotado, Habblaud fora
+//    allow; recusado: deny com o motivo. Qualquer outra coisa ("responder no terminal", tempo esgotado, DevLand fora
 //    do ar ou sem página aberta): sai sem imprimir nada e o Codex segue a aprovação normal. Atenção: o Codex só mostra
 //    a aprovação no terminal DEPOIS que o hook termina (enquanto isso, o terminal mostra o statusMessage do hook).
 //
@@ -25,7 +25,7 @@
 // sem saída (nunca com 2, que no Codex recusa o pedido). Nunca imprime updatedInput, updatedPermissions nem interrupt
 // (o Codex não os aceita: o hook "falha" sem decidir). Nos eventos de observação, nada vai para o stdout (no
 // UserPromptSubmit e no SessionStart ele viraria contexto do modelo). Só fala com 127.0.0.1.
-// HABBLAUD_HOOK_DEBUG=1 escreve o que acontece no stderr.
+// DEVLAND_HOOK_DEBUG=1 escreve o que acontece no stderr.
 import { readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, isAbsolute, join, resolve } from 'node:path';
@@ -36,26 +36,26 @@ export const DEFAULT_PORT = 4747;
 export const DEFAULT_WAIT_S = 25;
 export const MIN_WAIT_S = 5;
 export const MAX_WAIT_S = 120;
-/** Arquivo de configuração, em ~/.habblaud (o instalador grava). */
+/** Arquivo de configuração, em ~/.devland (o instalador grava). */
 export const CONFIG_FILE = 'codex-hook.json';
-/** Eventos mandados ao Habblaud (o PermissionRequest também, antes de registrar o pedido). */
+/** Eventos mandados ao DevLand (o PermissionRequest também, antes de registrar o pedido). */
 export const OBSERVED = new Set(['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'SubagentStart', 'SubagentStop', 'PermissionRequest']);
-/** Prazo do envio de um evento: o Habblaud responde na hora (e o hook não pode atrasar o Codex). */
+/** Prazo do envio de um evento: o DevLand responde na hora (e o hook não pode atrasar o Codex). */
 const EVENT_TIMEOUT_MS = 1_500;
 /** O SessionEnd tem só 1 s no Codex (e roda sempre em primeiro plano). */
 const SESSION_END_TIMEOUT_MS = 600;
-/** Registrar o pedido: se o Habblaud não responder nisso, ele está fora do ar (ou travado). */
+/** Registrar o pedido: se o DevLand não responder nisso, ele está fora do ar (ou travado). */
 const REGISTER_TIMEOUT_MS = 2_000;
 /** Espera máxima de cada long-poll (o servidor responde "pending" e o hook pergunta de novo). */
 const POLL_S = 25;
 const STDIN_TIMEOUT_MS = 5_000;
 const MAX_STDIN = 8 * 1024 * 1024;
-/** Textos do evento e dos argumentos mandados ao Habblaud (o servidor só mostra prévias). */
+/** Textos do evento e dos argumentos mandados ao DevLand (o servidor só mostra prévias). */
 const MAX_STRING = 8_000;
 /** Corpo do pedido (o servidor recusa acima de 256 KB). */
 const MAX_BODY = 200_000;
 
-const debug = process.env.HABBLAUD_HOOK_DEBUG === '1' ? (msg) => process.stderr.write(`[habblaud-codex] ${msg}\n`) : () => {};
+const debug = process.env.DEVLAND_HOOK_DEBUG === '1' ? (msg) => process.stderr.write(`[devland-codex] ${msg}\n`) : () => {};
 
 const isObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const validPort = (p) => Number.isInteger(p) && p > 0 && p < 65_536;
@@ -67,20 +67,20 @@ function expandHome(p, home) {
 }
 
 /**
- * Porta e espera: ~/.habblaud/codex-hook.json ({port, permissionTimeoutS}); sem porta no arquivo, HABBLAUD_PORT;
+ * Porta e espera: ~/.devland/codex-hook.json ({port, permissionTimeoutS}); sem porta no arquivo, DEVLAND_PORT;
  * senão os padrões. Arquivo ausente ou ilegível = padrões.
  */
 export function readConfig(env = process.env) {
   const home = env.HOME || homedir();
   let file;
   try {
-    file = JSON.parse(readFileSync(join(home, '.habblaud', CONFIG_FILE), 'utf8'));
+    file = JSON.parse(readFileSync(join(home, '.devland', CONFIG_FILE), 'utf8'));
   } catch {
     file = undefined;
   }
   const f = isObject(file) ? file : {};
   const filePort = Number(f.port);
-  const envPort = Number.parseInt(env.HABBLAUD_PORT ?? '', 10);
+  const envPort = Number.parseInt(env.DEVLAND_PORT ?? '', 10);
   const wait = Number(f.permissionTimeoutS);
   return {
     port: validPort(filePort) ? filePort : validPort(envPort) ? envPort : DEFAULT_PORT,
@@ -134,7 +134,7 @@ export function eventBody(input, account, codexHome) {
   return body;
 }
 
-/** Corpo de POST /api/permissions: só o que o Habblaud usa (nada do transcript_path). */
+/** Corpo de POST /api/permissions: só o que o DevLand usa (nada do transcript_path). */
 export function permissionBody(input, account, codexHome, timeoutMs) {
   const body = { provider: 'codex', account, codexHome, session_id: input.session_id, tool_name: input.tool_name, tool_input: {}, timeout_ms: timeoutMs };
   for (const k of ['agent_id', 'agent_type', 'cwd', 'turn_id']) if (typeof input[k] === 'string') body[k] = input[k];
@@ -142,7 +142,7 @@ export function permissionBody(input, account, codexHome, timeoutMs) {
   return body;
 }
 
-/** Saída do hook para uma decisão do Habblaud (undefined = sair sem decidir). Só allow e deny (+ message). */
+/** Saída do hook para uma decisão do DevLand (undefined = sair sem decidir). Só allow e deny (+ message). */
 export function decisionOutput(result) {
   if (!result || result.status !== 'decided') return undefined;
   if (result.behavior === 'allow') return { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'allow' } } };
@@ -173,7 +173,7 @@ function readStdin() {
   });
 }
 
-/** Requisição ao Habblaud local; null = fora do ar, tempo esgotado ou resposta ilegível. */
+/** Requisição ao DevLand local; null = fora do ar, tempo esgotado ou resposta ilegível. */
 async function call(base, method, path, body, timeoutMs) {
   try {
     const res = await fetch(`${base}${path}`, {
@@ -219,7 +219,7 @@ export async function run(env = process.env, stdinText) {
     const sent = await call(base, 'POST', '/api/codex/events', eventBody(input, account, codexHome), event === 'SessionEnd' ? SESSION_END_TIMEOUT_MS : EVENT_TIMEOUT_MS);
     debug(`${event}: ${sent ? `${sent.status} ${JSON.stringify(sent.json ?? null)}` : 'DevLand fora do ar'}`);
     if (event !== 'PermissionRequest' || typeof input.tool_name !== 'string' || !input.tool_name) return undefined;
-    // Sem resposta nem ao evento: o Habblaud está fora do ar (ou travado); a aprovação segue no terminal.
+    // Sem resposta nem ao evento: o DevLand está fora do ar (ou travado); a aprovação segue no terminal.
     if (!sent) return undefined;
 
     // A espera conta desde o início do hook (o Codex só mostra a aprovação no terminal quando ele termina).

@@ -1,4 +1,4 @@
-# Habblaud Cloud: vários usuários com login, para rodar num servidor atrás de um proxy com HTTPS (Traefik do Velix).
+# DevLand Cloud: vários usuários com login, para rodar num servidor atrás de um proxy com HTTPS (Traefik do Velix).
 #
 #   docker compose -f docker-compose.cloud.yml up -d --build
 #   docker compose -f docker-compose.cloud.yml logs habblaud   # mostra o código de instalação do primeiro acesso
@@ -18,16 +18,16 @@ services:
     ports:
       # Por padrão só no loopback do host (teste local ou proxy na mesma máquina). Nunca exponha esta porta direto
       # na internet sem o HTTPS do proxy. A 4747 (sem login) escuta só dentro do container.
-      - "${HABBLAUD_CLOUD_BIND:-127.0.0.1}:${HABBLAUD_CLOUD_PORT:-4748}:4748"
+      - "${DEVLAND_CLOUD_BIND:-127.0.0.1}:${DEVLAND_CLOUD_PORT:-4748}:4748"
     volumes:
       - habblaud-cloud-data:/data
       - habblaud-cloud-workspace:/workspace
       - habblaud-cloud-home:/home/dev
     environment:
       # O domínio do app (ex.: habblaud.needbr.com); localhost e IPs sempre valem.
-      HABBLAUD_ALLOWED_HOSTS: ${HABBLAUD_ALLOWED_HOSTS:-}
-      HABBLAUD_LANG: ${HABBLAUD_LANG:-}
-      HABBLAUD_DEMO: ${HABBLAUD_DEMO:-}
+      DEVLAND_ALLOWED_HOSTS: ${DEVLAND_ALLOWED_HOSTS:-}
+      DEVLAND_LANG: ${DEVLAND_LANG:-}
+      DEVLAND_DEMO: ${DEVLAND_DEMO:-}
     # O servidor roda como root no container só para abrir os agentes como o usuário "dev" (sem acesso a /data).
     security_opt:
       - no-new-privileges:true

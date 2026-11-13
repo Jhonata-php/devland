@@ -1,5 +1,5 @@
 // Mensagens pelo escritório pelas rotas de verdade (guard, app e server/messages/http.ts): a trava da config
-// (terminal + HABBLAUD_MENSAGENS), a trava das rotas (recurso desligado / Host que não é local), os status (400, 404,
+// (terminal + DEVLAND_MENSAGENS), a trava das rotas (recurso desligado / Host que não é local), os status (400, 404,
 // 405, 409, 429), o fluxo completo página → caixa de entrada do plugin → confirmação → consulta, e o demo.
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -68,7 +68,7 @@ async function serveMessages(opts: { enabled?: boolean; demo?: boolean; registry
     terminal: true,
     messages: registry ? createMessageRoutes(registry) : undefined,
   });
-  const guard = createRequestGuard({ allowedHosts: new Set(['habblaud.lan']) });
+  const guard = createRequestGuard({ allowedHosts: new Set(['devland.lan']) });
   const server = http.createServer((req, res) => {
     if (guard(req, res)) return;
     if (!api(req, res, new URL(req.url ?? '/', 'http://x'))) res.writeHead(404).end();
@@ -105,27 +105,27 @@ const snapshot = async (s: MessageServer) => (await request(s.base, '/api/snapsh
 const sleep = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 
 describe('trava das mensagens (config)', () => {
-  it('messagesOffReason: a trava do terminal e HABBLAUD_MENSAGENS (0/false/off/no desligam)', () => {
+  it('messagesOffReason: a trava do terminal e DEVLAND_MENSAGENS (0/false/off/no desligam)', () => {
     expect(messagesOffReason({}, '127.0.0.1', false)).toBeUndefined();
-    for (const v of ['1', 'true', 'sim', '']) expect(messagesOffReason({ HABBLAUD_MENSAGENS: v }, '127.0.0.1', false), v).toBeUndefined();
-    for (const v of ['0', 'false', 'off', 'no']) expect(messagesOffReason({ HABBLAUD_MENSAGENS: v }, '127.0.0.1', false)).toBe(`HABBLAUD_MENSAGENS=${v}`);
+    for (const v of ['1', 'true', 'sim', '']) expect(messagesOffReason({ DEVLAND_MENSAGENS: v }, '127.0.0.1', false), v).toBeUndefined();
+    for (const v of ['0', 'false', 'off', 'no']) expect(messagesOffReason({ DEVLAND_MENSAGENS: v }, '127.0.0.1', false)).toBe(`DEVLAND_MENSAGENS=${v}`);
     expect(messagesOffReason({}, '0.0.0.0', false)).toMatch(/^mesma trava do terminal: a porta está exposta/);
-    expect(messagesOffReason({ HABBLAUD_TERMINAL: '0' }, '127.0.0.1', false)).toMatch(/HABBLAUD_TERMINAL=0/);
+    expect(messagesOffReason({ DEVLAND_TERMINAL: '0' }, '127.0.0.1', false)).toMatch(/DEVLAND_TERMINAL=0/);
     // Ligar as mensagens não liga o que a trava do terminal desliga.
-    expect(messagesOffReason({ HABBLAUD_MENSAGENS: '1' }, '0.0.0.0', false)).toBeDefined();
-    expect(messagesOffReason({ HABBLAUD_MENSAGENS: '1', HABBLAUD_BIND: '127.0.0.1' }, '0.0.0.0', true)).toBeUndefined();
-    expect(messagesOffReason({ HABBLAUD_MENSAGENS: '1' }, '0.0.0.0', true)).toMatch(/HABBLAUD_BIND/);
+    expect(messagesOffReason({ DEVLAND_MENSAGENS: '1' }, '0.0.0.0', false)).toBeDefined();
+    expect(messagesOffReason({ DEVLAND_MENSAGENS: '1', DEVLAND_BIND: '127.0.0.1' }, '0.0.0.0', true)).toBeUndefined();
+    expect(messagesOffReason({ DEVLAND_MENSAGENS: '1' }, '0.0.0.0', true)).toMatch(/DEVLAND_BIND/);
   });
 
   it('loadConfig preenche ServerConfig.messages', () => {
     const tmp = tempDir();
     try {
-      const cfg = (env: NodeJS.ProcessEnv) => loadConfig({ HOME: tmp.dir, HABBLAUD_IN_DOCKER: '0', ...env }, []);
+      const cfg = (env: NodeJS.ProcessEnv) => loadConfig({ HOME: tmp.dir, DEVLAND_IN_DOCKER: '0', ...env }, []);
       expect(cfg({})).toMatchObject({ terminal: true, messages: true });
-      expect(cfg({ HABBLAUD_MENSAGENS: '0' })).toMatchObject({ terminal: true, messages: false });
-      expect(cfg({ HABBLAUD_TERMINAL: '0' })).toMatchObject({ terminal: false, messages: false });
-      expect(cfg({ HABBLAUD_HOST: '0.0.0.0', HABBLAUD_MENSAGENS: '1' })).toMatchObject({ terminal: false, messages: false });
-      expect(cfg({ HABBLAUD_IN_DOCKER: '1', HABBLAUD_HOST: '0.0.0.0', HABBLAUD_BIND: '127.0.0.1' })).toMatchObject({ terminal: true, messages: true });
+      expect(cfg({ DEVLAND_MENSAGENS: '0' })).toMatchObject({ terminal: true, messages: false });
+      expect(cfg({ DEVLAND_TERMINAL: '0' })).toMatchObject({ terminal: false, messages: false });
+      expect(cfg({ DEVLAND_HOST: '0.0.0.0', DEVLAND_MENSAGENS: '1' })).toMatchObject({ terminal: false, messages: false });
+      expect(cfg({ DEVLAND_IN_DOCKER: '1', DEVLAND_HOST: '0.0.0.0', DEVLAND_BIND: '127.0.0.1' })).toMatchObject({ terminal: true, messages: true });
     } finally {
       tmp.cleanup();
     }
@@ -154,11 +154,11 @@ describe('trava das rotas', () => {
     expect(summary.json).toMatchObject({ version: 't', agents: 1 });
   });
 
-  it('Host que não é local (proxy/túnel de HABBLAUD_ALLOWED_HOSTS ou IP da rede): 403', async () => {
+  it('Host que não é local (proxy/túnel de DEVLAND_ALLOWED_HOSTS ou IP da rede): 403', async () => {
     srv = await serveMessages();
     expect((await request(srv.base, '/api/health')).json).toMatchObject({ messages: true });
     expect((await snapshot(srv)).meta.messages).toBe(true);
-    for (const host of ['habblaud.lan', '192.168.0.10:4747']) {
+    for (const host of ['devland.lan', '192.168.0.10:4747']) {
       for (const [method, path] of ROUTES) {
         const r = await request(srv.base, path, { method, body: method === 'POST' ? { session: SESSION } : undefined, headers: { Host: host } });
         expect(r.status, `${host} ${path}`).toBe(403);
@@ -189,7 +189,7 @@ describe('rotas', () => {
     // Sessão sem o plugin conectado.
     const noPlugin = await post(srv, '/api/messages', { agentId: MAIN, text: 'oi' });
     expect(noPlugin.status).toBe(409);
-    expect(noPlugin.json).toMatchObject({ error: expect.stringMatching(/habblaud-mensagens/) });
+    expect(noPlugin.json).toMatchObject({ error: expect.stringMatching(/devland-mensagens/) });
     expect((await request(srv.base, '/api/messages')).status).toBe(405);
     expect((await request(srv.base, '/api/mod/inbox')).status).toBe(405);
     expect((await request(srv.base, '/api/messages/x', { method: 'POST', body: {} })).status).toBe(405);

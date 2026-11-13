@@ -1,4 +1,4 @@
-// Testes do mod do Habblaud, rodados pelo próprio Claude Code: `claude plugin test` dentro de mod/habblaud
+// Testes do mod do DevLand, rodados pelo próprio Claude Code: `claude plugin test` dentro de mod/devland
 // (sem sessão, sem login, sem rede). Os stubs respondem no lugar do Claude Code: env, relógio
 // (mock.clock), $.session.usage, $.session.id, $.session.surfaces, $.fs.write, $.http.fetch e $.ui.status.
 import type { CommandRunInput, HttpResponse, On, SessionRateLimit } from 'claude-code'
@@ -30,7 +30,7 @@ interface World {
   env?: Record<string, string>
   limits?: SessionRateLimit[]
   surfaces?: ReadonlyArray<'terminal' | 'desktop'>
-  /** Resposta do Habblaud: um resumo, 'offline' (conexão recusada), 'hang' (não responde) ou um HTTP cru. */
+  /** Resposta do DevLand: um resumo, 'offline' (conexão recusada), 'hang' (não responde) ou um HTTP cru. */
   answer?: () => Summary | 'offline' | 'hang' | { status: number; text: string }
   /** $.fs.write falha (pasta sem permissão, disco cheio...). */
   writeFails?: boolean
@@ -39,7 +39,7 @@ interface World {
 /** Registra todos os stubs (antes da primeira chamada em $, como o kit exige) e devolve o que foi capturado. */
 function world(on: On, w: World = {}) {
   const clock = mock.clock(on, { now: NOW })
-  mock.env(on, w.env ?? { HOME: '/home/fulano', CLAUDE_CONFIG_DIR: '~/.claude-conta2,/outra/pasta', HABBLAUD_PORT: PORT })
+  mock.env(on, w.env ?? { HOME: '/home/fulano', CLAUDE_CONFIG_DIR: '~/.claude-conta2,/outra/pasta', DEVLAND_PORT: PORT })
   const writes: Array<{ path: string; text: string }> = []
   const fetches: string[] = []
   const statuses: Array<string | undefined> = []
@@ -76,8 +76,8 @@ function world(on: On, w: World = {}) {
 }
 
 const START = { cwd: '/work', surface: 'terminal', isInteractive: true } as const
-/** /habblaud digitado no terminal (o kit pede a origem e onde a resposta aparece). */
-const RUN: CommandRunInput = { command: 'habblaud', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }
+/** /devland digitado no terminal (o kit pede a origem e onde a resposta aparece). */
+const RUN: CommandRunInput = { command: 'devland', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }
 
 function response(status: number, text: string): HttpResponse {
   return { status, ok: status >= 200 && status < 300, headers: { 'content-type': 'application/json' }, text }
@@ -87,10 +87,10 @@ describe('uso do plano', () => {
   test('session.start grava o arquivo no formato do tap, com source "mod"', async ($, on) => {
     const w = world(on)
     await $.session.start(START)
-    expect(w.commands).toEqual(['habblaud'])
+    expect(w.commands).toEqual(['devland'])
     expect(w.writes.length).toBe(1)
     // O kit passa o caminho gravado pelo path da máquina que roda o teste (no Windows, C:\home\...): sem o drive.
-    expect(w.writes[0]?.path.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '')).toBe('/home/fulano/.habblaud/usage/.claude-conta2.json')
+    expect(w.writes[0]?.path.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '')).toBe('/home/fulano/.devland/usage/.claude-conta2.json')
     expect(w.writes[0]?.text.endsWith('}\n')).toBe(true)
     expect(JSON.parse(w.writes[0]?.text ?? '')).toEqual({
       accountId: '.claude-conta2',
@@ -102,19 +102,19 @@ describe('uso do plano', () => {
     })
   })
 
-  test('HABBLAUD_USAGE_DIR com ~ e, sem CLAUDE_CONFIG_DIR, a conta ~/.claude', async ($, on) => {
-    const w = world(on, { env: { HOME: '/home/fulano', HABBLAUD_USAGE_DIR: '~/uso/' } })
+  test('DEVLAND_USAGE_DIR com ~ e, sem CLAUDE_CONFIG_DIR, a conta ~/.claude', async ($, on) => {
+    const w = world(on, { env: { HOME: '/home/fulano', DEVLAND_USAGE_DIR: '~/uso/' } })
     await $.session.measure({ context: CONTEXT, rateLimits: LIMITS, changed: ['rateLimits'] })
     expect(w.writes.map((x) => x.path.replace(/\\/g, '/').replace(/^[A-Za-z]:/, ''))).toEqual(['/home/fulano/uso/.claude.json'])
     expect(JSON.parse(w.writes[0]?.text ?? '')).toMatchObject({ accountId: '.claude', configDir: '/home/fulano/.claude' })
   })
 
   test('Windows: sem HOME vale o USERPROFILE, e CLAUDE_CONFIG_DIR com \\ dá a mesma conta', async ($, on) => {
-    const w = world(on, { env: { USERPROFILE: 'C:\\Users\\fulano', CLAUDE_CONFIG_DIR: 'C:\\Users\\fulano\\.claude-conta2\\', HABBLAUD_PORT: PORT } })
+    const w = world(on, { env: { USERPROFILE: 'C:\\Users\\fulano', CLAUDE_CONFIG_DIR: 'C:\\Users\\fulano\\.claude-conta2\\', DEVLAND_PORT: PORT } })
     await $.session.start(START)
     expect(w.writes.length).toBe(1)
     // O kit passa o caminho gravado pelo path da máquina que roda o teste: confere só o fim.
-    expect(w.writes[0]?.path).toMatch(/fulano[\\/]\.habblaud[\\/]usage[\\/]\.claude-conta2\.json$/)
+    expect(w.writes[0]?.path).toMatch(/fulano[\\/]\.devland[\\/]usage[\\/]\.claude-conta2\.json$/)
     expect(JSON.parse(w.writes[0]?.text ?? '')).toMatchObject({ accountId: '.claude-conta2', configDir: 'C:/Users/fulano/.claude-conta2' })
   })
 
@@ -146,7 +146,7 @@ describe('uso do plano', () => {
     const w = world(on, { writeFails: true })
     expect(await $.session.start(START)).toEqual({ cwd: '/work' })
     expect(await $.session.measure({ context: CONTEXT, rateLimits: LIMITS, changed: ['rateLimits'] })).toEqual({ changed: ['rateLimits'] })
-    expect(w.commands).toEqual(['habblaud'])
+    expect(w.commands).toEqual(['devland'])
     expect(w.writes).toEqual([])
   })
 })
@@ -216,7 +216,7 @@ describe('linha embaixo do prompt', () => {
   })
 })
 
-describe('/habblaud', () => {
+describe('/devland', () => {
   test('no ar: versão, endereço, contagem e uma linha por quem espera (o escritório inteiro)', async ($, on) => {
     const w = world(on, {
       answer: () => summary([waiting('Valentina', 'loja-virtual', { answerable: true }), waiting('Elias', 'app-mobile', { waitingFor: 'responder no terminal' })]),
@@ -258,7 +258,7 @@ describe('funções puras', () => {
     expect(configDirOf(' ~/.claude-conta2 , /x', '/home/f')).toBe('/home/f/.claude-conta2')
     expect(configDirOf(undefined, '/home/f/')).toBe('/home/f/.claude')
     expect(configDirOf('', undefined)).toBeUndefined()
-    expect(usageDirOf(undefined, '/home/f')).toBe('/home/f/.habblaud/usage')
+    expect(usageDirOf(undefined, '/home/f')).toBe('/home/f/.devland/usage')
     expect(usageDirOf(undefined, undefined)).toBeUndefined()
   })
 
@@ -269,7 +269,7 @@ describe('funções puras', () => {
     expect(configDirOf('~\\.claude-conta2', 'C:\\Users\\f')).toBe('C:/Users/f/.claude-conta2')
     expect(configDirOf(undefined, 'C:\\Users\\f')).toBe('C:/Users/f/.claude')
     expect(accountIdOf('C:/Users/f/.claude-conta2')).toBe('.claude-conta2')
-    expect(usageDirOf(undefined, 'C:\\Users\\f')).toBe('C:/Users/f/.habblaud/usage')
+    expect(usageDirOf(undefined, 'C:\\Users\\f')).toBe('C:/Users/f/.devland/usage')
   })
 
   test('UNC continua UNC, e fora do Windows a \\ é parte do nome', () => {

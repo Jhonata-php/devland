@@ -30,46 +30,46 @@ describe('trava do terminal (config)', () => {
     }
   });
 
-  it('Node: decide o HABBLAUD_HOST', () => {
+  it('Node: decide o DEVLAND_HOST', () => {
     for (const host of ['127.0.0.1', 'localhost', '::1']) expect(terminalOffReason({}, host, false)).toBeUndefined();
-    expect(terminalOffReason({}, '0.0.0.0', false)).toBe('a porta está exposta na rede: HABBLAUD_HOST=0.0.0.0');
+    expect(terminalOffReason({}, '0.0.0.0', false)).toBe('a porta está exposta na rede: DEVLAND_HOST=0.0.0.0');
     for (const host of ['::', '192.168.0.10', 'meu-mac.local']) expect(terminalOffReason({}, host, false)).toMatch(/exposta na rede/);
-    // HABBLAUD_BIND só vale no Docker: não liga o modo Node exposto.
-    expect(terminalOffReason({ HABBLAUD_BIND: '127.0.0.1' }, '0.0.0.0', false)).toBeDefined();
+    // DEVLAND_BIND só vale no Docker: não liga o modo Node exposto.
+    expect(terminalOffReason({ DEVLAND_BIND: '127.0.0.1' }, '0.0.0.0', false)).toBeDefined();
   });
 
-  it('Docker: decide o HABBLAUD_BIND (ausente ou vazio = desligado)', () => {
-    expect(terminalOffReason({ HABBLAUD_BIND: '127.0.0.1' }, '0.0.0.0', true)).toBeUndefined();
-    expect(terminalOffReason({ HABBLAUD_BIND: '[::1]' }, '0.0.0.0', true)).toBeUndefined();
-    expect(terminalOffReason({}, '0.0.0.0', true)).toMatch(/HABBLAUD_BIND não chegou/);
-    expect(terminalOffReason({ HABBLAUD_BIND: '  ' }, '0.0.0.0', true)).toMatch(/HABBLAUD_BIND não chegou/);
-    expect(terminalOffReason({ HABBLAUD_BIND: '0.0.0.0' }, '0.0.0.0', true)).toBe('a porta está exposta na rede: HABBLAUD_BIND=0.0.0.0');
-    expect(terminalOffReason({ HABBLAUD_BIND: '192.168.0.10' }, '0.0.0.0', true)).toMatch(/exposta na rede/);
+  it('Docker: decide o DEVLAND_BIND (ausente ou vazio = desligado)', () => {
+    expect(terminalOffReason({ DEVLAND_BIND: '127.0.0.1' }, '0.0.0.0', true)).toBeUndefined();
+    expect(terminalOffReason({ DEVLAND_BIND: '[::1]' }, '0.0.0.0', true)).toBeUndefined();
+    expect(terminalOffReason({}, '0.0.0.0', true)).toMatch(/DEVLAND_BIND não chegou/);
+    expect(terminalOffReason({ DEVLAND_BIND: '  ' }, '0.0.0.0', true)).toMatch(/DEVLAND_BIND não chegou/);
+    expect(terminalOffReason({ DEVLAND_BIND: '0.0.0.0' }, '0.0.0.0', true)).toBe('a porta está exposta na rede: DEVLAND_BIND=0.0.0.0');
+    expect(terminalOffReason({ DEVLAND_BIND: '192.168.0.10' }, '0.0.0.0', true)).toMatch(/exposta na rede/);
     // No container o host do processo não conta (é sempre 0.0.0.0).
-    expect(terminalOffReason({ HABBLAUD_BIND: '0.0.0.0' }, '127.0.0.1', true)).toBeDefined();
+    expect(terminalOffReason({ DEVLAND_BIND: '0.0.0.0' }, '127.0.0.1', true)).toBeDefined();
   });
 
-  it('HABBLAUD_TERMINAL só desliga: não há como ligar com a porta exposta', () => {
+  it('DEVLAND_TERMINAL só desliga: não há como ligar com a porta exposta', () => {
     for (const v of ['0', 'false', 'off', 'nao']) {
-      expect(terminalOffReason({ HABBLAUD_TERMINAL: v }, '127.0.0.1', false)).toBe(`HABBLAUD_TERMINAL=${v}`);
-      expect(terminalOffReason({ HABBLAUD_TERMINAL: v, HABBLAUD_BIND: '127.0.0.1' }, '0.0.0.0', true)).toMatch(/HABBLAUD_TERMINAL/);
+      expect(terminalOffReason({ DEVLAND_TERMINAL: v }, '127.0.0.1', false)).toBe(`DEVLAND_TERMINAL=${v}`);
+      expect(terminalOffReason({ DEVLAND_TERMINAL: v, DEVLAND_BIND: '127.0.0.1' }, '0.0.0.0', true)).toMatch(/DEVLAND_TERMINAL/);
     }
-    expect(terminalOffReason({ HABBLAUD_TERMINAL: '1' }, '127.0.0.1', false)).toBeUndefined();
-    expect(terminalOffReason({ HABBLAUD_TERMINAL: '' }, '127.0.0.1', false)).toBeUndefined();
-    expect(terminalOffReason({ HABBLAUD_TERMINAL: '1' }, '0.0.0.0', false)).toBeDefined();
-    expect(terminalOffReason({ HABBLAUD_TERMINAL: 'sim', HABBLAUD_BIND: '0.0.0.0' }, '0.0.0.0', true)).toBeDefined();
+    expect(terminalOffReason({ DEVLAND_TERMINAL: '1' }, '127.0.0.1', false)).toBeUndefined();
+    expect(terminalOffReason({ DEVLAND_TERMINAL: '' }, '127.0.0.1', false)).toBeUndefined();
+    expect(terminalOffReason({ DEVLAND_TERMINAL: '1' }, '0.0.0.0', false)).toBeDefined();
+    expect(terminalOffReason({ DEVLAND_TERMINAL: 'sim', DEVLAND_BIND: '0.0.0.0' }, '0.0.0.0', true)).toBeDefined();
   });
 
   it('loadConfig preenche ServerConfig.terminal', () => {
     const tmp = tempDir();
     try {
-      const terminal = (env: NodeJS.ProcessEnv) => loadConfig({ HOME: tmp.dir, HABBLAUD_IN_DOCKER: '0', ...env }, []).terminal;
+      const terminal = (env: NodeJS.ProcessEnv) => loadConfig({ HOME: tmp.dir, DEVLAND_IN_DOCKER: '0', ...env }, []).terminal;
       expect(terminal({})).toBe(true);
-      expect(terminal({ HABBLAUD_HOST: '0.0.0.0' })).toBe(false);
-      expect(terminal({ HABBLAUD_TERMINAL: '0' })).toBe(false);
-      expect(terminal({ HABBLAUD_IN_DOCKER: '1', HABBLAUD_HOST: '0.0.0.0' })).toBe(false);
-      expect(terminal({ HABBLAUD_IN_DOCKER: '1', HABBLAUD_HOST: '0.0.0.0', HABBLAUD_BIND: '127.0.0.1' })).toBe(true);
-      expect(terminal({ HABBLAUD_IN_DOCKER: '1', HABBLAUD_HOST: '0.0.0.0', HABBLAUD_BIND: '0.0.0.0' })).toBe(false);
+      expect(terminal({ DEVLAND_HOST: '0.0.0.0' })).toBe(false);
+      expect(terminal({ DEVLAND_TERMINAL: '0' })).toBe(false);
+      expect(terminal({ DEVLAND_IN_DOCKER: '1', DEVLAND_HOST: '0.0.0.0' })).toBe(false);
+      expect(terminal({ DEVLAND_IN_DOCKER: '1', DEVLAND_HOST: '0.0.0.0', DEVLAND_BIND: '127.0.0.1' })).toBe(true);
+      expect(terminal({ DEVLAND_IN_DOCKER: '1', DEVLAND_HOST: '0.0.0.0', DEVLAND_BIND: '0.0.0.0' })).toBe(false);
     } finally {
       tmp.cleanup();
     }
@@ -127,7 +127,7 @@ async function serve(opts: { terminal?: boolean; streams?: Partial<TerminalOptio
   const paths = new Map<string, string>();
   const terminals = new TerminalStreams({ office, transcriptPathOf: (id) => paths.get(id), createParser: fakeParser, pollMs: 20, demoPollMs: 20, ...opts.streams });
   const api = createApiHandler({ office, hub, accounts, sources: () => [], version: 't', inDocker: false, terminal, terminals });
-  const guard = createRequestGuard({ allowedHosts: new Set(['habblaud.lan']) });
+  const guard = createRequestGuard({ allowedHosts: new Set(['devland.lan']) });
   const server = http.createServer((req, res) => {
     if (guard(req, res)) return;
     if (!api(req, res, new URL(req.url ?? '/', 'http://x'))) res.writeHead(404).end();
@@ -237,13 +237,13 @@ describe('terminal: rota', () => {
     }
   });
 
-  it('Host que não é local (IP da rede ou nome de HABBLAUD_ALLOWED_HOSTS): 403; localhost abre', async () => {
+  it('Host que não é local (IP da rede ou nome de DEVLAND_ALLOWED_HOSTS): 403; localhost abre', async () => {
     const env = await serve();
     try {
       const file = join(env.dir, 't.jsonl');
       writeLines(file, [line('a')]);
       env.paths.set(MAIN, file);
-      for (const host of [`192.168.0.10:${env.port}`, `habblaud.lan:${env.port}`]) {
+      for (const host of [`192.168.0.10:${env.port}`, `devland.lan:${env.port}`]) {
         const r = await open(env.base, route(MAIN), { headers: { Host: host } });
         expect(r.status).toBe(403);
         expect(JSON.parse(r.body).error).toMatch(/próprio computador/);

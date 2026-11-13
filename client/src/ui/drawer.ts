@@ -243,7 +243,7 @@ class AgentView {
   private actTime: HTMLElement;
   private actDetails: HTMLDetailsElement;
   private actDetail: HTMLElement;
-  /** Mandar mensagem ao agente principal pelo Habblaud (plugin habblaud-mensagens). */
+  /** Mandar mensagem ao agente principal pelo DevLand (plugin devland-mensagens). */
   private composer: MessageComposer;
   private msgSec: ReturnType<typeof section>;
   private tasksSec: ReturnType<typeof section>;
@@ -326,7 +326,7 @@ class AgentView {
 
     this.alertText = h('p', { class: 'ui-alert__text' });
     this.alertQuestions = h('div', { class: 'ui-ask', hidden: true });
-    this.alertAnswerHint = h('p', { class: 'ui-ask__answer-hint', hidden: true, text: tr('Com o plugin habblaud-permissoes (npm run mod:install), dá para responder as perguntas por aqui.') });
+    this.alertAnswerHint = h('p', { class: 'ui-ask__answer-hint', hidden: true, text: tr('Com o plugin devland-permissoes (npm run mod:install), dá para responder as perguntas por aqui.') });
     const alertIcon = h('span', { class: 'ui-alert__icon', attrs: { 'aria-hidden': 'true' } });
     alertIcon.innerHTML = ICONS.hand;
     this.alert = h(
@@ -718,7 +718,7 @@ class AgentView {
           ? this.ctx.store.replaying
             ? tr('Sem terminal no timelapse: a conversa é a de agora, não a do momento reproduzido.')
             : this.ctx.store.snapshot?.meta.terminal && access().remote
-              ? tr('O terminal não está liberado no acesso remoto (HABBLAUD_REMOTE_ALLOW).')
+              ? tr('O terminal não está liberado no acesso remoto (DEVLAND_REMOTE_ALLOW).')
               : TERMINAL_UNAVAILABLE_HINT
           : !live
             ? tr('O agente já saiu do escritório.')
@@ -987,7 +987,7 @@ export class Drawer implements UiComponent {
       this.body,
     );
     // Arrastar pela barra solta a gaveta: flutuante, ela não cobre mais a lateral do escritório.
-    this.movable = new Movable(this.el, bar, { key: 'habblaud.move.drawer', enabled: () => !ctx.isNarrow(), onChange: () => this.onLayoutChange?.() });
+    this.movable = new Movable(this.el, bar, { key: 'devland.move.drawer', enabled: () => !ctx.isNarrow(), onChange: () => this.onLayoutChange?.() });
     this.el.inert = true;
   }
 

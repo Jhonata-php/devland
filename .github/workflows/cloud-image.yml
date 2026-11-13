@@ -1,7 +1,7 @@
-# Imagem do DevLand Cloud em ghcr.io/jhonata-php/habblaud (o nome do pacote no GitHub continua habblaud: trocar quebraria a atualização nativa), para a loja do Velix puxar.
+# Imagem do DevLand Cloud em ghcr.io/jhonata-php/habblaud (o nome do pacote no GitHub continua devland: trocar quebraria a atualização nativa), para a loja do Velix puxar.
 #
 # Sai a cada tag cloud-v* (ex.: cloud-v0.1.0 vira a imagem :cloud-v0.1.0 e também :latest), para amd64 e arm64.
-# O manifesto do Velix (velix/apps/api/src/catalog/manifests/habblaud.ts) usa :latest.
+# O manifesto do Velix (velix/apps/api/src/catalog/manifests/devland.ts) usa :latest.
 name: Imagem do Cloud
 
 on:
@@ -26,7 +26,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Pacote só com o código novo (uma camada, sem manifesto de atestado): a atualização nativa do Habblaud o baixa
+      # Pacote só com o código novo (uma camada, sem manifesto de atestado): a atualização nativa do DevLand o baixa
       # anonimamente (a imagem é pública) em vez de depender do Velix. Mesma tag com o prefixo dist-.
       - uses: docker/build-push-action@v6
         with:

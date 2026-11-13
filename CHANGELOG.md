@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Nome DevLand também por dentro.** Variáveis `HABBLAUD_*` viram `DEVLAND_*` (as antigas continuam valendo se a nova não estiver definida; as do Habblaud World não mudam), a pasta `~/.habblaud` vira `~/.devland` sozinha na primeira vez que o servidor sobe, e os plugins passam a ser `devland`, `devland-mensagens`, `devland-permissoes` e `devland-codex` (rode `npm run mod:install` de novo e remova os `habblaud-*` antigos). O Habblaud World, a imagem `ghcr.io/jhonata-php/habblaud` e os volumes do Docker mantêm o nome antigo para não quebrar quem já usa.
 - **"Atualizar agora": o motivo da falha aparece.** Quando a versão nova muda as dependências e falta a conexão com o Velix, o servidor respondia 502 e o proxy trocava o motivo por uma página sua (a tela mostrava "sem resposta do servidor"). Agora responde 422 e o motivo chega à tela; o projeto sugerido no formulário do Velix passa a ser "devland".
 - **"Atualizar agora" sem falso erro.** No Cloud, o Velix reinicia o app no meio do pedido e a página mostrava "Não deu para atualizar: sem resposta do servidor". Agora a queda da conexão conta como reinício em andamento (o botão volta sozinho se nada mudar em 3 minutos).
 - **Painel: avisos e pedidos de permissão no canto, inteiros.** O canto dos avisos ("Responder", pedidos de permissão) fica sempre preso à direita e embaixo, em qualquer largura de tela (a regra anterior só valia acima de 900 px e, abaixo disso, o aviso saía cortado pela esquerda).

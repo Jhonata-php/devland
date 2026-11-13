@@ -10,7 +10,7 @@ afterEach(() => dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force
 
 describe('createBuildReader', () => {
   it('lê o nome do bundle do index.html e acompanha um build novo', () => {
-    const root = mkdtempSync(join(tmpdir(), 'habblaud-build-'));
+    const root = mkdtempSync(join(tmpdir(), 'devland-build-'));
     dirs.push(root);
     const read = createBuildReader(root);
     expect(read()).toBeUndefined();
@@ -35,7 +35,7 @@ describe('readBuildInfo e scripts/build-info.mjs', () => {
   };
 
   it('sem arquivo ou com ele estragado: commit "unknown"', () => {
-    const root = mkdtempSync(join(tmpdir(), 'habblaud-build-'));
+    const root = mkdtempSync(join(tmpdir(), 'devland-build-'));
     dirs.push(root);
     expect(readBuildInfo(root)).toEqual({ commit: 'unknown', dirty: false });
     mkdirSync(join(root, 'dist'), { recursive: true });
@@ -46,7 +46,7 @@ describe('readBuildInfo e scripts/build-info.mjs', () => {
   });
 
   it('commit do git, "dirty" só com arquivo versionado modificado, e o arquivo lido de volta', () => {
-    const root = mkdtempSync(join(tmpdir(), 'habblaud-build-'));
+    const root = mkdtempSync(join(tmpdir(), 'devland-build-'));
     dirs.push(root);
     git(root, 'init', '-q');
     writeFileSync(join(root, 'a.txt'), 'um');
@@ -63,13 +63,13 @@ describe('readBuildInfo e scripts/build-info.mjs', () => {
     expect(run(root)).toMatchObject({ commit: head, dirty: true });
   });
 
-  it('sem git: "unknown"; HABBLAUD_BUILD_COMMIT/DIRTY substituem o git', () => {
-    const root = mkdtempSync(join(tmpdir(), 'habblaud-build-'));
+  it('sem git: "unknown"; DEVLAND_BUILD_COMMIT/DIRTY substituem o git', () => {
+    const root = mkdtempSync(join(tmpdir(), 'devland-build-'));
     dirs.push(root);
     // GIT_CEILING_DIRECTORIES: não sobe até um repositório acima da pasta temporária.
     expect(run(root, { GIT_CEILING_DIRECTORIES: dirname(root) })).toMatchObject({ commit: 'unknown', dirty: false });
     const sha = 'a'.repeat(40);
-    expect(run(root, { HABBLAUD_BUILD_COMMIT: sha, HABBLAUD_BUILD_DIRTY: '1' })).toMatchObject({ commit: sha, dirty: true });
-    expect(run(root, { HABBLAUD_BUILD_COMMIT: 'não-é-sha' })).toMatchObject({ commit: 'unknown', dirty: false });
+    expect(run(root, { DEVLAND_BUILD_COMMIT: sha, DEVLAND_BUILD_DIRTY: '1' })).toMatchObject({ commit: sha, dirty: true });
+    expect(run(root, { DEVLAND_BUILD_COMMIT: 'não-é-sha' })).toMatchObject({ commit: 'unknown', dirty: false });
   });
 });

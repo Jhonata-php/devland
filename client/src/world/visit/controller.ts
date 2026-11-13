@@ -19,7 +19,7 @@ export interface VisitControllerDeps {
   /** Manda comandos pelo stream da cena Mundo (só `leave` e `resync {building}` saem daqui). */
   send(cmds: WorldSceneCommand[]): void;
   now(): number;
-  /** Versão do Habblaud (vai em `meta.version` do escritório da visita). */
+  /** Versão do DevLand (vai em `meta.version` do escritório da visita). */
   version: string;
   /** O interior mudou (faixa, painel, luzes, tema). */
   changed?(): void;

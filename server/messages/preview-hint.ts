@@ -5,7 +5,7 @@ const ASKS_PREVIEW = /\b(preview|previewer|prévia|previa)\b|\b(abr[ae]|mostr[ae
 
 export const PREVIEW_HINT =
   '\n\n(DevLand: para mostrar o site, rode ' +
-  '`curl -s -X POST "http://127.0.0.1:${HABBLAUD_PORT:-4747}/api/preview/open" -H \'Content-Type: application/json\' -d "{\\"folder\\":\\"$PWD\\"}"` ' +
+  '`curl -s -X POST "http://127.0.0.1:${DEVLAND_PORT:-4747}/api/preview/open" -H \'Content-Type: application/json\' -d "{\\"folder\\":\\"$PWD\\"}"` ' +
   'na pasta do projeto: o DevLand instala as dependências, sobe o servidor e abre a prévia ao lado, sozinho. Não precisa de navegador nem de subir o servidor você mesmo.)';
 
 export function withPreviewHint(text: string): string {

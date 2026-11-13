@@ -1,4 +1,4 @@
-// Usuários e convites do Habblaud Cloud (HABBLAUD_CLOUD=1), em <dataDir>/users.json (permissão 600).
+// Usuários e convites do DevLand Cloud (DEVLAND_CLOUD=1), em <dataDir>/users.json (permissão 600).
 //
 // Senha só como hash scrypt (remote/password.ts). Convite: token aleatório entregue uma vez ao admin; o arquivo guarda
 // só o SHA-256 dele. `epoch` entra na chave das sessões do usuário (http/remote.ts): somar 1 derruba todas.

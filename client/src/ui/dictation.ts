@@ -1,4 +1,4 @@
-// Ditado: botão de microfone que grava no navegador (MediaRecorder), manda o áudio ao Habblaud (POST /api/dictation)
+// Ditado: botão de microfone que grava no navegador (MediaRecorder), manda o áudio ao DevLand (POST /api/dictation)
 // e devolve o texto transcrito pelo Whisper local do Mac, com o idioma detectado sozinho (português ou inglês; ver
 // server/dictation/whisper.ts). Fica no "Novo agente" e na caixa de mensagem (gaveta e terminal). O microfone só existe
 // em página segura (HTTPS ou localhost): fora disso o botão some.

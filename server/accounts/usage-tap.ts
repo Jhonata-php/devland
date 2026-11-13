@@ -1,4 +1,4 @@
-// Habblaud Cloud: ninguém roda `npm run usage:install` dentro do container, então o servidor mesmo põe o tap de uso
+// DevLand Cloud: ninguém roda `npm run usage:install` dentro do container, então o servidor mesmo põe o tap de uso
 // (scripts/statusline-tap.mjs) no statusLine de cada conta do Claude Code do usuário dos agentes: ao subir e quando uma
 // conta nova é conectada. É o que alimenta os cartões de uso (5 h e semana). Mesma regra do instalador: o statusline que
 // já existia continua rodando (o tap só espia e repassa), com backup do settings.json antes de mexer.

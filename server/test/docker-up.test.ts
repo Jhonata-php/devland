@@ -82,10 +82,10 @@ describe('docker-up', () => {
 
   it('override: somente leitura, sem criar pastas no host, `$` escapado e a pasta do statusline em /usage', () => {
     const mounts = planMounts(['/Users/fu$lano/.claude'], [acc('.claude', { email: 'a@b.c', cachedUsage: { fetchedAtMs: 1, utilization: {} } })], slash);
-    const yml = renderOverride(mounts, new Date('2026-10-06T00:00:00Z'), '/Users/fulano/.habblaud/usage');
+    const yml = renderOverride(mounts, new Date('2026-10-06T00:00:00Z'), '/Users/fulano/.devland/usage');
     expect(yml).toContain('source: "/Users/fu$$lano/.claude/projects"');
-    expect(yml).toContain('HABBLAUD_USAGE_DIR: "/usage"');
-    expect(yml).toContain('source: "/Users/fulano/.habblaud/usage"\n        target: "/usage"\n        read_only: true');
+    expect(yml).toContain('DEVLAND_USAGE_DIR: "/usage"');
+    expect(yml).toContain('source: "/Users/fulano/.devland/usage"\n        target: "/usage"\n        read_only: true');
     const binds = yml.split('- type: bind').length - 1;
     expect(binds).toBe(3);
     expect(yml.match(/read_only: true/g)).toHaveLength(3);
@@ -115,20 +115,20 @@ describe('docker-up', () => {
     ]);
     const claude = planMounts(['/Users/fulano/.claude'], [acc('.claude')], slash);
     const yml = renderOverride(claude, new Date(0), undefined, undefined, codex);
-    expect(yml).toContain('HABBLAUD_CODEX_DIRS: "/codex/.codex"');
+    expect(yml).toContain('DEVLAND_CODEX_DIRS: "/codex/.codex"');
     expect(yml).toContain(`source: "/real${host}/thread-writer-locks"\n        target: "/codex/.codex/thread-writer-locks"\n        read_only: true`);
     expect(yml.match(/read_only: true/g)).toHaveLength(4);
     for (const secret of ['auth.json', 'config.toml', 'history.jsonl', 'shell_snapshots', 'sqlite', 'logs_']) expect(yml).not.toContain(secret);
-    const accounts = JSON.parse(JSON.parse(/HABBLAUD_ACCOUNTS: (".*")/.exec(yml)![1]) as string) as Array<Record<string, unknown>>;
+    const accounts = JSON.parse(JSON.parse(/DEVLAND_ACCOUNTS: (".*")/.exec(yml)![1]) as string) as Array<Record<string, unknown>>;
     expect(accounts.map((a) => [a.id, a.provider, a.configDir])).toEqual([
       ['.claude', undefined, '/Users/fulano/.claude'],
       ['.codex', 'codex', host],
     ]);
-    // Sem Codex: nada de HABBLAUD_CODEX_DIRS.
-    expect(renderOverride(claude)).not.toContain('HABBLAUD_CODEX_DIRS');
-    expect(codexDisabled({ HABBLAUD_CODEX: '0' })).toBe(true);
-    expect(codexDisabled({ HABBLAUD_CODEX: 'off' })).toBe(true);
-    expect(codexDisabled({ HABBLAUD_CODEX: '1' })).toBe(false);
+    // Sem Codex: nada de DEVLAND_CODEX_DIRS.
+    expect(renderOverride(claude)).not.toContain('DEVLAND_CODEX_DIRS');
+    expect(codexDisabled({ DEVLAND_CODEX: '0' })).toBe(true);
+    expect(codexDisabled({ DEVLAND_CODEX: 'off' })).toBe(true);
+    expect(codexDisabled({ DEVLAND_CODEX: '1' })).toBe(false);
     expect(codexDisabled({})).toBe(false);
   });
 
@@ -210,16 +210,16 @@ describe('docker-up: migração do nome antigo (CodeTown)', () => {
       '# CODETOWN_COMENTADA=1',
       'CODETOWN_BIND=0.0.0.0',
       '  export CODETOWN_PORT = 4848',
-      'HABBLAUD_DEMO=1',
+      'DEVLAND_DEMO=1',
       '',
       'SEM_IGUAL',
       '1INVALIDA=x',
       'SEGREDO=CODETOWN_X=y\r',
     ].join('\n');
     const keys = envFileKeys(text);
-    expect(keys).toEqual(['CODETOWN_BIND', 'CODETOWN_PORT', 'HABBLAUD_DEMO', 'SEGREDO']);
+    expect(keys).toEqual(['CODETOWN_BIND', 'CODETOWN_PORT', 'DEVLAND_DEMO', 'SEGREDO']);
     const msg = legacyEnvWarning(keys, 'no .env');
-    expect(msg).toBe('variáveis do nome antigo ignoradas no .env: CODETOWN_BIND → HABBLAUD_BIND, CODETOWN_PORT → HABBLAUD_PORT. Renomeie para valer de novo.');
+    expect(msg).toBe('variáveis do nome antigo ignoradas no .env: CODETOWN_BIND → DEVLAND_BIND, CODETOWN_PORT → DEVLAND_PORT. Renomeie para valer de novo.');
     expect(msg).not.toContain('0.0.0.0');
     expect(envFileKeys('')).toEqual([]);
   });

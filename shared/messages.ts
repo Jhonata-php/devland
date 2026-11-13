@@ -5,13 +5,13 @@ import { tr } from './i18n';
 
 /** Tamanho máximo de uma mensagem (caracteres). */
 export const MESSAGE_MAX = 20_000;
-/** `Activity.tool` da atividade "Mensagem pelo Habblaud" (não é uma ferramenta do agente: é o seu texto entrando). */
-export const MESSAGE_TOOL = 'HabblaudMessage';
+/** `Activity.tool` da atividade "Mensagem pelo DevLand" (não é uma ferramenta do agente: é o seu texto entrando). */
+export const MESSAGE_TOOL = 'DevLandMessage';
 /** Detalhe da atividade: o começo do texto, mascarado e cortado (o texto inteiro vai só para a sessão). */
 const DETAIL_MAX = 300;
 
 /**
- * Atividade "Mensagem pelo Habblaud" de uma mensagem entregue à sessão (entrou nela ou na fila dela: não quer dizer
+ * Atividade "Mensagem pelo DevLand" de uma mensagem entregue à sessão (entrou nela ou na fila dela: não quer dizer
  * que o agente já leu).
  */
 export function describeMessage(text: string): ActivityDescription & { tool: string } {

@@ -57,12 +57,12 @@ export interface ApiDeps {
   /**
    * Rotas das mensagens pelo escritório (/api/messages, a caixa de entrada do plugin em /api/mod/inbox e a do auxiliar
    * do Codex em /api/codex/bridge/*, server/messages/http.ts). Só existem com ServerConfig.messages (a trava do
-   * terminal e HABBLAUD_MENSAGENS); a trava do Host local é conferida aqui antes de chamá-las.
+   * terminal e DEVLAND_MENSAGENS); a trava do Host local é conferida aqui antes de chamá-las.
    */
   messages?: (req: IncomingMessage, res: ServerResponse, path: string) => void;
   /**
    * Terminal interativo e ações nos agentes (/api/pty/*, POST /api/agents/:id/stop|takeover; http/pty.ts).
-   * Ausente = desligado (sem HABBLAUD_PTY=1, Docker, sem node-pty ou sem bind local).
+   * Ausente = desligado (sem DEVLAND_PTY=1, Docker, sem node-pty ou sem bind local).
    */
   pty?: (req: IncomingMessage, res: ServerResponse, path: string) => void;
   /**
@@ -130,7 +130,7 @@ export interface ApiDeps {
   };
   /**
    * Porta remota com login (http/remote.ts): `is` diz se a requisição chegou por ela (já autenticada); `allows`, o que
-   * HABBLAUD_REMOTE_ALLOW (ou, no Habblaud Cloud, a lista do usuário) libera. Requisição remota nunca vale pelo Host: só
+   * DEVLAND_REMOTE_ALLOW (ou, no DevLand Cloud, a lista do usuário) libera. Requisição remota nunca vale pelo Host: só
    * pelo que `allows` liberar.
    */
   remote?: { is(req: IncomingMessage): boolean; allows(req: IncomingMessage, feature: RemoteFeature): boolean; isAdmin?(req: IncomingMessage): boolean };
@@ -312,12 +312,12 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
   const isRemote = (req: IncomingMessage): boolean => !!deps.remote?.is(req);
   /**
    * A trava "pelo próprio computador": na porta local, o Host precisa ser loopback (como antes); na porta remota, só o
-   * que HABBLAUD_REMOTE_ALLOW liberar (`feature` ausente = nunca pela porta remota).
+   * que DEVLAND_REMOTE_ALLOW liberar (`feature` ausente = nunca pela porta remota).
    */
   const trusted = (req: IncomingMessage, feature?: RemoteFeature): boolean =>
     isRemote(req) ? !!feature && !!deps.remote?.allows(req, feature) : isLoopbackHost(req.headers.host);
   const denied = (req: IncomingMessage, localMessage: string): string =>
-    isRemote(req) ? tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') : localMessage;
+    isRemote(req) ? tr('não liberado no acesso remoto (veja DEVLAND_REMOTE_ALLOW)') : localMessage;
 
   const methodNotAllowed = (res: ServerResponse, allow: string) => {
     res.setHeader('Allow', allow);
@@ -417,7 +417,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           remote,
           terminal: !!terminals && (!remote || trusted(req, 'terminal')),
           permissions: !!deps.permissions && (!remote || trusted(req, 'permissions')),
-          // O terminal interativo (pty) pela porta remota só no Habblaud Cloud (deps.remote.isAdmin existe só nele).
+          // O terminal interativo (pty) pela porta remota só no DevLand Cloud (deps.remote.isAdmin existe só nele).
           pty: !!deps.pty && (!remote || (!!deps.remote?.isAdmin && trusted(req, 'terminal'))),
           messages: !!deps.messages && (!remote || trusted(req, 'messages')),
           codexEvents: !!deps.codexLive,
@@ -500,7 +500,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     }
     if (path === '/api/pty' || path.startsWith('/api/pty/') || AGENT_ACTION_ROUTE.test(path)) {
       // Executa comandos na máquina: nunca pela porta remota, nem com login (o Host e o endereço de quem conecta não
-      // bastam: o Tailscale chega pelo loopback e o Host se imita). Exceção: o Habblaud Cloud (o container é a máquina),
+      // bastam: o Tailscale chega pelo loopback e o Host se imita). Exceção: o DevLand Cloud (o container é a máquina),
       // para quem tem a permissão "terminal"; a rota confere de novo (http/pty.ts, remoteOk).
       if (isRemote(req) && !(deps.remote?.isAdmin && trusted(req, 'terminal'))) sendJson(res, 403, { error: tr('o terminal interativo só pode ser usado no próprio computador') });
       else if (!deps.pty) sendJson(res, 403, { error: tr('terminal interativo desligado (veja o log do servidor)') });
@@ -951,7 +951,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       // As mensagens entram na sessão como se você as tivesse digitado: a mesma trava (recurso ligado + Host local).
       if (!deps.messages) {
         sendJson(res, 403, {
-          error: tr('mensagens pelo escritório desligadas: só funcionam com o DevLand acessível apenas pelo próprio computador (e sem HABBLAUD_MENSAGENS=0)'),
+          error: tr('mensagens pelo escritório desligadas: só funcionam com o DevLand acessível apenas pelo próprio computador (e sem DEVLAND_MENSAGENS=0)'),
         });
       } else if (!trusted(req, 'messages')) {
         sendJson(res, 403, { error: denied(req, tr('mensagens só são mandadas pelo próprio computador (http://localhost ou http://127.0.0.1)')) });
@@ -1001,8 +1001,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     if (path === '/api/demo') {
       // Liga o modo demonstração para todo mundo: só pelo computador (o celular com login só vê o que foi liberado).
       if (method !== 'POST') methodNotAllowed(res, 'POST');
-      // Habblaud Cloud: o admin liga (é a instalação dele).
-      else if (isRemote(req) && !deps.remote?.isAdmin?.(req)) sendJson(res, 403, { error: tr('não liberado no acesso remoto (veja HABBLAUD_REMOTE_ALLOW)') });
+      // DevLand Cloud: o admin liga (é a instalação dele).
+      else if (isRemote(req) && !deps.remote?.isAdmin?.(req)) sendJson(res, 403, { error: tr('não liberado no acesso remoto (veja DEVLAND_REMOTE_ALLOW)') });
       else handleDemo(req, res).catch((err) => fail(res, err));
       return true;
     }

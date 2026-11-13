@@ -107,7 +107,7 @@ export class PluginsPage {
         h('p', { class: 'dash-muted dash-plug-hint', text: tr('Os plugins vêm de marketplaces (repositórios no GitHub). Não achou um plugin? Acrescente o marketplace dele.') }),
         h('div', { class: 'dash-list' }, ...this.markets.map((m) => h('div', { class: 'dash-agent dash-agent--static' },
           h('span', { class: 'dash-agent__main' }, h('b', { text: m.name }), h('span', { class: 'dash-agent__act', text: m.source })),
-          /^(claude-plugins-official|habblaud|anthropic-plugin-directory)$/.test(m.name) ? null : h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', attrs: { disabled: !!this.busy }, text: tr('Remover'), on: { click: () => confirm(tr('Remover o marketplace {0}? Os plugins instalados dele continuam.', [m.name])) && this.run(m.name, () => this.call('DELETE', `/api/plugins/marketplaces/${encodeURIComponent(m.name)}`), tr('Marketplace removido.')) } })))),
+          /^(claude-plugins-official|devland|anthropic-plugin-directory)$/.test(m.name) ? null : h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', attrs: { disabled: !!this.busy }, text: tr('Remover'), on: { click: () => confirm(tr('Remover o marketplace {0}? Os plugins instalados dele continuam.', [m.name])) && this.run(m.name, () => this.call('DELETE', `/api/plugins/marketplaces/${encodeURIComponent(m.name)}`), tr('Marketplace removido.')) } })))),
         form));
   }
 }

@@ -1,6 +1,6 @@
 // Envio de e-mail por SMTP, sem dependências (node:net e node:tls). Serve só para o "esqueci a senha" do Cloud: uma
 // mensagem de texto por vez, autenticação PLAIN/LOGIN, TLS implícito (porta 465) ou STARTTLS (587 e outras).
-// Configuração pelo ambiente (o nome com HABBLAUD_ vale mais que o genérico; apelidos MAIL_* e EMAIL_* também valem):
+// Configuração pelo ambiente (o nome com DEVLAND_ vale mais que o genérico; apelidos MAIL_* e EMAIL_* também valem):
 //   SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS (ou SMTP_PASSWORD), SMTP_FROM (padrão: SMTP_USER), SMTP_SECURE (1 = TLS implícito)
 import { randomBytes } from 'node:crypto';
 import net from 'node:net';
@@ -28,10 +28,10 @@ export interface Mailer {
 const TIMEOUT_MS = 15_000;
 
 export function mailConfigFromEnv(env: NodeJS.ProcessEnv = process.env): MailConfig | undefined {
-  // Cada item aceita o nome com HABBLAUD_ na frente e os apelidos mais comuns (SMTP_*, MAIL_*, EMAIL_*).
+  // Cada item aceita o nome com DEVLAND_ na frente e os apelidos mais comuns (SMTP_*, MAIL_*, EMAIL_*).
   const pick = (...names: string[]) => {
     for (const n of names) {
-      const v = (env[`HABBLAUD_${n}`] ?? env[n])?.trim();
+      const v = (env[`DEVLAND_${n}`] ?? env[n])?.trim();
       if (v) return v;
     }
     return undefined;
