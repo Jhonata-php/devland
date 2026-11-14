@@ -90,6 +90,7 @@ export const ES: Readonly<Record<string, string>> = {
   "Sem mensagens no timelapse: o escritório mostrado é o de outro momento": "Sin mensajes en el timelapse: la oficina que ves es de otro momento",
   "Subagentes não recebem mensagens: escreva para o agente principal": "Los subagentes no reciben mensajes: escríbele al agente principal",
   "Sessão encerrada": "Sesión cerrada",
+  "Limite de uso da conta atingido: volta às {0} (Brasília)": "Límite de uso de la cuenta alcanzado: vuelve a las {0} (hora de Brasilia)",
   "Para responder, use o Codex": "Para responder, usa Codex",
   "Para responder, use o terminal do Claude Code": "Para responder, usa la terminal de Claude Code",
   "Para mandar mensagens por aqui, abra o DevLand por http://localhost (ou 127.0.0.1)": "Para enviar mensajes desde aquí, abre DevLand en http://localhost (o 127.0.0.1)",

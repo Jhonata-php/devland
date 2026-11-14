@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentInfo } from '../../../shared/types';
 import {
+  brasiliaTime,
+  limitedUntil,
   canSend,
   CODEX_BRIDGE_HINT,
   CODEX_TIMEOUT_ERROR,
@@ -127,5 +129,21 @@ describe('caixa de mensagem (peças puras)', () => {
     expect(pollDelay(0)).toBeLessThan(1_000);
     expect(pollDelay(20_000)).toBeGreaterThan(pollDelay(0));
     expect(pollDelay(60_000)).toBeGreaterThanOrEqual(pollDelay(20_000));
+  });
+});
+
+describe('limite de uso', () => {
+  const now = Date.UTC(2026, 10, 13, 15, 0);
+  it('só conta janela em 100% que ainda não reiniciou, e usa a mais tardia', () => {
+    expect(limitedUntil(undefined, now)).toBeUndefined();
+    expect(limitedUntil({ source: 'oauth', fetchedAt: now, fiveHour: { utilization: 80, resetsAt: now + 1 } }, now)).toBeUndefined();
+    expect(limitedUntil({ source: 'oauth', fetchedAt: now, fiveHour: { utilization: 100, resetsAt: now - 1 } }, now)).toBeUndefined();
+    expect(limitedUntil({ source: 'oauth', fetchedAt: now, fiveHour: { utilization: 100, resetsAt: now + 1000 }, sevenDay: { utilization: 100, resetsAt: now + 5000 } }, now)).toBe(now + 5000);
+  });
+  it('mostra a hora de Brasília e fecha a caixa', () => {
+    expect(brasiliaTime(Date.UTC(2026, 10, 13, 15, 30))).toBe('13/11 12:30');
+    const a = { kind: 'main', status: 'working', canMessage: true } as never;
+    const m = composerMode(a, { enabled: true, local: true, replaying: false, limitedUntil: now + 1000 });
+    expect(m.kind).toBe('off');
   });
 });

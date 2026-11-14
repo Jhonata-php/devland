@@ -17,6 +17,7 @@ import {
   messageText,
   OFFLINE_ERROR,
   POLL_LIMIT_MS,
+  limitedUntil,
   pollDelay,
   sendStatusText,
   timeoutError,
@@ -187,6 +188,7 @@ export class MessageComposer {
       replaying: store.replaying,
       cloud: !!access().cloud,
       resume: !store.mock && !!this.ctx.terminals?.interactiveEnabled,
+      limitedUntil: agent ? limitedUntil(store.snapshot?.accounts.find((a) => a.id === agent.account)?.usage, store.snapshot?.serverTime ?? Date.now()) : undefined,
     });
     this.mode = mode;
     const ready = mode.kind === 'ready';

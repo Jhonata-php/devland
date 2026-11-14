@@ -12,6 +12,8 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Cloud: horário de Brasília.** O container passa a usar `America/Sao_Paulo` (`TZ`, com `tzdata`), então o "volta às …" do terminal do Claude Code deixa de sair em UTC. Dá para trocar com `TZ` no compose.
+- **Limite de uso: a caixa de mensagem fecha.** Com a conta do agente em 100% (5 h ou semana) a caixa mostra "Limite de uso da conta atingido: volta às HH:MM (Brasília)" e reabre sozinha quando o limite reinicia.
 - **Cloud: agentes sumiam a cada reinício.** Só as 6 primeiras conversas da lista guardada voltavam, e o resto era apagado da lista na primeira foto depois de subir. Agora voltam todas as que estavam abertas, sem limite.
 - **Cloud: plugins do DevLand em contas antigas.** Contas criadas antes do rename tinham o marketplace registrado como "habblaud", e a instalação dos plugins `devland*` falhava com "not found in marketplace". O servidor agora remove o marketplace antigo antes de registrar o novo.
 

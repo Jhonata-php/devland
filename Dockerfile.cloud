@@ -44,7 +44,7 @@ FROM node:24-bookworm-slim AS runtime
 
 # Ferramentas de uma máquina de desenvolvimento comum. Os agentes instalam o resto do projeto em /workspace e em ~.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client ripgrep jq less procps \
+  && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client tzdata ripgrep jq less procps \
      python3 python3-pip python3-venv make g++ unzip tini gh ffmpeg libgomp1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -78,6 +78,7 @@ ARG CLOUD_VERSION=dev
 ENV NODE_ENV=production \
     DEVLAND_IN_DOCKER=0 \
     DEVLAND_CLOUD=1 \
+    TZ=America/Sao_Paulo \
     DEVLAND_HOST=127.0.0.1 \
     DEVLAND_PORT=4747 \
     DEVLAND_REMOTE_HOST=0.0.0.0 \
