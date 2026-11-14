@@ -22,6 +22,7 @@ import { errMsg, log } from '../log';
 import { pidAlive } from '../sources/registry';
 import { readProcInfo, sameProcess, type ProcInfo, type RegisteredProc } from './procinfo';
 import { killWithConsoleReset } from './winkill';
+import { copyTranscript } from './transcript-copy';
 import { tr } from '../../shared/i18n';
 import { isExecutableFile } from '../claude-bin';
 
@@ -286,6 +287,27 @@ export class PtyManager {
       throw new PtyError(500, tr('não consegui encerrar a sessão: {0}', [errMsg(err)]));
     }
     log.info(tr('Agente {0} encerrado pelo escritório.', [agentId]));
+  }
+
+  /**
+   * Limite da conta estourado: leva a conversa (mesma sessão e mesmo histórico) para outra conta do Claude e retoma lá.
+   * Confere tudo antes de encerrar o agente de agora; o histórico é copiado para a conta nova (pty/transcript-copy.ts).
+   */
+  async switchAccount(agentId: string, accountId: unknown): Promise<PtyInfo> {
+    const agent = this.mainAgent(agentId);
+    if (typeof accountId !== 'string' || !accountId || accountId === agent.account) throw new PtyError(400, tr('escolha outra conta'));
+    if (!SESSION_ID.test(agent.sessionId)) throw new PtyError(409, tr('sessão sem id válido para retomar'));
+    if (!agent.cwd) throw new PtyError(409, tr('não sei a pasta desta sessão'));
+    const accounts = this.opts.accounts();
+    const from = accounts.find((a) => a.id === agent.account);
+    const to = accounts.find((a) => a.id === accountId);
+    if (!from || !to) throw new PtyError(400, tr('conta desconhecida'));
+    const plan = this.plan({ cwd: agent.cwd, account: to.id }, this.takeovers.size);
+    if (!copyTranscript(from.dir, to.dir, agent.sessionId)) throw new PtyError(409, tr('não achei o histórico desta conversa na conta de origem'));
+    await this.stop(agentId);
+    const info = this.spawn(plan, { resume: agent.sessionId, from: agentId });
+    log.info(tr('Agente {0} passou da conta {1} para a {2} (sessão {3}).', [agentId, from.id, to.id, agent.sessionId]));
+    return info;
   }
 
   /**

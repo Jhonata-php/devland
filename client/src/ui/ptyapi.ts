@@ -54,6 +54,11 @@ export function takeoverAgent(agentId: string, model?: string): Promise<PtyInfo 
   return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/takeover`, { ...SIZE, ...(model ? { model } : {}) });
 }
 
+/** Limite da conta: leva a conversa (mesma sessão) para outra conta do Claude e retoma lá. */
+export function switchAgentAccount(agentId: string, account: string): Promise<PtyInfo | undefined> {
+  return postPty<PtyInfo>(`/api/agents/${encodeURIComponent(agentId)}/switch`, { account });
+}
+
 /** Encerra o agente (aqui ou noutro terminal). */
 export async function stopAgent(agentId: string): Promise<void> {
   await postPty(`/api/agents/${encodeURIComponent(agentId)}/stop`, {});

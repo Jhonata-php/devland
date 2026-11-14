@@ -16,7 +16,7 @@ import { isLoopbackHost } from './guard';
 import { tr } from '../../shared/i18n';
 
 /** /api/agents/:id/(stop|takeover) (ids nunca contêm '/'). */
-const AGENT_ACTION_ROUTE = /^\/api\/agents\/([^/]+)\/(stop|takeover)$/;
+const AGENT_ACTION_ROUTE = /^\/api\/agents\/([^/]+)\/(stop|takeover|switch)$/;
 
 function isLoopbackAddress(addr: string | undefined): boolean {
   if (!addr) return false;
@@ -84,6 +84,7 @@ export function createPtyRoutes(
         await ptys.stop(id);
         return noContent(res);
       }
+      if (action[2] === 'switch') return sendJson(res, 201, await ptys.switchAccount(id, body?.account));
       return sendJson(res, 201, await ptys.takeover(id, { cols: body?.cols, rows: body?.rows, model: body?.model }));
     }
     const [rawId, act] = path.slice('/api/pty'.length).split('/').filter(Boolean);

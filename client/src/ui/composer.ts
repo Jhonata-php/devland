@@ -30,6 +30,7 @@ import { h, pastedFiles, setAttr, setHidden, setText, setTitle } from './dom';
 import { access } from '../net/access';
 import { ICONS } from './icons';
 import { uploadAttachment } from './spawn';
+import { switchAgentAccount } from './ptyapi';
 import { tr } from '../../../shared/i18n';
 
 interface SpeechLike {
@@ -73,6 +74,9 @@ export class MessageComposer {
   private provider: Provider = 'claude';
   /** O que a caixa mostra agora ("<agente>|<pronta>"): ao mudar, o conteúdo vem do rascunho. */
   private shown = '';
+  private agent: AgentInfo | undefined;
+  private alt: { id: string; name: string } | undefined;
+  private readonly switchBtn: HTMLButtonElement;
 
   private row: HTMLElement;
   private box: HTMLTextAreaElement;
@@ -173,13 +177,38 @@ export class MessageComposer {
     this.hint = h('p', { class: 'ui-msg__hint', hidden: true });
     this.status = h('p', { class: 'ui-msg__status', role: 'status', hidden: true, attrs: { 'aria-live': 'polite' } });
     this.tip = term ? null : h('p', { class: 'ui-msg__tip', text: composerTip() });
-    this.el = h('div', { class: `ui-msg ui-msg--${variant}` }, this.hint, this.fileList, this.row, this.dictStatus, this.status, this.tip);
+    this.switchBtn = h('button', { class: 'ui-btn ui-btn--sm ui-btn--accent', type: 'button', hidden: true, on: { click: () => this.switchAccount() } });
+    this.el = h('div', { class: `ui-msg ui-msg--${variant}` }, this.hint, this.switchBtn, this.fileList, this.row, this.dictStatus, this.status, this.tip);
   }
 
   /**
    * Atualiza a caixa para `agent` (undefined = nenhum: sessão do histórico ou agente que saiu); `key` identifica o
    * rascunho. Devolve o modo: a gaveta esconde a seção quando é 'off'.
    */
+  /** Conta do Claude com limite livre para onde a conversa pode ir (a de menor uso na janela de 5 h). */
+  private altAccount(agent: AgentInfo | undefined): { id: string; name: string } | undefined {
+    const snap = this.ctx.store.snapshot;
+    if (!agent || agent.kind !== 'main' || agent.provider === 'codex' || !snap) return undefined;
+    const free = snap.accounts
+      .filter((a) => a.id !== agent.account && a.provider !== 'codex' && !a.configDir.endsWith('.claude-ollama') && !limitedUntil(a.usage, snap.serverTime))
+      .sort((a, b) => (a.usage?.fiveHour?.utilization ?? 0) - (b.usage?.fiveHour?.utilization ?? 0));
+    return free[0] ? { id: free[0].id, name: free[0].name } : undefined;
+  }
+
+  private switchAccount(): void {
+    const agent = this.agent;
+    const alt = this.alt;
+    if (!agent || !alt) return;
+    this.switchBtn.disabled = true;
+    switchAgentAccount(agent.id, alt.id)
+      .then(() => this.ctx.invalidate())
+      .catch((err: Error) => {
+        this.switchBtn.disabled = false;
+        setText(this.status, tr('Não deu para trocar de conta: {0}', [err.message]));
+        setHidden(this.status, false);
+      });
+  }
+
   render(agent: AgentInfo | undefined, key = agent?.id ?? ''): ComposerMode['kind'] {
     const store = this.ctx.store;
     const mode = composerMode(agent, {
@@ -191,6 +220,11 @@ export class MessageComposer {
       limitedUntil: agent ? limitedUntil(store.snapshot?.accounts.find((a) => a.id === agent.account)?.usage, store.snapshot?.serverTime ?? Date.now()) : undefined,
     });
     this.mode = mode;
+    this.agent = agent;
+    const limited = !!agent && agent.status !== 'offline' && agent.status !== 'done' && mode.kind === 'off' && !!(store.snapshot && limitedUntil(store.snapshot.accounts.find((a) => a.id === agent.account)?.usage, store.snapshot.serverTime));
+    this.alt = limited && this.ctx.terminals?.interactiveEnabled ? this.altAccount(agent) : undefined;
+    setHidden(this.switchBtn, !this.alt);
+    if (this.alt) setText(this.switchBtn, tr('Continuar na {0}', [this.alt.name]));
     const ready = mode.kind === 'ready';
     const term = this.variant === 'terminal';
     this.provider = agent?.provider === 'codex' ? 'codex' : 'claude';
