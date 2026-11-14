@@ -11,7 +11,6 @@ export interface LiveAgent {
   cwd: string;
 }
 
-export const MAX_RESUME = 12;
 /** Depois de subir, as conversas retomadas (`claude --resume` demora) levam um tempo até aparecerem no escritório. */
 export const RESUME_GRACE_MS = 5 * 60_000;
 
@@ -50,7 +49,7 @@ export function dedupeLive(list: readonly LiveAgent[]): LiveAgent[] {
 export function saveLiveAgents(file: string, list: readonly LiveAgent[]): void {
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
-  writeFileSync(tmp, `${JSON.stringify(list.slice(0, 50))}\n`, { mode: 0o600 });
+  writeFileSync(tmp, `${JSON.stringify(list)}\n`, { mode: 0o600 });
   renameSync(tmp, file);
 }
 
@@ -59,8 +58,7 @@ export function loadLiveAgents(file: string): LiveAgent[] {
     const raw = JSON.parse(readFileSync(file, 'utf8')) as unknown;
     if (!Array.isArray(raw)) return [];
     return dedupeLive(raw
-      .filter((a): a is LiveAgent => !!a && typeof a.account === 'string' && typeof a.sessionId === 'string' && typeof a.cwd === 'string' && /^[\w-]{8,64}$/.test(a.sessionId)))
-      .slice(0, MAX_RESUME);
+      .filter((a): a is LiveAgent => !!a && typeof a.account === 'string' && typeof a.sessionId === 'string' && typeof a.cwd === 'string' && /^[\w-]{8,64}$/.test(a.sessionId)));
   } catch {
     return [];
   }
