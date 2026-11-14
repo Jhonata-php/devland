@@ -11,7 +11,7 @@ export interface LiveAgent {
   cwd: string;
 }
 
-export const MAX_RESUME = 6;
+export const MAX_RESUME = 12;
 /** Depois de subir, as conversas retomadas (`claude --resume` demora) levam um tempo até aparecerem no escritório. */
 export const RESUME_GRACE_MS = 5 * 60_000;
 

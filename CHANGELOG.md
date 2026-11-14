@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Cloud: agentes sumiam a cada reinício.** Só as 6 primeiras conversas da lista guardada voltavam, e o resto era apagado da lista na primeira foto depois de subir. O limite agora é 12.
 - **Cloud: plugins do DevLand em contas antigas.** Contas criadas antes do rename tinham o marketplace registrado como "habblaud", e a instalação dos plugins `devland*` falhava com "not found in marketplace". O servidor agora remove o marketplace antigo antes de registrar o novo.
 
 ### Adicionado
