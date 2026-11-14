@@ -12,6 +12,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
+- **Limite de uso lido da própria conversa.** Quando a conversa termina em "You've hit your … limit · resets 3:10pm (…)", a caixa de mensagem fecha e o botão "Continuar na <conta>" aparece mesmo que o uso mostrado na barra esteja desatualizado; a caixa volta sozinha na hora indicada.
 - **Limite de uso: "Continuar na Conta B".** Com a caixa fechada pelo limite, se houver outra conta do Claude com limite livre aparece o botão **Continuar na <conta>**: o histórico da conversa é copiado para a outra conta e a mesma sessão é retomada lá (`claude --resume`), com o contexto intacto. O agente antigo é encerrado.
 - **Cloud: horário de Brasília.** O container passa a usar `America/Sao_Paulo` (`TZ`, com `tzdata`), então o "volta às …" do terminal do Claude Code deixa de sair em UTC. Dá para trocar com `TZ` no compose.
 - **Limite de uso: a caixa de mensagem fecha.** Com a conta do agente em 100% (5 h ou semana) a caixa mostra "Limite de uso da conta atingido: volta às HH:MM (Brasília)" e reabre sozinha quando o limite reinicia.

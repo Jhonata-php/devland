@@ -48,6 +48,33 @@ export function limitedUntil(usage: AccountUsage | undefined, now: number): numb
   return until.length ? Math.max(...until) : undefined;
 }
 
+/** Instante (epoch ms) em que o relógio de `tz` marca y-m-d h:mi. */
+function zonedEpoch(y: number, mo: number, d: number, h: number, mi: number, tz: string): number {
+  const guess = Date.UTC(y, mo, d, h, mi);
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(guess).map((x) => [x.type, Number(x.value)]));
+  return guess - (Date.UTC(p.year!, p.month! - 1, p.day!, p.hour!, p.minute!) - guess);
+}
+
+/**
+ * "You've hit your 5-hour limit · resets 3:10pm (America/Sao_Paulo)" (a linha que o Claude Code põe na conversa) →
+ * quando o limite volta (a próxima vez que o relógio marca essa hora depois de `at`), ou undefined. Vale mesmo quando
+ * o uso mostrado na barra está desatualizado.
+ */
+export function limitFromText(text: string, at: number): number | undefined {
+  const m = /hit your .*limit.*resets\s+(\d{1,2})(?::(\d{2}))?\s*([ap]m)?\s*(?:\(([^)]+)\))?/i.exec(text);
+  if (!m) return undefined;
+  let h = Number(m[1]);
+  if (m[3]) h = (h % 12) + (m[3].toLowerCase() === 'pm' ? 12 : 0);
+  const tz = m[4] ?? 'America/Sao_Paulo';
+  try {
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(at).split('-').map(Number);
+    const t = zonedEpoch(day[0]!, day[1]! - 1, day[2]!, h, Number(m[2] ?? 0), tz);
+    return t > at ? t : t + 86_400_000;
+  } catch {
+    return undefined;
+  }
+}
+
 export function composerMode(agent: AgentInfo | undefined, env: ComposerEnv): ComposerMode {
   if (env.replaying) return { kind: 'off', text: tr('Sem mensagens no timelapse: o escritório mostrado é o de outro momento') };
   if (agent?.kind === 'sub') return { kind: 'off', text: tr('Subagentes não recebem mensagens: escreva para o agente principal') };

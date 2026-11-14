@@ -10,6 +10,7 @@
 // Sessão do Codex: selo "Codex" no cabeçalho e um spinner neutro no rodapé (o ✻ é do Claude Code).
 import type { AgentInfo, Provider, RecentSession, TerminalEntry, TerminalInit } from '../../../shared/types';
 import { MessageComposer } from './composer';
+import { limitFromText } from './composer-model';
 import type { UiComponent, UiContext } from './context';
 import { copyText, h, iconButton, prefersReducedMotion, setAttr, setHidden, setText, setTitle, setVariant } from './dom';
 import { calendarDayDiff, formatClock, formatDateTime, formatDuration, formatElapsed, relativeTime } from './format';
@@ -829,7 +830,19 @@ export class TerminalPanel implements UiComponent, TerminalControl {
     this.renderFooter();
     this.renderState();
     // Mensagens só para a sessão ao vivo (no histórico, a caixa diz que a sessão foi encerrada).
-    this.composer.render(this.session ? undefined : this.ctx.agent(this.id), this.id);
+    this.composer.render(this.session ? undefined : this.ctx.agent(this.id), this.id, this.logLimit());
+  }
+
+  /** Quando o limite de uso volta, se a conversa termina na linha "You've hit your ... limit · resets ..." (sem fala depois). */
+  private logLimit(): number | undefined {
+    const items = [...this.log.values()];
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i]!;
+      if (it.type !== 'entry' || it.entry.kind !== 'system') return undefined;
+      const t = limitFromText(it.entry.text, it.entry.at);
+      if (t) return t;
+    }
+    return undefined;
   }
 
   /** Abre o painel numa conversa nova (agente ou sessão do histórico); a mesma conversa só recebe o foco. */
@@ -1043,6 +1056,8 @@ export class TerminalPanel implements UiComponent, TerminalControl {
       else this.unread += added + batch.attached.length;
       this.renderState();
     }
+    // Chegou (ou saiu) a linha de limite de uso: a caixa de mensagem fecha (ou volta).
+    if (added) this.ctx.invalidate();
   }
 
   private buildRow(item: TerminalItem, now: number): HTMLElement {

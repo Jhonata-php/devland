@@ -209,19 +209,21 @@ export class MessageComposer {
       });
   }
 
-  render(agent: AgentInfo | undefined, key = agent?.id ?? ''): ComposerMode['kind'] {
+  render(agent: AgentInfo | undefined, key = agent?.id ?? '', logLimit?: number): ComposerMode['kind'] {
     const store = this.ctx.store;
+    const now = store.snapshot?.serverTime ?? Date.now();
+    const until = agent ? (limitedUntil(store.snapshot?.accounts.find((a) => a.id === agent.account)?.usage, now) ?? (logLimit && logLimit > now ? logLimit : undefined)) : undefined;
     const mode = composerMode(agent, {
       enabled: store.mock || !!store.snapshot?.meta.messages,
       local: store.mock || access().messages,
       replaying: store.replaying,
       cloud: !!access().cloud,
       resume: !store.mock && !!this.ctx.terminals?.interactiveEnabled,
-      limitedUntil: agent ? limitedUntil(store.snapshot?.accounts.find((a) => a.id === agent.account)?.usage, store.snapshot?.serverTime ?? Date.now()) : undefined,
+      limitedUntil: until,
     });
     this.mode = mode;
     this.agent = agent;
-    const limited = !!agent && agent.status !== 'offline' && agent.status !== 'done' && mode.kind === 'off' && !!(store.snapshot && limitedUntil(store.snapshot.accounts.find((a) => a.id === agent.account)?.usage, store.snapshot.serverTime));
+    const limited = !!agent && agent.status !== 'offline' && agent.status !== 'done' && mode.kind === 'off' && !!until;
     this.alt = limited && this.ctx.terminals?.interactiveEnabled ? this.altAccount(agent) : undefined;
     setHidden(this.switchBtn, !this.alt);
     if (this.alt) setText(this.switchBtn, tr('Continuar na {0}', [this.alt.name]));

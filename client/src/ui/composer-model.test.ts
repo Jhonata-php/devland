@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentInfo } from '../../../shared/types';
 import {
+  limitFromText,
   brasiliaTime,
   limitedUntil,
   canSend,
