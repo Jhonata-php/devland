@@ -10,6 +10,10 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **Cloud: plugins do DevLand em contas antigas.** Contas criadas antes do rename tinham o marketplace registrado como "habblaud", e a instalação dos plugins `devland*` falhava com "not found in marketplace". O servidor agora remove o marketplace antigo antes de registrar o novo.
+
 ### Adicionado
 
 - **Novo agente: Codex.** No assistente "Novo agente", ao lado de "Conta do Claude" e "IA local", aparece o cartão **Codex** (quando há uma conta do Codex conectada e o terminal está ligado). Ao começar, o DevLand abre o Codex num terminal na pasta do projeto, com a sua conta do ChatGPT e o seu pedido já passado a ele; o agente aparece no escritório pelas sessões do Codex. Ainda não há modelo, anexos nem agendamento para o Codex.

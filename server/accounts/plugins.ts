@@ -38,6 +38,9 @@ function run(bin: string, args: string[], dir: string): Promise<{ ok: boolean; o
 export async function ensureDevLandPlugins(dirs: readonly string[], claudeBin: string, root: string): Promise<void> {
   for (const dir of dirs) {
     try {
+      // Contas criadas antes do rename têm o mesmo caminho registrado como marketplace "habblaud": o add novo diria
+      // "já existe" e o "devland" nunca apareceria. Remover o antigo também desinstala os plugins habblaud*.
+      await run(claudeBin, ['plugin', 'marketplace', 'remove', 'habblaud'], dir);
       // "já existe" também sai com erro: o que importa é o plugin ficar instalado.
       await run(claudeBin, ['plugin', 'marketplace', 'add', root], dir);
       const failed: string[] = [];
