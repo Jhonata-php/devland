@@ -26,6 +26,7 @@ import net from 'node:net';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { parsePasswordHash, verifyPassword, type PasswordHash } from '../remote/password';
+import { aiBearerOk } from '../ai/openai';
 import { hostAllowed } from './guard';
 import { getLocale, tr } from '../../shared/i18n';
 import { authPage, BRAND, ICON, js } from './auth-shell';
@@ -668,6 +669,11 @@ export function createRemoteGate(deps: RemoteGateDeps): (req: IncomingMessage, r
     }
 
     if (!authed && method === 'GET' && deps.selfAuth?.(path)) {
+      remoteRequests.add(req);
+      return false;
+    }
+    // API de IA (/v1, ai/openai.ts): outro sistema, sem cookie, com o token DEVLAND_AI_TOKEN (conferido lá de novo).
+    if (!authed && path.startsWith('/v1/') && aiBearerOk(req)) {
       remoteRequests.add(req);
       return false;
     }

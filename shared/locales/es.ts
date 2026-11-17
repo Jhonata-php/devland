@@ -90,6 +90,8 @@ export const ES: Readonly<Record<string, string>> = {
   "Sem mensagens no timelapse: o escritório mostrado é o de outro momento": "Sin mensajes en el timelapse: la oficina que ves es de otro momento",
   "Subagentes não recebem mensagens: escreva para o agente principal": "Los subagentes no reciben mensajes: escríbele al agente principal",
   "Sessão encerrada": "Sesión cerrada",
+  "API de IA desligada: defina DEVLAND_AI_TOKEN": "API de IA desactivada: define DEVLAND_AI_TOKEN",
+  "token inválido": "token no válido",
   "Agente {0} passou da conta {1} para a {2} (sessão {3}).": "El agente {0} pasó de la cuenta {1} a la {2} (sesión {3}).",
   "não achei o histórico desta conversa na conta de origem": "no encontré el historial de esta conversación en la cuenta de origen",
   "escolha outra conta": "elige otra cuenta",

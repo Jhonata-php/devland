@@ -19,6 +19,7 @@ import type { SpawnService } from '../spawn/spawn';
 import { parseSchedule, type ScheduleStore } from '../schedule/schedules';
 import type { PluginStore } from '../plugins/store';
 import type { LocalAi } from '../ai/local';
+import { handleOpenAi } from '../ai/openai';
 import { mcpCatalog, type McpStore } from '../accounts/mcp';
 import { createPr, githubUser, listProjects, mergePr, projectDetail, projectInfo, pull, pushBranch, ACTIVITY_DAYS } from '../github/projects';
 import { addDays } from '../../shared/daystats';
@@ -376,6 +377,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
 
   return (req, res, url) => {
     const path = url.pathname;
+    if (handleOpenAi(req, res, path, deps.localAi)) return true;
     if (path !== '/api' && !path.startsWith('/api/')) return false;
     const method = req.method ?? 'GET';
     const isRead = method === 'GET' || method === 'HEAD';

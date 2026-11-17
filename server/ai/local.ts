@@ -183,6 +183,13 @@ export class LocalAi {
     if (size && need > free) throw new Error(tr('Memória insuficiente para {0}: precisa de cerca de {1} GB livres e há {2} GB. Feche agentes ou use um modelo menor.', [model, (need / 1e9).toFixed(1), (free / 1e9).toFixed(1)]));
   }
 
+  /** Repasta uma chamada à API compatível com a da OpenAI do Ollama (/v1/...), já com o Ollama no ar e o modelo cabendo. */
+  async forward(path: string, body?: { model?: unknown }): Promise<Response> {
+    await this.start();
+    if (typeof body?.model === 'string') await this.ensureFits(body.model);
+    return fetch(`http://${this.host}${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+  }
+
   stop(): void {
     this.server?.kill();
     this.server = null;
