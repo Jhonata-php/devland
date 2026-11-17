@@ -3,9 +3,18 @@
 import { access } from '../net/access';
 import { tr } from '../../../shared/i18n';
 import { copyText, h } from './dom';
+import { ICONS } from './icons';
 
 interface CatalogModel { id: string; name: string; use: string; sizeGb: number; ramGb: number; code?: boolean; agent?: boolean }
 interface ApiTotals { requests: number; errors: number; promptTokens: number; completionTokens: number }
+interface ApiTokenInfo { id: string; name: string; token: string; models: string[]; createdAt: number; lastUsedAt?: number; requests: number; promptTokens: number; completionTokens: number; fromEnv?: boolean }
+interface ApiUsageInfo {
+  total: ApiTotals;
+  today: ApiTotals;
+  days: { day: string; requests: number; errors: number; tokens: number }[];
+  models: { model: string; requests: number; tokens: number }[];
+  last: { at: number; model: string; token?: string; status: number; ms: number; promptTokens: number; completionTokens: number; ip: string }[];
+}
 interface AiStatus {
   system: { platform: string; arch: string; cpus: number; cpuModel: string; load: number; ramTotal: number; ramFree: number; disk: { free: number; total: number } | null };
   ollama: { installed: boolean; own: boolean; running: boolean; version: string | null; package: string | null };
@@ -14,7 +23,7 @@ interface AiStatus {
   catalog: CatalogModel[];
   agentModel: string | null;
   guard?: string;
-  api?: { token: string | null; fromEnv: boolean; usage: { total: ApiTotals; today: ApiTotals; last: { at: number; model: string; status: number; ms: number; promptTokens: number; completionTokens: number; ip: string }[] } };
+  api?: { tokens: ApiTokenInfo[]; usage: ApiUsageInfo };
   recommended: string;
   job: { kind: 'install' | 'pull'; model?: string; status: string; percent?: number; error?: string; done: boolean } | null;
 }
@@ -162,7 +171,7 @@ export class AiPage {
   /** Muda quando a página precisa redesenhar. */
   key(): string {
     const j = this.st?.job;
-    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}|${[...this.speed].join(',')}|${this.st?.api?.token ? 1 : 0}|${this.st?.api?.usage.total.requests ?? 0}|${this.showToken}|${this.copied}`;
+    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}|${[...this.speed].join(',')}|${this.st?.api?.tokens.length ?? 0}|${this.st?.api?.usage.total.requests ?? 0}|${this.apiOpen}|${[...this.shown]}|${this.copied}|${this.apiForm ? `f${this.apiForm.id ?? ''}` : ''}`;
   }
 
   /** Liga a atualização (a cada 3 s, mais rápido com download em andamento) enquanto a página está aberta. */
@@ -204,10 +213,11 @@ export class AiPage {
     });
   }
 
-  /** "API para outros sistemas": gera/mostra/revoga o token do /v1 (compatível com a API da OpenAI, ai/openai.ts). */
-  private apiCard(st: AiStatus): HTMLElement {
-    const api = st.api;
-    const copy = (what: string, text: string) => void copyText(text).then(() => {
+  private readonly dayFmt = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit' });
+  private readonly clockFmt = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+  private copy(what: string, text: string): void {
+    void copyText(text).then(() => {
       this.copied = what;
       this.invalidate();
       setTimeout(() => {
@@ -215,55 +225,120 @@ export class AiPage {
         this.invalidate();
       }, 1500);
     });
-    const gen = () => this.act(() => this.post('/api/ai/api-token'));
-    const body: (HTMLElement | null)[] = [];
-    if (!api?.token) {
-      body.push(h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Gerar token'), on: { click: gen } }));
-    } else {
-      const url = location.origin;
-      const row = (label: string, value: string, shown: string, what: string) => h('div', { class: 'dash-ai-api__row' },
-        h('small', { class: 'dash-muted', text: label }),
-        h('code', { text: shown }),
-        h('button', { class: 'dash-btn', type: 'button', text: this.copied === what ? tr('Copiado') : tr('Copiar'), on: { click: () => copy(what, value) } }));
-      body.push(
-        row(tr('Endereço'), url, url, 'url'),
-        row(tr('Token'), api.token, this.showToken ? api.token : `••••••••${api.token.slice(-4)}`, 'token'),
-        h('div', { class: 'dash-ai-api__acts' },
-          h('button', { class: 'dash-link', type: 'button', text: this.showToken ? tr('Ocultar') : tr('Mostrar'), on: { click: () => { this.showToken = !this.showToken; this.invalidate(); } } }),
-          h('button', { class: 'dash-btn', type: 'button', text: tr('Gerar outro token'), on: { click: () => confirm(tr('Gerar outro token? O atual para de funcionar.')) && gen() } }),
-          h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Revogar'), on: { click: () => confirm(tr('Revogar o token? Os sistemas que o usam ficam sem IA.')) && this.act(() => this.post('/api/ai/api-token', undefined, 'DELETE')) } })),
-        h('p', { class: 'dash-muted', text: tr('No outro sistema, use este endereço e este token (cabeçalho Authorization: Bearer). Caminhos: /v1/models e /v1/chat/completions.') }),
-        this.usageBlock(api.usage),
-        api.fromEnv ? h('p', { class: 'dash-muted', text: tr('Este token vem da variável DEVLAND_AI_TOKEN do servidor; gerar outro aqui passa a valer no lugar dele.') }) : null);
-    }
-    return h('section', { class: 'dash-card dash-ai-api' },
-      h('div', { class: 'dash-card__head' }, h('h2', { text: tr('API para outros sistemas') })),
-      h('p', { class: 'dash-muted', text: tr('Deixa outros sistemas (como o Pergunte ao Orion) usarem a IA local deste servidor, com um token. É compatível com a API da OpenAI.') }),
-      ...body);
   }
 
-  /** Uso da API: hoje e no total, e os últimos pedidos (quem chamou, modelo, tokens, tempo). */
-  private usageBlock(u: NonNullable<AiStatus['api']>['usage']): HTMLElement {
-    const fmt = (t: ApiTotals) => tr('{0} pedidos · {1} tokens · {2} erros', [t.requests, (t.promptTokens + t.completionTokens).toLocaleString(), t.errors]);
-    const clock = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    return h('div', { class: 'dash-ai-api__use' },
-      h('h3', { text: tr('Uso da API') }),
-      h('p', {}, h('b', { text: tr('Hoje') }), ` ${fmt(u.today)}`),
-      h('p', {}, h('b', { text: tr('No total') }), ` ${fmt(u.total)}`),
-      u.last.length
-        ? h('ul', { class: 'dash-ai-api__calls' }, ...u.last.slice(0, 8).map((c) => h('li', { class: c.status >= 400 ? 'is-err' : '' },
-            h('span', { text: clock.format(c.at) }), h('span', { text: c.model || '—' }), h('span', { text: String(c.status) }),
-            h('span', { text: tr('{0} tokens · {1} s', [(c.promptTokens + c.completionTokens).toLocaleString(), (c.ms / 1000).toFixed(1)]) }), h('span', { text: c.ip }))))
-        : h('p', { class: 'dash-muted', text: tr('Nenhum pedido ainda. Quando algum sistema usar a API, ele aparece aqui.') }));
+  /** Gráfico de uso da IA local (últimos 14 dias, pela API para outros sistemas) e a engrenagem que abre os tokens. */
+  private usageCard(st: AiStatus): HTMLElement {
+    const api = st.api;
+    const u = api?.usage;
+    const gear = h('button', { class: 'dash-ai-gear', type: 'button', attrs: { 'aria-label': tr('API e tokens'), title: tr('API e tokens') }, on: { click: () => { this.apiOpen = true; this.invalidate(); } } });
+    gear.innerHTML = ICONS.settings;
+    gear.append(h('span', { text: tr('API e tokens') }));
+    const max = Math.max(1, ...(u?.days.map((d) => d.tokens) ?? [0]));
+    const empty = !u || u.total.requests === 0;
+    const bars = h('div', { class: 'dash-ai-chart', attrs: { role: 'img', 'aria-label': tr('Tokens por dia, últimos 14 dias') } },
+      ...(u?.days ?? []).map((d) => h('div', { class: 'dash-ai-chart__col', attrs: { title: tr('{0}: {1} pedidos · {2} tokens', [this.dayFmt.format(new Date(`${d.day}T12:00:00`)), d.requests, d.tokens.toLocaleString()]) } },
+        h('i', { class: d.errors ? 'has-err' : '', style: `height:${d.tokens ? Math.max(4, Math.round((d.tokens / max) * 100)) : 2}%` }))));
+    const fmt = (t: ApiTotals) => `${t.requests} · ${(t.promptTokens + t.completionTokens).toLocaleString()}`;
+    return h('section', { class: 'dash-card dash-ai-usage' },
+      h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Uso da IA local') }), h('small', { class: 'dash-muted', text: tr('Últimos 14 dias, pela API para outros sistemas') }), gear),
+      empty
+        ? h('p', { class: 'dash-muted', text: api?.tokens.length ? tr('Nenhum pedido ainda. Quando algum sistema usar a API, ele aparece aqui.') : tr('Para outros sistemas usarem a IA local deste servidor, crie um token na engrenagem ⚙.') })
+        : h('div', {}, bars,
+            h('div', { class: 'dash-ai-chart__axis' }, h('span', { text: this.dayFmt.format(new Date(`${u!.days[0]!.day}T12:00:00`)) }), h('span', { text: tr('tokens por dia') }), h('span', { text: tr('hoje') })),
+            h('div', { class: 'dash-ai-stats' },
+              h('div', {}, h('small', { text: tr('Hoje') }), h('b', { text: fmt(u!.today) })),
+              h('div', {}, h('small', { text: tr('No total') }), h('b', { text: fmt(u!.total) })),
+              h('div', {}, h('small', { text: tr('Erros') }), h('b', { text: String(u!.total.errors) })),
+              h('div', {}, h('small', { text: tr('Tokens ativos') }), h('b', { text: String(api?.tokens.length ?? 0) }))),
+            u!.models.length ? h('ul', { class: 'dash-ai-models' }, ...u!.models.slice(0, 4).map((m) => h('li', {}, h('span', { text: m.model }), h('i', { style: `width:${Math.max(3, Math.round((m.tokens / Math.max(1, u!.models[0]!.tokens)) * 100))}%` }), h('small', { text: tr('{0} pedidos · {1} tokens', [m.requests, m.tokens.toLocaleString()]) })))) : null),
+      h('small', { class: 'dash-muted', text: tr('pedidos · tokens (entrada + saída)') }));
+  }
+
+  /** Modal "API e tokens": endereço, tokens listados (modelos permitidos e uso de cada um) e os últimos pedidos. */
+  private apiModal(st: AiStatus): HTMLElement {
+    const api = st.api!;
+    const close = () => {
+      this.apiOpen = false;
+      this.apiForm = null;
+      this.invalidate();
+    };
+    const url = location.origin;
+    const installed = st.models.map((m) => m.name);
+    const form = this.apiForm;
+    const body: (HTMLElement | null)[] = [
+      h('div', { class: 'dash-ai-api__row' }, h('small', { class: 'dash-muted', text: tr('Endereço') }), h('code', { text: url }),
+        h('button', { class: 'dash-btn', type: 'button', text: this.copied === 'url' ? tr('Copiado') : tr('Copiar'), on: { click: () => this.copy('url', url) } })),
+      h('p', { class: 'dash-muted', text: tr('No outro sistema, use este endereço e um dos tokens abaixo (cabeçalho Authorization: Bearer). Caminhos: /v1/models e /v1/chat/completions.') }),
+    ];
+    if (form) {
+      const name = h('input', { class: 'dash-ai-api__name', type: 'text', attrs: { placeholder: tr('Nome do sistema (ex.: Orion)'), maxlength: 60, 'aria-label': tr('Nome') }, on: { input: (e) => { form.name = (e.target as HTMLInputElement).value; } } });
+      name.value = form.name;
+      const check = (on: boolean, change: (e: Event) => void) => {
+        const c = h('input', { type: 'checkbox', on: { change } });
+        c.checked = on;
+        return c;
+      };
+      const all = form.models.size === 0;
+      const list = [...new Set([...installed, ...form.models])];
+      body.push(h('section', { class: 'dash-ai-api__form' },
+        h('h3', { text: form.id ? tr('Editar token') : tr('Novo token') }),
+        name,
+        h('h4', { text: tr('Modelos permitidos') }),
+        h('label', { class: 'dash-ai-api__opt' }, check(all, () => { form.models.clear(); this.invalidate(); }), h('span', { text: tr('Todos os modelos') })),
+        ...list.map((m) => h('label', { class: 'dash-ai-api__opt' }, check(form.models.has(m), (e) => { (e.target as HTMLInputElement).checked ? form.models.add(m) : form.models.delete(m); this.invalidate(); }), h('span', { text: m }))),
+        h('p', { class: 'dash-muted', text: tr('Marque só os modelos que este token pode usar. Sem marcar nenhum, ele vale para todos.') }),
+        h('div', { class: 'dash-ai-api__acts' },
+          h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Salvar'), on: { click: () => {
+            const payload = { name: form.name.trim() || tr('Sem nome'), models: [...form.models] };
+            this.apiForm = null;
+            this.act(() => (form.id ? this.post(`/api/ai/api-tokens/${form.id}`, payload, 'PUT') : this.post('/api/ai/api-tokens', payload)));
+          } } }),
+          h('button', { class: 'dash-btn', type: 'button', text: tr('Cancelar'), on: { click: () => { this.apiForm = null; this.invalidate(); } } }))));
+    } else {
+      body.push(h('div', { class: 'dash-ai-api__acts' }, h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: `+ ${tr('Novo token')}`, on: { click: () => { this.apiForm = { name: '', models: new Set() }; this.invalidate(); } } })));
+    }
+    body.push(api.tokens.length
+      ? h('ul', { class: 'dash-ai-tokens' }, ...api.tokens.map((t) => {
+          const shown = this.shown.has(t.id);
+          const v = `${t.id}`;
+          return h('li', { class: 'dash-ai-token' },
+            h('div', { class: 'dash-ai-token__head' }, h('b', { text: t.name }), t.fromEnv ? h('small', { class: 'dash-muted', text: tr('variável DEVLAND_AI_TOKEN') }) : null),
+            h('div', { class: 'dash-ai-api__row' },
+              h('code', { text: shown ? t.token : `••••••••${t.token.slice(-4)}` }),
+              h('button', { class: 'dash-link', type: 'button', text: shown ? tr('Ocultar') : tr('Mostrar'), on: { click: () => { shown ? this.shown.delete(v) : this.shown.add(v); this.invalidate(); } } }),
+              h('button', { class: 'dash-btn', type: 'button', text: this.copied === `t${t.id}` ? tr('Copiado') : tr('Copiar'), on: { click: () => this.copy(`t${t.id}`, t.token) } })),
+            h('div', { class: 'dash-ai-token__chips' },
+              ...(t.models.length ? t.models.map((m) => h('span', { class: 'dash-ai-chip', text: m })) : [h('span', { class: 'dash-ai-chip dash-ai-chip--all', text: tr('Todos os modelos') })])),
+            h('small', { class: 'dash-muted', text: `${t.lastUsedAt ? tr('Último uso {0}', [this.clockFmt.format(t.lastUsedAt)]) : tr('Nunca usado')} · ${tr('{0} pedidos · {1} tokens', [t.requests, (t.promptTokens + t.completionTokens).toLocaleString()])}` }),
+            t.fromEnv ? null : h('div', { class: 'dash-ai-api__acts' },
+              h('button', { class: 'dash-btn', type: 'button', text: tr('Editar'), on: { click: () => { this.apiForm = { id: t.id, name: t.name, models: new Set(t.models) }; this.invalidate(); } } }),
+              h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Revogar'), on: { click: () => confirm(tr('Revogar o token {0}? Os sistemas que o usam ficam sem IA.', [t.name])) && this.act(() => this.post(`/api/ai/api-tokens/${t.id}`, undefined, 'DELETE')) } })));
+        }))
+      : h('p', { class: 'dash-muted', text: tr('Nenhum token ainda. Crie um para liberar a API para outro sistema.') }));
+    const last = api.usage.last;
+    if (last.length) {
+      body.push(h('div', { class: 'dash-ai-api__use' }, h('h3', { text: tr('Últimos pedidos') }),
+        h('ul', { class: 'dash-ai-api__calls' }, ...last.slice(0, 8).map((c) => h('li', { class: c.status >= 400 ? 'is-err' : '' },
+          h('span', { text: this.clockFmt.format(c.at) }), h('span', { text: c.token ?? '—' }), h('span', { text: c.model || '—' }), h('span', { text: String(c.status) }),
+          h('span', { text: tr('{0} tokens · {1} s', [(c.promptTokens + c.completionTokens).toLocaleString(), (c.ms / 1000).toFixed(1)]) }), h('span', { text: c.ip }))))));
+    }
+    return h('div', { class: 'dash-ai-modal', on: { click: (e) => e.target === e.currentTarget && close() } },
+      h('section', { class: 'dash-card dash-ai-apimodal', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': tr('API e tokens') } },
+        h('div', { class: 'dash-ai-chat__head' }, h('div', {}, h('b', { text: tr('API e tokens') }), h('small', { text: tr('Deixa outros sistemas usarem a IA local deste servidor. É compatível com a API da OpenAI.') })),
+          h('button', { class: 'dash-ai-x', type: 'button', text: '✕', attrs: { 'aria-label': tr('Fechar') }, on: { click: close } })),
+        h('div', { class: 'dash-ai-apimodal__body' }, ...body)));
   }
 
   /** Abre o Novo agente (definido pelo painel). */
   onNewAgent?: () => void;
   /** Mostra também os modelos grandes demais para este servidor. */
   private showAll = false;
-  /** Token da API para outros sistemas visível (por padrão fica oculto). */
-  private showToken = false;
+  /** Modal "API e tokens" (engrenagem): aberto?, tokens com o valor à mostra, e o formulário de novo token/edição. */
+  private apiOpen = false;
+  private shown = new Set<string>();
   private copied = '';
+  private apiForm: { id?: string; name: string; models: Set<string> } | null = null;
 
   page(): HTMLElement {
     const head = this.header(tr('IA local'), tr('Modelos de IA no seu próprio servidor: sem conta, sem custo por uso e sem enviar nada para fora.'));
@@ -372,6 +447,7 @@ export class AiPage {
     return h('div', { class: 'dash-page' }, head,
       this.err ? h('p', { class: 'dash-bad', text: this.err }) : null,
       meters,
+      st.api ? this.usageCard(st) : null,
       st.guard ? h('section', { class: 'dash-alert' }, h('b', { text: tr('Proteção de memória') }), h('span', { text: st.guard })) : null,
       agentCard,
       st.models.length ? h('section', { class: 'dash-card' }, h('div', { class: 'dash-card__head' }, h('h2', { text: tr('Seus modelos') }),
@@ -380,8 +456,8 @@ export class AiPage {
         h('small', { class: 'dash-muted', text: tr('Seu servidor: {0} de memória, {1} núcleos', [gb(s.ramTotal), s.cpus]) })),
         store,
         hidden ? h('button', { class: 'dash-link dash-ai-more', type: 'button', text: this.showAll ? tr('Mostrar só os que cabem neste servidor') : tr('Ver também os {0} modelos maiores (precisam de servidor com mais memória)', [hidden]), on: { click: () => { this.showAll = !this.showAll; this.invalidate(); } } }) : null),
-      this.apiCard(st),
       this.modal,
+      this.apiOpen && st.api ? this.apiModal(st) : null,
       st.ollama.own ? h('details', { class: 'dash-ai-adv' }, h('summary', { text: tr('Mais opções') }),
         h('p', { class: 'dash-muted', text: tr('Desativar apaga o motor e todos os modelos baixados, liberando o espaço no disco.') }),
         h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', attrs: { disabled: working }, text: tr('Desativar a IA local'), on: { click: () => confirm(tr('Desativar a IA local e apagar todos os modelos baixados?')) && this.act(() => this.post('/api/ai/uninstall')) } })) : null);

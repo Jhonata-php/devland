@@ -745,6 +745,8 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       const ai = deps.localAi;
       const admin = isRemote(req) ? !!deps.remote?.isAdmin?.(req) : isLoopbackHost(req.headers.host);
       const model = /^\/api\/ai\/models\/(.+)$/.exec(path);
+      const tokenId = /^\/api\/ai\/api-tokens\/([0-9a-f-]{36})$/.exec(path);
+      const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
       const answer = (p: Promise<unknown>) => p.then((r) => sendJson(res, 200, r ?? { ok: true }), (err: Error) => sendJson(res, 400, { error: err.message }));
       if (!ai) sendJson(res, 404, { error: tr('IA local indisponível') });
       else if (!admin) sendJson(res, 403, { error: tr('Só admin.') });
@@ -753,8 +755,9 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       else if (path === '/api/ai/pull' && method === 'POST') answer(readJson(req).then((b) => ai.pull(String((b as { model?: unknown }).model ?? ''))));
       else if (path === '/api/ai/chat' && method === 'POST') answer(readJson(req).then((b) => ai.chat(String((b as { model?: unknown }).model ?? ''), Array.isArray((b as { messages?: unknown }).messages) ? (b as { messages: { role: string; content: string }[] }).messages : [])));
       else if (path === '/api/ai/agent-model' && method === 'POST') answer(readJson(req).then((b) => ai.setAgentModel(String((b as { model?: unknown }).model ?? ''))));
-      else if (path === '/api/ai/api-token' && method === 'POST') answer(Promise.resolve().then(() => ai.newApiToken()));
-      else if (path === '/api/ai/api-token' && method === 'DELETE') answer(Promise.resolve().then(() => ai.revokeApiToken()));
+      else if (path === '/api/ai/api-tokens' && method === 'POST') answer(readJson(req).then((b) => ai.tokens.create(String((b as { name?: unknown }).name ?? ''), strings((b as { models?: unknown }).models)).id).then((id) => ({ id })));
+      else if (tokenId && method === 'PUT') answer(readJson(req).then((b) => ai.tokens.update(tokenId[1]!, { name: (b as { name?: string }).name, models: strings((b as { models?: unknown }).models) })));
+      else if (tokenId && method === 'DELETE') answer(Promise.resolve().then(() => ai.tokens.remove(tokenId[1]!)));
       else if (path === '/api/ai/cancel' && method === 'POST') answer(Promise.resolve().then(() => ai.cancel()));
       else if (path === '/api/ai/uninstall' && method === 'POST') answer(ai.uninstall());
       else if (model && method === 'DELETE') answer(ai.remove(decodeURIComponent(model[1]!)));

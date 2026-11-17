@@ -1225,14 +1225,44 @@ html.theme-light .ui-chats__file { border-color: rgba(0, 0, 0, 0.14); background
 html.is-panel .ui-root .ui-toasts { left: auto !important; right: 12px !important; bottom: calc(12px + env(safe-area-inset-bottom)) !important; width: min(344px, calc(100vw - 24px)) !important; max-width: calc(100vw - 24px); box-sizing: border-box; }
 html.is-panel .ui-root .ui-toast { max-width: 100%; box-sizing: border-box; }
 
-/* IA local: API para outros sistemas (endereço, token e uso) */
+/* IA local: gráfico de uso, engrenagem e modal "API e tokens" */
+.dash-ai-gear { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(127, 127, 127, 0.3); background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.dash-ai-gear svg { width: 18px; height: 18px; }
+.dash-ai-gear:hover { background: rgba(127, 127, 127, 0.14); }
+.dash-ai-usage .dash-card__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dash-ai-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin-top: 10px; }
+.dash-ai-chart__col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
+.dash-ai-chart__col i { display: block; width: 100%; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, #7c6cff, #5b8cff); }
+.dash-ai-chart__col i.has-err { background: linear-gradient(180deg, #ff8a5c, #ff5a50); }
+.dash-ai-chart__axis { display: flex; justify-content: space-between; font-size: 11px; opacity: 0.6; margin-top: 4px; }
+.dash-ai-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 12px; }
+.dash-ai-stats div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: rgba(127, 127, 127, 0.1); min-width: 0; }
+.dash-ai-stats small { opacity: 0.65; font-size: 11px; }
+.dash-ai-stats b { font-size: 14px; overflow-wrap: anywhere; }
+.dash-ai-models { list-style: none; margin: 12px 0 4px; padding: 0; display: grid; gap: 6px; }
+.dash-ai-models li { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr; gap: 4px 10px; align-items: center; font-size: 12px; }
+.dash-ai-models li span { overflow-wrap: anywhere; }
+.dash-ai-models li i { display: block; height: 8px; border-radius: 4px; background: #7c6cff; }
+.dash-ai-models li small { grid-column: 1 / -1; opacity: 0.6; }
+.dash-ai-apimodal { width: min(680px, 100%); max-height: min(88dvh, 860px); display: flex; flex-direction: column; overflow: hidden; }
+.dash-ai-apimodal__body { overflow-y: auto; overflow-x: hidden; padding: 4px 2px 8px; min-width: 0; }
 .dash-ai-api__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; min-width: 0; }
 .dash-ai-api__row small { flex: 0 0 64px; }
 .dash-ai-api__row code { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; padding: 6px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); font-size: 12px; }
 .dash-ai-api__acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.dash-ai-api__form { margin: 12px 0; padding: 12px; border-radius: 12px; border: 1px solid rgba(124, 108, 255, 0.4); background: rgba(124, 108, 255, 0.06); }
+.dash-ai-api__form h3, .dash-ai-api__form h4 { margin: 0 0 6px; font-size: 13px; }
+.dash-ai-api__form h4 { margin-top: 12px; }
+.dash-ai-api__name { width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(127, 127, 127, 0.35); background: transparent; color: inherit; font: inherit; }
+.dash-ai-api__opt { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; overflow-wrap: anywhere; }
+.dash-ai-tokens { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 10px; }
+.dash-ai-token { padding: 12px; border-radius: 12px; border: 1px solid rgba(127, 127, 127, 0.25); background: rgba(127, 127, 127, 0.06); min-width: 0; }
+.dash-ai-token__head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dash-ai-token__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.dash-ai-chip { padding: 3px 9px; border-radius: 999px; font-size: 11px; background: rgba(127, 127, 127, 0.16); overflow-wrap: anywhere; }
+.dash-ai-chip--all { background: rgba(60, 190, 120, 0.2); }
 .dash-ai-api__use { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(127, 127, 127, 0.2); }
 .dash-ai-api__use h3 { margin: 0 0 6px; font-size: 13px; }
-.dash-ai-api__use p { margin: 4px 0; font-size: 13px; overflow-wrap: anywhere; }
 .dash-ai-api__calls { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .dash-ai-api__calls li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.08); overflow-wrap: anywhere; }
 .dash-ai-api__calls li.is-err { background: rgba(255, 90, 80, 0.14); }

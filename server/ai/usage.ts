@@ -6,6 +6,8 @@ import { dirname } from 'node:path';
 export interface ApiCall {
   at: number;
   model: string;
+  /** Nome do token que fez o pedido. */
+  token?: string;
   status: number;
   ms: number;
   promptTokens: number;
@@ -27,14 +29,16 @@ const dayOf = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZon
 export class ApiUsage {
   private total = empty();
   private days = new Map<string, Totals>();
+  private models = new Map<string, Totals>();
   private last: ApiCall[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly file: string) {
     try {
-      const j = JSON.parse(readFileSync(file, 'utf8')) as { total?: Totals; days?: Record<string, Totals>; last?: ApiCall[] };
+      const j = JSON.parse(readFileSync(file, 'utf8')) as { total?: Totals; days?: Record<string, Totals>; models?: Record<string, Totals>; last?: ApiCall[] };
       this.total = { ...empty(), ...j.total };
       this.days = new Map(Object.entries(j.days ?? {}));
+      this.models = new Map(Object.entries(j.models ?? {}));
       this.last = (j.last ?? []).slice(0, KEEP);
     } catch { /* primeira vez */ }
   }
@@ -51,25 +55,38 @@ export class ApiUsage {
     const day = this.days.get(d) ?? empty();
     add(day);
     this.days.set(d, day);
+    if (c.model) {
+      const m = this.models.get(c.model) ?? empty();
+      add(m);
+      this.models.set(c.model, m);
+    }
     for (const k of [...this.days.keys()].sort().slice(0, -45)) this.days.delete(k); // só os últimos 45 dias
     this.last = [c, ...this.last].slice(0, KEEP);
     this.timer ??= setTimeout(() => {
       this.timer = null;
       try {
         mkdirSync(dirname(this.file), { recursive: true });
-        writeFileSync(this.file, JSON.stringify({ total: this.total, days: Object.fromEntries(this.days), last: this.last }));
+        writeFileSync(this.file, JSON.stringify({ total: this.total, days: Object.fromEntries(this.days), models: Object.fromEntries(this.models), last: this.last }));
       } catch { /* sem disco: segue só em memória */ }
     }, 2000);
     this.timer.unref?.();
   }
 
+  /** Totais, os últimos 14 dias (para o gráfico; dias sem uso valem zero), o uso por modelo e os últimos pedidos. */
   summary(now = Date.now()) {
-    return { total: this.total, today: this.days.get(dayOf(now)) ?? empty(), last: this.last };
+    const days = Array.from({ length: 14 }, (_, i) => {
+      const day = dayOf(now - (13 - i) * 86_400_000);
+      const t = this.days.get(day) ?? empty();
+      return { day, requests: t.requests, errors: t.errors, tokens: t.promptTokens + t.completionTokens };
+    });
+    const models = [...this.models].map(([model, t]) => ({ model, requests: t.requests, tokens: t.promptTokens + t.completionTokens })).sort((a, b) => b.tokens - a.tokens || b.requests - a.requests).slice(0, 8);
+    return { total: this.total, today: this.days.get(dayOf(now)) ?? empty(), days, models, last: this.last };
   }
 
   reset(): void {
     this.total = empty();
     this.days.clear();
+    this.models.clear();
     this.last = [];
   }
 }
