@@ -67,6 +67,31 @@ describe('API de IA compatível com OpenAI', () => {
   });
 });
 
+describe('cliente que desiste', () => {
+  it('cancela o pedido ao Ollama quando a conexão cai antes da resposta', async () => {
+    const d = dir();
+    const tokens = new ApiTokens(join(d, 't.json'), undefined, () => undefined);
+    const tok = tokens.create('Orion', []);
+    setAiAuth((b) => tokens.find(b));
+    let sinal: AbortSignal | undefined;
+    const ai = {
+      tokens,
+      usage: new ApiUsage(join(d, 'u.json')),
+      // o "Ollama" nunca responde: só termina se for cancelado
+      forward: (_p: string, _b: unknown, signal?: AbortSignal) => ((sinal = signal), new Promise<Response>((_ok, fail) => signal?.addEventListener('abort', () => fail(new Error('abortado'))))),
+    } as unknown as LocalAi;
+    const base = await listen((req, res) => void (handleOpenAi(req, res, req.url!, ai) || res.writeHead(404).end()));
+    const ctl = new AbortController();
+    const p = fetch(`${base}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok.token}` }, body: JSON.stringify({ model: 'm', messages: [] }), signal: ctl.signal }).catch(() => 'caiu');
+    await new Promise((r) => setTimeout(r, 150));
+    expect(sinal?.aborted).toBe(false);
+    ctl.abort();
+    await p;
+    await new Promise((r) => setTimeout(r, 150));
+    expect(sinal?.aborted).toBe(true);
+  });
+});
+
 describe('tokens', () => {
   it('cria, edita, revoga e migra o token antigo único para "Principal"', () => {
     const d = dir();

@@ -51,12 +51,15 @@ function readBody(req: IncomingMessage, max = MAX_BODY): Promise<unknown> {
 /** Atende /v1/*; devolve true quando a rota era dele. */
 export function handleOpenAi(req: IncomingMessage, res: ServerResponse, path: string, ai: LocalAi | undefined, dictation?: DictationService): boolean {
   if (!path.startsWith('/v1/')) return false;
+  // o cliente fechou a conexão antes do fim: cancela o que está rodando no Ollama
+  const abort = new AbortController();
+  res.on('close', () => !res.writableEnded && abort.abort());
   const tok = aiAuth(req);
   if (!ai || !ai.tokens.any()) json(res, 404, { error: { message: tr('API de IA desligada: gere o token em IA local') } });
   else if (!tok) json(res, 401, { error: { message: tr('token inválido') } });
   else if (path === '/v1/models' && req.method === 'GET') {
     // só os modelos que o token pode usar
-    void relay(res, ai.forward('/v1/models'), undefined, (txt) => {
+    void relay(res, ai.forward('/v1/models', undefined, abort.signal), undefined, (txt) => {
       try {
         const j = JSON.parse(txt) as { data?: { id: string }[] };
         return JSON.stringify({ ...j, data: (j.data ?? []).filter((m) => ai.tokens.allows(tok, m.id)) });
@@ -75,7 +78,7 @@ export function handleOpenAi(req: IncomingMessage, res: ServerResponse, path: st
         if (!ai.tokens.allows(tok, model)) return json(res, 403, { error: { message: tr('Este token não tem permissão para o modelo {0}', [model]) } });
         // stream: o Ollama só manda o consumo de tokens no fim se pedirmos
         if (body.stream === true) body.stream_options = { ...body.stream_options, include_usage: true };
-        return relay(res, ai.forward('/v1/chat/completions', body), (tail) => {
+        return relay(res, ai.forward('/v1/chat/completions', body, abort.signal), (tail) => {
           const tk = tokensFrom(tail);
           ai.usage.record({ at: t0, model, token: tok.name, status: res.statusCode, ms: Date.now() - t0, promptTokens: tk.prompt, completionTokens: tk.completion, ip });
           ai.tokens.touch(tok.id, tk.prompt, tk.completion);

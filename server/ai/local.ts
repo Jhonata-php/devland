@@ -193,10 +193,12 @@ export class LocalAi {
   }
 
   /** Repasta uma chamada à API compatível com a da OpenAI do Ollama (/v1/...), já com o Ollama no ar e o modelo cabendo. */
-  async forward(path: string, body?: { model?: unknown }): Promise<Response> {
+  async forward(path: string, body?: { model?: unknown }, signal?: AbortSignal): Promise<Response> {
     await this.start();
     if (typeof body?.model === 'string') await this.ensureFits(body.model);
-    return fetch(`http://${this.host}${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+    // signal: quem chamou desistiu → o pedido ao Ollama é cancelado (ele atende um por vez; sem isso, o que foi abandonado
+    // continua gerando e trava a fila de quem vem depois)
+    return fetch(`http://${this.host}${path}`, { signal, ...(body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   }
 
   stop(): void {
