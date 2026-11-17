@@ -92,6 +92,39 @@ describe('cliente que desiste', () => {
   });
 });
 
+describe('cliente que desiste com a resposta já fluindo', () => {
+  it('não derruba o processo (AbortError no stream) e cancela o pedido ao Ollama', async () => {
+    const d = dir();
+    const tokens = new ApiTokens(join(d, 't.json'), undefined, () => undefined);
+    const tok = tokens.create('Orion', []);
+    setAiAuth((b) => tokens.find(b));
+    // um "Ollama" de verdade: manda um pedaço e fica gerando (a conexão só termina se for cancelada)
+    let ollamaFechou = false;
+    const ollama = await listen((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.write('data: {"choices":[{"delta":{"content":"o"}}]}\n\n');
+      res.on('close', () => (ollamaFechou = true));
+    });
+    // o encaminhamento é o mesmo fetch com signal que o LocalAi.forward usa
+    const ai = { tokens, usage: new ApiUsage(join(d, 'u.json')), forward: (_p: string, _b: unknown, signal?: AbortSignal) => fetch(`${ollama}/v1/chat/completions`, { signal }) } as unknown as LocalAi;
+    const erros: unknown[] = [];
+    const guarda = (e: unknown) => erros.push(e);
+    process.on('uncaughtException', guarda);
+    try {
+      const base = await listen((req, res) => void (handleOpenAi(req, res, req.url!, ai) || res.writeHead(404).end()));
+      const ctl = new AbortController();
+      const r = await fetch(`${base}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok.token}` }, body: JSON.stringify({ model: 'm', stream: true, messages: [] }), signal: ctl.signal });
+      await r.body!.getReader().read(); // o primeiro pedaço chegou: a resposta está fluindo
+      ctl.abort();
+      await new Promise((ok) => setTimeout(ok, 400));
+      expect(ollamaFechou).toBe(true); // o pedido ao Ollama foi cancelado
+      expect(erros).toEqual([]); // e nada ficou sem tratamento
+    } finally {
+      process.off('uncaughtException', guarda);
+    }
+  });
+});
+
 describe('erros do Ollama', () => {
   it('falha ao falar com o Ollama volta como 424 com o motivo (o proxy do Velix esconde 502)', async () => {
     const d = dir();

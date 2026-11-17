@@ -2,7 +2,7 @@
 // ferramentas), repassada ao Ollama do próprio DevLand. Serve outros sistemas (ex.: o "Pergunte ao Orion"). Só liga com um
 // token (gerado na tela "IA local" ou DEVLAND_AI_TOKEN); quem chama manda `Authorization: Bearer <token>`.
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { Readable } from 'node:stream';
+import { pipeline, Readable } from 'node:stream';
 import { tr } from '../../shared/i18n';
 import type { LocalAi } from './local';
 import { ApiTokens, type ApiToken } from './tokens';
@@ -115,12 +115,17 @@ async function relay(res: ServerResponse, call: Promise<Response>, done?: (tail:
       return fim();
     }
     const src = Readable.fromWeb(r.body as never);
+    // o cliente desistiu (abort) ou o Ollama caiu no meio: o stream emite 'error'. Sem este ouvinte o Node trata como erro
+    // não capturado e derruba o DevLand inteiro (e os agentes junto)
+    src.on('error', () => res.destroy());
+    res.on('error', () => undefined);
     src.on('data', (c: Buffer) => {
       tail = (tail + c.toString('utf8')).slice(-4096);
     });
     src.on('end', fim);
     res.on('close', () => src.destroy());
-    src.pipe(res);
+    // pipeline (e não pipe): ele também escuta o 'error' dos dois lados e fecha tudo direito
+    pipeline(src, res, () => undefined);
   } catch (err) {
     // 424 (não 502): o proxy do Velix troca o corpo de 502/503/504 por uma página dele e o motivo (ex.: memória insuficiente,
     // Ollama parado) nunca chegaria a quem chamou
