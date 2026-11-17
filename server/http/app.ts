@@ -377,7 +377,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
 
   return (req, res, url) => {
     const path = url.pathname;
-    if (handleOpenAi(req, res, path, deps.localAi)) return true;
+    if (handleOpenAi(req, res, path, deps.localAi, deps.dictation)) return true;
     if (path !== '/api' && !path.startsWith('/api/')) return false;
     const method = req.method ?? 'GET';
     const isRead = method === 'GET' || method === 'HEAD';

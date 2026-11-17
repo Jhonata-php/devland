@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import { tr } from '../../shared/i18n';
 import type { LocalAi } from './local';
 import { ApiTokens, type ApiToken } from './tokens';
+import { AUDIO_BODY_MAX, type DictationService } from '../dictation/dictation';
 import { tokensFrom } from './usage';
 
 const MAX_BODY = 4 * 1024 * 1024;
@@ -27,13 +28,13 @@ function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }).end(JSON.stringify(body));
 }
 
-function readBody(req: IncomingMessage): Promise<unknown> {
+function readBody(req: IncomingMessage, max = MAX_BODY): Promise<unknown> {
   return new Promise((ok, fail) => {
     const chunks: Buffer[] = [];
     let size = 0;
     req.on('data', (c: Buffer) => {
       size += c.length;
-      if (size > MAX_BODY) return fail(new Error(tr('corpo grande demais')));
+      if (size > max) return fail(new Error(tr('corpo grande demais')));
       chunks.push(c);
     });
     req.on('end', () => {
@@ -48,7 +49,7 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /** Atende /v1/*; devolve true quando a rota era dele. */
-export function handleOpenAi(req: IncomingMessage, res: ServerResponse, path: string, ai: LocalAi | undefined): boolean {
+export function handleOpenAi(req: IncomingMessage, res: ServerResponse, path: string, ai: LocalAi | undefined, dictation?: DictationService): boolean {
   if (!path.startsWith('/v1/')) return false;
   const tok = aiAuth(req);
   if (!ai || !ai.tokens.any()) json(res, 404, { error: { message: tr('API de IA desligada: gere o token em IA local') } });
@@ -82,6 +83,14 @@ export function handleOpenAi(req: IncomingMessage, res: ServerResponse, path: st
       },
       (err: Error) => json(res, 400, { error: { message: err.message } }),
     );
+  } else if (path === '/v1/audio/transcriptions' && req.method === 'POST') {
+    // Voz para texto pelo Whisper do ditado do DevLand: corpo JSON {type: 'audio/webm', data: <base64>} → {text}
+    if (!dictation?.available()) json(res, 503, { error: { message: tr('transcrição indisponível: o Whisper não está instalado neste DevLand') } });
+    else
+      readBody(req, AUDIO_BODY_MAX).then(
+        (body) => transcrever(res, dictation, body),
+        (err: Error) => json(res, 400, { error: { message: err.message } }),
+      );
   } else json(res, 404, { error: { message: tr('rota desconhecida') } });
   return true;
 }
@@ -114,4 +123,18 @@ async function relay(res: ServerResponse, call: Promise<Response>, done?: (tail:
     else res.end();
     fim();
   }
+}
+
+/** Entrega o áudio ao ditado e espera o texto (até 90 s: o Whisper local em CPU não é instantâneo). */
+async function transcrever(res: ServerResponse, dictation: DictationService, body: unknown): Promise<void> {
+  const r = dictation.submit(body);
+  if ('error' in r) return json(res, r.error === 'invalid' ? 400 : r.error === 'too-many' ? 429 : 503, { error: { message: r.reason } });
+  const fim = Date.now() + 90_000;
+  while (Date.now() < fim) {
+    const info = dictation.get(r.dictation.id);
+    if (info?.status === 'done') return json(res, 200, { text: info.text ?? '', language: info.lang ?? '' });
+    if (info?.status === 'failed') return json(res, 502, { error: { message: info.error ?? tr('não deu para transcrever') } });
+    await new Promise((ok) => setTimeout(ok, 400));
+  }
+  json(res, 504, { error: { message: tr('a transcrição demorou demais') } });
 }

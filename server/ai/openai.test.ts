@@ -8,6 +8,7 @@ import { handleOpenAi, setAiAuth } from './openai';
 import type { LocalAi } from './local';
 import { ApiTokens } from './tokens';
 import { ApiUsage, tokensFrom } from './usage';
+import { DictationService } from '../dictation/dictation';
 
 const servers: http.Server[] = [];
 afterEach(() => {
@@ -100,5 +101,25 @@ describe('uso da API', () => {
     expect(s.days).toHaveLength(14);
     expect(s.days.at(-1)).toMatchObject({ requests: 35, tokens: 105 });
     expect(s.days[0]).toMatchObject({ requests: 0, tokens: 0 });
+  });
+});
+
+describe('transcrição de áudio (/v1/audio/transcriptions)', () => {
+  it('manda o áudio ao Whisper do ditado e devolve o texto; sem Whisper, 503; sem token, 401', async () => {
+    const tokens = new ApiTokens(join(dir(), 't.json'), undefined, () => undefined);
+    const tok = tokens.create('Orion', []);
+    setAiAuth((b) => tokens.find(b));
+    const ai = { tokens, usage: new ApiUsage(join(dir(), 'u.json')) } as unknown as LocalAi;
+    const com = new DictationService({ transcriber: async () => ({ text: 'quantos MB deu o AP 02', lang: 'pt' }) });
+    const sem = new DictationService();
+    const mk = (d: DictationService) => listen((req, res) => void (handleOpenAi(req, res, req.url!, ai, d) || res.writeHead(404).end()));
+    const audio = { type: 'audio/webm', data: Buffer.alloc(200, 1).toString('base64') };
+    const call = (base: string, auth?: string) => fetch(`${base}/v1/audio/transcriptions`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: auth } : {}) }, body: JSON.stringify(audio) });
+    const ok = await mk(com);
+    expect((await call(ok)).status).toBe(401);
+    const r = await call(ok, `Bearer ${tok.token}`);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ text: 'quantos MB deu o AP 02', language: 'pt' });
+    expect((await call(await mk(sem), `Bearer ${tok.token}`)).status).toBe(503);
   });
 });
