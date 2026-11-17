@@ -2,9 +2,10 @@
 // consumo e testar uma pergunta. Conversa com /api/ai (server/ai/local.ts); só admin ou o próprio computador.
 import { access } from '../net/access';
 import { tr } from '../../../shared/i18n';
-import { h } from './dom';
+import { copyText, h } from './dom';
 
 interface CatalogModel { id: string; name: string; use: string; sizeGb: number; ramGb: number; code?: boolean; agent?: boolean }
+interface ApiTotals { requests: number; errors: number; promptTokens: number; completionTokens: number }
 interface AiStatus {
   system: { platform: string; arch: string; cpus: number; cpuModel: string; load: number; ramTotal: number; ramFree: number; disk: { free: number; total: number } | null };
   ollama: { installed: boolean; own: boolean; running: boolean; version: string | null; package: string | null };
@@ -13,6 +14,7 @@ interface AiStatus {
   catalog: CatalogModel[];
   agentModel: string | null;
   guard?: string;
+  api?: { token: string | null; fromEnv: boolean; usage: { total: ApiTotals; today: ApiTotals; last: { at: number; model: string; status: number; ms: number; promptTokens: number; completionTokens: number; ip: string }[] } };
   recommended: string;
   job: { kind: 'install' | 'pull'; model?: string; status: string; percent?: number; error?: string; done: boolean } | null;
 }
@@ -160,7 +162,7 @@ export class AiPage {
   /** Muda quando a página precisa redesenhar. */
   key(): string {
     const j = this.st?.job;
-    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}|${[...this.speed].join(',')}`;
+    return `${this.err}|${this.st ? `${this.st.ollama.running}|${this.st.models.length}|${this.st.loaded.length}|${Math.round(this.st.system.ramFree / 1e9)}|${j?.status}|${j?.percent}|${j?.done}` : '-'}|${[...this.speed].join(',')}|${this.st?.api?.token ? 1 : 0}|${this.st?.api?.usage.total.requests ?? 0}|${this.showToken}|${this.copied}`;
   }
 
   /** Liga a atualização (a cada 3 s, mais rápido com download em andamento) enquanto a página está aberta. */
@@ -202,10 +204,66 @@ export class AiPage {
     });
   }
 
+  /** "API para outros sistemas": gera/mostra/revoga o token do /v1 (compatível com a API da OpenAI, ai/openai.ts). */
+  private apiCard(st: AiStatus): HTMLElement {
+    const api = st.api;
+    const copy = (what: string, text: string) => void copyText(text).then(() => {
+      this.copied = what;
+      this.invalidate();
+      setTimeout(() => {
+        this.copied = '';
+        this.invalidate();
+      }, 1500);
+    });
+    const gen = () => this.act(() => this.post('/api/ai/api-token'));
+    const body: (HTMLElement | null)[] = [];
+    if (!api?.token) {
+      body.push(h('button', { class: 'dash-btn dash-btn--primary', type: 'button', text: tr('Gerar token'), on: { click: gen } }));
+    } else {
+      const url = location.origin;
+      const row = (label: string, value: string, shown: string, what: string) => h('div', { class: 'dash-ai-api__row' },
+        h('small', { class: 'dash-muted', text: label }),
+        h('code', { text: shown }),
+        h('button', { class: 'dash-btn', type: 'button', text: this.copied === what ? tr('Copiado') : tr('Copiar'), on: { click: () => copy(what, value) } }));
+      body.push(
+        row(tr('Endereço'), url, url, 'url'),
+        row(tr('Token'), api.token, this.showToken ? api.token : `••••••••${api.token.slice(-4)}`, 'token'),
+        h('div', { class: 'dash-ai-api__acts' },
+          h('button', { class: 'dash-link', type: 'button', text: this.showToken ? tr('Ocultar') : tr('Mostrar'), on: { click: () => { this.showToken = !this.showToken; this.invalidate(); } } }),
+          h('button', { class: 'dash-btn', type: 'button', text: tr('Gerar outro token'), on: { click: () => confirm(tr('Gerar outro token? O atual para de funcionar.')) && gen() } }),
+          h('button', { class: 'dash-btn dash-btn--ghost-bad', type: 'button', text: tr('Revogar'), on: { click: () => confirm(tr('Revogar o token? Os sistemas que o usam ficam sem IA.')) && this.act(() => this.post('/api/ai/api-token', undefined, 'DELETE')) } })),
+        h('p', { class: 'dash-muted', text: tr('No outro sistema, use este endereço e este token (cabeçalho Authorization: Bearer). Caminhos: /v1/models e /v1/chat/completions.') }),
+        this.usageBlock(api.usage),
+        api.fromEnv ? h('p', { class: 'dash-muted', text: tr('Este token vem da variável DEVLAND_AI_TOKEN do servidor; gerar outro aqui passa a valer no lugar dele.') }) : null);
+    }
+    return h('section', { class: 'dash-card dash-ai-api' },
+      h('div', { class: 'dash-card__head' }, h('h2', { text: tr('API para outros sistemas') })),
+      h('p', { class: 'dash-muted', text: tr('Deixa outros sistemas (como o Pergunte ao Orion) usarem a IA local deste servidor, com um token. É compatível com a API da OpenAI.') }),
+      ...body);
+  }
+
+  /** Uso da API: hoje e no total, e os últimos pedidos (quem chamou, modelo, tokens, tempo). */
+  private usageBlock(u: NonNullable<AiStatus['api']>['usage']): HTMLElement {
+    const fmt = (t: ApiTotals) => tr('{0} pedidos · {1} tokens · {2} erros', [t.requests, (t.promptTokens + t.completionTokens).toLocaleString(), t.errors]);
+    const clock = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return h('div', { class: 'dash-ai-api__use' },
+      h('h3', { text: tr('Uso da API') }),
+      h('p', {}, h('b', { text: tr('Hoje') }), ` ${fmt(u.today)}`),
+      h('p', {}, h('b', { text: tr('No total') }), ` ${fmt(u.total)}`),
+      u.last.length
+        ? h('ul', { class: 'dash-ai-api__calls' }, ...u.last.slice(0, 8).map((c) => h('li', { class: c.status >= 400 ? 'is-err' : '' },
+            h('span', { text: clock.format(c.at) }), h('span', { text: c.model || '—' }), h('span', { text: String(c.status) }),
+            h('span', { text: tr('{0} tokens · {1} s', [(c.promptTokens + c.completionTokens).toLocaleString(), (c.ms / 1000).toFixed(1)]) }), h('span', { text: c.ip }))))
+        : h('p', { class: 'dash-muted', text: tr('Nenhum pedido ainda. Quando algum sistema usar a API, ele aparece aqui.') }));
+  }
+
   /** Abre o Novo agente (definido pelo painel). */
   onNewAgent?: () => void;
   /** Mostra também os modelos grandes demais para este servidor. */
   private showAll = false;
+  /** Token da API para outros sistemas visível (por padrão fica oculto). */
+  private showToken = false;
+  private copied = '';
 
   page(): HTMLElement {
     const head = this.header(tr('IA local'), tr('Modelos de IA no seu próprio servidor: sem conta, sem custo por uso e sem enviar nada para fora.'));
@@ -322,6 +380,7 @@ export class AiPage {
         h('small', { class: 'dash-muted', text: tr('Seu servidor: {0} de memória, {1} núcleos', [gb(s.ramTotal), s.cpus]) })),
         store,
         hidden ? h('button', { class: 'dash-link dash-ai-more', type: 'button', text: this.showAll ? tr('Mostrar só os que cabem neste servidor') : tr('Ver também os {0} modelos maiores (precisam de servidor com mais memória)', [hidden]), on: { click: () => { this.showAll = !this.showAll; this.invalidate(); } } }) : null),
+      this.apiCard(st),
       this.modal,
       st.ollama.own ? h('details', { class: 'dash-ai-adv' }, h('summary', { text: tr('Mais opções') }),
         h('p', { class: 'dash-muted', text: tr('Desativar apaga o motor e todos os modelos baixados, liberando o espaço no disco.') }),

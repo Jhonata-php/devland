@@ -1224,3 +1224,15 @@ html.theme-light .ui-chats__file { border-color: rgba(0, 0, 0, 0.14); background
 /* Painel (qualquer largura): avisos e pedidos de permissão sempre inteiros no canto inferior direito; a área livre do mapa não vale aqui e os empurrava para fora. */
 html.is-panel .ui-root .ui-toasts { left: auto !important; right: 12px !important; bottom: calc(12px + env(safe-area-inset-bottom)) !important; width: min(344px, calc(100vw - 24px)) !important; max-width: calc(100vw - 24px); box-sizing: border-box; }
 html.is-panel .ui-root .ui-toast { max-width: 100%; box-sizing: border-box; }
+
+/* IA local: API para outros sistemas (endereço, token e uso) */
+.dash-ai-api__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; min-width: 0; }
+.dash-ai-api__row small { flex: 0 0 64px; }
+.dash-ai-api__row code { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; padding: 6px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); font-size: 12px; }
+.dash-ai-api__acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.dash-ai-api__use { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(127, 127, 127, 0.2); }
+.dash-ai-api__use h3 { margin: 0 0 6px; font-size: 13px; }
+.dash-ai-api__use p { margin: 4px 0; font-size: 13px; overflow-wrap: anywhere; }
+.dash-ai-api__calls { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.dash-ai-api__calls li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.08); overflow-wrap: anywhere; }
+.dash-ai-api__calls li.is-err { background: rgba(255, 90, 80, 0.14); }

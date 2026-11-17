@@ -6,6 +6,7 @@ import { startPreviewHost } from './http/preview-host';
 import './env-compat';
 import { McpStore } from './accounts/mcp';
 import { LocalAi, LOCAL_ACCOUNT_DIR } from './ai/local';
+import { setAiTokenSource } from './ai/openai';
 import { chownSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
 import http from 'node:http';
 import { dirname, join } from 'node:path';
@@ -487,6 +488,7 @@ const pluginStore = claudeBin ? new PluginStore(claudeBin, () => accounts.entrie
 // IA local (Ollama na pasta de dados): sobe sozinho se já estiver instalado; rotas só para admin ou o próprio computador.
 const localAi = new LocalAi(config.dataDir);
 void localAi.start();
+setAiTokenSource(() => localAi.apiToken());
 // Conta "IA local" já usada antes: as sessões dela aparecem no escritório desde a subida.
 {
   const localDir = join(agentRunAs()?.home ?? config.home, LOCAL_ACCOUNT_DIR);

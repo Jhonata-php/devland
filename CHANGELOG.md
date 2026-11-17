@@ -12,7 +12,7 @@ do meio (0.**3**.0).
 
 ### Corrigido
 
-- **IA local como API (compatível com a da OpenAI).** Com `DEVLAND_AI_TOKEN` definido, o DevLand responde em `/v1/models` e `/v1/chat/completions` (streaming e ferramentas) com `Authorization: Bearer <token>`, repassando ao Ollama dele. Serve outros sistemas, sem chave de nuvem.
+- **IA local como API (compatível com a da OpenAI), configurada pela tela.** Em **IA local → API para outros sistemas** você gera o token e copia o endereço; outros sistemas (ex.: o Pergunte ao Orion) chamam `/v1/models` e `/v1/chat/completions` (streaming e ferramentas) com `Authorization: Bearer <token>`, e o DevLand repassa ao Ollama dele. A tela mostra o uso (pedidos, tokens, erros, últimos pedidos). `DEVLAND_AI_TOKEN` continua valendo como alternativa.
 - **Login de MCP no Cloud.** O link `http://localhost:PORTA/callback?...` que a página de login do MCP devolve (e que o navegador não abre, porque o endereço é do container) agora pode ser colado na caixa de mensagem: o DevLand o entrega ao Claude Code por dentro do container, em vez de mandá-lo como prompt.
 - **Limite de uso lido da própria conversa.** Quando a conversa termina em "You've hit your … limit · resets 3:10pm (…)", a caixa de mensagem fecha e o botão "Continuar na <conta>" aparece mesmo que o uso mostrado na barra esteja desatualizado; a caixa volta sozinha na hora indicada.
 - **Limite de uso: "Continuar na Conta B".** Com a caixa fechada pelo limite, se houver outra conta do Claude com limite livre aparece o botão **Continuar na <conta>**: o histórico da conversa é copiado para a outra conta e a mesma sessão é retomada lá (`claude --resume`), com o contexto intacto. O agente antigo é encerrado.

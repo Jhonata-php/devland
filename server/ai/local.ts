@@ -4,8 +4,10 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { chownSync, existsSync, mkdirSync, readFileSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
 import { cpus, freemem, loadavg, setPriority, totalmem } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { Readable } from 'node:stream';
+import { ApiUsage } from './usage';
 import { createGunzip, createZstdDecompress } from 'node:zlib';
 import { tr } from '../../shared/i18n';
 
@@ -75,8 +77,37 @@ export class LocalAi {
   /** Cancela o download em andamento (instalação ou modelo). */
   private abort: AbortController | null = null;
 
+  /** Token da API de IA para outros sistemas (/v1, ai/openai.ts): gerado pela tela "IA local", guardado na pasta de dados. */
+  private readonly tokenFile: string;
+  /** Uso da API /v1 (pedidos, tokens, últimos pedidos). */
+  readonly usage: ApiUsage;
+
   constructor(dataDir: string) {
     this.dir = join(dataDir, 'ollama');
+    this.tokenFile = join(dataDir, 'ai-api-token');
+    this.usage = new ApiUsage(join(dataDir, 'ai-api-usage.json'));
+  }
+
+  /** Token em vigor: o gerado pela tela; senão DEVLAND_AI_TOKEN. Sem nenhum, a API /v1 fica desligada. */
+  apiToken(): string | undefined {
+    try {
+      const t = readFileSync(this.tokenFile, 'utf8').trim();
+      if (t) return t;
+    } catch { /* ainda não gerado */ }
+    return process.env.DEVLAND_AI_TOKEN || undefined;
+  }
+
+  private tokenFileExists(): boolean {
+    return existsSync(this.tokenFile);
+  }
+
+  newApiToken(): void {
+    mkdirSync(dirname(this.tokenFile), { recursive: true });
+    writeFileSync(this.tokenFile, randomBytes(32).toString('hex'), { mode: 0o600 });
+  }
+
+  revokeApiToken(): void {
+    rmSync(this.tokenFile, { force: true });
   }
 
   /** Instalado pelo DevLand (na pasta de dados): só esse dá para desinstalar por aqui. */
@@ -220,6 +251,7 @@ export class LocalAi {
       recommended: recommend(total / 1e9),
       job: this.job,
       guard: this.guardNote,
+      api: { token: this.apiToken() ?? null, fromEnv: !this.tokenFileExists() && !!process.env.DEVLAND_AI_TOKEN, usage: this.usage.summary() },
     };
   }
 
