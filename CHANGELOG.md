@@ -11,6 +11,7 @@ do meio (0.**3**.0).
 ## [Não lançado]
 
 ### Corrigido
+- **Ditado mais rápido.** O Whisper local passa a decodificar de forma gulosa (`-bs 1 -bo 1 -nf`) e com todos os núcleos (até 8), e a API `/v1/audio/transcriptions` aceita `language` (ex.: `pt`) para pular a detecção automática de idioma (que custava uma passada a mais). `DEVLAND_WHISPER_FAST=0` volta ao padrão do whisper.cpp; `DEVLAND_WHISPER_THREADS` escolhe os núcleos.
 - **API de IA: cliente que desiste não derruba mais o DevLand.** Ao cancelar o pedido ao Ollama (timeout ou "Parar" do outro sistema) o stream emitia um erro sem tratamento e o processo caía, reiniciando o container e retomando todos os agentes. Agora o encaminhamento usa `pipeline` e trata o erro dos dois lados.
 - **API de IA: o motivo do erro chega a quem chamou.** Quando o Ollama não responde (parado, sem memória), a API devolve 424 com a explicação; antes era 502 e o proxy do Velix trocava o corpo por uma página dele, escondendo o motivo.
 - **API de IA: pedido abandonado não trava mais a fila.** Quando quem chamou desiste (timeout, "Parar"), o DevLand cancela o pedido no Ollama; antes ele seguia gerando no vazio e os pedidos seguintes esperavam na fila.

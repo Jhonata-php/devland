@@ -137,7 +137,9 @@ async function relay(res: ServerResponse, call: Promise<Response>, done?: (tail:
 
 /** Entrega o áudio ao ditado e espera o texto (até 90 s: o Whisper local em CPU não é instantâneo). */
 async function transcrever(res: ServerResponse, dictation: DictationService, body: unknown): Promise<void> {
-  const r = dictation.submit(body);
+  // "language" (o nome do campo na API da OpenAI) vira o idioma do ditado: com ele o Whisper não precisa detectar
+  const b = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+  const r = dictation.submit({ ...b, lang: b.lang ?? b.language });
   if ('error' in r) return json(res, r.error === 'invalid' ? 400 : r.error === 'too-many' ? 429 : 503, { error: { message: r.reason } });
   const fim = Date.now() + 90_000;
   while (Date.now() < fim) {

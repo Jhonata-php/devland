@@ -7,7 +7,7 @@
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
 import { execFile } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { cpus, homedir, tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { tr } from '../../shared/i18n';
 
@@ -30,7 +30,8 @@ export interface Transcript {
   lang: string;
 }
 
-export type Transcriber = (audio: Buffer, type: string) => Promise<Transcript>;
+/** `lang`: o idioma já conhecido (ex.: "pt"): pula a detecção automática, que custa uma passada a mais do Whisper. */
+export type Transcriber = (audio: Buffer, type: string, opts?: { lang?: string }) => Promise<Transcript>;
 
 function onPath(name: string, env: NodeJS.ProcessEnv): string | undefined {
   for (const dir of (env.PATH ?? '').split(delimiter)) {
@@ -82,9 +83,20 @@ export function parseWhisperJson(raw: string): Transcript {
   return { text, lang: typeof d.result?.language === 'string' ? d.result.language : '' };
 }
 
+/**
+ * Opções que deixam o whisper-cli bem mais rápido em CPU: decodificação gulosa (beam 1, best-of 1, em vez de 5 e 5), sem
+ * refazer com temperatura maior quando a confiança é baixa (-nf) e todos os núcleos (até 8). Perde um pouco de precisão em
+ * áudio ruim; DEVLAND_WHISPER_FAST=0 volta ao padrão do whisper.cpp e DEVLAND_WHISPER_THREADS escolhe os núcleos.
+ */
+export function opcoesRapidas(env: NodeJS.ProcessEnv = process.env, nucleos = cpus().length): string[] {
+  if (env.DEVLAND_WHISPER_FAST === '0') return [];
+  const t = Number.parseInt(env.DEVLAND_WHISPER_THREADS ?? '', 10);
+  return ['-t', String(Number.isFinite(t) && t > 0 ? t : Math.max(2, Math.min(8, nucleos))), '-bs', '1', '-bo', '1', '-nf'];
+}
+
 /** Transcritor com o whisper-cli; a pasta temporária some no fim, com ou sem erro. */
 export function createWhisperTranscriber(setup: WhisperSetup, timeoutMs = TRANSCRIBE_TIMEOUT_MS): Transcriber {
-  return async (audio) => {
+  return async (audio, _type, opts) => {
     const dir = mkdtempSync(join(tmpdir(), 'devland-dictation-'));
     try {
       const input = join(dir, 'audio.in');
@@ -94,10 +106,15 @@ export function createWhisperTranscriber(setup: WhisperSetup, timeoutMs = TRANSC
       if (!conv.ok) throw new Error(tr('não deu para ler o áudio ({0})', [conv.error]));
       const pass = async (lang: string): Promise<Transcript> => {
         const out = join(dir, `out-${lang}`);
-        const r = await run(setup.bin, ['-m', setup.model, '-l', lang, '-f', wav, '-nt', '-np', '-oj', '-of', out], timeoutMs);
+        const r = await run(setup.bin, ['-m', setup.model, '-l', lang, '-f', wav, '-nt', '-np', '-oj', '-of', out, ...opcoesRapidas()], timeoutMs);
         if (!r.ok) throw new Error(tr('o Whisper falhou ({0})', [r.error]));
         return parseWhisperJson(readFileSync(`${out}.json`, 'utf8'));
       };
+      // idioma conhecido: uma passada só, direto nele (sem detectar e sem refazer)
+      if (opts?.lang && /^[a-z]{2,3}$/.test(opts.lang)) {
+        const t = await pass(opts.lang);
+        return { text: t.text, lang: opts.lang };
+      }
       const first = await pass('auto');
       if (!first.lang || setup.langs.includes(first.lang) || !first.text) return first;
       // Detectou uma língua fora da lista (ex.: "es" para português): refaz no idioma principal.

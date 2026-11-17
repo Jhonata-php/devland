@@ -33,6 +33,8 @@ export interface DictationInfo {
 
 interface Entry {
   info: DictationInfo;
+  /** Idioma pedido por quem enviou (pula a detecção automática). */
+  lang?: string;
   audio: Buffer | null;
   type: string;
   at: number;
@@ -84,7 +86,8 @@ export class DictationService {
     for (const e of this.entries.values()) if (e.info.status === 'queued' || e.info.status === 'sent') open++;
     if (open >= MAX_OPEN) return { error: 'too-many', reason: tr('ditados demais esperando: aguarde o anterior') };
     const info: DictationInfo = { id: this.opts.newId?.() ?? randomUUID(), status: 'queued' };
-    const entry: Entry = { info, audio: audio.data, type: audio.type, at: this.now() };
+    const pedido = raw && typeof raw === 'object' ? (raw as Record<string, unknown>).lang : undefined;
+    const entry: Entry = { info, audio: audio.data, type: audio.type, at: this.now(), lang: typeof pedido === 'string' && /^[a-z]{2,3}$/.test(pedido) ? pedido : undefined };
     this.entries.set(info.id, entry);
     if (this.opts.transcriber) void this.transcribeHere(entry, this.opts.transcriber);
     else this.host.wake();
@@ -135,7 +138,7 @@ export class DictationService {
     e.info.status = 'sent';
     if (!audio) return this.fail(e, tr('áudio perdido'));
     try {
-      this.finish(e, await transcribe(audio, e.type));
+      this.finish(e, await transcribe(audio, e.type, { lang: e.lang }));
     } catch (err) {
       this.fail(e, (err as Error).message || tr('o Whisper falhou'));
     }
