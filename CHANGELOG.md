@@ -11,6 +11,7 @@ do meio (0.**3**.0).
 ## [Não lançado]
 
 ### Corrigido
+- **API de IA: o motivo do erro chega a quem chamou.** Quando o Ollama não responde (parado, sem memória), a API devolve 424 com a explicação; antes era 502 e o proxy do Velix trocava o corpo por uma página dele, escondendo o motivo.
 - **API de IA: pedido abandonado não trava mais a fila.** Quando quem chamou desiste (timeout, "Parar"), o DevLand cancela o pedido no Ollama; antes ele seguia gerando no vazio e os pedidos seguintes esperavam na fila.
 
 - **IA local como API (compatível com a da OpenAI), configurada pela tela.** Em **IA local** há um gráfico de uso dos últimos 14 dias (tokens por dia, pedidos, erros e modelos mais usados) e uma engrenagem **API e tokens**: o modal mostra o endereço, lista os tokens (vários, cada um com nome, **modelos permitidos**, último uso e consumo) e os últimos pedidos; dá para criar, editar e revogar. Outros sistemas (ex.: o Pergunte ao Orion) chamam `/v1/models` e `/v1/chat/completions` (streaming e ferramentas) com `Authorization: Bearer <token>`; modelo fora da permissão recebe 403. `DEVLAND_AI_TOKEN` continua valendo como um token só de leitura. Também transcreve voz em texto: `POST /v1/audio/transcriptions` (JSON `{type, data}` em base64) usa o Whisper do ditado.

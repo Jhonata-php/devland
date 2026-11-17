@@ -122,7 +122,9 @@ async function relay(res: ServerResponse, call: Promise<Response>, done?: (tail:
     res.on('close', () => src.destroy());
     src.pipe(res);
   } catch (err) {
-    if (!res.headersSent) json(res, 502, { error: { message: (err as Error).message } });
+    // 424 (não 502): o proxy do Velix troca o corpo de 502/503/504 por uma página dele e o motivo (ex.: memória insuficiente,
+    // Ollama parado) nunca chegaria a quem chamou
+    if (!res.headersSent) json(res, 424, { error: { message: explicar(err as Error) } });
     else res.end();
     fim();
   }
@@ -136,8 +138,17 @@ async function transcrever(res: ServerResponse, dictation: DictationService, bod
   while (Date.now() < fim) {
     const info = dictation.get(r.dictation.id);
     if (info?.status === 'done') return json(res, 200, { text: info.text ?? '', language: info.lang ?? '' });
-    if (info?.status === 'failed') return json(res, 502, { error: { message: info.error ?? tr('não deu para transcrever') } });
+    if (info?.status === 'failed') return json(res, 424, { error: { message: info.error ?? tr('não deu para transcrever') } });
     await new Promise((ok) => setTimeout(ok, 400));
   }
   json(res, 504, { error: { message: tr('a transcrição demorou demais') } });
+}
+
+/** "fetch failed" não diz nada: o erro de verdade está na causa (conexão recusada = o Ollama está parado ou caiu). */
+function explicar(err: Error): string {
+  const causa = (err as Error & { cause?: { code?: string; message?: string } }).cause;
+  if (causa?.code === 'ECONNREFUSED' || causa?.code === 'ECONNRESET' || causa?.code === 'UND_ERR_SOCKET') {
+    return tr('O Ollama deste DevLand não está respondendo (parado ou sem memória). Veja a página IA local.');
+  }
+  return err.message === 'fetch failed' && causa?.message ? causa.message : err.message;
 }

@@ -90,6 +90,7 @@ export const EN: Readonly<Record<string, string>> = {
   "Sem mensagens no timelapse: o escritório mostrado é o de outro momento": "No messages in timelapse: the office shown is from another moment",
   "Subagentes não recebem mensagens: escreva para o agente principal": "Subagents don't receive messages: write to the main agent",
   "Sessão encerrada": "Session ended",
+  "O Ollama deste DevLand não está respondendo (parado ou sem memória). Veja a página IA local.": "This DevLand's Ollama is not responding (stopped or out of memory). Check the Local AI page.",
   "não deu para transcrever": "could not transcribe",
   "transcrição indisponível: o Whisper não está instalado neste DevLand": "transcription unavailable: Whisper is not installed in this DevLand",
   "No outro sistema, use este endereço e um dos tokens abaixo (cabeçalho Authorization: Bearer). Caminhos: /v1/models e /v1/chat/completions.": "In the other system, use this address and one of the tokens below (Authorization: Bearer header). Paths: /v1/models and /v1/chat/completions.",

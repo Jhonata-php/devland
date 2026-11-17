@@ -92,6 +92,20 @@ describe('cliente que desiste', () => {
   });
 });
 
+describe('erros do Ollama', () => {
+  it('falha ao falar com o Ollama volta como 424 com o motivo (o proxy do Velix esconde 502)', async () => {
+    const d = dir();
+    const tokens = new ApiTokens(join(d, 't.json'), undefined, () => undefined);
+    const tok = tokens.create('Orion', []);
+    setAiAuth((b) => tokens.find(b));
+    const ai = { tokens, usage: new ApiUsage(join(d, 'u.json')), forward: async () => { throw new Error('Memória insuficiente para qwen3:4b: precisa de cerca de 5.8 GB livres e há 4.1 GB.'); } } as unknown as LocalAi;
+    const base = await listen((req, res) => void (handleOpenAi(req, res, req.url!, ai) || res.writeHead(404).end()));
+    const r = await fetch(`${base}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok.token}` }, body: JSON.stringify({ model: 'qwen3:4b', messages: [] }) });
+    expect(r.status).toBe(424);
+    expect(JSON.stringify(await r.json())).toContain('Memória insuficiente');
+  });
+});
+
 describe('tokens', () => {
   it('cria, edita, revoga e migra o token antigo único para "Principal"', () => {
     const d = dir();
