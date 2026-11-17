@@ -35,6 +35,8 @@ export interface MessageAttachments {
   save: (id: string, files: readonly Attachment[]) => string[];
 }
 
+const OAUTH_CALLBACK = /^http:\/\/(?:localhost|127\.0\.0\.1):\d{2,5}\/callback\?\S+$/;
+
 export function createMessageRoutes(registry: MessageRegistry, attach?: MessageAttachments): (req: IncomingMessage, res: ServerResponse, path: string) => void {
   const send = async (req: IncomingMessage, res: ServerResponse) => {
     let body = await readJson(req);
@@ -53,6 +55,15 @@ export function createMessageRoutes(registry: MessageRegistry, attach?: MessageA
       }
       const text = (body as { text?: unknown }).text;
       body = { ...(body as object), text: promptWithAttachments(typeof text === 'string' ? text : '', paths) };
+    }
+    // Login de MCP (OAuth): o Claude Code espera o retorno em http://localhost:PORTA/callback DENTRO do container, que o
+    // navegador de quem usa não alcança. O link colado aqui vai direto a esse endereço, em vez de virar um prompt.
+    const pasted = body && typeof body === 'object' ? (body as { text?: unknown }).text : undefined;
+    const cb = typeof pasted === 'string' ? OAUTH_CALLBACK.exec(pasted.trim()) : null;
+    const agentId = (body as { agentId?: unknown } | null)?.agentId;
+    if (cb && typeof agentId === 'string' && (await fetch(cb[0], { signal: AbortSignal.timeout(8000) }).then((r) => r.ok || r.status < 500, () => false))) {
+      const now = Date.now();
+      return sendJson(res, 201, { id: randomUUID(), agentId, status: 'delivered', createdAt: now, updatedAt: now });
     }
     const r = registry.send(body);
     if ('message' in r) return sendJson(res, 201, r.message);

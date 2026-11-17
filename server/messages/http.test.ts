@@ -273,3 +273,25 @@ describe('rotas', () => {
     expect((await snapshot(srv)).agents.filter((a) => a.canMessage)).toEqual([]);
   });
 });
+
+describe('retorno do login de MCP (OAuth)', () => {
+  it('link http://localhost:PORTA/callback colado na caixa vai ao ouvinte local e não vira prompt', async () => {
+    const hits: string[] = [];
+    const listener = http.createServer((req, res) => {
+      hits.push(req.url ?? '');
+      res.end('ok');
+    });
+    await new Promise<void>((ok) => listener.listen(0, '127.0.0.1', ok));
+    const port = (listener.address() as AddressInfo).port;
+    try {
+      srv = await serveMessages();
+      const r = await post(srv, '/api/messages', { agentId: MAIN, text: `http://localhost:${port}/callback?code=abc&state=xyz` });
+      expect(r.status).toBe(201);
+      expect((r.json as OutboxMessage).status).toBe('delivered');
+      expect(hits).toEqual(['/callback?code=abc&state=xyz']);
+    } finally {
+      listener.closeAllConnections();
+      listener.close();
+    }
+  });
+});
